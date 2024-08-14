@@ -458,6 +458,7 @@ function convertDateToMonthDay(dateString) {
   const day = parts[2];
   return `${month}-${day}`;
 }
+
 function countEntriesInLast30Days(entries) {
   const counts = {};
   const currentDate = new Date();
