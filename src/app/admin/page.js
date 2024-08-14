@@ -49,7 +49,7 @@ export default function usePage() {
       })
     );
   }, [webshop]);
-  console.log(sumarComprasUltimos7Dias(compras));
+
   return (
     <div className="grid min-h-screen w-full overflow-hidden ">
       <div className="flex flex-col w-full">
