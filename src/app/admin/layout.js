@@ -59,6 +59,7 @@ export default function RootLayout({ children }) {
             .from("Sitios")
             .select("*")
             .eq("Editor", userId || null);
+
           const [a] = tienda;
           const b = {
             ...a,
