@@ -50,7 +50,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Dashboard({ ThemeContext }) {
   const supabase = createClient();
-
   const { webshop, setwebshop } = useContext(ThemeContext);
   const [busqueda, setbusqueda] = useState("");
   const [event, setevent] = useState({
