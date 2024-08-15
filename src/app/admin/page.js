@@ -6,20 +6,21 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { ThemeContext } from "@/app/admin/layout";
-import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
+import {
+  Activity,
+  CreditCard,
+  DollarSign,
+  Users,
+  ArrowUpRight,
+  Search,
+} from "lucide-react";
 import {
   Area,
   AreaChart,
   Bar,
   BarChart,
-  CartesianGrid,
   Label,
   LabelList,
-  Line,
-  LineChart,
-  PolarAngleAxis,
-  RadialBar,
-  RadialBarChart,
   Rectangle,
   ReferenceLine,
   XAxis,
@@ -34,6 +35,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import Dashboard from "@/components/Chadcn-components/Compras";
 
 export default function usePage() {
   const { webshop, setwebshop } = useContext(ThemeContext);
@@ -146,83 +148,6 @@ export default function usePage() {
                     vistas.
                   </CardDescription>
                 </CardFooter>
-              </Card>
-              <Card
-                className="flex flex-col lg:max-w-md"
-                x-chunk="charts-01-chunk-1"
-              >
-                <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2 [&>div]:flex-1">
-                  <div>
-                    <CardDescription>Ventas</CardDescription>
-                    <CardTitle className="flex items-baseline gap-1 text-4xl tabular-nums">
-                      ${Number(sumTotalField(compras)).toFixed(2)}
-                      <span className="text-sm font-normal tracking-normal text-muted-foreground">
-                        CUP
-                      </span>
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex flex-1 items-center">
-                  <ChartContainer
-                    config={{
-                      suma: {
-                        label: "Suma",
-                        color: "hsl(var(--chart-1))",
-                      },
-                    }}
-                    className="w-full"
-                  >
-                    <LineChart
-                      accessibilityLayer
-                      margin={{
-                        left: 14,
-                        right: 14,
-                        top: 10,
-                      }}
-                      data={sumarComprasUltimos7Dias(compras)}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="4 4"
-                        vertical={false}
-                        stroke="hsl(var(--muted-foreground))"
-                        strokeOpacity={0.5}
-                      />
-                      <YAxis hide domain={["dataMin - 10", "dataMax + 10"]} />
-                      <XAxis dataKey="dia" />
-                      <Line
-                        dataKey="suma"
-                        type="natural"
-                        fill="var(--color-resting)"
-                        stroke="var(--color-resting)"
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{
-                          fill: "var(--color-resting)",
-                          stroke: "var(--color-resting)",
-                          r: 4,
-                        }}
-                      />
-                      <ChartTooltip
-                        content={
-                          <ChartTooltipContent
-                            indicator="line"
-                            labelFormatter={(value) => {
-                              return new Date(value).toLocaleDateString(
-                                "en-US",
-                                {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                }
-                              );
-                            }}
-                          />
-                        }
-                        cursor={false}
-                      />
-                    </LineChart>
-                  </ChartContainer>
-                </CardContent>
               </Card>
             </div>
             <div className="grid w-full flex-1 gap-6 lg:max-w-[20rem]">
@@ -445,8 +370,39 @@ export default function usePage() {
                   </ChartContainer>
                 </CardContent>
               </Card>
+              <Card x-chunk="dashboard-01-chunk-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Productos mas visitados
+                  </CardTitle>
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+                    {topThreeMostVisited(webshop.products).map((obj) => (
+                      <li>{obj.title}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card x-chunk="dashboard-01-chunk-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Productos menos visitados
+                  </CardTitle>
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+                    {topThreeLeastVisited(webshop.products).map((obj) => (
+                      <li>{obj.title}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
             </div>
           </div>
+          <Dashboard ThemeContext={ThemeContext} />
         </main>
       </div>
     </div>
@@ -513,9 +469,6 @@ function topThreeMostVisited(products) {
 }
 function topThreeLeastVisited(products) {
   return products.sort((a, b) => a.visitas - b.visitas).slice(0, 3);
-}
-function sumTotalField(products) {
-  return products.reduce((sum, product) => sum + product.total, 0);
 }
 
 function sumLengthOfPedido(products) {
@@ -594,45 +547,4 @@ function promedioVisitasPorMes(fechaArray) {
     contadorMeses,
     promedio: Number.isNaN(promedio) ? 0 : promedio, // Evitar NaN si no hay fechas
   };
-}
-
-function sumarComprasUltimos7Dias(data) {
-  const hoy = new Date();
-  const sieteDiasAtras = new Date(hoy);
-  sieteDiasAtras.setDate(hoy.getDate() - 7);
-
-  // Objeto para almacenar las sumas de compras por día
-  const comprasPorDia = {};
-
-  // Recorrer los últimos 7 días
-  for (let i = 0; i < 7; i++) {
-    const fecha = new Date(sieteDiasAtras);
-    fecha.setDate(fecha.getDate() + i);
-    const dia = fecha.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-
-    // Inicializar el día en el objeto con 0
-    comprasPorDia[dia] = 0;
-  }
-
-  // Recorrer el arreglo de datos
-  data.forEach((item) => {
-    const fecha = new Date(item.created_at);
-
-    // Verificar si la fecha está dentro de los últimos 7 días
-    if (fecha >= sieteDiasAtras && fecha <= hoy) {
-      const dia = fecha.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-      if (!comprasPorDia[dia]) {
-        comprasPorDia[dia] = 0;
-      }
-      comprasPorDia[dia] += item.total;
-    }
-  });
-
-  // Convertir el objeto a un array de resultados
-  const resultado = Object.entries(comprasPorDia).map(([dia, suma]) => ({
-    dia: convertDateToMonthDay(dia),
-    suma,
-  }));
-
-  return resultado;
 }
