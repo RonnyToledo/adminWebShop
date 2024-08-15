@@ -379,8 +379,8 @@ export default function usePage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
-                    {topThreeMostVisited(webshop.products).map((obj) => (
-                      <li>{obj.title}</li>
+                    {topThreeMostVisited(webshop.products).map((obj, ind) => (
+                      <li key={ind}>{obj.title}</li>
                     ))}
                   </ul>
                 </CardContent>
@@ -394,8 +394,8 @@ export default function usePage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
-                    {topThreeLeastVisited(webshop.products).map((obj) => (
-                      <li>{obj.title}</li>
+                    {topThreeLeastVisited(webshop.products).map((obj, ind) => (
+                      <li key={ind}>{obj.title}</li>
                     ))}
                   </ul>
                 </CardContent>
