@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { LogOut, Unlink2, CircleArrowOutUpRight } from "lucide-react";
 import {
@@ -11,9 +12,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useContext } from "react";
 
 export default function HeaderAdmin({ ThemeContext }) {
+  const { webshop, setwebshop } = useContext(ThemeContext);
+
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const Log_Out = async () => {
@@ -69,16 +72,18 @@ export default function HeaderAdmin({ ThemeContext }) {
                     Inicio
                   </Link>
                 </CommandItem>
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/guia"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <CircleArrowOutUpRight className="h-4 w-4" />
-                    Guia
-                  </Link>
-                </CommandItem>
+                {webshop.store.plan == "basic" && (
+                  <CommandItem>
+                    <Link
+                      className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                      href="/admin/guia"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <CircleArrowOutUpRight className="h-4 w-4" />
+                      Guia
+                    </Link>
+                  </CommandItem>
+                )}
                 <CommandItem>
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"

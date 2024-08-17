@@ -90,8 +90,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <HeaderAdmin ThemeContext={ThemeContext} />
         <ThemeContext.Provider value={{ webshop, setwebshop }}>
+          <HeaderAdmin ThemeContext={ThemeContext} />
           {children}
         </ThemeContext.Provider>
 
