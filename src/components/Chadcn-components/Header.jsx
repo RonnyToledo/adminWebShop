@@ -35,7 +35,6 @@ export default function Header({ ThemeContext }) {
     const formData = new FormData();
     formData.append("name", store.name);
     formData.append("parrrafo", store.parrrafo);
-    formData.append("parrafoInfo", store.parrafoInfo);
     const jsonString = JSON.stringify(store.horario);
     formData.append("horario", jsonString);
     if (store.image) {
@@ -154,21 +153,7 @@ export default function Header({ ThemeContext }) {
             }
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="info-message">Mensaje de Infromacion</Label>
-          <Textarea
-            id="info-message"
-            name="info-message"
-            value={store.parrafoInfo}
-            rows={5}
-            onChange={(e) =>
-              setStore({
-                ...store,
-                parrafoInfo: e.target.value,
-              })
-            }
-          />
-        </div>
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="business-hours text-lg">Horarios de Trabajo</Label>

@@ -67,7 +67,6 @@ export async function POST(request, { params }) {
         {
           name: data.get("name"),
           parrrafo: data.get("parrrafo"),
-          parrafoInfo: data.get("parrafoInfo"),
           horario: data.get("horario"),
           urlPoster: res.secure_url,
         },
@@ -93,7 +92,6 @@ export async function POST(request, { params }) {
         {
           name: data.get("name"),
           parrrafo: data.get("parrrafo"),
-          parrafoInfo: data.get("parrafoInfo"),
           horario: data.get("horario"),
         },
       ])
