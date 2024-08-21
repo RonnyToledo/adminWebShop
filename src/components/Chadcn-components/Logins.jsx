@@ -28,11 +28,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+// Llamar a la función para obtener los datos
+
 export default function Logins({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
-  const [logins, setlogins] = useState(
-    webshop.events.filter((obj) => obj.events == "inicio")
-  );
+  const [logins, setlogins] = useState([]);
   const [compras, setcompras] = useState(
     webshop.events
       .filter((obj) => obj.events == "compra")
@@ -42,7 +42,6 @@ export default function Logins({ ThemeContext }) {
   );
 
   useEffect(() => {
-    setlogins(webshop.events.filter((obj) => obj.events == "inicio"));
     const a = webshop.events.filter((obj) => obj.events == "compra");
     setcompras(
       a.map((obj) => {
@@ -50,7 +49,23 @@ export default function Logins({ ThemeContext }) {
       })
     );
     console.log(a);
+    async function fetchData(tienda) {
+      try {
+        const response = await fetch(`/api/tienda/${tienda}/GA`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        setlogins(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+    fetchData(webshop.store.sitioweb);
   }, [webshop]);
+
+  console.log(logins);
 
   return (
     <div className="chart-wrapper mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
@@ -80,7 +95,7 @@ export default function Logins({ ThemeContext }) {
                   left: -4,
                   right: -4,
                 }}
-                data={countEntriesInLast30Days(webshop.events)}
+                data={countEntriesInLast30Days(logins)}
               >
                 <Bar
                   dataKey="count"
@@ -423,7 +438,7 @@ function countEntriesInLast30Days(entries) {
   return result;
 }
 
-function filterDatesInLast30Days(entries) {
+const filterDatesInLast30Days = (entries) => {
   const currentDate = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(currentDate.getDate() - 30);
@@ -431,17 +446,18 @@ function filterDatesInLast30Days(entries) {
     const entryDate = new Date(entry.created_at.split(" ")[0]);
     return entryDate >= thirtyDaysAgo && entryDate <= currentDate;
   });
-}
-function filterDatesInLast7Days(entries) {
+};
+
+const filterDatesInLast7Days = (entries) => {
   const currentDate = new Date();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(currentDate.getDate() - 7);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(currentDate.getDate() - 7);
 
   return entries.filter((entry) => {
     const entryDate = new Date(entry.created_at.split(" ")[0]);
-    return entryDate >= thirtyDaysAgo && entryDate <= currentDate;
+    return entryDate >= sevenDaysAgo && entryDate <= currentDate;
   });
-}
+};
 
 // Función para calcular visitas por día y obtener los mejores y peores productos
 const obtenerMejoresYPeoresProductos = (productos) => {
