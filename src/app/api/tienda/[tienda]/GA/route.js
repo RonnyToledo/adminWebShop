@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
       property: `properties/${propertyId}`,
       dimensions: [{ name: "pagePath" }, { name: "hour" }, { name: "date" }],
       metrics: [{ name: "sessions" }],
-      dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+      dateRanges: [{ startDate: "365daysAgo", endDate: "today" }],
       dimensionFilter: {
         filter: {
           fieldName: "pagePath",

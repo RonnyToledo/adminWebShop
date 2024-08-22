@@ -57,7 +57,7 @@ export default function Logins({ ThemeContext }) {
         }
         const data = await response.json();
 
-        setlogins(data);
+        logins.length == 0 && setlogins(data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
