@@ -27,6 +27,7 @@ export default function Configuracion({ ThemeContext }) {
     valor: 0,
   });
   const [downloading, setDownloading] = useState(false);
+  const [Parpadeo, setParpadeo] = useState(false);
   const { toast } = useToast();
   const form = useRef(null);
   const newForm = useRef(null);
@@ -38,6 +39,11 @@ export default function Configuracion({ ThemeContext }) {
     horario: [],
     envios: [],
   });
+  const pause = (duration) => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, duration);
+    });
+  };
 
   useEffect(() => {
     setStore(webshop.store);
@@ -88,6 +94,13 @@ export default function Configuracion({ ThemeContext }) {
       setwebshop({ ...webshop, store: { ...webshop.store, ...store } });
     }
   };
+  async function Cambio(value) {
+    if (value) {
+      setParpadeo(true);
+      await pause(2000);
+      setParpadeo(false);
+    }
+  }
   return (
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
       <form ref={form} className="grid gap-6" onSubmit={handleSubmit}>
@@ -268,6 +281,7 @@ export default function Configuracion({ ThemeContext }) {
                 id="delivery"
                 checked={store.domicilio}
                 onCheckedChange={(value) => {
+                  Cambio(store.domicilio);
                   setStore({
                     ...store,
                     domicilio: value,
@@ -281,12 +295,16 @@ export default function Configuracion({ ThemeContext }) {
               />
             </div>
             {store.domicilio ? (
-              <Link
-                className="border p-3 text-center"
-                href={`/admin/configuracion/domicilios`}
-              >
-                Definir Domicilios
-              </Link>
+              <div className="max-w-max max-h-max">
+                <Link
+                  className={` ${
+                    Parpadeo && "animate-pulse duration-500"
+                  } border p-3 text-center`}
+                  href={`/admin/configuracion/domicilios`}
+                >
+                  Definir Domicilios
+                </Link>
+              </div>
             ) : (
               <></>
             )}

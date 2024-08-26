@@ -72,7 +72,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     Inicio
                   </Link>
                 </CommandItem>
-                {webshop.store.plan == "basic" && (
+                {webshop.store.plan == "pro" && (
                   <CommandItem>
                     <Link
                       className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
