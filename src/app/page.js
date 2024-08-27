@@ -9,9 +9,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supa";
 
 export default function usePage() {
-  const supabase = createClient();
   const router = useRouter();
   const [email, setemail] = useState("");
   const [password, setpassword] = useState("");

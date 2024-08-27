@@ -11,18 +11,21 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
-import { usePathname } from "next/navigation";
 import { useState, useContext } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { supabase } from "@/lib/supa";
 
 export default function HeaderAdmin({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
-
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const Log_Out = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       alert(error);
+    } else {
+      router.push("/");
     }
   };
 

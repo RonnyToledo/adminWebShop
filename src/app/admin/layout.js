@@ -1,5 +1,5 @@
 "use client";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, createContext } from "react";
 import { Toaster } from "@/components/ui/toaster";
@@ -23,8 +23,6 @@ export default function RootLayout({ children }) {
     cambio: false,
   });
   const [userId, setuserId] = useState("");
-
-  const supabase = createClient();
   const router = useRouter();
 
   supabase.auth.onAuthStateChange((event, session) => {
