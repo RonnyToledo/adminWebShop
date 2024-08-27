@@ -84,7 +84,6 @@ export default function RootLayout({ children }) {
     };
     obtenerDatos();
   }, [userId, setwebshop.cambio]);
-  console.log(webshop);
   return (
     <html lang="en">
       <body>
