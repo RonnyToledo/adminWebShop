@@ -69,7 +69,7 @@ export default function Links({ ThemeContext }) {
                 <div className="flex items-center space-x-2 justify-center">
                   <QrCode
                     value={webshop.store.variable}
-                    value2={webshop.store.sitioWeb}
+                    value2={webshop.store.sitioweb}
                     name={webshop.store.name}
                   />
                 </div>
