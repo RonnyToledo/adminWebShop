@@ -115,25 +115,23 @@ export default function Specific({ specific, ThemeContext }) {
                 <CardTitle>Imagen del producto</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-center">
-                  <Image
-                    src={
-                      newImage
-                        ? URL.createObjectURL(newImage)
-                        : products?.image
-                        ? products?.image
-                        : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
-                    }
-                    alt={products?.title ? products?.title : `Product`}
-                    width={150}
-                    style={{
-                      aspectRatio: "200/300",
-                      objectFit: "cover",
-                    }}
-                    height={200}
-                    className="object-contain"
-                  />
-                </div>
+                <Image
+                  src={
+                    newImage
+                      ? URL.createObjectURL(newImage)
+                      : products?.image
+                      ? products?.image
+                      : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
+                  }
+                  alt={products?.title ? products?.title : `Product`}
+                  width={100}
+                  style={{
+                    aspectRatio: "200/300",
+                    objectFit: "cover",
+                  }}
+                  height={150}
+                  className="object-contain"
+                />
               </CardContent>
             </Card>
             <Card className="w-full">
