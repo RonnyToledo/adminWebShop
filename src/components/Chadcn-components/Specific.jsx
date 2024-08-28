@@ -109,8 +109,8 @@ export default function Specific({ specific, ThemeContext }) {
           <h1 className="text-2xl font-bold">Editar producto</h1>
         </div>
         <form onSubmit={SaveData}>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 w-full">
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Imagen del producto</CardTitle>
               </CardHeader>
@@ -125,14 +125,18 @@ export default function Specific({ specific, ThemeContext }) {
                         : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
                     }
                     alt={products?.title ? products?.title : `Product`}
-                    width={300}
-                    height={300}
+                    width={150}
+                    style={{
+                      aspectRatio: "200/300",
+                      objectFit: "cover",
+                    }}
+                    height={200}
                     className="object-contain"
                   />
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Cambiar Imagen</CardTitle>
               </CardHeader>
@@ -175,7 +179,7 @@ export default function Specific({ specific, ThemeContext }) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Detalles del producto</CardTitle>
               </CardHeader>
@@ -237,7 +241,7 @@ export default function Specific({ specific, ThemeContext }) {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Categoría</CardTitle>
               </CardHeader>
@@ -267,7 +271,7 @@ export default function Specific({ specific, ThemeContext }) {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Estado</CardTitle>
               </CardHeader>
@@ -306,7 +310,7 @@ export default function Specific({ specific, ThemeContext }) {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Agregado</CardTitle>
               </CardHeader>
@@ -408,7 +412,7 @@ export default function Specific({ specific, ThemeContext }) {
                 </div>
               </CardContent>
             </Card>
-            <div className="bg-white p-2 flex justify-end sticky bottom-0 gap-2">
+            <div className="bg-white p-2 flex justify-end sticky bottom-0 gap-2 w-full">
               <Button
                 className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
                   downloading ? "opacity-50 cursor-not-allowed" : ""
