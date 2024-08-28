@@ -26,6 +26,7 @@ export default function Category({ ThemeContext }) {
       },
     });
     form.current.reset();
+    newCat("");
   };
   function startDrag(evt, obj) {
     evt.dataTransfer.setData("itemId", obj);
@@ -95,15 +96,18 @@ export default function Category({ ThemeContext }) {
       setDownloading(false);
     }
   };
+  function Reset() {
+    setFormulario(false);
+    form.current.reset();
+    setNewCat("");
+  }
   return (
     <main className="py-8 px-6">
       <div className="mb-6">
         <Button
           size="sm"
           onClick={() => {
-            formulario
-              ? setFormulario(false) && form.current.reset()
-              : setFormulario(true);
+            formulario ? Reset() : setFormulario(true);
           }}
         >
           {formulario ? "Cerrar" : "Agregar Categoría"}

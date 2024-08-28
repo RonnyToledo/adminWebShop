@@ -91,6 +91,13 @@ export default function NewProduct({ ThemeContext }) {
       });
     } finally {
       form.current.reset();
+      setProducts({
+        favorito: false,
+        title: "",
+        descripcion: "",
+        discount: 0,
+        price: 0,
+      });
       setDownloading(false);
     }
   };
