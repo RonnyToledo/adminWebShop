@@ -115,7 +115,7 @@ export default function Specific({ specific, ThemeContext }) {
                 <CardHeader>
                   <CardTitle>Imagen del producto</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex justify-center">
                   <Image
                     src={
                       newImage

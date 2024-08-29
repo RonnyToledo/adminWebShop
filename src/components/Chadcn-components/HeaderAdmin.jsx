@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { LogOut, Unlink2, CircleArrowOutUpRight } from "lucide-react";
 import {
   Command,
@@ -28,6 +28,12 @@ export default function HeaderAdmin({ ThemeContext }) {
       router.push("/");
     }
   };
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log(session);
+      console.log(event);
+    });
+  }, [supabase]);
 
   return (
     <header

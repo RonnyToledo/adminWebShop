@@ -11,22 +11,21 @@ import { useState, useEffect, useRef, useContext } from "react";
 export default function Category({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
+  const [category, setCategory] = useState([]);
   const { toast } = useToast();
   const form = useRef(null);
   const [formulario, setFormulario] = useState(false);
   const [newCat, setNewCat] = useState("");
 
+  useEffect(() => {
+    setCategory(webshop.store.categoria);
+  }, [webshop]);
+
   const catSubmit = (e) => {
     e.preventDefault();
-    setwebshop({
-      ...webshop,
-      store: {
-        ...webshop.store,
-        categoria: [...webshop.store.categoria, newCat],
-      },
-    });
+    setCategory(Array.from(new Set([...category, newCat])));
     form.current.reset();
-    newCat("");
+    setNewCat("");
   };
   function startDrag(evt, obj) {
     evt.dataTransfer.setData("itemId", obj);
@@ -62,9 +61,16 @@ export default function Category({ ThemeContext }) {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setwebshop({
+      ...webshop,
+      store: {
+        ...webshop.store,
+        categoria: category,
+      },
+    });
     setDownloading(true);
     const formData = new FormData();
-    const jsonString = JSON.stringify(webshop.store.categoria);
+    const jsonString = JSON.stringify(category);
     formData.append("categoria", jsonString);
     try {
       const res = await axios.post(
@@ -139,7 +145,7 @@ export default function Category({ ThemeContext }) {
       )}
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
-          {webshop.store.categoria.map((obj, ind) => (
+          {category.map((obj, ind) => (
             <div
               key={ind}
               className="bg-white border rounded-lg p-4 flex items-center justify-between"
