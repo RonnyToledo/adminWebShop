@@ -103,323 +103,329 @@ export default function Specific({ specific, ThemeContext }) {
     }
   };
   return (
-    <main className="container mx-auto py-12 px-6">
-      <div className="flex flex-col gap-6 ">
+    <main className="grid min-h-screen w-full overflow-hidden ">
+      <div className="flex flex-col gap-6 w-full ">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Editar producto</h1>
         </div>
-        <form onSubmit={SaveData}>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 w-full">
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Imagen del producto</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Image
-                  src={
-                    newImage
-                      ? URL.createObjectURL(newImage)
-                      : products?.image
-                      ? products?.image
-                      : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
-                  }
-                  alt={products?.title ? products?.title : `Product`}
-                  width={100}
-                  style={{
-                    aspectRatio: "200/300",
-                    objectFit: "cover",
-                  }}
-                  height={150}
-                  className="object-contain"
-                />
-              </CardContent>
-            </Card>
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Cambiar Imagen</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    htmlFor="images"
-                  >
-                    Imágenes
-                  </Label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                    <div className="space-y-1 text-center">
-                      <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                        <label
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-                          htmlFor="images"
-                        >
-                          <span>Subir archivos</span>
-                          <input
-                            className="sr-only"
-                            id="images"
-                            name="images"
-                            type="file"
-                            onChange={(e) => setNewImage(e.target.files[0])}
-                          />
-                        </label>
-                        <p className="pl-1">o arrastrar y soltar</p>
+        <form onSubmit={SaveData} className="flex flex-1 flex-col gap-8 p-6">
+          <div className="grid gap-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Imagen del producto</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Image
+                    src={
+                      newImage
+                        ? URL.createObjectURL(newImage)
+                        : products?.image
+                        ? products?.image
+                        : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
+                    }
+                    alt={products?.title ? products?.title : `Product`}
+                    width={100}
+                    style={{
+                      aspectRatio: "200/300",
+                      objectFit: "cover",
+                    }}
+                    height={150}
+                    className="object-contain"
+                  />
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Cambiar Imagen</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      htmlFor="images"
+                    >
+                      Imágenes
+                    </Label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                      <div className="space-y-1 text-center">
+                        <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                          <label
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                            htmlFor="images"
+                          >
+                            <span>Subir archivos</span>
+                            <input
+                              className="sr-only"
+                              id="images"
+                              name="images"
+                              type="file"
+                              onChange={(e) => setNewImage(e.target.files[0])}
+                            />
+                          </label>
+                          <p className="pl-1">o arrastrar y soltar</p>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          PNG, JPG, GIF hasta 10MB
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          *Opcional
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG, GIF hasta 10MB
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        *Opcional
-                      </p>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Detalles del producto</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Nombre</Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      value={products?.title}
-                      onChange={(e) =>
-                        setProducts({ ...products, title: e.target.value })
-                      }
-                    />
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Detalles del producto</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name">Nombre</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={products?.title}
+                        onChange={(e) =>
+                          setProducts({ ...products, title: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Descripción</Label>
+                      <Textarea
+                        id="description"
+                        rows={4}
+                        defaultValue={products?.descripcion}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            descripcion: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="price">Precio</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        defaultValue={products?.price}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            price: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="price">Descuento</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        defaultValue={products?.discount}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            discount: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Categoría</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="grid gap-2">
-                    <Label htmlFor="description">Descripción</Label>
-                    <Textarea
-                      id="description"
-                      rows={4}
-                      defaultValue={products?.descripcion}
-                      onChange={(e) =>
+                    <Label htmlFor="category">Categoría</Label>
+                    <Select
+                      id="category"
+                      onValueChange={(value) => {
                         setProducts({
                           ...products,
-                          descripcion: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="price">Precio</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      defaultValue={products?.price}
-                      onChange={(e) =>
-                        setProducts({
-                          ...products,
-                          price: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="price">Descuento</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      defaultValue={products?.discount}
-                      onChange={(e) =>
-                        setProducts({
-                          ...products,
-                          discount: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Categoría</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2">
-                  <Label htmlFor="category">Categoría</Label>
-                  <Select
-                    id="category"
-                    onValueChange={(value) => {
-                      setProducts({
-                        ...products,
-                        caja: value,
-                      });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={products?.caja} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {webshop.store.categoria.map((obj, ind) => (
-                        <SelectItem key={ind} value={obj}>
-                          {obj}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Estado</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="out-of-stock"
-                      checked={products?.agotado}
-                      onCheckedChange={(value) =>
-                        setProducts({ ...products, agotado: value })
-                      }
-                    />
-                    <Label htmlFor="out-of-stock ">Agotado</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="favorite"
-                      checked={products?.favorito}
-                      onCheckedChange={(value) =>
-                        setProducts({ ...products, favorito: value })
-                      }
-                    />
-                    <Label htmlFor="favorite">Favorito</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="visible"
-                      checked={products?.visible}
-                      onCheckedChange={(value) =>
-                        setProducts({ ...products, visible: value })
-                      }
-                    />
-                    <Label htmlFor="visible">Visible</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Agregado</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {products?.agregados.length >= 0 &&
-                  products?.agregados.map((obj1, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between "
+                          caja: value,
+                        });
+                      }}
                     >
-                      <div className="flex items-center gap-2">
-                        <GitMerge className="h-5 w-5 text-primary" />
-                        <p className="text-base font-medium">{obj1.nombre}</p>
-                        <p className="text-base font-medium">${obj1.valor}</p>
+                      <SelectTrigger>
+                        <SelectValue placeholder={products?.caja} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {webshop.store.categoria.map((obj, ind) => (
+                          <SelectItem key={ind} value={obj}>
+                            {obj}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Estado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="out-of-stock"
+                        checked={products?.agotado}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, agotado: value })
+                        }
+                      />
+                      <Label htmlFor="out-of-stock ">Agotado</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="favorite"
+                        checked={products?.favorito}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, favorito: value })
+                        }
+                      />
+                      <Label htmlFor="favorite">Favorito</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="visible"
+                        checked={products?.visible}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, visible: value })
+                        }
+                      />
+                      <Label htmlFor="visible">Visible</Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Agregado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {products?.agregados.length >= 0 &&
+                    products?.agregados.map((obj1, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between "
+                      >
+                        <div className="flex items-center gap-2">
+                          <GitMerge className="h-5 w-5 text-primary" />
+                          <p className="text-base font-medium">{obj1.nombre}</p>
+                          <p className="text-base font-medium">${obj1.valor}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setProducts({
+                              ...products,
+                              agregados: products?.agregados.filter(
+                                (fil) => fil != obj1
+                              ),
+                            });
+                          }}
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                          <span className="sr-only">Eliminar</span>
+                        </Button>
+                      </div>
+                    ))}
+                  <div className="flex items-center justify-between">
+                    <form
+                      ref={form}
+                      className="space-x-6 flex items-center justify-between"
+                    >
+                      <div>
+                        <Label
+                          htmlFor="new-subcategory"
+                          className="text-base font-medium"
+                        >
+                          Nombre
+                        </Label>
+                        <Input
+                          id="title"
+                          name="title"
+                          required
+                          value={newAregados.nombre}
+                          type="text"
+                          onChange={(e) =>
+                            setNewAgregados({
+                              ...newAregados,
+                              nombre: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="new-subcategory"
+                          className="text-base font-medium"
+                        >
+                          Valor
+                        </Label>
+                        <Input
+                          id="value"
+                          name="value"
+                          required
+                          value={newAregados.valor}
+                          type="number"
+                          onChange={(e) =>
+                            setNewAgregados({
+                              ...newAregados,
+                              valor: e.target.value,
+                            })
+                          }
+                        />
                       </div>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-foreground"
+                        variant="outline m-2"
+                        className="w-16"
                         onClick={(e) => {
                           e.preventDefault();
                           setProducts({
                             ...products,
-                            agregados: products?.agregados.filter(
-                              (fil) => fil != obj1
+                            agregados: Array.from(
+                              new Set([...products?.agregados, newAregados])
                             ),
+                          });
+                          setNewAgregados({
+                            nombre: "",
+                            valor: 0,
+                            cantidad: 0,
                           });
                         }}
                       >
-                        <TrashIcon className="h-5 w-5" />
-                        <span className="sr-only">Eliminar</span>
+                        <PlusIcon className="h-5 w-5" />
                       </Button>
-                    </div>
-                  ))}
-                <div className="flex items-center justify-between">
-                  <form
-                    ref={form}
-                    className="space-x-6 flex items-center justify-between"
-                  >
-                    <div>
-                      <Label
-                        htmlFor="new-subcategory"
-                        className="text-base font-medium"
-                      >
-                        Nombre
-                      </Label>
-                      <Input
-                        id="title"
-                        name="title"
-                        required
-                        value={newAregados.nombre}
-                        type="text"
-                        onChange={(e) =>
-                          setNewAgregados({
-                            ...newAregados,
-                            nombre: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label
-                        htmlFor="new-subcategory"
-                        className="text-base font-medium"
-                      >
-                        Valor
-                      </Label>
-                      <Input
-                        id="value"
-                        name="value"
-                        required
-                        value={newAregados.valor}
-                        type="number"
-                        onChange={(e) =>
-                          setNewAgregados({
-                            ...newAregados,
-                            valor: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <Button
-                      variant="outline m-2"
-                      className="w-16"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setProducts({
-                          ...products,
-                          agregados: Array.from(
-                            new Set([...products?.agregados, newAregados])
-                          ),
-                        });
-                        setNewAgregados({ nombre: "", valor: 0, cantidad: 0 });
-                      }}
-                    >
-                      <PlusIcon className="h-5 w-5" />
-                    </Button>
-                  </form>
-                </div>
-              </CardContent>
-            </Card>
-            <div className="bg-white p-2 flex justify-end sticky bottom-0 gap-2 w-full">
-              <Button
-                className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
-                  downloading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-                disabled={downloading}
-                type="submit"
-              >
-                {downloading ? "Guardando..." : "Guardar"}
-              </Button>
+                    </form>
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="bg-white p-2 flex justify-end sticky bottom-0 gap-2 w-full">
+                <Button
+                  className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+                    downloading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={downloading}
+                  type="submit"
+                >
+                  {downloading ? "Guardando..." : "Guardar"}
+                </Button>
+              </div>
             </div>
           </div>
         </form>
