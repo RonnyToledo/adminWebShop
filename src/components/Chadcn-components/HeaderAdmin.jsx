@@ -28,12 +28,6 @@ export default function HeaderAdmin({ ThemeContext }) {
       router.push("/");
     }
   };
-  useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      console.log(session);
-      console.log(event);
-    });
-  }, [supabase]);
 
   return (
     <header

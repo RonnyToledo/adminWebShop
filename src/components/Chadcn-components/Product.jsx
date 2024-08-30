@@ -80,39 +80,37 @@ export default function Product({ ThemeContext }) {
                 {webshop.products.map((obj, ind) => (
                   <div
                     key={ind}
-                    className="p-4 flex items-center justify-between"
+                    className="p-4 grid grid-cols-4 items-center justify-between"
                   >
-                    <div className="flex items-center gap-4">
-                      <Link href={`/admin/products/${obj.productId}`}>
-                        <Image
-                          alt={obj.title ? obj.title : `Producto${ind}`}
-                          className="rounded-md"
-                          height={64}
-                          src={
-                            obj.image
-                              ? obj.image
-                              : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
-                          }
-                          style={{
-                            aspectRatio: "64/64",
-                            objectFit: "cover",
-                          }}
-                          width={64}
-                        />
-                      </Link>
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                          {obj.title}
-                        </h3>
-                        <p className="text-gray-500 dark:text-gray-400">
-                          ${obj.price}
-                        </p>
-                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-blue-200 dark:text-blue-900">
-                          {obj.caja}
-                        </span>
-                      </div>
+                    <Link href={`/admin/products/${obj.productId}`}>
+                      <Image
+                        alt={obj.title ? obj.title : `Producto${ind}`}
+                        className="rounded-md"
+                        height={64}
+                        src={
+                          obj.image
+                            ? obj.image
+                            : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
+                        }
+                        style={{
+                          aspectRatio: "64/64",
+                          objectFit: "cover",
+                        }}
+                        width={64}
+                      />
+                    </Link>
+                    <div className="col-span-2">
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">
+                        {obj.title}
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        ${obj.price}
+                      </p>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-blue-200 dark:text-blue-900">
+                        {obj.caja}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="grid grid-cols-2 gap-1">
                         {obj.visible && (
                           <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-2 rounded dark:bg-green-200 dark:text-green-900">
