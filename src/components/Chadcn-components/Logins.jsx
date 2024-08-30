@@ -33,37 +33,29 @@ import {
 export default function Logins({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
   const [logins, setlogins] = useState([]);
-  const [compras, setcompras] = useState(
-    webshop.events
-      .filter((obj) => obj.events == "compra")
-      .map((obj) => {
-        return { ...obj.desc, created_at: obj.created_at };
-      })
-  );
 
   useEffect(() => {
-    const a = webshop.events.filter((obj) => obj.events == "compra");
-    setcompras(
-      a.map((obj) => {
-        return { ...obj.desc, created_at: obj.created_at, uid: obj.uid };
-      })
-    );
     async function fetchData(tienda) {
       try {
-        const response = await fetch(`/api/tienda/${tienda}/GA`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        console.log(tienda === undefined);
+        console.log(!(tienda === undefined));
+        console.log(webshop.store.sitioweb);
+        if (!(tienda === undefined)) {
+          const response = await fetch(`/api/tienda/${tienda}/GA`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
 
-        logins.length == 0 && setlogins(data);
+          logins.length == 0 && setlogins(data);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     }
     fetchData(webshop.store.sitioweb);
   }, [webshop]);
-
+  console.log(logins);
   return (
     <div className="chart-wrapper mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[22rem] lg:grid-cols-1 xl:max-w-[25rem]">
