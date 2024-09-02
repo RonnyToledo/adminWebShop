@@ -7,6 +7,18 @@ import axios from "axios";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect, useRef, useContext } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
@@ -16,9 +28,11 @@ export default function Category({ ThemeContext }) {
   const form = useRef(null);
   const [formulario, setFormulario] = useState(false);
   const [newCat, setNewCat] = useState("");
+  const [products, setproducts] = useState([]);
 
   useEffect(() => {
     setCategory(webshop.store.categoria);
+    setproducts(webshop.products);
   }, [webshop]);
 
   const catSubmit = (e) => {
@@ -61,17 +75,21 @@ export default function Category({ ThemeContext }) {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setwebshop({
-      ...webshop,
-      store: {
-        ...webshop.store,
-        categoria: category,
-      },
+    // Crear un objeto desde el array fijo para facilitar la comparación
+    const fijoDict = Object.fromEntries(
+      webshop.products.map((obj) => [obj.id, obj])
+    );
+
+    // Identificar objetos con campo 'caja' diferente
+    const diferentes = products.filter((obj) => {
+      const objetoFijo = fijoDict[obj.id];
+      return objetoFijo && objetoFijo.caja !== obj.caja;
     });
+    console.log(diferentes);
     setDownloading(true);
     const formData = new FormData();
-    const jsonString = JSON.stringify(category);
-    formData.append("categoria", jsonString);
+    formData.append("categoria", JSON.stringify(category));
+    formData.append("products", JSON.stringify(diferentes));
     try {
       const res = await axios.post(
         `/api/tienda/${webshop.store.sitioweb}/categoria`,
@@ -100,6 +118,14 @@ export default function Category({ ThemeContext }) {
       });
     } finally {
       setDownloading(false);
+      setwebshop({
+        ...webshop,
+        store: {
+          ...webshop.store,
+          categoria: category,
+        },
+        products: products,
+      });
     }
   };
   function Reset() {
@@ -107,6 +133,8 @@ export default function Category({ ThemeContext }) {
     form.current.reset();
     setNewCat("");
   }
+  console.log(products);
+
   return (
     <main className="py-8 px-6">
       <div className="mb-6">
@@ -167,6 +195,85 @@ export default function Category({ ThemeContext }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="w-full" variant="outline">
+                      {" "}
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[300px] sm:max-w-[425px] h-2/3">
+                    <DialogHeader>
+                      <DialogTitle>Agregar Productos</DialogTitle>
+                      <DialogDescription>
+                        Indique los productos a los q le va a agregar esta
+                        categoria
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-full w-full rounded-md border p-4">
+                      <div className="grid gap-4 py-4">
+                        {webshop.products
+                          .sort((a, b) => {
+                            if (a.caja === obj && b.caja !== obj) {
+                              return -1; // 'a' debe ir primero
+                            }
+                            if (a.caja !== obj && b.caja === obj) {
+                              return 1; // 'b' debe ir primero
+                            }
+                            return 0; // Mantener el orden original si ambos son iguales
+                          })
+                          .map((prod, ind2) => (
+                            <div
+                              key={ind2}
+                              className="flex justify-between items-center gap-4"
+                            >
+                              <Label
+                                htmlFor="terms"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {prod.title}
+                              </Label>
+                              <div className="flex justify-between items-center gap-1">
+                                {products
+                                  .filter(
+                                    (prod2) => prod2.productId == prod.productId
+                                  )
+                                  .map((prod2) => (
+                                    <Checkbox
+                                      checked={prod2.caja == obj}
+                                      onCheckedChange={() => {
+                                        setproducts(
+                                          products.map((prod1) => {
+                                            if (
+                                              prod1.productId == prod.productId
+                                            ) {
+                                              if (prod1.caja !== obj) {
+                                                return {
+                                                  ...prod1,
+                                                  caja: obj,
+                                                };
+                                              } else {
+                                                return {
+                                                  ...prod1,
+                                                  caja: prod.caja,
+                                                };
+                                              }
+                                            } else {
+                                              return prod1;
+                                            }
+                                          })
+                                        );
+                                      }}
+                                    />
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+
                 <Button
                   size="sm"
                   variant="danger"

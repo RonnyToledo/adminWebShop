@@ -35,8 +35,7 @@ export default function Header({ ThemeContext }) {
     const formData = new FormData();
     formData.append("name", store.name);
     formData.append("parrrafo", store.parrrafo);
-    const jsonString = JSON.stringify(store.horario);
-    formData.append("horario", jsonString);
+    formData.append("horario", JSON.stringify(store.horario));
     if (store.image) {
       formData.append("urlPosterNew", store.image);
       if (store.urlPoster) {
