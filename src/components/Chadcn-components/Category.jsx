@@ -238,8 +238,9 @@ export default function Category({ ThemeContext }) {
                                   .filter(
                                     (prod2) => prod2.productId == prod.productId
                                   )
-                                  .map((prod2) => (
+                                  .map((prod2, ind3) => (
                                     <Checkbox
+                                      key={ind3}
                                       checked={prod2.caja == obj}
                                       onCheckedChange={() => {
                                         setproducts(
