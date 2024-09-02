@@ -207,7 +207,7 @@ export default function Category({ ThemeContext }) {
                       <DialogTitle>Agregar Productos</DialogTitle>
                       <DialogDescription>
                         Indique los productos a los q le va a agregar esta
-                        categoria
+                        categoria {`(${obj})`}
                       </DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="h-full w-full rounded-md border p-4">
