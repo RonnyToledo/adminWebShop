@@ -47,7 +47,6 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("descripcion", products.descripcion);
-    formData.append("discount", products.discount);
     formData.append("UID", webshop.store.UUID);
     formData.append("creado", getLocalISOString(now));
     if (products.image) formData.append("image", products.image);
@@ -278,35 +277,6 @@ export default function NewProduct({ ThemeContext }) {
                 })
               }
             />
-          </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="discount"
-          >
-            Descuento
-          </Label>
-          <div className="mt-1 flex items-center">
-            <Input
-              id="discount"
-              max="100"
-              min="0"
-              name="discount"
-              required
-              value={products.discount}
-              step="1"
-              type="number"
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  discount: e.target.value,
-                })
-              }
-            />
-            <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
-              %
-            </span>
           </div>
         </div>
 

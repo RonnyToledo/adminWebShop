@@ -30,6 +30,7 @@
     "@tabler/icons-react": "^3.11.0",
     "@vercel/speed-insights": "^1.0.12",
     "axios": "^1.7.2",
+    "chroma-js": "^3.0.0",
     "class-variance-authority": "^0.7.0",
     "cloudinary": "^2.2.0",
     "cloudinary-build-url": "^0.2.4",

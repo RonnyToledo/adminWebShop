@@ -49,7 +49,7 @@ export default function Specific({ specific, ThemeContext }) {
     formData.append("title", products.title);
     formData.append("descripcion", products.descripcion);
     formData.append("price", products.price);
-    formData.append("discount", products.discount);
+    formData.append("order", products.order);
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("agotado", products.agotado);
@@ -122,7 +122,7 @@ export default function Specific({ specific, ThemeContext }) {
                         ? URL.createObjectURL(newImage)
                         : products?.image
                         ? products?.image
-                        : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
+                        : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
                     }
                     alt={products?.title ? products?.title : `Product`}
                     width={100}
@@ -224,15 +224,15 @@ export default function Specific({ specific, ThemeContext }) {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="price">Descuento</Label>
+                      <Label htmlFor="price">Orden Logico</Label>
                       <Input
                         id="price"
                         type="number"
-                        defaultValue={products?.discount}
+                        defaultValue={products?.order}
                         onChange={(e) =>
                           setProducts({
                             ...products,
-                            discount: Number(e.target.value),
+                            order: Number(e.target.value),
                           })
                         }
                       />
@@ -415,18 +415,18 @@ export default function Specific({ specific, ThemeContext }) {
                   </div>
                 </CardContent>
               </Card>
-              <div className="bg-white p-2 flex justify-end sticky bottom-0 gap-2 w-full">
-                <Button
-                  className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
-                    downloading ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  disabled={downloading}
-                  type="submit"
-                >
-                  {downloading ? "Guardando..." : "Guardar"}
-                </Button>
-              </div>
             </div>
+          </div>
+          <div className="bg-white p-2 flex justify-end sticky bottom-0 w-full">
+            <Button
+              className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+                downloading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={downloading}
+              type="submit"
+            >
+              {downloading ? "Guardando..." : "Guardar"}
+            </Button>
           </div>
         </form>
       </div>
