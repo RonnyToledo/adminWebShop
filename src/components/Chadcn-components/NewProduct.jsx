@@ -92,6 +92,7 @@ export default function NewProduct({ ThemeContext }) {
     } finally {
       form.current.reset();
       setProducts({
+        ...products,
         favorito: false,
         title: "",
         descripcion: "",
