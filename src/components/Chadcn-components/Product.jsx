@@ -122,7 +122,9 @@ export default function Product({ ThemeContext }) {
                           className="text-black-800 text-xs font-medium px-2 py-0.5 rounded "
                         >
                           {obj.caja}
-                          {obj.order < 100000 && `-${obj.order}`}
+                          {obj.order < 100000
+                            ? `-${obj.order}`
+                            : "Sin prioridad"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -200,7 +202,9 @@ export default function Product({ ThemeContext }) {
                           className="text-black-800 text-xs font-medium px-2 py-0.5 rounded "
                         >
                           {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                          {obj.order < 100000 && `-${obj.order}`}
+                          {obj.order < 100000
+                            ? `-${obj.order}`
+                            : "Sin prioridad"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
