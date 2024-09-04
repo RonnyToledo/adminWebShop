@@ -162,6 +162,82 @@ export default function Product({ ThemeContext }) {
                     </div>
                   )
                 )}
+                {webshop.products
+                  .sort((a, b) => a.order - b.order)
+                  .filter((obj) => !webshop.store.categoria.includes(obj.caja))
+                  .map((obj, ind) => (
+                    <div
+                      key={ind}
+                      className="p-4 grid grid-cols-4 items-center justify-between"
+                    >
+                      <Link href={`/admin/products/${obj.productId}`}>
+                        <Image
+                          alt={obj.title ? obj.title : `Producto${ind}`}
+                          className="rounded-md"
+                          height={64}
+                          src={
+                            obj.image
+                              ? obj.image
+                              : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                          }
+                          style={{
+                            aspectRatio: "64/64",
+                            objectFit: "cover",
+                          }}
+                          width={64}
+                        />
+                      </Link>
+                      <div className="col-span-2">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">
+                          {obj.title}
+                        </h3>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          ${obj.price}
+                        </p>
+                        <span
+                          style={{ backgroundColor: coloresPastel[obj.caja] }}
+                          className="text-black-800 text-xs font-medium px-2 py-0.5 rounded "
+                        >
+                          {obj.caja ? obj.caja : "Sin categoria"}-{obj.order}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="grid grid-cols-2 gap-1">
+                          {obj.visible && (
+                            <span className="bg-green-100 text-green-800 text-xs font-medium p-1 flex item-center rounded dark:bg-green-200 dark:text-green-900">
+                              <Eye className=" h-4 w-4 " />
+                            </span>
+                          )}
+                          {obj.favorito && (
+                            <span className="bg-blue-100 text-blue-800 text-xs font-medium p-1 flex item-center rounded dark:bg-blue-200 dark:text-blue-900">
+                              <Star className=" h-4 w-4 " />
+                            </span>
+                          )}
+                          {obj.agotado && (
+                            <span className="bg-red-100 text-red-800 text-xs font-medium p-1 flex item-center rounded dark:bg-red-200 dark:text-red-900">
+                              <ScreenShareOff className=" h-4 w-4 " />
+                            </span>
+                          )}
+                        </div>
+
+                        <Button
+                          className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                          size="icon"
+                          variant="outline"
+                          disable={downloading}
+                          onClick={() =>
+                            deleteProduct(obj.productId, obj.image)
+                          }
+                        >
+                          {!downloading ? (
+                            <DeleteIcon className="w-5 h-5" />
+                          ) : (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
