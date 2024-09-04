@@ -121,7 +121,8 @@ export default function Product({ ThemeContext }) {
                           style={{ backgroundColor: coloresPastel[obj.caja] }}
                           className="text-black-800 text-xs font-medium px-2 py-0.5 rounded "
                         >
-                          {obj.caja}-{obj.order}
+                          {obj.caja}
+                          {obj.order < 100000 && `-${obj.order}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -198,7 +199,8 @@ export default function Product({ ThemeContext }) {
                           style={{ backgroundColor: coloresPastel[obj.caja] }}
                           className="text-black-800 text-xs font-medium px-2 py-0.5 rounded "
                         >
-                          {obj.caja ? obj.caja : "Sin categoria"}-{obj.order}
+                          {obj.caja ? obj.caja : "Sin categoria"}{" "}
+                          {obj.order < 100000 && `-${obj.order}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
