@@ -150,7 +150,6 @@ export default function Product({ ThemeContext }) {
                           className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                           size="icon"
                           variant="outline"
-                          disable={downloading}
                           onClick={() =>
                             deleteProduct(obj.productId, obj.image)
                           }
@@ -230,7 +229,6 @@ export default function Product({ ThemeContext }) {
                           className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                           size="icon"
                           variant="outline"
-                          disable={downloading}
                           onClick={() =>
                             deleteProduct(obj.productId, obj.image)
                           }

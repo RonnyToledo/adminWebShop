@@ -36,6 +36,7 @@ import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import TableRowsComponent from "./table-rows";
 
 export const description =
   "An products dashboard with a sidebar navigation. The sidebar has icon navigation. The content area has a breadcrumb and search in the header. It displays a list of products in a table with actions.";
@@ -153,170 +154,19 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {OrderProducts(
-                        webshop.products,
-                        webshop.store.categoria
-                      ).map((obj, ind) => (
-                        <TableRow key={ind}>
-                          <TableCell className="hidden sm:table-cell">
-                            <Image
-                              alt={obj.title ? obj.title : `Producto${ind}`}
-                              className="aspect-square rounded-md object-cover"
-                              height={64}
-                              src={
-                                obj.image
-                                  ? obj.image
-                                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                              }
-                              style={{
-                                aspectRatio: "64/64",
-                                objectFit: "cover",
-                              }}
-                              width={64}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {obj.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {" "}
-                              {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                              {obj.order < 100000
-                                ? `-${obj.order}`
-                                : "-Sin prioridad"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            ${Number(obj.price).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {obj.agotado ? "Si" : "No"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {obj.favorito ? "Si" : "No"}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  aria-haspopup="true"
-                                  size="icon"
-                                  variant="ghost"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Link
-                                    href={`/admin/products/${obj.productId}`}
-                                  >
-                                    Edit
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Button
-                                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                                    size="icon"
-                                    variant="ghost"
-                                    disable={downloading}
-                                    onClick={() =>
-                                      deleteProduct(obj.productId, obj.image)
-                                    }
-                                  >
-                                    Delete
-                                  </Button>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {webshop.products
-                        .sort((a, b) => a.order - b.order)
-                        .filter(
-                          (obj) => !webshop.store.categoria.includes(obj.caja)
-                        )
-                        .map((obj, ind) => (
-                          <TableRow key={ind}>
-                            <TableCell className="hidden sm:table-cell">
-                              <Image
-                                alt={obj.title ? obj.title : `Producto${ind}`}
-                                className="aspect-square rounded-md object-cover"
-                                height={64}
-                                src={
-                                  obj.image
-                                    ? obj.image
-                                    : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                                }
-                                style={{
-                                  aspectRatio: "64/64",
-                                  objectFit: "cover",
-                                }}
-                                width={64}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {obj.title}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {" "}
-                                {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                                {obj.order < 100000
-                                  ? `-${obj.order}`
-                                  : "-Sin prioridad"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              ${Number(obj.price).toFixed(2)}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {obj.agotado ? "Si" : "No"}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {obj.favorito ? "Si" : "No"}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    aria-haspopup="true"
-                                    size="icon"
-                                    variant="ghost"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Link
-                                      href={`/admin/products/${obj.productId}`}
-                                    >
-                                      Edit
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <Button
-                                      className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                                      size="icon"
-                                      variant="ghost"
-                                      disable={downloading}
-                                      onClick={() =>
-                                        deleteProduct(obj.productId, obj.image)
-                                      }
-                                    >
-                                      Delete
-                                    </Button>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                      <TableRowsComponent
+                        product={OrderProducts(
+                          webshop.products,
+                          webshop.store.categoria
+                        )}
+                      />
+                      <TableRowsComponent
+                        product={webshop.products
+                          .sort((a, b) => a.order - b.order)
+                          .filter(
+                            (obj) => !webshop.store.categoria.includes(obj.caja)
+                          )}
+                      />{" "}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -354,169 +204,19 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {OrderProducts(
-                        FilterAgotado,
-                        webshop.store.categoria
-                      ).map((obj, ind) => (
-                        <TableRow key={ind}>
-                          <TableCell className="hidden sm:table-cell">
-                            <Image
-                              alt={obj.title ? obj.title : `Producto${ind}`}
-                              className="aspect-square rounded-md object-cover"
-                              height={64}
-                              src={
-                                obj.image
-                                  ? obj.image
-                                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                              }
-                              style={{
-                                aspectRatio: "64/64",
-                                objectFit: "cover",
-                              }}
-                              width={64}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {obj.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {" "}
-                              {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                              {obj.order < 100000
-                                ? `-${obj.order}`
-                                : "-Sin prioridad"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            ${Number(obj.price).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {obj.agotado ? "Si" : "No"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {obj.favorito ? "Si" : "No"}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  aria-haspopup="true"
-                                  size="icon"
-                                  variant="ghost"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Link
-                                    href={`/admin/products/${obj.productId}`}
-                                  >
-                                    Edit
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Button
-                                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                                    size="icon"
-                                    variant="ghost"
-                                    disable={downloading}
-                                    onClick={() =>
-                                      deleteProduct(obj.productId, obj.image)
-                                    }
-                                  >
-                                    Delete
-                                  </Button>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {FilterAgotado.sort((a, b) => a.order - b.order)
-                        .filter(
+                      <TableRowsComponent
+                        product={OrderProducts(
+                          FilterAgotado,
+                          webshop.store.categoria
+                        )}
+                      />
+                      <TableRowsComponent
+                        product={FilterAgotado.sort(
+                          (a, b) => a.order - b.order
+                        ).filter(
                           (obj) => !webshop.store.categoria.includes(obj.caja)
-                        )
-                        .map((obj, ind) => (
-                          <TableRow key={ind}>
-                            <TableCell className="hidden sm:table-cell">
-                              <Image
-                                alt={obj.title ? obj.title : `Producto${ind}`}
-                                className="aspect-square rounded-md object-cover"
-                                height={64}
-                                src={
-                                  obj.image
-                                    ? obj.image
-                                    : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                                }
-                                style={{
-                                  aspectRatio: "64/64",
-                                  objectFit: "cover",
-                                }}
-                                width={64}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {obj.title}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {" "}
-                                {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                                {obj.order < 100000
-                                  ? `-${obj.order}`
-                                  : "-Sin prioridad"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              ${Number(obj.price).toFixed(2)}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {obj.agotado ? "Si" : "No"}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {obj.favorito ? "Si" : "No"}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    aria-haspopup="true"
-                                    size="icon"
-                                    variant="ghost"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Link
-                                      href={`/admin/products/${obj.productId}`}
-                                    >
-                                      Edit
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <Button
-                                      className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                                      size="icon"
-                                      variant="ghost"
-                                      disable={downloading}
-                                      onClick={() =>
-                                        deleteProduct(obj.productId, obj.image)
-                                      }
-                                    >
-                                      Delete
-                                    </Button>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        )}
+                      />
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -554,169 +254,19 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {OrderProducts(
-                        FilterFavorito,
-                        webshop.store.categoria
-                      ).map((obj, ind) => (
-                        <TableRow key={ind}>
-                          <TableCell className="hidden sm:table-cell">
-                            <Image
-                              alt={obj.title ? obj.title : `Producto${ind}`}
-                              className="aspect-square rounded-md object-cover"
-                              height={64}
-                              src={
-                                obj.image
-                                  ? obj.image
-                                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                              }
-                              style={{
-                                aspectRatio: "64/64",
-                                objectFit: "cover",
-                              }}
-                              width={64}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {obj.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {" "}
-                              {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                              {obj.order < 100000
-                                ? `-${obj.order}`
-                                : "-Sin prioridad"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            ${Number(obj.price).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {obj.agotado ? "Si" : "No"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {obj.favorito ? "Si" : "No"}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  aria-haspopup="true"
-                                  size="icon"
-                                  variant="ghost"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Link
-                                    href={`/admin/products/${obj.productId}`}
-                                  >
-                                    Edit
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Button
-                                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                                    size="icon"
-                                    variant="ghost"
-                                    disable={downloading}
-                                    onClick={() =>
-                                      deleteProduct(obj.productId, obj.image)
-                                    }
-                                  >
-                                    Delete
-                                  </Button>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {FilterFavorito.sort((a, b) => a.order - b.order)
-                        .filter(
+                      <TableRowsComponent
+                        product={OrderProducts(
+                          FilterFavorito,
+                          webshop.store.categoria
+                        )}
+                      />
+                      <TableRowsComponent
+                        product={FilterFavorito.sort(
+                          (a, b) => a.order - b.order
+                        ).filter(
                           (obj) => !webshop.store.categoria.includes(obj.caja)
-                        )
-                        .map((obj, ind) => (
-                          <TableRow key={ind}>
-                            <TableCell className="hidden sm:table-cell">
-                              <Image
-                                alt={obj.title ? obj.title : `Producto${ind}`}
-                                className="aspect-square rounded-md object-cover"
-                                height={64}
-                                src={
-                                  obj.image
-                                    ? obj.image
-                                    : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                                }
-                                style={{
-                                  aspectRatio: "64/64",
-                                  objectFit: "cover",
-                                }}
-                                width={64}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {obj.title}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {" "}
-                                {obj.caja ? obj.caja : "Sin categoria"}{" "}
-                                {obj.order < 100000
-                                  ? `-${obj.order}`
-                                  : "-Sin prioridad"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              ${Number(obj.price).toFixed(2)}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {obj.agotado ? "Si" : "No"}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {obj.favorito ? "Si" : "No"}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    aria-haspopup="true"
-                                    size="icon"
-                                    variant="ghost"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Link
-                                      href={`/admin/products/${obj.productId}`}
-                                    >
-                                      Edit
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <Button
-                                      className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                                      size="icon"
-                                      variant="ghost"
-                                      disable={downloading}
-                                      onClick={() =>
-                                        deleteProduct(obj.productId, obj.image)
-                                      }
-                                    >
-                                      Delete
-                                    </Button>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        )}
+                      />
                     </TableBody>
                   </Table>
                 </CardContent>
