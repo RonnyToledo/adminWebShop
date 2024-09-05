@@ -157,7 +157,7 @@ export function Dashboard() {
                         webshop.products,
                         webshop.store.categoria
                       ).map((obj, ind) => (
-                        <TableRow>
+                        <TableRow key={ind}>
                           <TableCell className="hidden sm:table-cell">
                             <Image
                               alt={obj.title ? obj.title : `Producto${ind}`}
@@ -240,7 +240,7 @@ export function Dashboard() {
                           (obj) => !webshop.store.categoria.includes(obj.caja)
                         )
                         .map((obj, ind) => (
-                          <TableRow>
+                          <TableRow key={ind}>
                             <TableCell className="hidden sm:table-cell">
                               <Image
                                 alt={obj.title ? obj.title : `Producto${ind}`}
@@ -358,7 +358,7 @@ export function Dashboard() {
                         FilterAgotado,
                         webshop.store.categoria
                       ).map((obj, ind) => (
-                        <TableRow>
+                        <TableRow key={ind}>
                           <TableCell className="hidden sm:table-cell">
                             <Image
                               alt={obj.title ? obj.title : `Producto${ind}`}
@@ -440,7 +440,7 @@ export function Dashboard() {
                           (obj) => !webshop.store.categoria.includes(obj.caja)
                         )
                         .map((obj, ind) => (
-                          <TableRow>
+                          <TableRow key={ind}>
                             <TableCell className="hidden sm:table-cell">
                               <Image
                                 alt={obj.title ? obj.title : `Producto${ind}`}
@@ -558,7 +558,7 @@ export function Dashboard() {
                         FilterFavorito,
                         webshop.store.categoria
                       ).map((obj, ind) => (
-                        <TableRow>
+                        <TableRow key={ind}>
                           <TableCell className="hidden sm:table-cell">
                             <Image
                               alt={obj.title ? obj.title : `Producto${ind}`}
@@ -640,7 +640,7 @@ export function Dashboard() {
                           (obj) => !webshop.store.categoria.includes(obj.caja)
                         )
                         .map((obj, ind) => (
-                          <TableRow>
+                          <TableRow key={ind}>
                             <TableCell className="hidden sm:table-cell">
                               <Image
                                 alt={obj.title ? obj.title : `Producto${ind}`}
