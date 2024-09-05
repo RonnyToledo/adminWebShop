@@ -8,12 +8,53 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import {
+  File,
+  Home,
+  LineChart,
+  ListFilter,
+  MoreHorizontal,
+  Package,
+  Package2,
+  PanelLeft,
+  PlusCircle,
+  Search,
+  Settings,
+  ShoppingCart,
+  Users2,
+} from "lucide-react";
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
 import { useState, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supa";
+import Image from "next/image";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import { Separator } from "../ui/separator";
 
 export default function HeaderAdmin({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
@@ -28,152 +69,242 @@ export default function HeaderAdmin({ ThemeContext }) {
       router.push("/");
     }
   };
+  console.log(pathname);
+  const pathParts = pathname.split("/").filter((part) => part);
+  const breadcrumbs = pathParts.map((part, index) => {
+    const href = "/" + pathParts.slice(0, index + 1).join("/");
+    return { href, label: part };
+  });
+  console.log(breadcrumbs);
 
   return (
-    <header
-      className="flex items-center justify-between px-4 py-3 bg-gray-100 z-[10]"
-      style={{ position: "sticky", top: 0 }}
-    >
-      <Link
-        className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-50"
-        href="#"
-      >
-        <Package2Icon className="h-6 w-6" />
-        <span>
-          {pathname == "/admin/newProduct"
-            ? "Agregar Producto"
-            : pathname == "/admin/products"
-            ? "Editar Productos"
-            : pathname == "/admin/header"
-            ? "Editar Informacion"
-            : pathname == "/admin/configuracion"
-            ? "Configuracion"
-            : pathname == "/admin/category"
-            ? "Editar Categorias"
-            : "Admin"}
-        </span>
-      </Link>
-
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button size="icon" variant="outline" onClick={() => setIsOpen(true)}>
-            <MenuIcon className="h-6 w-6" />
-            <span className="sr-only">Toggle navigation menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right">
-          <Command>
-            <CommandList>
-              <CommandGroup heading="Inicio">
-                <CommandItem>
+    <>
+      <div className="flex sticky top-0 w-full flex-col bg-muted/40">
+        <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+          <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+            <Link
+              href="#"
+              className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+            >
+              <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
+              <span className="sr-only">Acme Inc</span>
+            </Link>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/"
                     onClick={() => setIsOpen(false)}
                   >
-                    <HomeIcon className="h-4 w-4" />
-                    Inicio
+                    <Home className="h-5 w-5" />
+                    <span className="sr-only">Inicio</span>
                   </Link>
-                </CommandItem>
-                {webshop.store.plan == "pro" && (
-                  <CommandItem>
+                </TooltipTrigger>
+                <TooltipContent side="right">Inicio</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {webshop.store.plan == "pro" && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Link
-                      className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                       href="/admin/guia"
-                      onClick={() => setIsOpen(false)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
                     >
-                      <CircleArrowOutUpRight className="h-4 w-4" />
-                      Guia
+                      <CatIcon className="h-4 w-4" />
+                      <span className="sr-only">Guia</span>
                     </Link>
-                  </CommandItem>
-                )}
-                <CommandItem>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Guia</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/admin/link"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <Unlink2 className="h-4 w-4" />
+                    <span className="sr-only">Enlaces</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Enlaces</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Separator />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/admin/category"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <CatIcon className="h-4 w-4" />
+                    <span className="sr-only">Editar Categoria</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Editar Categoria</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    href="/admin/newProduct"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span className="sr-only"> Nuevo Producto</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right"> Nuevo Producto</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/admin/products"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <PackageIcon className="h-4 w-4" />
+                    <span className="sr-only"> Editar Productos</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right"> Editar Productos</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Separator />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/admin/header"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <HeadingIcon className="h-4 w-4" />
+                    <span className="sr-only">Editar Info</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Editar Info</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </nav>
+          <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/admin/configuracion"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <SettingsIcon className="h-4 w-4" />
+                    <span className="sr-only">Configuracion</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Settings</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </nav>
+        </aside>
+        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="outline" className="sm:hidden">
+                  <PanelLeft className="h-5 w-5" />
+                  <span className="sr-only">Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="sm:max-w-xs">
+                <nav className="grid gap-6 text-lg font-medium">
+                  <Link
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    href="/admin/"
+                  >
+                    <Home className="h-5 w-5" />
+                    Inicio
+                  </Link>
+                  <Link
+                    href="/admin/guia"
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                  >
+                    <CatIcon className="h-4 w-4" />
+                    Guia
+                  </Link>
+                  <Link
                     href="/admin/link"
-                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
                     <Unlink2 className="h-4 w-4" />
                     Enlaces
                   </Link>
-                </CommandItem>
-              </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup heading="Productos">
-                <CommandItem>
+                  <Separator />
                   <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/category"
-                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
                     <CatIcon className="h-4 w-4" />
                     Editar Categoria
                   </Link>
-                </CommandItem>
-                <CommandItem>
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/newProduct"
-                    onClick={() => setIsOpen(false)}
                   >
                     <PlusIcon className="h-4 w-4" />
                     Nuevo Producto
                   </Link>
-                </CommandItem>
-                <CommandItem>
                   <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/products"
-                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
                     <PackageIcon className="h-4 w-4" />
                     Editar Productos
                   </Link>
-                </CommandItem>
-              </CommandGroup>
-              <CommandSeparator />
-
-              <CommandGroup heading="Perfil de Negocio">
-                <CommandItem>
+                  <Separator />
                   <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/header"
-                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
                     <HeadingIcon className="h-4 w-4" />
                     Editar Info
                   </Link>
-                </CommandItem>
-                <CommandItem>
                   <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/configuracion"
-                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
                     <SettingsIcon className="h-4 w-4" />
                     Configuracion
                   </Link>
-                </CommandItem>
-              </CommandGroup>
-              <CommandSeparator />
-
-              <CommandGroup heading="Usuario">
-                <CommandItem>
-                  <Button
-                    variant="gosth"
-                    className=" flex items-center gap-2 text-sm font-medium hover:underline mt-5 underline-offset-4 dark:text-gray-400 dark:hover:text-gray-50"
-                    onClick={Log_Out}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Cerrar cesion
-                  </Button>
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </SheetContent>
-      </Sheet>
-    </header>
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <Breadcrumb>
+              <BreadcrumbList>
+                {breadcrumbs.map((obj, ind) => (
+                  <div key={ind} className="flex items-center">
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link href={obj.href} className="capitalize">
+                          {obj.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                  </div>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </header>
+        </div>
+      </div>
+    </>
   );
 }
 

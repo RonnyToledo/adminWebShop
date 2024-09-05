@@ -89,7 +89,7 @@ export default function RootLayout({ children }) {
       <body>
         <ThemeContext.Provider value={{ webshop, setwebshop }}>
           <HeaderAdmin ThemeContext={ThemeContext} />
-          {children}
+          <main className="sm:pl-14">{children}</main>
         </ThemeContext.Provider>
 
         <Toaster />
