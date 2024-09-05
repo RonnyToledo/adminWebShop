@@ -60,6 +60,7 @@ export default function HeaderAdmin({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+
   const pathname = usePathname();
   const Log_Out = async () => {
     const { error } = await supabase.auth.signOut();
@@ -215,9 +216,14 @@ export default function HeaderAdmin({ ThemeContext }) {
         </aside>
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-            <Sheet>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button size="icon" variant="outline" className="sm:hidden">
+                <Button
+                  onClick={() => setIsOpen(true)}
+                  size="icon"
+                  variant="outline"
+                  className="sm:hidden"
+                >
                   <PanelLeft className="h-5 w-5" />
                   <span className="sr-only">Menu</span>
                 </Button>
@@ -227,6 +233,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/"
+                    onClick={() => setIsOpen(false)}
                   >
                     <Home className="h-5 w-5" />
                     Inicio
@@ -234,6 +241,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     href="/admin/guia"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
                   >
                     <CatIcon className="h-4 w-4" />
                     Guia
@@ -241,6 +249,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     href="/admin/link"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
                   >
                     <Unlink2 className="h-4 w-4" />
                     Enlaces
@@ -249,6 +258,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     href="/admin/category"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
                   >
                     <CatIcon className="h-4 w-4" />
                     Editar Categoria
@@ -256,6 +266,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/newProduct"
+                    onClick={() => setIsOpen(false)}
                   >
                     <PlusIcon className="h-4 w-4" />
                     Nuevo Producto
@@ -263,6 +274,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     href="/admin/products"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
                   >
                     <PackageIcon className="h-4 w-4" />
                     Editar Productos
@@ -271,6 +283,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     href="/admin/header"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
                   >
                     <HeadingIcon className="h-4 w-4" />
                     Editar Info
@@ -278,6 +291,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <Link
                     href="/admin/configuracion"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
                   >
                     <SettingsIcon className="h-4 w-4" />
                     Configuracion
