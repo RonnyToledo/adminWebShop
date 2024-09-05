@@ -79,7 +79,7 @@ export default function HeaderAdmin({ ThemeContext }) {
 
   return (
     <>
-      <div className="flex sticky top-0 w-full flex-col bg-muted/40">
+      <div className="flex sticky top-0 w-full flex-col bg-muted/40 z-[10]">
         <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
           <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
             <Link
@@ -291,7 +291,10 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <div key={ind} className="flex items-center">
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
-                        <Link href={obj.href} className="capitalize">
+                        <Link
+                          href={obj.href}
+                          className="capitalize truncate  max-w-20"
+                        >
                           {obj.label}
                         </Link>
                       </BreadcrumbLink>

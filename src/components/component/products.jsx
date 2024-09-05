@@ -31,8 +31,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeContext } from "@/app/admin/layout";
 import { useState, useContext, useRef, useEffect } from "react";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -43,47 +41,9 @@ export const description =
 export function Dashboard() {
   const { webshop, setwebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
-  const { toast } = useToast();
   const [FilterAgotado, setFilterAgotado] = useState([]);
   const [FilterFavorito, setFilterFavorito] = useState([]);
 
-  const deleteProduct = async (value, image) => {
-    setDownloading(true);
-    const formData = new FormData();
-    if (image) formData.append("image", image);
-    formData.append("Id", value);
-    try {
-      const res = await axios.delete(
-        `/api/tienda/${webshop.store.sitioweb}/products/${value}/`,
-        {
-          data: formData,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Error :", error);
-      toast({
-        title: "Error",
-        variant: "destructive",
-        description: "No se pudo eliminar el producto.",
-      });
-    } finally {
-      toast({
-        title: "Tarea Ejecutada",
-        description: "Informacion Actualizada",
-        action: (
-          <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-        ),
-      });
-      setwebshop({
-        ...webshop,
-        products: webshop.products.filter((obj) => obj.productId !== value),
-      });
-      setDownloading(false);
-    }
-  };
   useEffect(() => {
     setFilterAgotado(webshop.products.filter((product) => product.agotado));
     setFilterFavorito(webshop.products.filter((product) => product.favorito));
@@ -279,8 +239,6 @@ export function Dashboard() {
   );
 }
 function OrderProducts(productos, categorias) {
-  console.log(categorias);
-
   const productosOrdenados = {};
 
   // Inicializar el objeto con categorías vacías

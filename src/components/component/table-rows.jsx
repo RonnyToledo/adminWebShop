@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import {
   Table,
@@ -21,8 +22,55 @@ import { Button } from "@/components/ui/button";
 import { File, ListFilter, MoreHorizontal, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Trash2, Pencil, Loader2 } from "lucide-react";
+import { useState, useContext } from "react";
+import axios from "axios";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
+import { ThemeContext } from "@/app/admin/layout";
 
 export default function TableRowsComponent({ product }) {
+  const { webshop, setwebshop } = useContext(ThemeContext);
+  const [downloading, setDownloading] = useState(false);
+  const { toast } = useToast();
+
+  const deleteProduct = async (value, image) => {
+    setDownloading(true);
+    const formData = new FormData();
+    if (image) formData.append("image", image);
+    formData.append("Id", value);
+    try {
+      const res = await axios.delete(
+        `/api/tienda/${webshop.store.sitioweb}/products/${value}/`,
+        {
+          data: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error :", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "No se pudo eliminar el producto.",
+      });
+    } finally {
+      toast({
+        title: "Tarea Ejecutada",
+        description: "Informacion Actualizada",
+        action: (
+          <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+        ),
+      });
+      setwebshop({
+        ...webshop,
+        products: webshop.products.filter((obj) => obj.productId !== value),
+      });
+      setDownloading(false);
+    }
+  };
   return (
     <>
       {product.map((obj, ind) => (
@@ -49,7 +97,7 @@ export default function TableRowsComponent({ product }) {
             <Badge variant="outline">
               {" "}
               {obj.caja ? obj.caja : "Sin categoria"}{" "}
-              {obj.order < 100000 ? `-${obj.order}` : "-Sin prioridad"}
+              {obj.order < 100000 && `-${obj.order}`}
             </Badge>
           </TableCell>
           <TableCell className="hidden md:table-cell">
@@ -70,14 +118,25 @@ export default function TableRowsComponent({ product }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <div className="flex flex-col">
-                  <Link href={`/admin/products/${obj.productId}`}>Edit</Link>
+                <div className="flex flex-col gap-3 p-2">
+                  <Link
+                    className="flex gap-3 w-full justify-start items-center"
+                    href={`/admin/products/${obj.productId}`}
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit
+                  </Link>
                   <Button
-                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                    className="flex gap-3 w-full justify-start items-center"
                     size="icon"
                     variant="ghost"
                     onClick={() => deleteProduct(obj.productId, obj.image)}
                   >
+                    {!downloading ? (
+                      <Trash2 className="h-3 w-3" />
+                    ) : (
+                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    )}
                     Delete
                   </Button>
                 </div>
