@@ -132,6 +132,7 @@ export async function PUT(request, { params }) {
         moneda_default: data.get("moneda_default"),
         moneda: data.get("moneda"),
         envios: data.get("envios"),
+        font: data.get("font"),
       },
     ])
     .eq("sitioweb", params.tienda)

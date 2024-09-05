@@ -19,6 +19,45 @@ import { useToast } from "@/components/ui/use-toast";
 import { provincias } from "@/components/json/Site.json";
 import { useState, useEffect, useRef, useContext } from "react";
 import { ThemeContext } from "@/app/admin/layout";
+import {
+  Roboto,
+  Oswald,
+  Inter,
+  Open_Sans,
+  Playfair_Display,
+  Merriweather,
+  Poppins,
+  Montserrat,
+  Lato,
+  Sevillana,
+} from "next/font/google";
+
+const roboto = Roboto({ subsets: ["latin"], weight: "400" });
+const oswald = Oswald({ subsets: ["latin"], weight: "700" });
+const open_Sans = Open_Sans({ subsets: ["latin"], weight: "400" });
+const playfair_Display = Playfair_Display({
+  subsets: ["latin"],
+  weight: "400",
+});
+const merriweather = Merriweather({ subsets: ["latin"], weight: "400" });
+const inter = Inter({ subsets: ["latin"], weight: "400" });
+const poppins = Poppins({ subsets: ["latin"], weight: "400" });
+const montserrat = Montserrat({ subsets: ["latin"], weight: "400" });
+const lato = Lato({ subsets: ["latin"], weight: "400" });
+const sevillana = Sevillana({ subsets: ["latin"], weight: "400" });
+
+const fonts = [
+  { name: "Roboto", clase: roboto.className },
+  { name: "Oswald", clase: oswald.className },
+  { name: "Inter", clase: inter.className },
+  { name: "Open_Sans", clase: open_Sans.className },
+  { name: "Playfair_Display", clase: playfair_Display.className },
+  { name: "Merriweather", clase: merriweather.className },
+  { name: "Poppins", clase: poppins.className },
+  { name: "Montserrat", clase: montserrat.className },
+  { name: "Lato", clase: lato.className },
+  { name: "Sevillana", clase: sevillana.className },
+];
 
 export default function Configuracion({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
@@ -62,6 +101,7 @@ export default function Configuracion({ ThemeContext }) {
     formData.append("municipio", store.municipio);
     formData.append("local", store.local);
     formData.append("domicilio", store.domicilio);
+    formData.append("font", store.font);
     formData.append("reservas", store.reservas);
     formData.append("moneda_default", JSON.stringify(store.moneda_default));
     formData.append("moneda", JSON.stringify(store.moneda));
@@ -101,6 +141,7 @@ export default function Configuracion({ ThemeContext }) {
       setParpadeo(false);
     }
   }
+  console.log(store);
   return (
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
       <form ref={form} className="grid gap-6" onSubmit={handleSubmit}>
@@ -120,6 +161,7 @@ export default function Configuracion({ ThemeContext }) {
               }
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="bank-card">Tarjeta Bancaria</Label>
             <Input
@@ -139,55 +181,73 @@ export default function Configuracion({ ThemeContext }) {
             *Comercio Electronico y pagos por transferenica Bancaria
           </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            placeholder="Enter your phone number"
-            type="number"
-            value={store.cell}
-            onChange={(e) =>
-              setStore({
-                ...store,
-                cell: e.target.value,
-              })
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            placeholder="Enter your email"
-            type="email"
-            value={store.email}
-            onChange={(e) =>
-              setStore({
-                ...store,
-                email: e.target.value,
-              })
-            }
-          />
+        <div className="border rounded-2x p-5">
+          <div className="space-y-2">
+            <Label htmlFor="region">Fuente</Label>
+
+            <Select
+              id="category"
+              name="category"
+              onValueChange={(value) =>
+                setStore({
+                  ...store,
+                  font: value,
+                })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={store.font} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {fonts.map((obj, ind) => (
+                    <SelectItem
+                      key={ind}
+                      value={obj.name}
+                      className={obj.clase}
+                    >
+                      {obj.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            *Seleccione una fuente
+          </p>
         </div>
         <div className="border rounded-2x p-5">
           <div className="space-y-2">
-            <Label htmlFor="instagram">Instagram</Label>
+            <Label htmlFor="phone">Phone Number</Label>
             <Input
-              id="instagram"
-              placeholder="Enter your Instagram handle"
-              type="text"
-              value={store.insta}
+              id="phone"
+              placeholder="Enter your phone number"
+              type="number"
+              value={store.cell}
               onChange={(e) =>
                 setStore({
                   ...store,
-                  insta: e.target.value,
+                  cell: e.target.value,
                 })
               }
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            *URL de su cuenta Ej: https://www.instagram.com/r-and-h.menu
-          </p>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              placeholder="Enter your email"
+              type="email"
+              value={store.email}
+              onChange={(e) =>
+                setStore({
+                  ...store,
+                  email: e.target.value,
+                })
+              }
+            />
+          </div>
         </div>
         <div className="border rounded-2x p-5">
           <div className="space-y-2">
@@ -251,6 +311,27 @@ export default function Configuracion({ ThemeContext }) {
             *Seleccione su ubicacion
           </p>
         </div>
+        <div className="border rounded-2x p-5">
+          <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input
+              id="instagram"
+              placeholder="Enter your Instagram handle"
+              type="text"
+              value={store.insta}
+              onChange={(e) =>
+                setStore({
+                  ...store,
+                  insta: e.target.value,
+                })
+              }
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            *URL de su cuenta Ej: https://www.instagram.com/r-and-h.menu
+          </p>
+        </div>
+
         <div className="border rounded-2x p-5">
           <div className="space-y-2">
             <Label htmlFor="available" className="mr-2">
