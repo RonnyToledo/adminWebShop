@@ -579,6 +579,7 @@ export default function Configuracion({ ThemeContext }) {
               downloading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={downloading}
+            style={{ backgroundColor: store?.color }}
           >
             {downloading ? "Guardando..." : "Guardar"}
           </Button>

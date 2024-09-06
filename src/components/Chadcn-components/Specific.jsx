@@ -103,7 +103,7 @@ export default function Specific({ specific, ThemeContext }) {
     }
   };
   return (
-    <main className="grid min-h-screen w-full overflow-hidden ">
+    <main className="grid min-h-screen w-full ">
       <div className="flex flex-col gap-6 w-full ">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Editar producto</h1>
