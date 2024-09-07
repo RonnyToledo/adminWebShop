@@ -56,13 +56,14 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { Separator } from "../ui/separator";
+import Welcome from "../component/welcome";
 
 export default function HeaderAdmin({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-
   const pathname = usePathname();
+
   const Log_Out = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -71,13 +72,11 @@ export default function HeaderAdmin({ ThemeContext }) {
       router.push("/");
     }
   };
-  console.log(pathname);
   const pathParts = pathname.split("/").filter((part) => part);
   const breadcrumbs = pathParts.map((part, index) => {
     const href = "/" + pathParts.slice(0, index + 1).join("/");
     return { href, label: part };
   });
-  console.log(breadcrumbs);
 
   return (
     <>
@@ -227,6 +226,21 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipContent side="right">Settings</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    onClick={Log_Out}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="sr-only">Cerrar Session</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Cerrar Session</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </nav>
         </aside>
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
@@ -318,6 +332,16 @@ export default function HeaderAdmin({ ThemeContext }) {
                   >
                     <Palette className="h-4 w-4" />
                     Temas
+                  </Link>
+                  <Separator />
+
+                  <Link
+                    href="/"
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={Log_Out}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Cerrar Sesion
                   </Link>
                 </nav>
               </SheetContent>

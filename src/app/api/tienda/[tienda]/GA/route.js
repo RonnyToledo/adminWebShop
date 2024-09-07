@@ -1,20 +1,19 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { GoogleAuth } from "google-auth-library";
-import fs from "fs";
 import { NextResponse } from "next/server";
 
-const Key = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-const a = JSON.parse(Key);
+const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+const propertyId = process.env.NEXT_PUBLIC_GA_PROPERTY_ID; // ID de propiedad de GA4
 
+// Configura autenticación con Google Auth
 const auth = new GoogleAuth({
-  credentials: a,
+  credentials,
   scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
 });
+
 const analyticsDataClient = new BetaAnalyticsDataClient({ auth });
 
 export async function GET(request, { params }) {
-  const propertyId = process.env.NEXT_PUBLIC_GA_PROPERTY_ID; // Reemplaza con tu ID de propiedad de GA4
-
   try {
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
@@ -32,69 +31,63 @@ export async function GET(request, { params }) {
       },
     });
 
-    function formatAnalyticsDataByDate(data, tienda) {
-      const formattedData = {};
-
-      data.rows.forEach((row) => {
-        const pagePath = row.dimensionValues[0].value;
-        const hour = row.dimensionValues[1].value;
-        const date = row.dimensionValues[2].value;
-        const sessions = row.metricValues[0].value;
-
-        if (pagePath === `/t/${tienda}`) {
-          if (!formattedData[date]) {
-            formattedData[date] = [];
-          }
-
-          const formattedRow = {
-            pagePath,
-            hour,
-            sessions,
-          };
-
-          formattedData[date].push(formattedRow);
-        }
-      });
-
-      return formattedData;
-    }
+    // Formatea los datos de Analytics
     const formattedData = formatAnalyticsDataByDate(response, params.tienda);
-    const newDatos = convertirDatos(formattedData);
-    return NextResponse.json(newDatos);
+    const convertedData = convertirDatos(formattedData);
+
+    return NextResponse.json(convertedData);
   } catch (error) {
-    console.error("Error running report:", error);
+    console.error("Error al ejecutar el reporte:", error);
     return NextResponse.json(
-      { message: error },
       {
-        status: 401,
-      }
+        message: "Error al ejecutar el reporte de Analytics",
+        error: error.message,
+      },
+      { status: 500 }
     );
   }
 }
 
+// Función para formatear los datos de Analytics
+function formatAnalyticsDataByDate(data, tienda) {
+  return data.rows.reduce((acc, row) => {
+    const [pagePath, hour, date] = row.dimensionValues.map((val) => val.value);
+    const sessions = parseInt(row.metricValues[0].value, 10);
+
+    if (pagePath === `/t/${tienda}`) {
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push({ pagePath, hour, sessions });
+    }
+
+    return acc;
+  }, {});
+}
+
+// Convierte los datos a un formato específico
 function convertirDatos(datos) {
   const resultado = [];
 
-  for (const fecha in datos) {
-    if (datos.hasOwnProperty(fecha)) {
-      datos[fecha].forEach((item) => {
-        const fechaHora = `${fecha.slice(0, 4)}-${fecha.slice(
-          4,
-          6
-        )}-${fecha.slice(6, 8)}T${item.hour.padStart(2, "0")}:00:00`;
-        for (let i = 0; i < item.sessions; i++) {
-          resultado.push({
-            id: i,
-            uid: "a",
-            desc: [],
-            created_at: fechaHora,
-            events: "inicio",
-            tienda: item.pagePath.split("/t/")[1],
-          });
-        }
-      });
-    }
-  }
+  Object.entries(datos).forEach(([fecha, items]) => {
+    items.forEach(({ pagePath, hour, sessions }) => {
+      const fechaHora = `${fecha.slice(0, 4)}-${fecha.slice(
+        4,
+        6
+      )}-${fecha.slice(6, 8)}T${hour.padStart(2, "0")}:00:00`;
+
+      for (let i = 0; i < sessions; i++) {
+        resultado.push({
+          id: i,
+          uid: "a", // Este valor puede ser dinámico si es necesario
+          desc: [],
+          created_at: fechaHora,
+          events: "inicio",
+          tienda: pagePath.split("/t/")[1],
+        });
+      }
+    });
+  });
 
   return resultado;
 }

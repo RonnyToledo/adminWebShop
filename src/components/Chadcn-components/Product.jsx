@@ -60,9 +60,6 @@ export default function Product({ ThemeContext }) {
     }
   };
 
-  // Asignar colores a las categorías
-  console.log(coloresPastel);
-
   return (
     <div key="1" className="flex flex-col min-h-screen">
       <main className="flex-1 bg-gray-100 dark:bg-gray-800 p-6">

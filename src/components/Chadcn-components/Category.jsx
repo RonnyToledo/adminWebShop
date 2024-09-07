@@ -31,8 +31,10 @@ export default function Category({ ThemeContext }) {
   const [products, setproducts] = useState([]);
 
   useEffect(() => {
-    setCategory(webshop.store.categoria);
-    setproducts(webshop.products);
+    if (webshop.store.categoria.length > 0) {
+      setCategory(webshop.store.categoria);
+      setproducts(webshop.products);
+    }
   }, [webshop]);
 
   const catSubmit = (e) => {
@@ -85,7 +87,6 @@ export default function Category({ ThemeContext }) {
       const objetoFijo = fijoDict[obj.id];
       return objetoFijo && objetoFijo.caja !== obj.caja;
     });
-    console.log(diferentes);
     setDownloading(true);
     const formData = new FormData();
     formData.append("categoria", JSON.stringify(category));

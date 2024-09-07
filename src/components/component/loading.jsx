@@ -1,18 +1,14 @@
-"use client";
 import React from "react";
-import { Progress } from "../ui/progress";
 
-export default function Loading({ loading }) {
+export default function Loading() {
   return (
-    <div className="fixed top-0 left-0 h-full w-full flex flex-col items-center justify-center h-screen bg-background z-[200]">
-      <div className=" w-full max-w-md">
-        <div className="flex flex-col items-center space-y-4 px-6">
-          <h2 className="text-2xl font-bold ">Cargando...</h2>
-          <Progress value={loading} />
-
-          <p className="text-muted-foreground">
-            Cargando productos, por favor espere...
-          </p>
+    <div className="flex items-center justify-center h-screen">
+      <div className="space-y-4 text-center">
+        <div className="text-3xl font-bold">Cargando</div>
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-4 h-4 bg-gray-500 rounded-full animate-bounce" />
+          <div className="w-4 h-4 bg-gray-500 rounded-full animate-bounce animation-delay-100" />
+          <div className="w-4 h-4 bg-gray-500 rounded-full animate-bounce animation-delay-200" />
         </div>
       </div>
     </div>

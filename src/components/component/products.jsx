@@ -23,7 +23,6 @@ import {
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -48,6 +47,8 @@ export function Dashboard() {
     setFilterAgotado(webshop.products.filter((product) => product.agotado));
     setFilterFavorito(webshop.products.filter((product) => product.favorito));
   }, [webshop]);
+
+  console.log(generateDomainName("Coffe-Bar Eclipse"));
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">

@@ -4,6 +4,7 @@ import { ThemeContext } from "@/app/admin/layout";
 import Dashboard from "@/components/Chadcn-components/Compras";
 import Logins from "@/components/Chadcn-components/Logins";
 import Guia from "@/components/Chadcn-components/Guia";
+import Loading from "@/components/component/loading";
 
 export default function usePage() {
   const { webshop, setwebshop } = useContext(ThemeContext);
@@ -14,11 +15,13 @@ export default function usePage() {
         <main className="flex flex-1 flex-col">
           {webshop.store.plan == "basic" ? (
             <Guia ThemeContext={ThemeContext} />
-          ) : (
+          ) : webshop.store.plan == "pro" ? (
             <>
               <Logins ThemeContext={ThemeContext} />
               <Dashboard ThemeContext={ThemeContext} />
             </>
+          ) : (
+            <Loading />
           )}
         </main>
       </div>
