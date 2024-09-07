@@ -258,7 +258,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="sm:max-w-xs">
-                <nav className="grid gap-6 text-lg font-medium">
+                <nav className="grid gap-2 text-lg font-medium">
                   <Link
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/"

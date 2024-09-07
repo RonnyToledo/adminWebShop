@@ -23,11 +23,12 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { supabase } from "@/lib/supa";
+import { useRouter } from "next/navigation";
 
 export default function MultiStepForm() {
   const [step, setStep] = useState(1); // Controlar la página actual del formulario
   const [downloading, setDownloading] = useState(false);
-
+  const router = useRouter();
   const [formData, setFormData] = useState({
     nombreNegocio: "",
     Provincia: "",
@@ -172,6 +173,7 @@ export default function MultiStepForm() {
       });
     } finally {
       setDownloading(false);
+      router.push("/admin");
     }
   };
   // Renderizar diferentes pasos del formulario
