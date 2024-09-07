@@ -267,14 +267,16 @@ export default function HeaderAdmin({ ThemeContext }) {
                     <Home className="h-5 w-5" />
                     Inicio
                   </Link>
-                  <Link
-                    href="/admin/guia"
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <CatIcon className="h-4 w-4" />
-                    Guia
-                  </Link>
+                  {webshop.store.plan == "pro" && (
+                    <Link
+                      href="/admin/guia"
+                      className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <CatIcon className="h-4 w-4" />
+                      Guia
+                    </Link>
+                  )}
                   <Link
                     href="/admin/link"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
