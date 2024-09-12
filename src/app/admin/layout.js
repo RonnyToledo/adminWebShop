@@ -74,6 +74,14 @@ export default function RootLayout({ children }) {
   });
   const router = useRouter();
 
+  const Log_Out = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert(error);
+    } else {
+      router.push("/");
+    }
+  };
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -86,8 +94,12 @@ export default function RootLayout({ children }) {
         const { data: a, error: errorTienda } = await supabase
           .from("Sitios")
           .select("*")
-          .eq("Editor", userId);
+          .eq("Editor", userId)
+          .single();
         const [tienda] = a;
+        if (!tienda?.login) {
+          Log_Out();
+        }
         if (errorTienda) {
           throw new Error("Error al cargar tienda o tienda no encontrada.");
         }
