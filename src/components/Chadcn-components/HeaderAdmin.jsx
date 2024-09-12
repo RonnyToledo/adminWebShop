@@ -77,6 +77,11 @@ export default function HeaderAdmin({ ThemeContext }) {
     const href = "/" + pathParts.slice(0, index + 1).join("/");
     return { href, label: part };
   });
+  useEffect(() => {
+    if (!webshop?.login) {
+      Log_Out();
+    }
+  }, [webshop]);
 
   return (
     <>
