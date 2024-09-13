@@ -79,7 +79,7 @@ export default function RootLayout({ children }) {
     if (error) {
       alert(error);
     } else {
-      router.push("/");
+      router.replace("/");
     }
   };
   useEffect(() => {
@@ -87,44 +87,49 @@ export default function RootLayout({ children }) {
       try {
         const userId = await fetchUserSession();
         if (!userId) {
-          router.push("/");
+          router.replace("/"); // Cambié push() por replace() para evitar que se quede en el historial
           return;
         }
+
         setuser(userId);
+
         const { data: a, error: errorTienda } = await supabase
           .from("Sitios")
           .select("*")
-          .eq("Editor", userId)
-          .single();
-        const [tienda] = a;
-        if (!tienda?.login) {
-          Log_Out();
-        }
-        if (errorTienda) {
-          throw new Error("Error al cargar tienda o tienda no encontrada.");
-        }
-        if (tienda) {
-          const tiendaParsed = {
-            ...tienda,
-            moneda: JSON.parse(tienda.moneda),
-            moneda_default: JSON.parse(tienda.moneda_default),
-            horario: JSON.parse(tienda.horario),
-            comentario: JSON.parse(tienda.comentario),
-            categoria: JSON.parse(tienda.categoria),
-            envios: JSON.parse(tienda.envios),
-          };
-          const webshopData = await fetchWebshopData(
-            tienda.sitioweb,
-            tienda.UUID
-          );
-          setwebshop({ store: tiendaParsed, ...webshopData });
+          .eq("Editor", userId);
+
+        if (a?.length > 0) {
+          const [tienda] = a;
+          if (!tienda?.login) {
+            Log_Out();
+          }
+          if (errorTienda) {
+            throw new Error("Error al cargar tienda o tienda no encontrada.");
+          }
+          if (tienda) {
+            const tiendaParsed = {
+              ...tienda,
+              moneda: JSON.parse(tienda.moneda),
+              moneda_default: JSON.parse(tienda.moneda_default),
+              horario: JSON.parse(tienda.horario),
+              comentario: JSON.parse(tienda.comentario),
+              categoria: JSON.parse(tienda.categoria),
+              envios: JSON.parse(tienda.envios),
+            };
+            const webshopData = await fetchWebshopData(
+              tienda.sitioweb,
+              tienda.UUID
+            );
+            setwebshop({ store: tiendaParsed, ...webshopData });
+          } else {
+            setIsNewUser(true);
+            router.replace("/welcome");
+          }
         } else {
-          setIsNewUser(true);
-          router.push("/welcome");
+          router.replace("/admin/configPage");
         }
       } catch (error) {
         console.error("Error al inicializar los datos:", error);
-        // Opcional: manejar errores específicos aquí
       }
     };
 

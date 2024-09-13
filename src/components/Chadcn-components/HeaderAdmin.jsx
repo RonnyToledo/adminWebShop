@@ -69,7 +69,7 @@ export default function HeaderAdmin({ ThemeContext }) {
     if (error) {
       alert(error);
     } else {
-      router.push("/");
+      router.replace("/");
     }
   };
   const pathParts = pathname.split("/").filter((part) => part);

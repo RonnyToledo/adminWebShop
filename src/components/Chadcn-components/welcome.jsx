@@ -173,7 +173,7 @@ export default function MultiStepForm() {
       });
     } finally {
       setDownloading(false);
-      router.push("/admin");
+      router.replace("/admin");
     }
   };
   // Renderizar diferentes pasos del formulario

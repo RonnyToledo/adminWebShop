@@ -14,7 +14,7 @@ export default function usePage() {
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        router.push("/admin");
+        router.replace("/admin");
       }
     });
   }, [router]);
@@ -27,7 +27,7 @@ export default function usePage() {
       <Auth
         supabaseClient={supabase}
         appearance={{ theme: ThemeSupa }} // Estilo predeterminado, puedes cambiarlo
-        providers={["google", "github"]} // Proveedores de OAuth opcionales
+        providers={["google"]} // Proveedores de OAuth opcionales
         redirectTo="http://localhost:3000/admin"
         localization={{
           variables: {
