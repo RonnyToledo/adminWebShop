@@ -3,9 +3,16 @@ import React from "react";
 import { supabase } from "@/lib/supa";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 export default function LogoutPage() {
   const router = useRouter();
+  useEffect(() => {
+    console.log("Mounted loginPAge");
+    return () => {
+      console.log("Unmounting loginPAge");
+    };
+  }, []);
 
   const logOut = async () => {
     const { error } = await supabase.auth.signOut();

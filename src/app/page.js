@@ -19,6 +19,12 @@ export default function usePage() {
     });
   }, [router]);
 
+  useEffect(() => {
+    console.log("Mounted loginPAge");
+    return () => {
+      console.log("Unmounting loginPAge");
+    };
+  }, []);
   return (
     <div
       className="flex justify-center items-center"

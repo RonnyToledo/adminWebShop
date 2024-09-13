@@ -1,33 +1,27 @@
 "use client";
+
+import { useState, useEffect, createContext } from "react";
 import { supabase } from "@/lib/supa";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, createContext } from "react";
-import { Toaster } from "@/components/ui/toaster";
 import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
+import { Toaster } from "@/components/ui/toaster";
 
 export const ThemeContext = createContext();
 
 async function fetchUserSession() {
   return new Promise((resolve) => {
     supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        resolve(null);
-      } else {
-        resolve(session.user.id);
-      }
+      resolve(session ? session.user.id : null);
     });
   });
 }
 
 async function fetchWebshopData(sitioweb, UUID) {
   try {
-    const { data: productos, error: errorProductos } = await supabase
+    const { data: productos } = await supabase
       .from("Products")
       .select("*")
       .eq("storeId", UUID);
-    if (errorProductos) {
-      throw new Error("Error al cargar productos.");
-    }
 
     const productosParsed = productos.map((producto) => ({
       ...producto,
@@ -35,18 +29,16 @@ async function fetchWebshopData(sitioweb, UUID) {
       coment: JSON.parse(producto.coment),
     }));
 
-    const { data: events, error: errorEvents } = await supabase
+    const { data: events } = await supabase
       .from("Events")
       .select("*")
       .eq("tienda", sitioweb);
-    if (errorEvents) {
-      throw new Error("Error al cargar eventos.");
-    }
 
     const eventsParsed = events.map((event) => ({
       ...event,
       desc: JSON.parse(event.desc),
     }));
+
     return {
       products: productosParsed,
       events: eventsParsed,
@@ -57,10 +49,10 @@ async function fetchWebshopData(sitioweb, UUID) {
   }
 }
 
-export default function RootLayout({ children }) {
+export default function AdminLayout({ children }) {
   const [isNewUser, setIsNewUser] = useState(false);
-  const [user, setuser] = useState("");
-  const [webshop, setwebshop] = useState({
+  const [user, setUser] = useState("");
+  const [webshop, setWebshop] = useState({
     store: {
       moneda: [],
       moneda_default: [],
@@ -72,64 +64,53 @@ export default function RootLayout({ children }) {
     products: [],
     events: [],
   });
+
   const router = useRouter();
 
-  const Log_Out = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      alert(error);
-    } else {
-      router.replace("/");
-    }
-  };
   useEffect(() => {
     const initializeData = async () => {
       try {
         const userId = await fetchUserSession();
         if (!userId) {
-          router.replace("/"); // Cambié push() por replace() para evitar que se quede en el historial
+          router.replace("/");
           return;
         }
 
-        setuser(userId);
+        setUser(userId);
 
-        const { data: a, error: errorTienda } = await supabase
+        const { data: stores } = await supabase
           .from("Sitios")
           .select("*")
           .eq("Editor", userId);
 
-        if (a?.length > 0) {
-          const [tienda] = a;
-          if (!tienda?.login) {
-            Log_Out();
-          }
-          if (errorTienda) {
-            throw new Error("Error al cargar tienda o tienda no encontrada.");
-          }
-          if (tienda) {
-            const tiendaParsed = {
-              ...tienda,
-              moneda: JSON.parse(tienda.moneda),
-              moneda_default: JSON.parse(tienda.moneda_default),
-              horario: JSON.parse(tienda.horario),
-              comentario: JSON.parse(tienda.comentario),
-              categoria: JSON.parse(tienda.categoria),
-              envios: JSON.parse(tienda.envios),
-            };
-            const webshopData = await fetchWebshopData(
-              tienda.sitioweb,
-              tienda.UUID
-            );
-            setwebshop({ store: tiendaParsed, ...webshopData });
-          } else {
-            setIsNewUser(true);
+        if (stores?.length > 0) {
+          const store = stores[0];
+          if (!store?.login) {
             router.replace("/welcome");
+          } else if (!store?.active) {
+            router.replace("/admin/configPage");
+          } else {
+            const tiendaParsed = {
+              ...store,
+              moneda: JSON.parse(store.moneda),
+              moneda_default: JSON.parse(store.moneda_default),
+              horario: JSON.parse(store.horario),
+              comentario: JSON.parse(store.comentario),
+              categoria: JSON.parse(store.categoria),
+              envios: JSON.parse(store.envios),
+            };
+
+            const webshopData = await fetchWebshopData(
+              store.sitioweb,
+              store.UUID
+            );
+            setWebshop({ store: tiendaParsed, ...webshopData });
           }
         } else {
           router.replace("/admin/configPage");
         }
       } catch (error) {
-        console.error("Error al inicializar los datos:", error);
+        console.error("Error inicializando datos:", error);
       }
     };
 
@@ -137,20 +118,10 @@ export default function RootLayout({ children }) {
   }, [router]);
 
   return (
-    <html lang="en">
-      <body>
-        <ThemeContext.Provider value={{ webshop, setwebshop }}>
-          {!isNewUser ? (
-            <>
-              <HeaderAdmin ThemeContext={ThemeContext} />
-              <main className="sm:pl-14">{children}</main>
-            </>
-          ) : (
-            <></>
-          )}
-        </ThemeContext.Provider>
-        <Toaster />
-      </body>
-    </html>
+    <ThemeContext.Provider value={{ webshop, setWebshop }}>
+      {!isNewUser && <HeaderAdmin ThemeContext={ThemeContext} />}
+      <main className="sm:pl-14">{children}</main>
+      <Toaster />
+    </ThemeContext.Provider>
   );
 }
