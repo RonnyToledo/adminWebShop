@@ -104,3 +104,37 @@ export async function POST(request, { params }) {
     return NextResponse.json(tienda);
   }
 }
+export async function PUT(request, { params }) {
+  const supabase = createClient();
+  const data = await request.formData();
+  const products = JSON.parse(data.get("products"));
+
+  try {
+    // Actualiza los productos usando Promise.all para paralelismo
+    await Promise.all(
+      products.map(async (product) => {
+        const { productId, agotado } = product;
+        const { error: productError } = await supabase
+          .from("Products")
+          .update({ agotado })
+          .eq("productId", productId);
+
+        if (productError) {
+          throw new Error(
+            `Error actualizando producto ${productId}: ${productError.message}`
+          );
+        }
+      })
+    );
+
+    return NextResponse.json({
+      message: "Categoría y productos actualizados correctamente.",
+    });
+  } catch (error) {
+    console.error("Error en la actualización:", error.message);
+    return NextResponse.json(
+      { message: `Error: ${error.message}` },
+      { status: 500 }
+    );
+  }
+}

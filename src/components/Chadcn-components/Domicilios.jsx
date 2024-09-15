@@ -19,7 +19,7 @@ import { ThemeContext } from "@/app/admin/layout";
 
 export default function Domicilios({ ThemeContext }) {
   const [downloading, setDownloading] = useState(false);
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const { toast } = useToast();
   const form = useRef(null);
   const [store, setStore] = useState({

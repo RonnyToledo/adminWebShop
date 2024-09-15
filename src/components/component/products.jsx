@@ -38,7 +38,7 @@ import TableRowsComponent from "./table-rows";
 export const description =
   "An products dashboard with a sidebar navigation. The sidebar has icon navigation. The content area has a breadcrumb and search in the header. It displays a list of products in a table with actions.";
 export function Dashboard() {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const [FilterAgotado, setFilterAgotado] = useState([]);
   const [FilterFavorito, setFilterFavorito] = useState([]);

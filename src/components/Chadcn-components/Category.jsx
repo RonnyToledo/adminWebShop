@@ -21,7 +21,7 @@ import { Plus } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 
 export default function Category({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const [category, setCategory] = useState([]);
   const { toast } = useToast();
@@ -47,7 +47,7 @@ export default function Category({ ThemeContext }) {
     evt.dataTransfer.setData("itemId", obj);
     const array = webshop.store.categoria.filter((objeto) => objeto !== obj);
     array.push(obj);
-    setwebshop({
+    setWebshop({
       ...webshop,
       store: { ...webshop.store, categoria: array },
     });
@@ -55,7 +55,7 @@ export default function Category({ ThemeContext }) {
   function startDrag1(evt, obj) {
     const array = webshop.store.categoria.filter((objeto) => objeto !== obj);
     array.push(obj);
-    setwebshop({
+    setWebshop({
       ...webshop,
       store: { ...webshop.store, categoria: array },
     });
@@ -63,14 +63,14 @@ export default function Category({ ThemeContext }) {
   function startDrag1(evt, obj) {
     const array = webshop.store.categoria.filter((objeto) => objeto !== obj);
     array.push(obj);
-    setwebshop({
+    setWebshop({
       ...webshop,
       store: { ...webshop.store, categoria: array },
     });
   }
   const Eliminar = (obj) => {
     const array = webshop.store.categoria.filter((objeto) => objeto !== obj);
-    setwebshop({
+    setWebshop({
       ...webshop,
       store: { ...webshop.store, categoria: array },
     });
@@ -119,7 +119,7 @@ export default function Category({ ThemeContext }) {
       });
     } finally {
       setDownloading(false);
-      setwebshop({
+      setWebshop({
         ...webshop,
         store: {
           ...webshop.store,

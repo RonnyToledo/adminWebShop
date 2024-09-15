@@ -13,7 +13,7 @@ import Image from "next/image";
 import { ThemeContext } from "@/app/admin/layout";
 
 export default function Header({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
 
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
@@ -67,7 +67,7 @@ export default function Header({ ThemeContext }) {
     } finally {
       form.current.reset();
       setDownloading(false);
-      setwebshop({ ...webshop, store: { ...webshop.store, ...store } });
+      setWebshop({ ...webshop, store: { ...webshop.store, ...store } });
     }
   };
   return (

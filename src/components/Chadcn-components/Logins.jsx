@@ -31,7 +31,7 @@ import {
 // Llamar a la función para obtener los datos
 
 export default function Logins({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [logins, setlogins] = useState([]);
 
   useEffect(() => {

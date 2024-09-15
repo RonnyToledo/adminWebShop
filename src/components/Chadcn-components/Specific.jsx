@@ -21,7 +21,7 @@ import { useState, useRef, useContext, useEffect } from "react";
 import { ThemeContext } from "@/app/admin/layout";
 
 export default function Specific({ specific, ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const [newAregados, setNewAgregados] = useState({
     nombre: "",
@@ -89,7 +89,7 @@ export default function Specific({ specific, ThemeContext }) {
             }
           : obj
       );
-      setwebshop({ ...webshop, products: b });
+      setWebshop({ ...webshop, products: b });
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({

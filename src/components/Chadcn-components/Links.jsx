@@ -10,7 +10,7 @@ import QrCode from "@/components/Chadcn-components/QRcode";
 export default function Links({ ThemeContext }) {
   const supabase = createClient();
   const { toast } = useToast();
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
 
   const copyToClipboard = (text) => {
     console.log(text);

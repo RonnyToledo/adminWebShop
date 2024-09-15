@@ -60,7 +60,7 @@ const fonts = [
 ];
 
 export default function Configuracion({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [newAregados, setNewAgregados] = useState({
     moneda: "",
     valor: 0,
@@ -131,7 +131,7 @@ export default function Configuracion({ ThemeContext }) {
     } finally {
       form.current.reset();
       setDownloading(false);
-      setwebshop({ ...webshop, store: { ...webshop.store, ...store } });
+      setWebshop({ ...webshop, store: { ...webshop.store, ...store } });
     }
   };
   async function Cambio(value) {

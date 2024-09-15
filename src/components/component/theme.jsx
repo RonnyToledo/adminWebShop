@@ -18,7 +18,7 @@ const color = [
 ];
 
 export default function Theme({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
   const [selectedTheme, setSelectedTheme] = useState("rgb(17, 24, 37)");
@@ -63,7 +63,7 @@ export default function Theme({ ThemeContext }) {
       });
     } finally {
       setDownloading(false);
-      setwebshop({
+      setWebshop({
         ...webshop,
         store: { ...webshop.store, color: selectedTheme },
       });

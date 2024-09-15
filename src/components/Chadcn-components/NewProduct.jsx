@@ -21,7 +21,7 @@ import axios from "axios";
 
 export default function NewProduct({ ThemeContext }) {
   const [downloading, setDownloading] = useState(false);
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const { toast } = useToast();
   const form = useRef(null);
   const [products, setProducts] = useState({
@@ -70,7 +70,7 @@ export default function NewProduct({ ThemeContext }) {
         });
       }
       const [a] = res.data;
-      setwebshop({
+      setWebshop({
         ...webshop,
         products: [
           ...webshop.products,

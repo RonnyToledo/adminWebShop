@@ -12,7 +12,7 @@ import { ThemeContext } from "@/app/admin/layout";
 import chroma from "chroma-js";
 
 export default function Product({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
   const form = useRef(null);
@@ -52,7 +52,7 @@ export default function Product({ ThemeContext }) {
           <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
         ),
       });
-      setwebshop({
+      setWebshop({
         ...webshop,
         products: webshop.products.filter((obj) => obj.productId !== value),
       });

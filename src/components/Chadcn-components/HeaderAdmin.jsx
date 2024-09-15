@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Palette,
   Search,
+  CircleOff,
   Settings,
   ShoppingCart,
   Users2,
@@ -59,7 +60,7 @@ import { Separator } from "../ui/separator";
 import Welcome from "../component/welcome";
 
 export default function HeaderAdmin({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
@@ -185,17 +186,18 @@ export default function HeaderAdmin({ ThemeContext }) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/admin/theme"
+                    href="/admin/productsOffStock"
                     className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
                   >
-                    <Palette className="h-4 w-4" />
-                    <span className="sr-only">Temas</span>
+                    <CircleOff className="h-4 w-4" />
+                    <span className="sr-only">Productos Agotados</span>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right"> Editar Productos</TooltipContent>
+                <TooltipContent side="right">Productos Agotados</TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <Separator />
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -208,6 +210,20 @@ export default function HeaderAdmin({ ThemeContext }) {
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">Editar Info</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/admin/theme"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <Palette className="h-4 w-4" />
+                    <span className="sr-only">Temas</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right"> Editar Temas</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </nav>
@@ -309,6 +325,15 @@ export default function HeaderAdmin({ ThemeContext }) {
                   >
                     <PackageIcon className="h-4 w-4" />
                     Editar Productos
+                  </Link>
+
+                  <Link
+                    href="/admin/productsOffStock"
+                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <CircleOff className="h-4 w-4" />
+                    Productos Agotados
                   </Link>
                   <Separator />
                   <Link
