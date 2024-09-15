@@ -35,7 +35,12 @@ export async function GET(request, { params }) {
     const formattedData = formatAnalyticsDataByDate(response, params.tienda);
     const convertedData = convertirDatos(formattedData);
 
-    return NextResponse.json(convertedData);
+    return NextResponse.json(convertedData, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store", // Bloquea el almacenamiento en caché
+      },
+    });
   } catch (error) {
     console.error("Error al ejecutar el reporte:", error);
     return NextResponse.json(
@@ -43,7 +48,12 @@ export async function GET(request, { params }) {
         message: "Error al ejecutar el reporte de Analytics",
         error: error.message,
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store", // Bloquea el almacenamiento en caché en caso de error también
+        },
+      }
     );
   }
 }

@@ -104,7 +104,6 @@ export default function Logins({ ThemeContext }) {
                         return new Date(value).toLocaleDateString("en-US", {
                           day: "numeric",
                           month: "long",
-                          year: "numeric",
                         });
                       }}
                     />
@@ -112,7 +111,7 @@ export default function Logins({ ThemeContext }) {
                   cursor={false}
                 />
                 <ReferenceLine
-                  y={calcularPromedioPorDia(logins).promedio}
+                  y={calcularPromedioVisitasPorDia(logins).promedio}
                   stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="3 3"
                   strokeWidth={1}
@@ -120,13 +119,13 @@ export default function Logins({ ThemeContext }) {
                   <Label
                     position="insideBottomLeft"
                     value="Promedio diario"
-                    offset={calcularPromedioPorDia(logins).promedio}
+                    offset={calcularPromedioVisitasPorDia(logins).promedio}
                     fill="hsl(var(--foreground))"
                   />
                   <Label
                     position="insideBottomRigth"
                     value={Number(
-                      calcularPromedioPorDia(logins).promedio
+                      calcularPromedioVisitasPorDia(logins).promedio
                     ).toFixed(2)}
                     className="text-lg"
                     fill="hsl(var(--foreground))"
@@ -210,7 +209,7 @@ export default function Logins({ ThemeContext }) {
             </div>
             <div className="grid auto-rows-min gap-2">
               <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
-                {promedioVisitasPorMes(logins).promedio}
+                {promedioVisitasPorMes(logins).promedio.toFixed(2)}
                 <span className="text-sm font-normal text-muted-foreground">
                   visitas/mes
                 </span>
@@ -236,7 +235,7 @@ export default function Logins({ ThemeContext }) {
                   data={[
                     {
                       date: "Promedio Mensual",
-                      steps: promedioVisitasPorMes(logins).promedio,
+                      steps: promedioVisitasPorMes(logins).promedio.toFixed(2),
                     },
                   ]}
                 >
@@ -549,4 +548,29 @@ function promedioVisitasPorMes(fechaArray) {
     contadorMeses,
     promedio: Number.isNaN(promedio) ? 0 : promedio, // Evitar NaN si no hay fechas
   };
+}
+
+// Función para calcular visitas promedio por día
+function calcularPromedioVisitasPorDia(datos) {
+  // Agrupar las visitas por fecha
+  const visitasPorDia = datos.reduce((acc, visita) => {
+    const fecha = visita.created_at.split("T")[0]; // Obtener solo la fecha
+    if (!acc[fecha]) {
+      acc[fecha] = 0;
+    }
+    acc[fecha] += 1; // Incrementar la cantidad de visitas para esa fecha
+    return acc;
+  }, {});
+
+  // Calcular el total de visitas y el número de días
+  const totalVisitas = Object.values(visitasPorDia).reduce(
+    (acc, visitas) => acc + visitas,
+    0
+  );
+  const numeroDeDias = Object.keys(visitasPorDia).length;
+
+  // Calcular el promedio
+  const promedio = totalVisitas / numeroDeDias;
+
+  return { visitasPorDia, promedio };
 }
