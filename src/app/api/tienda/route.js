@@ -26,6 +26,7 @@ const datos = {
   font: "Poppins",
   color: "rgb(23, 37, 84)",
   login: true,
+  active: false,
 };
 
 export async function GET() {

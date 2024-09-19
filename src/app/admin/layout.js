@@ -1,10 +1,12 @@
 "use client";
-
+import styles from "./Sonner.module.css";
 import { useState, useEffect, createContext } from "react";
 import { supabase } from "@/lib/supa";
 import { useRouter } from "next/navigation";
 import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { Toaster as UiToaster } from "@/components/ui/toaster";
+import { toast } from "sonner";
 
 export const ThemeContext = createContext();
 
@@ -49,9 +51,23 @@ async function fetchWebshopData(sitioweb, UUID) {
   }
 }
 
+async function fetchPendingNotifications(userId) {
+  try {
+    const { data: notifications } = await supabase
+      .from("Notification")
+      .select("*")
+      .eq("userID", userId);
+
+    return notifications || [];
+  } catch (error) {
+    console.error("Error al obtener notificaciones pendientes:", error);
+    throw error;
+  }
+}
+
 export default function AdminLayout({ children }) {
   const [isNewUser, setIsNewUser] = useState(false);
-  const [user, setUser] = useState("");
+  const [user, setUser] = useState(null);
   const [webshop, setWebshop] = useState({
     store: {
       moneda: [],
@@ -64,8 +80,42 @@ export default function AdminLayout({ children }) {
     products: [],
     events: [],
   });
-
   const router = useRouter();
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!user) return; // Si no hay un usuario, no hacemos nada
+    console.log(user);
+
+    const channel = supabase
+      .channel("custom-insert-channel")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "Notification" },
+        async (payload) => {
+          const notification = payload.new;
+          if (notification.userID === user) {
+            DeleteNotification(notification.id);
+            setNotifications((prev) => {
+              const updatedNotifications = [...prev, notification];
+              toast("Notificación", {
+                description: notification.mensaje,
+                action: {
+                  label: "Cerrar",
+                },
+              });
+
+              return updatedNotifications;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -78,6 +128,22 @@ export default function AdminLayout({ children }) {
 
         setUser(userId);
 
+        // Fetch and show pending notifications
+        const pendingNotifications = await fetchPendingNotifications(userId);
+
+        // Usamos un bucle for...of para poder utilizar await
+        for (const notification of pendingNotifications) {
+          toast("Notificación", {
+            description: notification.mensaje,
+            action: {
+              label: "Cerrar",
+              onClick: () => console.log("Cerrar"),
+            },
+          });
+          // Esperar a que la notificación se elimine antes de continuar
+          await DeleteNotification(notification.id);
+        }
+
         const { data: stores } = await supabase
           .from("Sitios")
           .select("*")
@@ -85,10 +151,10 @@ export default function AdminLayout({ children }) {
 
         if (stores?.length > 0) {
           const store = stores[0];
-          if (!store?.login) {
+          if (!store?.active) {
+            router.replace("/configPage");
+          } else if (!store?.sitioweb) {
             router.replace("/welcome");
-          } else if (!store?.active) {
-            router.replace("/admin/configPage");
           } else {
             const tiendaParsed = {
               ...store,
@@ -121,7 +187,19 @@ export default function AdminLayout({ children }) {
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       {!isNewUser && <HeaderAdmin ThemeContext={ThemeContext} />}
       <main className="sm:pl-14">{children}</main>
-      <Toaster />
+      <SonnerToaster className={styles.sonner_dark} />
+      <UiToaster />
     </ThemeContext.Provider>
   );
 }
+
+const DeleteNotification = async (id) => {
+  try {
+    const { error } = await supabase.from("Notification").delete().eq("id", id);
+    if (error) {
+      console.error("Error al eliminar la notificación:", error);
+    }
+  } catch (error) {
+    console.error("Error en la función DeleteNotification:", error);
+  }
+};
