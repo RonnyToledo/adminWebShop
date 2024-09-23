@@ -113,10 +113,10 @@ export async function PUT(request, { params }) {
     // Actualiza los productos usando Promise.all para paralelismo
     await Promise.all(
       products.map(async (product) => {
-        const { productId, agotado } = product;
+        const { productId, agotado, order } = product;
         const { error: productError } = await supabase
           .from("Products")
-          .update({ agotado })
+          .update({ agotado: agotado, order: order })
           .eq("productId", productId);
 
         if (productError) {

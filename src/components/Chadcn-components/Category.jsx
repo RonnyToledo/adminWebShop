@@ -118,7 +118,6 @@ export default function Category({ ThemeContext }) {
       return;
     } else {
       setCategory((prevCat) => {
-        console.log(reorder(prevCat, source.index, destination.index));
         return reorder(prevCat, source.index, destination.index);
       });
     }

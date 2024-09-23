@@ -223,20 +223,6 @@ export default function Specific({ specific, ThemeContext }) {
                         }
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="price">Orden Logico</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        defaultValue={products?.order}
-                        onChange={(e) =>
-                          setProducts({
-                            ...products,
-                            order: Number(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
                   </div>
                 </CardContent>
               </Card>

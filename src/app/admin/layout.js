@@ -18,18 +18,20 @@ async function fetchUserSession() {
   });
 }
 
-async function fetchWebshopData(sitioweb, UUID) {
+async function fetchWebshopData(sitioweb, UUID, categoria) {
   try {
     const { data: productos } = await supabase
       .from("Products")
       .select("*")
       .eq("storeId", UUID);
 
-    const productosParsed = productos.map((producto) => ({
-      ...producto,
-      agregados: JSON.parse(producto.agregados),
-      coment: JSON.parse(producto.coment),
-    }));
+    const productosParsed = OrderProducts(productos, categoria).map(
+      (producto, index) => ({
+        ...producto,
+        agregados: JSON.parse(producto.agregados),
+        coment: JSON.parse(producto.coment),
+      })
+    );
 
     const { data: events } = await supabase
       .from("Events")
@@ -168,7 +170,8 @@ export default function AdminLayout({ children }) {
 
             const webshopData = await fetchWebshopData(
               store.sitioweb,
-              store.UUID
+              store.UUID,
+              tiendaParsed.categoria
             );
             setWebshop({ store: tiendaParsed, ...webshopData });
           }
@@ -202,4 +205,36 @@ const DeleteNotification = async (id) => {
   } catch (error) {
     console.error("Error en la función DeleteNotification:", error);
   }
+};
+function OrderProducts(productos, categorias) {
+  const productosOrdenados = {};
+
+  // Inicializar el objeto con categorías vacías
+  categorias.forEach((categoria) => {
+    productosOrdenados[categoria] = [];
+  });
+
+  // Llenar el objeto con productos según su categoría
+  productos
+    .sort((a, b) => a.order - b.order)
+    .forEach((producto) => {
+      if (productosOrdenados[producto.caja]) {
+        productosOrdenados[producto.caja].push(producto);
+      }
+    });
+  console.log();
+
+  return asignarOrden(productosOrdenados);
+}
+const asignarOrden = (productos) => {
+  const resultadoFinal = [];
+  Object.keys(productos).forEach((categoria) => {
+    resultadoFinal.push(
+      ...productos[categoria].map((prod, index) => ({
+        ...prod,
+        order: index,
+      }))
+    );
+  });
+  return resultadoFinal;
 };

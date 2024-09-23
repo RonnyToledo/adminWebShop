@@ -32,21 +32,14 @@ export default function ProductsOffStock() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setProducts([
-      ...OrderProducts(webshop.products, webshop.store.categoria),
-      ...webshop.products
-        .sort((a, b) => a.order - b.order)
-        .filter((obj) => !webshop.store.categoria.includes(obj.caja)),
-    ]);
+    setProducts(webshop.products);
+    console.log("a");
   }, [webshop]);
 
   const SaveData = async () => {
     setDownloading(true);
     const formData = new FormData();
-    formData.append(
-      "products",
-      JSON.stringify(obtenerProductosModificados(webshop.products, products))
-    );
+    formData.append("products", JSON.stringify(webshop.products));
 
     try {
       const res = await axios.put(
@@ -86,45 +79,47 @@ export default function ProductsOffStock() {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <div className="flex flex-col sm:gap-4 sm:py-4 ">
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-          <Card x-chunk="dashboard-06-chunk-0">
-            <CardHeader>
-              <CardTitle>Products</CardTitle>
-              <CardDescription>
-                Manage your products and view their sales performance.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="hidden w-[100px] sm:table-cell">
-                      <span className="sr-only">Imagen</span>
-                    </TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Agotado</TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Categoria-Prioridad
-                    </TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Precio
-                    </TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Favorito
-                    </TableHead>
-                    <TableHead>
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+          {webshop.store.categoria.map((obj, ind) => (
+            <Card key={ind} x-chunk="dashboard-06-chunk-0">
+              <CardHeader>
+                <CardTitle>{obj}</CardTitle>
+                <CardDescription>
+                  Manage your products and view their sales performance.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="hidden w-[100px] sm:table-cell">
+                        <span className="sr-only">Imagen</span>
+                      </TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Agotado</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Categoria-Prioridad
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Precio
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Favorito
+                      </TableHead>
+                      <TableHead>
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableRowsComponent
                     products={products}
                     setProducts={setProducts}
+                    categoria={obj}
+                    index={ind}
                   />
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                </Table>
+              </CardContent>
+            </Card>
+          ))}
           <div className="bg-white p-2 flex justify-end sticky bottom-0 w-full">
             <Button
               className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
@@ -141,36 +136,19 @@ export default function ProductsOffStock() {
     </div>
   );
 }
-function OrderProducts(productos, categorias) {
-  const productosOrdenados = {};
 
-  // Inicializar el objeto con categorías vacías
-  categorias.forEach((categoria) => {
-    productosOrdenados[categoria] = [];
-  });
+const obtenerProductosModificados = (productosOriginales, productosNuevos) => {
+  // Crear un objeto de búsqueda para los productos originales
+  const productosMap = Object.fromEntries(
+    productosOriginales.map((producto) => [producto.productId, producto])
+  );
 
-  // Llenar el objeto con productos según su categoría
-  productos
-    .sort((a, b) => a.order - b.order)
-    .forEach((producto) => {
-      if (productosOrdenados[producto.caja]) {
-        productosOrdenados[producto.caja].push(producto);
-      }
-    });
-
-  // Crear un array final siguiendo el orden de categorías
-  const resultadoFinal = [];
-  categorias.forEach((categoria) => {
-    resultadoFinal.push(...productosOrdenados[categoria]);
-  });
-
-  return resultadoFinal;
-}
-const obtenerProductosModificados = (array1, array2) => {
-  return array2.filter((producto2) => {
-    const producto1 = array1.find(
-      (producto) => producto.productId === producto2.productId
+  return productosNuevos.filter((productoNuevo) => {
+    const productoOriginal = productosMap[productoNuevo.productId];
+    return (
+      productoOriginal &&
+      (productoOriginal.agotado !== productoNuevo.agotado ||
+        productoOriginal.order !== productoNuevo.order)
     );
-    return producto1 && producto1.agotado !== producto2.agotado;
   });
 };

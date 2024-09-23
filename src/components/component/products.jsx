@@ -237,31 +237,6 @@ export function Dashboard() {
     </div>
   );
 }
-function OrderProducts(productos, categorias) {
-  const productosOrdenados = {};
-
-  // Inicializar el objeto con categorías vacías
-  categorias.forEach((categoria) => {
-    productosOrdenados[categoria] = [];
-  });
-
-  // Llenar el objeto con productos según su categoría
-  productos
-    .sort((a, b) => a.order - b.order)
-    .forEach((producto) => {
-      if (productosOrdenados[producto.caja]) {
-        productosOrdenados[producto.caja].push(producto);
-      }
-    });
-
-  // Crear un array final siguiendo el orden de categorías
-  const resultadoFinal = [];
-  categorias.forEach((categoria) => {
-    resultadoFinal.push(...productosOrdenados[categoria]);
-  });
-
-  return resultadoFinal;
-}
 const generatePDF = (products) => {
   const doc = new jsPDF();
 
