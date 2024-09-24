@@ -113,12 +113,7 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRowsComponent
-                        product={OrderProducts(
-                          webshop.products,
-                          webshop.store.categoria
-                        )}
-                      />
+                      <TableRowsComponent product={webshop.products} />
                       <TableRowsComponent
                         product={webshop.products
                           .sort((a, b) => a.order - b.order)
@@ -163,12 +158,7 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRowsComponent
-                        product={OrderProducts(
-                          FilterAgotado,
-                          webshop.store.categoria
-                        )}
-                      />
+                      <TableRowsComponent product={FilterAgotado} />
                       <TableRowsComponent
                         product={FilterAgotado.sort(
                           (a, b) => a.order - b.order
@@ -213,12 +203,7 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRowsComponent
-                        product={OrderProducts(
-                          FilterFavorito,
-                          webshop.store.categoria
-                        )}
-                      />
+                      <TableRowsComponent product={FilterFavorito} />
                       <TableRowsComponent
                         product={FilterFavorito.sort(
                           (a, b) => a.order - b.order

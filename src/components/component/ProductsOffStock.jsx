@@ -33,13 +33,15 @@ export default function ProductsOffStock() {
 
   useEffect(() => {
     setProducts(webshop.products);
-    console.log("a");
   }, [webshop]);
 
   const SaveData = async () => {
     setDownloading(true);
     const formData = new FormData();
-    formData.append("products", JSON.stringify(webshop.products));
+    formData.append(
+      "products",
+      JSON.stringify(obtenerProductosModificados(webshop.products, products))
+    );
 
     try {
       const res = await axios.put(
@@ -97,10 +99,10 @@ export default function ProductsOffStock() {
                       <TableHead>Nombre</TableHead>
                       <TableHead>Agotado</TableHead>
                       <TableHead className="hidden md:table-cell">
-                        Categoria-Prioridad
+                        Precio
                       </TableHead>
                       <TableHead className="hidden md:table-cell">
-                        Precio
+                        Categoria-Orden
                       </TableHead>
                       <TableHead className="hidden md:table-cell">
                         Favorito

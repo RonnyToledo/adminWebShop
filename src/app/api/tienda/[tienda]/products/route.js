@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import cloudinary from "@/lib/cloudinary";
+import { supabase } from "@/lib/supa";
 
 export async function GET(request, { params }) {
   const supabase = createClient();
@@ -9,7 +10,6 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  const supabase = createClient();
   const data = await request.formData();
   const image = data.get("image");
   const Ui = data.get("UID");
@@ -105,7 +105,6 @@ export async function POST(request, { params }) {
   }
 }
 export async function PUT(request, { params }) {
-  const supabase = createClient();
   const data = await request.formData();
   const products = JSON.parse(data.get("products"));
 
@@ -113,25 +112,32 @@ export async function PUT(request, { params }) {
     // Actualiza los productos usando Promise.all para paralelismo
     await Promise.all(
       products.map(async (product) => {
-        const { productId, agotado, order } = product;
-        const { error: productError } = await supabase
+        const { productId, agotado, order, title } = product;
+        console.log(productId, agotado, order, title);
+
+        // Intentamos hacer la actualización en la base de datos
+        const { error } = await supabase
           .from("Products")
           .update({ agotado: agotado, order: order })
           .eq("productId", productId);
 
-        if (productError) {
+        // Si ocurre algún error, lo lanzamos para ser capturado
+        if (error) {
+          console.error(
+            `Error al actualizar el producto ${title}: ${error.message}`
+          );
           throw new Error(
-            `Error actualizando producto ${productId}: ${productError.message}`
+            `Error actualizando producto ${title}: ${error.message}`
           );
         }
       })
     );
 
     return NextResponse.json({
-      message: "Categoría y productos actualizados correctamente.",
+      message: "Productos actualizados correctamente.",
     });
   } catch (error) {
-    console.error("Error en la actualización:", error.message);
+    console.error("Error en la actualización:", error);
     return NextResponse.json(
       { message: `Error: ${error.message}` },
       { status: 500 }

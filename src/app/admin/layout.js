@@ -18,41 +18,6 @@ async function fetchUserSession() {
   });
 }
 
-async function fetchWebshopData(sitioweb, UUID, categoria) {
-  try {
-    const { data: productos } = await supabase
-      .from("Products")
-      .select("*")
-      .eq("storeId", UUID);
-
-    const productosParsed = OrderProducts(productos, categoria).map(
-      (producto, index) => ({
-        ...producto,
-        agregados: JSON.parse(producto.agregados),
-        coment: JSON.parse(producto.coment),
-      })
-    );
-
-    const { data: events } = await supabase
-      .from("Events")
-      .select("*")
-      .eq("tienda", sitioweb);
-
-    const eventsParsed = events.map((event) => ({
-      ...event,
-      desc: JSON.parse(event.desc),
-    }));
-
-    return {
-      products: productosParsed,
-      events: eventsParsed,
-    };
-  } catch (error) {
-    console.error("Error al obtener datos:", error);
-    throw error;
-  }
-}
-
 async function fetchPendingNotifications(userId) {
   try {
     const { data: notifications } = await supabase
@@ -84,6 +49,85 @@ export default function AdminLayout({ children }) {
   });
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        const userId = await fetchUserSession();
+        if (!userId) {
+          router.replace("/");
+          return;
+        }
+
+        setUser(userId);
+
+        // Fetch and show pending notifications
+        const pendingNotifications = await fetchPendingNotifications(userId);
+
+        // Usamos un bucle for...of para poder utilizar await
+        for (const notification of pendingNotifications) {
+          toast("Notificación", {
+            description: notification.mensaje,
+            action: {
+              label: "Cerrar",
+              onClick: () => console.log("Cerrar"),
+            },
+          });
+          // Esperar a que la notificación se elimine antes de continuar
+          await DeleteNotification(notification.id);
+        }
+
+        const { data: store } = await supabase
+          .from("Sitios")
+          .select("*, Products (*), Events(*)")
+          .eq("Editor", userId)
+          .single();
+
+        if (store) {
+          if (!store?.active) {
+            router.replace("configPage");
+          } else if (!store?.sitioweb) {
+            router.replace("welcome");
+          } else {
+            const tiendaParsed = {
+              ...store,
+              moneda: JSON.parse(store.moneda),
+              moneda_default: JSON.parse(store.moneda_default),
+              horario: JSON.parse(store.horario),
+              comentario: JSON.parse(store.comentario),
+              categoria: JSON.parse(store.categoria),
+              envios: JSON.parse(store.envios),
+            };
+
+            const productosParsed = OrderProducts(
+              store.Products,
+              tiendaParsed.categoria
+            ).map((producto) => ({
+              ...producto,
+              agregados: JSON.parse(producto.agregados),
+              coment: JSON.parse(producto.coment),
+            }));
+            const eventsParsed = store.Events.map((event) => ({
+              ...event,
+              desc: JSON.parse(event.desc),
+            }));
+            setWebshop({
+              ...webshop,
+              store: tiendaParsed,
+              products: productosParsed,
+              events: eventsParsed,
+            });
+          }
+        } else {
+          router.replace("/admin/configPage");
+        }
+      } catch (error) {
+        console.error("Error inicializando datos:", error);
+      }
+    };
+
+    initializeData();
+  }, [router]);
 
   useEffect(() => {
     if (!user) return; // Si no hay un usuario, no hacemos nada
@@ -118,73 +162,6 @@ export default function AdminLayout({ children }) {
       supabase.removeChannel(channel);
     };
   }, [user]);
-
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        const userId = await fetchUserSession();
-        if (!userId) {
-          router.replace("/");
-          return;
-        }
-
-        setUser(userId);
-
-        // Fetch and show pending notifications
-        const pendingNotifications = await fetchPendingNotifications(userId);
-
-        // Usamos un bucle for...of para poder utilizar await
-        for (const notification of pendingNotifications) {
-          toast("Notificación", {
-            description: notification.mensaje,
-            action: {
-              label: "Cerrar",
-              onClick: () => console.log("Cerrar"),
-            },
-          });
-          // Esperar a que la notificación se elimine antes de continuar
-          await DeleteNotification(notification.id);
-        }
-
-        const { data: stores } = await supabase
-          .from("Sitios")
-          .select("*")
-          .eq("Editor", userId);
-
-        if (stores?.length > 0) {
-          const store = stores[0];
-          if (!store?.active) {
-            router.replace("/configPage");
-          } else if (!store?.sitioweb) {
-            router.replace("/welcome");
-          } else {
-            const tiendaParsed = {
-              ...store,
-              moneda: JSON.parse(store.moneda),
-              moneda_default: JSON.parse(store.moneda_default),
-              horario: JSON.parse(store.horario),
-              comentario: JSON.parse(store.comentario),
-              categoria: JSON.parse(store.categoria),
-              envios: JSON.parse(store.envios),
-            };
-
-            const webshopData = await fetchWebshopData(
-              store.sitioweb,
-              store.UUID,
-              tiendaParsed.categoria
-            );
-            setWebshop({ store: tiendaParsed, ...webshopData });
-          }
-        } else {
-          router.replace("/admin/configPage");
-        }
-      } catch (error) {
-        console.error("Error inicializando datos:", error);
-      }
-    };
-
-    initializeData();
-  }, [router]);
 
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
