@@ -1,29 +1,13 @@
 "use client";
-import React, { useEffect } from "react";
-import { LogOut, Unlink2, CircleArrowOutUpRight } from "lucide-react";
+import React from "react";
 import {
-  Command,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
-import {
-  File,
+  LogOut,
+  Unlink2,
   Home,
-  LineChart,
-  ListFilter,
-  MoreHorizontal,
-  Package,
-  Package2,
   PanelLeft,
-  PlusCircle,
   Palette,
-  Search,
+  BadgeDollarSign,
   CircleOff,
-  Settings,
-  ShoppingCart,
-  Users2,
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -32,7 +16,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -40,7 +23,6 @@ import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
 import { useState, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supa";
-import Image from "next/image";
 import {
   Tooltip,
   TooltipContent,
@@ -75,13 +57,6 @@ export default function HeaderAdmin({ ThemeContext }) {
       <div className="flex sticky top-0 w-full flex-col bg-muted/40 z-[10]">
         <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
           <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-            <Link
-              href="#"
-              className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-            >
-              <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-              <span className="sr-only">Acme Inc</span>
-            </Link>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -217,6 +192,22 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipContent side="right"> Editar Temas</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            {webshop.store.plan == "custom" && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href="/admin/codeDiscount"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    >
+                      <BadgeDollarSign className="h-4 w-4" />
+                      <span className="sr-only">Marketing</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Marketing</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </nav>
           <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
             <TooltipProvider>
@@ -335,6 +326,16 @@ export default function HeaderAdmin({ ThemeContext }) {
                     <HeadingIcon className="h-4 w-4" />
                     Editar Info
                   </Link>
+                  {webshop.store.plan == "custom" && (
+                    <Link
+                      href="/admin/codeDiscount"
+                      className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <BadgeDollarSign className="h-4 w-4" />
+                      Marketing
+                    </Link>
+                  )}
                   <Link
                     href="/admin/configuracion"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"

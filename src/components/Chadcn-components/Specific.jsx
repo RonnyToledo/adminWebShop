@@ -18,7 +18,7 @@ import { GitMerge } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import ImageUpload from "../component/ImageDND";
 
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -102,6 +102,7 @@ export default function Specific({ specific, ThemeContext }) {
       setDownloading(false);
     }
   };
+
   return (
     <main className="grid min-h-screen w-full ">
       <div className="flex flex-col gap-6 w-full ">
@@ -147,33 +148,10 @@ export default function Specific({ specific, ThemeContext }) {
                     >
                       Imágenes
                     </Label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                      <div className="space-y-1 text-center">
-                        <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                          <label
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-                            htmlFor="images"
-                          >
-                            <span>Subir archivos</span>
-                            <input
-                              className="sr-only"
-                              id="images"
-                              name="images"
-                              type="file"
-                              onChange={(e) => setNewImage(e.target.files[0])}
-                            />
-                          </label>
-                          <p className="pl-1">o arrastrar y soltar</p>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          PNG, JPG, GIF hasta 10MB
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          *Opcional
-                        </p>
-                      </div>
-                    </div>
+                    <ImageUpload
+                      setImageNew={setNewImage}
+                      imageNew={newImage}
+                    />
                   </div>
                 </CardContent>
               </Card>

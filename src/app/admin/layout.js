@@ -45,11 +45,11 @@ export default function AdminLayout({ children }) {
       envios: [],
     },
     products: [],
+    code: [],
     events: [],
   });
   const router = useRouter();
-  const [notifications, setNotifications] = useState([]);
-
+  console.log(webshop);
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -79,9 +79,10 @@ export default function AdminLayout({ children }) {
 
         const { data: store } = await supabase
           .from("Sitios")
-          .select("*, Products (*), Events(*)")
+          .select("*, Products (*), Events(*), codeDiscount(*)")
           .eq("Editor", userId)
           .single();
+        console.log(store);
 
         if (store) {
           if (!store?.active) {
@@ -116,6 +117,7 @@ export default function AdminLayout({ children }) {
               store: tiendaParsed,
               products: productosParsed,
               events: eventsParsed,
+              code: tiendaParsed.codeDiscount,
             });
           }
         } else {
@@ -131,7 +133,6 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (!user) return; // Si no hay un usuario, no hacemos nada
-    console.log(user);
 
     const channel = supabase
       .channel("custom-insert-channel")
@@ -142,16 +143,11 @@ export default function AdminLayout({ children }) {
           const notification = payload.new;
           if (notification.userID === user) {
             DeleteNotification(notification.id);
-            setNotifications((prev) => {
-              const updatedNotifications = [...prev, notification];
-              toast("Notificación", {
-                description: notification.mensaje,
-                action: {
-                  label: "Cerrar",
-                },
-              });
-
-              return updatedNotifications;
+            toast("Notificación", {
+              description: notification.mensaje,
+              action: {
+                label: "Cerrar",
+              },
             });
           }
         }

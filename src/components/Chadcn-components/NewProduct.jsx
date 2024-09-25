@@ -18,12 +18,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
+import ImageUpload from "../component/ImageDND";
 
 export default function NewProduct({ ThemeContext }) {
   const [downloading, setDownloading] = useState(false);
   const { webshop, setWebshop } = useContext(ThemeContext);
   const { toast } = useToast();
   const form = useRef(null);
+  const [imageNew, setImageNew] = useState();
   const [products, setProducts] = useState({
     favorito: false,
     title: "",
@@ -101,6 +103,11 @@ export default function NewProduct({ ThemeContext }) {
       setDownloading(false);
     }
   };
+
+  useEffect(() => {
+    setProducts({ ...products, image: imageNew });
+  }, [imageNew]);
+
   return (
     <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit} className="space-y-6">
@@ -111,36 +118,7 @@ export default function NewProduct({ ThemeContext }) {
           >
             Imágenes
           </Label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                <label
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-                  htmlFor="images"
-                >
-                  <span>Subir archivos</span>
-                  <input
-                    className="sr-only"
-                    id="images"
-                    name="images"
-                    type="file"
-                    onChange={(e) =>
-                      setProducts({
-                        ...products,
-                        image: e.target.files[0],
-                      })
-                    }
-                  />
-                </label>
-                <p className="pl-1">o arrastrar y soltar</p>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                PNG, JPG, GIF hasta 10MB
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">*Opcional</p>
-            </div>
-          </div>
+          <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
           {products?.image && (
             <Image
               alt="Logo"
