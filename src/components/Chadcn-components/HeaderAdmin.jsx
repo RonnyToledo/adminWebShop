@@ -192,22 +192,23 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipContent side="right"> Editar Temas</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {webshop.store.plan == "custom" && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href="/admin/codeDiscount"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                    >
-                      <BadgeDollarSign className="h-4 w-4" />
-                      <span className="sr-only">Marketing</span>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Marketing</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            {webshop.store.plan == "custom" &&
+              webshop.store.custom.CodePromo && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href="/admin/codeDiscount"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                      >
+                        <BadgeDollarSign className="h-4 w-4" />
+                        <span className="sr-only">Marketing</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Marketing</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
           </nav>
           <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
             <TooltipProvider>
@@ -326,16 +327,17 @@ export default function HeaderAdmin({ ThemeContext }) {
                     <HeadingIcon className="h-4 w-4" />
                     Editar Info
                   </Link>
-                  {webshop.store.plan == "custom" && (
-                    <Link
-                      href="/admin/codeDiscount"
-                      className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <BadgeDollarSign className="h-4 w-4" />
-                      Marketing
-                    </Link>
-                  )}
+                  {webshop.store.plan == "custom" &&
+                    webshop.store.custom.CodePromo && (
+                      <Link
+                        href="/admin/codeDiscount"
+                        className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <BadgeDollarSign className="h-4 w-4" />
+                        Marketing
+                      </Link>
+                    )}
                   <Link
                     href="/admin/configuracion"
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"

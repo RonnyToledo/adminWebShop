@@ -79,7 +79,7 @@ export default function AdminLayout({ children }) {
 
         const { data: store } = await supabase
           .from("Sitios")
-          .select("*, Products (*), Events(*), codeDiscount(*)")
+          .select("*, Products (*), Events(*), codeDiscount(*),Custom (*)")
           .eq("Editor", userId)
           .single();
         console.log(store);
@@ -90,6 +90,7 @@ export default function AdminLayout({ children }) {
           } else if (!store?.sitioweb) {
             router.replace("welcome");
           } else {
+            const [custom] = store.Custom;
             const tiendaParsed = {
               ...store,
               moneda: JSON.parse(store.moneda),
@@ -98,6 +99,7 @@ export default function AdminLayout({ children }) {
               comentario: JSON.parse(store.comentario),
               categoria: JSON.parse(store.categoria),
               envios: JSON.parse(store.envios),
+              custom: custom,
             };
 
             const productosParsed = OrderProducts(

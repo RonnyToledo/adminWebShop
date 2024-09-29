@@ -15,7 +15,7 @@ export default function usePage() {
         <main className="flex flex-1 flex-col">
           {webshop.store.plan == "basic" ? (
             <Guia ThemeContext={ThemeContext} />
-          ) : webshop.store.plan == "pro" ? (
+          ) : webshop.store.plan == "pro" || webshop.store.plan == "custom" ? (
             <>
               <Logins ThemeContext={ThemeContext} />
               <Dashboard ThemeContext={ThemeContext} />
