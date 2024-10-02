@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 const color = [
   {
@@ -25,6 +26,7 @@ export default function Theme({ ThemeContext }) {
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
   const [selectedTheme, setSelectedTheme] = useState("1");
+  const router = useRouter();
 
   console.log(webshop);
   console.log(webshop.store.color);
@@ -51,9 +53,14 @@ export default function Theme({ ThemeContext }) {
       if (res.status == 200) {
         toast({
           title: "Tarea Ejecutada",
-          description: "Informacion Actualizada",
+          description: "Su enlace de sitio web ha cambiado",
           action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+            <ToastAction
+              altText="Ir a la programación"
+              onClick={() => router.push("/admin/link")}
+            >
+              Ir a la web
+            </ToastAction>
           ),
         });
       }
