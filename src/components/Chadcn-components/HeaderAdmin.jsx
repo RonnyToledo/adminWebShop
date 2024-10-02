@@ -178,20 +178,22 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipContent side="right">Editar Info</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/admin/theme"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                  >
-                    <Palette className="h-4 w-4" />
-                    <span className="sr-only">Temas</span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right"> Editar Temas</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {webshop.store.plan == "custom" && webshop.store.custom.theme && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href="/admin/theme"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    >
+                      <Palette className="h-4 w-4" />
+                      <span className="sr-only">Temas</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right"> Editar Temas</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {webshop.store.plan == "custom" &&
               webshop.store.custom.CodePromo && (
                 <TooltipProvider>
@@ -346,14 +348,17 @@ export default function HeaderAdmin({ ThemeContext }) {
                     <SettingsIcon className="h-4 w-4" />
                     Configuracion
                   </Link>
-                  <Link
-                    href="/admin/theme"
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Palette className="h-4 w-4" />
-                    Temas
-                  </Link>
+                  {webshop.store.plan == "custom" &&
+                    webshop.store.custom.theme && (
+                      <Link
+                        href="/admin/theme"
+                        className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Palette className="h-4 w-4" />
+                        Temas
+                      </Link>
+                    )}
                   <Separator />
 
                   <Link

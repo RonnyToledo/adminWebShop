@@ -8,7 +8,7 @@ export async function PUT(request, { params }) {
     .from("Sitios")
     .update([
       {
-        color: data.get("color"),
+        variable: data.get("variable"),
       },
     ])
     .select()
