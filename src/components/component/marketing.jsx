@@ -120,7 +120,7 @@ export function Marketing({ ThemeContext }) {
         .update({ marketing: value })
         .eq("UUID", webshop.store.UUID);
       if (error) {
-        console.log(error);
+        console.error(error);
       } else {
         setWebshop({
           ...webshop,

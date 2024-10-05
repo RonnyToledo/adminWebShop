@@ -2,15 +2,17 @@ import React, { useCallback } from "react";
 import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 
 export default function ImageUpload({ imageNew, setImageNew }) {
-  const handleDrop = useCallback((acceptedFiles) => {
-    // Aquí puedes manejar los archivos aceptados
-    console.log("Archivos aceptados:", acceptedFiles);
-    setImageNew(acceptedFiles[0]);
-  }, []);
+  const handleDrop = useCallback(
+    (acceptedFiles) => {
+      // Aquí puedes manejar los archivos aceptados
+      setImageNew(acceptedFiles[0]);
+    },
+    [setImageNew]
+  );
 
   const onDragEnd = (result) => {
     // Manejar el final del drag and drop si es necesario
-    console.log("Resultado del drag:", result);
+    console.log("Finally");
   };
 
   return (
@@ -50,12 +52,7 @@ export default function ImageUpload({ imageNew, setImageNew }) {
                     id="images"
                     name="images"
                     type="file"
-                    onChange={(e) =>
-                      setProducts({
-                        ...products,
-                        image: e.target.files[0],
-                      })
-                    }
+                    onChange={(e) => setImageNew(e.target.files[0])}
                     accept="image/*"
                     style={{ display: "none" }} // Ocultar el input
                   />

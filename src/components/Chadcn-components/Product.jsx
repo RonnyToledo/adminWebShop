@@ -249,8 +249,6 @@ export default function Product({ ThemeContext }) {
 }
 
 function OrderProducts(productos, categorias) {
-  console.log(categorias);
-
   const productosOrdenados = {};
 
   // Inicializar el objeto con categorías vacías

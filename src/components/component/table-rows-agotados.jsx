@@ -202,10 +202,8 @@ export default function TableRowsComponent({
 
 const reorder = (list, startIndex, endIndex) => {
   const result = [...list];
-  console.log(list);
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
-  console.log(result);
   return result;
 };
 function OrderProducts(productos, categorias, specific, startIndex, endIndex) {
@@ -222,7 +220,6 @@ function OrderProducts(productos, categorias, specific, startIndex, endIndex) {
       productosOrdenados[producto.caja].push(producto);
     }
   });
-  console.log(startIndex, endIndex);
 
   // Reordenar los productos en la categoría específica
   const reorderedProducts = reorder(
@@ -232,7 +229,6 @@ function OrderProducts(productos, categorias, specific, startIndex, endIndex) {
   );
   // Asignar el resultado de la categoría reordenada
   productosOrdenados[specific] = reorderedProducts;
-  console.log(reorderedProducts);
   // Retornar el resultado final con el orden asignado
   return asignarOrden(productosOrdenados);
 }

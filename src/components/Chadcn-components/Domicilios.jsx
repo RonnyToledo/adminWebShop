@@ -13,11 +13,11 @@ import axios from "axios";
 import { GitMerge } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
-import { provincias } from "@/components/json/Site.json";
 import { useState, useEffect, useRef, useContext } from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import provinciasData from "@/components/json/Site.json";
 
 export default function Domicilios({ ThemeContext }) {
+  const provincias = provinciasData.provincias;
   const [downloading, setDownloading] = useState(false);
   const { webshop, setWebshop } = useContext(ThemeContext);
   const { toast } = useToast();

@@ -13,7 +13,6 @@ export default function Links({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
 
   const copyToClipboard = (text) => {
-    console.log(text);
     if (navigator?.clipboard) {
       try {
         navigator.clipboard.writeText(text);
@@ -34,8 +33,6 @@ export default function Links({ ThemeContext }) {
           ),
         });
       }
-    } else {
-      console.log("Error al abrir el clipboard");
     }
   };
   return (

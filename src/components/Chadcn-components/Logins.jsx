@@ -37,9 +37,6 @@ export default function Logins({ ThemeContext }) {
   useEffect(() => {
     async function fetchData(tienda) {
       try {
-        console.log(tienda === undefined);
-        console.log(!(tienda === undefined));
-        console.log(webshop.store.sitioweb);
         if (!(tienda === undefined)) {
           const response = await fetch(`/api/tienda/${tienda}/GA`);
           if (!response.ok) {
@@ -54,8 +51,8 @@ export default function Logins({ ThemeContext }) {
       }
     }
     fetchData(webshop.store.sitioweb);
-  }, [webshop]);
-  console.log(logins);
+  }, [webshop, logins.length]);
+
   return (
     <div className="chart-wrapper mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[22rem] lg:grid-cols-1 xl:max-w-[25rem]">

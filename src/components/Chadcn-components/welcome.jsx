@@ -6,7 +6,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { provincias } from "@/components/json/Site.json";
 import axios from "axios";
 import {
   SelectValue,
@@ -24,8 +23,10 @@ import {
 } from "@/components/ui/input-otp";
 import { supabase } from "@/lib/supa";
 import { useRouter } from "next/navigation";
+import provinciasData from "@/components/json/Site.json";
 
 export default function MultiStepForm() {
+  const provincias = provinciasData.provincias;
   const [step, setStep] = useState(1); // Controlar la página actual del formulario
   const [downloading, setDownloading] = useState(false);
   const router = useRouter();
@@ -121,7 +122,6 @@ export default function MultiStepForm() {
     setDownloading(true);
     const form = new FormData();
     const user = await fetchUserSession();
-    console.log(user);
     form.append("user", user);
     form.append("name", formData.nombreNegocio);
     form.append("sitioweb", capitalizeAndRemoveSpaces(formData.nombreNegocio));
@@ -134,7 +134,6 @@ export default function MultiStepForm() {
     );
     form.append("email", formData.email);
     form.append("cell", formData.cell);
-    console.log(form);
     try {
       const res = await axios.post(`/api/tienda/`, form, {
         headers: {

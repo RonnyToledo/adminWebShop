@@ -56,6 +56,7 @@ export default function Specific({ specific, ThemeContext }) {
     formData.append("visible", products.visible);
     formData.append("agregados", JSON.stringify(products.agregados));
     formData.append("Id", products.productId);
+    formData.append("oldPrice", products.oldPrice);
     if (newImage) {
       formData.append("newImage", newImage);
       if (products.image) formData.append("image", products.image);
@@ -196,6 +197,10 @@ export default function Specific({ specific, ThemeContext }) {
                         onChange={(e) =>
                           setProducts({
                             ...products,
+                            oldPrice:
+                              Number(e.target.value) < products.price
+                                ? products.price
+                                : Number(e.target.value),
                             price: Number(e.target.value),
                           })
                         }

@@ -16,9 +16,9 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
-import { provincias } from "@/components/json/Site.json";
+import provinciasData from "@/components/json/Site.json";
 import { useState, useEffect, useRef, useContext } from "react";
-import { ThemeContext } from "@/app/admin/layout";
+
 import {
   Roboto,
   Oswald,
@@ -60,6 +60,7 @@ const fonts = [
 ];
 
 export default function Configuracion({ ThemeContext }) {
+  const provincias = provinciasData.provincias;
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [newAregados, setNewAgregados] = useState({
     moneda: "",
@@ -141,7 +142,6 @@ export default function Configuracion({ ThemeContext }) {
       setParpadeo(false);
     }
   }
-  console.log(store);
   return (
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
       <form ref={form} className="grid gap-6" onSubmit={handleSubmit}>

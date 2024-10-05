@@ -30,7 +30,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ThemeContext } from "@/app/admin/layout";
 
 export default function TableRowsComponent({ product }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
 
@@ -64,7 +64,7 @@ export default function TableRowsComponent({ product }) {
           <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
         ),
       });
-      setwebshop({
+      setWebshop({
         ...webshop,
         products: webshop.products.filter((obj) => obj.productId !== value),
       });

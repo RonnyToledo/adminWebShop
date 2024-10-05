@@ -27,10 +27,6 @@ export default function Theme({ ThemeContext }) {
   const { toast } = useToast();
   const [selectedTheme, setSelectedTheme] = useState("1");
   const router = useRouter();
-
-  console.log(webshop);
-  console.log(webshop.store.color);
-  console.log(selectedTheme);
   useEffect(() => {
     setSelectedTheme(webshop.store.color);
   }, [webshop]);

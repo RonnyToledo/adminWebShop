@@ -119,13 +119,13 @@ export default function NewProduct({ ThemeContext }) {
             Imágenes
           </Label>
           <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
-          {products?.image && (
+          {imageNew && (
             <Image
               alt="Logo"
               className="rounded-xl  mx-auto my-1"
               height={200}
               width={150}
-              src={URL.createObjectURL(products.image)}
+              src={URL.createObjectURL(imageNew)}
               style={{
                 aspectRatio: "40/40",
                 objectFit: "cover",

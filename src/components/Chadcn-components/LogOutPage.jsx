@@ -7,12 +7,6 @@ import { useEffect } from "react";
 
 export default function LogoutPage() {
   const router = useRouter();
-  useEffect(() => {
-    console.log("Mounted loginPAge");
-    return () => {
-      console.log("Unmounting loginPAge");
-    };
-  }, []);
 
   const logOut = async () => {
     const { error } = await supabase.auth.signOut();
