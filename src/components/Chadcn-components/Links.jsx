@@ -1,14 +1,12 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import React, { useEffect, useState, useContext } from "react";
-import { createClient } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import QrCode from "@/components/Chadcn-components/QRcode";
 
 export default function Links({ ThemeContext }) {
-  const supabase = createClient();
   const { toast } = useToast();
   const { webshop, setWebshop } = useContext(ThemeContext);
 

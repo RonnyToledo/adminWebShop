@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 
 export async function POST(request, { params }) {
-  const supabase = createClient();
   const data = await request.formData();
   const { data: tienda, error } = await supabase
     .from("Sitios")

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 import { cookies } from "next/headers"; // Importar cookies desde headers
 
 const LogUser = async () => {
@@ -22,7 +22,6 @@ const LogUser = async () => {
 export async function PUT(request, { params }) {
   await LogUser();
 
-  const supabase = createClient();
   const data = await request.formData();
   const { data: tienda, error } = await supabase
     .from("Sitios")
