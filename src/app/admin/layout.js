@@ -62,8 +62,6 @@ export default function AdminLayout({ children }) {
     const initializeData = async () => {
       try {
         const userId = await fetchUserSession();
-        console.log(userId);
-        console.log(userId.user.id);
         if (!userId.user.id) {
           router.push("/");
           return;
@@ -82,7 +80,6 @@ export default function AdminLayout({ children }) {
             description: notification.mensaje,
             action: {
               label: "Cerrar",
-              onClick: () => console.log("Cerrar"),
             },
           });
           // Esperar a que la notificación se elimine antes de continuar
@@ -96,14 +93,6 @@ export default function AdminLayout({ children }) {
           )
           .eq("Editor", userId.user.id)
           .single();
-
-        if (errorStore) {
-          console.error("Error al obtener el sitio:", errorStore);
-        } else if (!store) {
-          console.log("No se encontró el sitio para este editor.");
-        } else {
-          console.log("Datos del sitio:", store);
-        }
 
         if (!store?.sitioweb) {
           router.replace("welcome");

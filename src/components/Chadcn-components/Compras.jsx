@@ -82,7 +82,7 @@ export default function Dashboard({ ThemeContext }) {
     let { data: Events, error } = await supabase
       .from("Events")
       .select("*")
-      .eq("uid", busqueda);
+      .eq("UID_Venta", busqueda);
     const [a] = Events;
     setevent(JSON.parse(a.desc));
   }

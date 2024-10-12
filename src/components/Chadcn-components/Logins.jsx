@@ -52,7 +52,6 @@ export default function Logins({ ThemeContext }) {
     }
     fetchData(webshop.store.sitioweb);
   }, [webshop, logins.length]);
-
   return (
     <div className="chart-wrapper mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[22rem] lg:grid-cols-1 xl:max-w-[25rem]">
@@ -397,7 +396,8 @@ function countEntriesInLast30Days(entries) {
   const counts = {};
   const currentDate = new Date();
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(currentDate.getDate() - 30);
+  thirtyDaysAgo.setDate(currentDate.getDate() - 32);
+  thirtyDaysAgo.setDate(currentDate.getDate() - 2);
 
   // Inicializar el contador para cada uno de los últimos 30 días
   for (let i = 0; i <= 30; i++) {
@@ -426,7 +426,8 @@ function countEntriesInLast30Days(entries) {
 const filterDatesInLast30Days = (entries) => {
   const currentDate = new Date();
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(currentDate.getDate() - 30);
+  thirtyDaysAgo.setDate(currentDate.getDate() - 32);
+  currentDate.setDate(currentDate.getDate() - 2);
   return entries.filter((entry) => {
     const entryDate = new Date(entry.created_at.split(" ")[0]);
     return entryDate >= thirtyDaysAgo && entryDate <= currentDate;

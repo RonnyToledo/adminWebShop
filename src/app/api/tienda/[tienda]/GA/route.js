@@ -3,7 +3,11 @@ import { GoogleAuth } from "google-auth-library";
 import { NextResponse } from "next/server";
 
 const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
-const propertyId = process.env.NEXT_PUBLIC_GA_PROPERTY_ID; // ID de propiedad de GA4
+const propertyId = process.env.NEXT_PUBLIC_GA_PROPERTY_ID;
+
+// Cache en memoria con TTL
+const storeCache = {};
+const cacheTTL = 60 * 60 * 1000; // 1 hora en milisegundos
 
 // Configura autenticación con Google Auth
 const auth = new GoogleAuth({
@@ -14,6 +18,19 @@ const auth = new GoogleAuth({
 const analyticsDataClient = new BetaAnalyticsDataClient({ auth });
 
 export async function GET(request, { params }) {
+  const tienda = params.tienda;
+
+  // Verificar si los datos están en caché y si no han expirado
+  if (storeCache[tienda] && !isCacheExpired(storeCache[tienda].timestamp)) {
+    console.log(`Datos en caché para la tienda: ${tienda}`);
+    return NextResponse.json(storeCache[tienda].data, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   try {
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
@@ -32,13 +49,19 @@ export async function GET(request, { params }) {
     });
 
     // Formatea los datos de Analytics
-    const formattedData = formatAnalyticsDataByDate(response, params.tienda);
+    const formattedData = formatAnalyticsDataByDate(response, tienda);
     const convertedData = convertirDatos(formattedData);
+
+    // Almacena los datos en caché con el timestamp actual
+    storeCache[tienda] = {
+      data: convertedData,
+      timestamp: Date.now(),
+    };
 
     return NextResponse.json(convertedData, {
       status: 200,
       headers: {
-        "Cache-Control": "no-store", // Bloquea el almacenamiento en caché
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {
@@ -51,7 +74,7 @@ export async function GET(request, { params }) {
       {
         status: 500,
         headers: {
-          "Cache-Control": "no-store", // Bloquea el almacenamiento en caché en caso de error también
+          "Cache-Control": "no-store",
         },
       }
     );
@@ -100,4 +123,9 @@ function convertirDatos(datos) {
   });
 
   return resultado;
+}
+
+// Función para verificar si el caché ha expirado
+function isCacheExpired(timestamp) {
+  return Date.now() - timestamp > cacheTTL;
 }

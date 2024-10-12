@@ -58,8 +58,6 @@ export default function HeaderAdmin({ ThemeContext }) {
     return { href, label: part };
   });
 
-  console.log(webshop);
-
   return (
     <>
       <div className="flex sticky top-0 w-full flex-col bg-muted/40 z-[10]">
