@@ -8,12 +8,17 @@ import { useEffect } from "react";
 export default function LogoutPage() {
   const router = useRouter();
 
-  const logOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      alert("Error al cerrar sesión: " + error.message);
-    } else {
+  const Log_Out = async () => {
+    const res = await fetch("/api/login", {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      // Redirigir al usuario a la página de inicio o login
       router.replace("/");
+    } else {
+      const data = await res.json();
+      console.error("Error al cerrar sesión:", data.error);
     }
   };
 
@@ -28,7 +33,7 @@ export default function LogoutPage() {
           Por favor, comuníquese con los administradores para la creación de su
           tienda online. Gracias y disculpe las molestias.
         </p>
-        <Button onClick={logOut}>Cerrar sesión</Button>
+        <Button onClick={Log_Out}>Cerrar sesión</Button>
       </div>
     </div>
   );

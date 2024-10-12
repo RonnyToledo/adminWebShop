@@ -1,15 +1,35 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
 import cloudinary from "@/lib/cloudinary";
 import { supabase } from "@/lib/supa";
+import { cookies } from "next/headers"; // Importar cookies desde headers
+
+const LogUser = async () => {
+  const cookie = cookies().get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 
 export async function GET(request, { params }) {
-  const supabase = createClient();
+  await LogUser();
+
   const { data: tienda } = await supabase.from("Products").select("*");
   return NextResponse.json(tienda);
 }
 
 export async function POST(request, { params }) {
+  await LogUser();
+
   const data = await request.formData();
   const image = data.get("image");
   const Ui = data.get("UID");
@@ -105,6 +125,8 @@ export async function POST(request, { params }) {
   }
 }
 export async function PUT(request, { params }) {
+  await LogUser();
+
   const data = await request.formData();
   const products = JSON.parse(data.get("products"));
 

@@ -10,14 +10,6 @@ import { toast } from "sonner";
 
 export const ThemeContext = createContext();
 
-async function fetchUserSession() {
-  return new Promise((resolve) => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      resolve(session ? session.user.id : null);
-    });
-  });
-}
-
 async function fetchPendingNotifications(userId) {
   try {
     const { data: notifications } = await supabase
@@ -49,20 +41,40 @@ export default function AdminLayout({ children }) {
     events: [],
   });
   const router = useRouter();
-  console.log(webshop);
+
+  async function fetchUserSession() {
+    try {
+      const res = await fetch("/api/login");
+      const data = await res.json();
+      if (res.ok && data?.user?.id) {
+        return data;
+      } else {
+        console.log("Usuario no encontrado o error en la respuesta:", data);
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Error al obtener la sesión del usuario:", error);
+      router.push("/");
+    }
+  }
+
   useEffect(() => {
     const initializeData = async () => {
       try {
         const userId = await fetchUserSession();
-        if (!userId) {
-          router.replace("/");
+        console.log(userId);
+        console.log(userId.user.id);
+        if (!userId.user.id) {
+          router.push("/");
           return;
         }
 
-        setUser(userId);
+        setUser(userId.user.id);
 
         // Fetch and show pending notifications
-        const pendingNotifications = await fetchPendingNotifications(userId);
+        const pendingNotifications = await fetchPendingNotifications(
+          userId.user.id
+        );
 
         // Usamos un bucle for...of para poder utilizar await
         for (const notification of pendingNotifications) {
@@ -77,61 +89,62 @@ export default function AdminLayout({ children }) {
           await DeleteNotification(notification.id);
         }
 
-        const { data: store } = await supabase
+        const { data: store, errorStore } = await supabase
           .from("Sitios")
           .select("*, Products (*), Events(*), codeDiscount(*),Custom (*)")
-          .eq("Editor", userId)
+          .eq("Editor", userId.user.id)
           .single();
-        console.log(store);
-
-        if (store) {
-          if (!store?.active) {
-            router.replace("configPage");
-          } else if (!store?.sitioweb) {
-            router.replace("welcome");
-          } else {
-            const [custom] = store.Custom;
-            const tiendaParsed = {
-              ...store,
-              moneda: JSON.parse(store.moneda),
-              moneda_default: JSON.parse(store.moneda_default),
-              horario: JSON.parse(store.horario),
-              comentario: JSON.parse(store.comentario),
-              categoria: JSON.parse(store.categoria),
-              envios: JSON.parse(store.envios),
-              custom: custom,
-            };
-
-            const productosParsed = OrderProducts(
-              store.Products,
-              tiendaParsed.categoria
-            ).map((producto) => ({
-              ...producto,
-              agregados: JSON.parse(producto.agregados),
-              coment: JSON.parse(producto.coment),
-            }));
-            const eventsParsed = store.Events.map((event) => ({
-              ...event,
-              desc: JSON.parse(event.desc),
-            }));
-            setWebshop({
-              ...webshop,
-              store: tiendaParsed,
-              products: productosParsed,
-              events: eventsParsed,
-              code: tiendaParsed.codeDiscount,
-            });
-          }
-        } else {
-          router.replace("/admin/configPage");
+        if (errorStore) {
+          console.error("Error al obtener datos:", errorStore.message);
         }
+
+        if (!store?.sitioweb) {
+          router.replace("welcome");
+        } else if (!store?.active) {
+          router.replace("configPage");
+        } else {
+          const [custom] = store.Custom;
+          const tiendaParsed = {
+            ...store,
+            moneda: JSON.parse(store.moneda),
+            moneda_default: JSON.parse(store.moneda_default),
+            horario: JSON.parse(store.horario),
+            comentario: JSON.parse(store.comentario),
+            categoria: JSON.parse(store.categoria),
+            envios: JSON.parse(store.envios),
+            custom: custom,
+          };
+
+          const productosParsed = OrderProducts(
+            store.Products,
+            tiendaParsed.categoria
+          ).map((producto) => ({
+            ...producto,
+            agregados: JSON.parse(producto.agregados),
+            coment: JSON.parse(producto.coment),
+          }));
+          const eventsParsed = store.Events.map((event) => ({
+            ...event,
+            desc: JSON.parse(event.desc),
+          }));
+          setWebshop({
+            ...webshop,
+            store: tiendaParsed,
+            products: productosParsed,
+            events: eventsParsed,
+            code: tiendaParsed.codeDiscount,
+          });
+        }
+        /*else {
+          router.replace("/configPage");
+        }*/
       } catch (error) {
         console.error("Error inicializando datos:", error);
       }
     };
 
     initializeData();
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (!user) return; // Si no hay un usuario, no hacemos nada
@@ -197,7 +210,6 @@ function OrderProducts(productos, categorias) {
         productosOrdenados[producto.caja].push(producto);
       }
     });
-  console.log();
 
   return asignarOrden(productosOrdenados);
 }

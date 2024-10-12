@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
+import { cookies } from "next/headers"; // Importar cookies desde headers
+
+const LogUser = async () => {
+  const cookie = cookies().get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 
 const datos = {
   sitioweb: "",
@@ -30,7 +48,8 @@ const datos = {
 };
 
 export async function GET() {
-  const supabase = createClient();
+  await LogUser();
+
   const { data: tienda } = await supabase.from("Sitios").select("*");
   const a = tienda.map((obj) => {
     return {
@@ -52,7 +71,8 @@ export async function GET() {
 }
 
 export async function POST(request, { params }) {
-  const supabase = createClient();
+  await LogUser();
+
   const data = await request.formData();
   const { data: tienda1 } = await supabase.from("Sitios").select("*");
   console.log(data.get("name"));

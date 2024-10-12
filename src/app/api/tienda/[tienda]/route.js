@@ -1,10 +1,25 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "@/lib/cloudinary";
+import { cookies } from "next/headers"; // Importar cookies desde headers
 
 export async function GET(request, { params }) {
-  const supabase = createClient();
+  const cookie = cookies().get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+
   const { data: tienda } = await supabase
     .from("Sitios")
     .select()
@@ -23,7 +38,21 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  const supabase = createClient();
+  const cookie = cookies().get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+
   const data = await request.formData();
   const image = data.get("urlPosterNew");
 
@@ -112,9 +141,32 @@ export async function POST(request, { params }) {
   return NextResponse.json({ message: "Producto creado" });
 }
 export async function PUT(request, { params }) {
-  const supabase = createClient();
   const data = await request.formData();
 
+  const cookie = cookies().get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+
+  console.log(session, errorS);
+  if (errorS || !session) {
+    return NextResponse.json(
+      { message: errorS },
+      {
+        status: 402,
+      }
+    );
+  }
   const { data: tienda, error } = await supabase
     .from("Sitios")
     .update([

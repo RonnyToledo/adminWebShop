@@ -107,15 +107,19 @@ export default function MultiStepForm() {
     });
   }
   async function fetchUserSession() {
-    return new Promise((resolve) => {
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (!session) {
-          resolve(null);
-        } else {
-          resolve(session.user.id);
-        }
-      });
-    });
+    try {
+      const res = await fetch("/api/login");
+      const data = await res.json();
+      if (res.ok && data?.user?.id) {
+        return data.user.id;
+      } else {
+        console.log("Usuario no encontrado o error en la respuesta:", data);
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Error al obtener la sesión del usuario:", error);
+      router.push("/");
+    }
   }
 
   const handleSubmit = async () => {
@@ -507,7 +511,7 @@ const capitalizeAndRemoveSpaces = (inputString) => {
     .split(" ") // Divide el string en palabras
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitaliza cada palabra
     .join("") // Une las palabras sin espacios
-    .replace(/\s+/g, ""); // Elimina espacios en blanco
+    .replace(/[^a-zA-Z0-9]/g, ""); // Elimina espacios en blanco
 };
 const Moneda = (inputString) => {
   return {

@@ -39,13 +39,19 @@ export default function HeaderAdmin({ ThemeContext }) {
   const pathname = usePathname();
 
   const Log_Out = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      alert(error);
-    } else {
+    const res = await fetch("/api/login", {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      // Redirigir al usuario a la página de inicio o login
       router.replace("/");
+    } else {
+      const data = await res.json();
+      console.error("Error al cerrar sesión:", data.error);
     }
   };
+
   const pathParts = pathname.split("/").filter((part) => part);
   const breadcrumbs = pathParts.map((part, index) => {
     const href = "/" + pathParts.slice(0, index + 1).join("/");
