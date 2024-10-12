@@ -19,6 +19,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
 import ImageUpload from "../component/ImageDND";
+import { supabase } from "@/lib/supa";
 
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -54,7 +55,6 @@ export default function Specific({ specific, ThemeContext }) {
     formData.append("favorito", products.favorito);
     formData.append("agotado", products.agotado);
     formData.append("visible", products.visible);
-    formData.append("agregados", JSON.stringify(products.agregados));
     formData.append("Id", products.productId);
     formData.append("oldPrice", products.oldPrice);
     if (newImage) {
@@ -82,13 +82,7 @@ export default function Specific({ specific, ThemeContext }) {
       }
       const [a] = res.data;
       const b = webshop.products.map((obj) =>
-        obj.productId == a.productId
-          ? {
-              ...a,
-              coment: JSON.parse(a.coment),
-              agregados: JSON.parse(a.agregados),
-            }
-          : obj
+        obj.productId == a.productId ? a : obj
       );
       setWebshop({ ...webshop, products: b });
     } catch (error) {
@@ -103,7 +97,97 @@ export default function Specific({ specific, ThemeContext }) {
       setDownloading(false);
     }
   };
+  const SubirAgregado = async (e) => {
+    e.preventDefault();
+    try {
+      if (newAregados.nombre && newAregados.valor) {
+        const formData = new FormData();
 
+        formData.append("nombre", newAregados.nombre);
+        formData.append("valor", newAregados.valor);
+        formData.append("cantidad", newAregados.cantidad);
+        const res = await axios.post(
+          `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/agregado`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        if (res.status == 200) {
+          toast({
+            title: "Tarea Ejecutada",
+            description: "Informacion Actualizada",
+            action: (
+              <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+            ),
+          });
+          setProducts({
+            ...products,
+            agregados: [...products?.agregados, res?.data?.value],
+          });
+          setNewAgregados({
+            nombre: "",
+            valor: 0,
+            cantidad: 0,
+          });
+        } else {
+          toast({
+            title: "Error",
+            variant: "destructive",
+
+            description: "No hay datos.",
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        variant: "destructive",
+
+        description: "No se actualizar el producto.",
+      });
+    }
+  };
+  const Delete = async (e, id) => {
+    e.preventDefault();
+    try {
+      const formData = new FormData();
+
+      formData.append("id", id);
+      const res = await axios.post(
+        `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/agregado`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (res.status == 200) {
+        toast({
+          title: "Tarea Ejecutada",
+          description: "Informacion Actualizada",
+          action: (
+            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+          ),
+        });
+        setProducts({
+          ...products,
+          agregados: products?.agregados.filter((fil) => fil.id != id),
+        });
+      }
+    } catch (error) {
+      console.error("Error al enviar el comentario:", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+
+        description: "No se actualizar el producto.",
+      });
+    }
+  };
   return (
     <main className="grid min-h-screen w-full ">
       <div className="flex flex-col gap-6 w-full ">
@@ -298,15 +382,7 @@ export default function Specific({ specific, ThemeContext }) {
                           variant="ghost"
                           size="icon"
                           className="text-muted-foreground hover:text-foreground"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setProducts({
-                              ...products,
-                              agregados: products?.agregados.filter(
-                                (fil) => fil != obj1
-                              ),
-                            });
-                          }}
+                          onClick={(e) => Delete(e, obj1.id)}
                         >
                           <TrashIcon className="h-5 w-5" />
                           <span className="sr-only">Eliminar</span>
@@ -363,20 +439,7 @@ export default function Specific({ specific, ThemeContext }) {
                       <Button
                         variant="outline m-2"
                         className="w-16"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setProducts({
-                            ...products,
-                            agregados: Array.from(
-                              new Set([...products?.agregados, newAregados])
-                            ),
-                          });
-                          setNewAgregados({
-                            nombre: "",
-                            valor: 0,
-                            cantidad: 0,
-                          });
-                        }}
+                        onClick={SubirAgregado}
                       >
                         <PlusIcon className="h-5 w-5" />
                       </Button>

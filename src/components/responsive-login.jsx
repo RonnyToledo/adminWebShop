@@ -46,7 +46,6 @@ export function ResponsiveLogin() {
     });
 
     const data = await res.json();
-    console.log(data);
     if (res.ok) {
       // Manejar la sesión o redirigir al dashboard
       router.push("/admin");

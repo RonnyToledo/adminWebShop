@@ -1,7 +1,27 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
+import { cookies } from "next/headers"; // Importar cookies desde headers
+
+const LogUser = async () => {
+  const cookie = cookies().get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 
 export async function POST(request, { params }) {
+  await LogUser();
+
   console.log("a");
   const { data: codeDiscount, error1 } = await supabase
     .from("codeDiscount")
@@ -42,6 +62,8 @@ export async function POST(request, { params }) {
   return NextResponse.json(tienda);
 }
 export async function DELETE(request, { params }) {
+  await LogUser();
+
   const url = new URL(request.url);
   const id = url.searchParams.get("id"); // Obtener el ID desde los parámetros de consulta
   const { error } = await supabase.from("codeDiscount").delete().eq("id", id); // Asegúrate de especificar el campo correcto

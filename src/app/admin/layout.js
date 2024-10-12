@@ -89,13 +89,20 @@ export default function AdminLayout({ children }) {
           await DeleteNotification(notification.id);
         }
 
-        const { data: store, errorStore } = await supabase
+        const { data: store, error: errorStore } = await supabase
           .from("Sitios")
-          .select("*, Products (*), Events(*), codeDiscount(*),Custom (*)")
+          .select(
+            "*, Products (*, agregados(*)), Events (*) , codeDiscount (*)"
+          )
           .eq("Editor", userId.user.id)
           .single();
+
         if (errorStore) {
-          console.error("Error al obtener datos:", errorStore.message);
+          console.error("Error al obtener el sitio:", errorStore);
+        } else if (!store) {
+          console.log("No se encontró el sitio para este editor.");
+        } else {
+          console.log("Datos del sitio:", store);
         }
 
         if (!store?.sitioweb) {
@@ -103,7 +110,6 @@ export default function AdminLayout({ children }) {
         } else if (!store?.active) {
           router.replace("configPage");
         } else {
-          const [custom] = store.Custom;
           const tiendaParsed = {
             ...store,
             moneda: JSON.parse(store.moneda),
@@ -112,17 +118,11 @@ export default function AdminLayout({ children }) {
             comentario: JSON.parse(store.comentario),
             categoria: JSON.parse(store.categoria),
             envios: JSON.parse(store.envios),
-            custom: custom,
           };
-
           const productosParsed = OrderProducts(
             store.Products,
             tiendaParsed.categoria
-          ).map((producto) => ({
-            ...producto,
-            agregados: JSON.parse(producto.agregados),
-            coment: JSON.parse(producto.coment),
-          }));
+          );
           const eventsParsed = store.Events.map((event) => ({
             ...event,
             desc: JSON.parse(event.desc),

@@ -25,7 +25,7 @@ export async function POST(request, { params }) {
         coment: data.get("comentario"),
       },
     ])
-    .select()
+    .select("*, agregados (*)")
     .eq("productId", params.specific);
   if (error) {
     console.log(error);
@@ -103,7 +103,7 @@ export async function PUT(request, { params }) {
         image: res.secure_url,
       })
       .eq("productId", Id)
-      .select();
+      .select("*, agregados (*)");
     if (error) {
       console.log("Error");
       console.log(error);
@@ -134,7 +134,7 @@ export async function PUT(request, { params }) {
         oldPrice: data.get("oldPrice"),
       })
       .eq("productId", Id)
-      .select();
+      .select("*, agregados (*)");
     if (error) {
       console.log(error);
 

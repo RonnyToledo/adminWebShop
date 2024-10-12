@@ -11,7 +11,6 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -23,37 +22,52 @@ export async function POST(request, { params }) {
   await LogUser();
 
   const data = await request.formData();
-  const categoria = data.get("categoria");
-  const products = JSON.parse(data.get("products"));
-
+  const nombre = data.get("nombre");
+  const valor = data.get("valor");
+  const cantidad = data.get("cantidad");
+  console.log(params.specific);
   try {
     // Actualiza la categoría de la tienda
-    const { data: tienda, error: tiendaError } = await supabase
-      .from("Sitios")
-      .update({ categoria })
-      .eq("sitioweb", params.tienda)
+    const { data: agg, error: tiendaError } = await supabase
+      .from("agregados")
+      .insert([{ nombre, valor, cantidad, UID: params.specific }])
       .select();
 
     if (tiendaError) {
       return handleError(tiendaError);
     }
 
-    // Actualiza los productos usando Promise.all para paralelismo
-    await Promise.all(
-      products.map(async (product) => {
-        const { productId, caja } = product;
-        const { error: productError } = await supabase
-          .from("Products")
-          .update({ caja })
-          .eq("productId", productId);
-
-        if (productError) {
-          throw new Error(
-            `Error actualizando producto ${productId}: ${productError.message}`
-          );
-        }
-      })
+    return NextResponse.json({
+      message: "Categoría y productos actualizados correctamente.",
+      value: agg,
+    });
+  } catch (error) {
+    console.error("Error en la actualización:", error.message);
+    return NextResponse.json(
+      { message: `Error: ${error.message}` },
+      { status: 500 }
     );
+  }
+}
+export async function DELETE(request, { params }) {
+  await LogUser();
+
+  const data = await request.formData();
+  const nombre = data.get("nombre");
+  const valor = data.get("valor");
+  const cantidad = data.get("cantidad");
+
+  try {
+    // Actualiza la categoría de la tienda
+    const { data: tienda, error: tiendaError } = await supabase
+      .from("Products")
+      .update({ nombre, valor, cantidad, UID: params.specific })
+      .eq("productId", params.specific)
+      .select();
+
+    if (tiendaError) {
+      return handleError(tiendaError);
+    }
 
     return NextResponse.json({
       message: "Categoría y productos actualizados correctamente.",
