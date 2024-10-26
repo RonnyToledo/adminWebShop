@@ -32,7 +32,7 @@ import {
 
 export default function Logins({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
-  const [logins, setlogins] = useState([]);
+  const [logins, setlogins] = useState({});
 
   useEffect(() => {
     async function fetchData(tienda) {
@@ -43,8 +43,7 @@ export default function Logins({ ThemeContext }) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.json();
-
-          logins.length == 0 && setlogins(data);
+          setlogins(data);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -52,6 +51,7 @@ export default function Logins({ ThemeContext }) {
     }
     fetchData(webshop.store.sitioweb);
   }, [webshop, logins.length]);
+
   return (
     <div className="chart-wrapper mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[22rem] lg:grid-cols-1 xl:max-w-[25rem]">
@@ -59,7 +59,7 @@ export default function Logins({ ThemeContext }) {
           <CardHeader className="space-y-0 pb-2">
             <CardDescription>Ultimos 30 dias</CardDescription>
             <CardTitle className="text-4xl tabular-nums">
-              {filterDatesInLast30Days(logins).length}{" "}
+              {logins?.filterDatesInLast30Days?.length}{" "}
               <span className="font-sans text-sm font-normal tracking-normal text-muted-foreground">
                 visitas
               </span>
@@ -80,7 +80,7 @@ export default function Logins({ ThemeContext }) {
                   left: -4,
                   right: -4,
                 }}
-                data={countEntriesInLast30Days(logins)}
+                data={logins?.countEntriesInLast30Days}
               >
                 <Bar
                   dataKey="count"
@@ -107,7 +107,7 @@ export default function Logins({ ThemeContext }) {
                   cursor={false}
                 />
                 <ReferenceLine
-                  y={calcularPromedioVisitasPorDia(logins).promedio}
+                  y={logins?.calcularPromedioVisitasPorDia?.promedio}
                   stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="3 3"
                   strokeWidth={1}
@@ -115,13 +115,13 @@ export default function Logins({ ThemeContext }) {
                   <Label
                     position="insideBottomLeft"
                     value="Promedio diario"
-                    offset={calcularPromedioVisitasPorDia(logins).promedio}
+                    offset={logins?.calcularPromedioVisitasPorDia?.promedio}
                     fill="hsl(var(--foreground))"
                   />
                   <Label
                     position="insideBottomRigth"
                     value={Number(
-                      calcularPromedioVisitasPorDia(logins).promedio
+                      logins?.calcularPromedioVisitasPorDia?.promedio
                     ).toFixed(2)}
                     className="text-lg"
                     fill="hsl(var(--foreground))"
@@ -136,7 +136,7 @@ export default function Logins({ ThemeContext }) {
             <CardDescription>
               Durante los últimos 7 días, ha tenido{" "}
               <span className="font-medium text-foreground">
-                {filterDatesInLast7Days(logins).length}
+                {logins?.filterDatesInLast7Days?.length}
               </span>{" "}
               vistas.
             </CardDescription>
@@ -154,7 +154,7 @@ export default function Logins({ ThemeContext }) {
           <CardContent className="grid gap-4">
             <div className="grid auto-rows-min gap-2">
               <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
-                {filterDatesInLast30Days(logins).length}
+                {logins?.filterDatesInLast30Days?.length}
                 <span className="text-sm font-normal text-muted-foreground">
                   visitas/mes
                 </span>
@@ -162,7 +162,7 @@ export default function Logins({ ThemeContext }) {
               <ChartContainer
                 config={{
                   steps: {
-                    label: "Steps",
+                    label: "steps",
                     color: "hsl(var(--chart-1))",
                   },
                 }}
@@ -180,7 +180,7 @@ export default function Logins({ ThemeContext }) {
                   data={[
                     {
                       date: "30 dias",
-                      steps: filterDatesInLast30Days(logins).length,
+                      steps: logins?.filterDatesInLast30Days?.length,
                     },
                   ]}
                 >
@@ -205,7 +205,7 @@ export default function Logins({ ThemeContext }) {
             </div>
             <div className="grid auto-rows-min gap-2">
               <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
-                {promedioVisitasPorMes(logins).promedio.toFixed(2)}
+                {logins?.promedioVisitasPorMes?.promedio.toFixed(2)}
                 <span className="text-sm font-normal text-muted-foreground">
                   visitas/mes
                 </span>
@@ -231,7 +231,7 @@ export default function Logins({ ThemeContext }) {
                   data={[
                     {
                       date: "Promedio Mensual",
-                      steps: promedioVisitasPorMes(logins).promedio.toFixed(2),
+                      steps: logins?.promedioVisitasPorMes?.promedio.toFixed(2),
                     },
                   ]}
                 >
@@ -266,7 +266,7 @@ export default function Logins({ ThemeContext }) {
           </CardHeader>
           <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
             <div className="flex items-baseline gap-1 text-3xl font-bold tabular-nums leading-none">
-              {logins.length}
+              {logins?.cant}
               <span className="text-sm font-normal text-muted-foreground">
                 clientes
               </span>
@@ -300,7 +300,7 @@ export default function Logins({ ThemeContext }) {
             >
               <AreaChart
                 accessibilityLayer
-                data={contarVisitasPorHora(logins)}
+                data={logins?.contarVisitasPorHora}
                 margin={{
                   left: 1,
                   right: 1,

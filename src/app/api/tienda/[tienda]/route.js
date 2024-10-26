@@ -20,21 +20,26 @@ export async function GET(request, { params }) {
     refresh_token: parsedCookie.refresh_token,
   });
 
-  const { data: tienda } = await supabase
+  const { data: tiendaData } = await supabase
     .from("Sitios")
-    .select()
-    .eq("sitioweb", params.tienda);
-  const [a] = tienda;
-  const b = {
-    ...a,
-    categoria: JSON.parse(a.categoria),
-    moneda: JSON.parse(a.moneda),
-    moneda_default: JSON.parse(a.moneda_default),
-    horario: JSON.parse(a.horario),
-    comentario: JSON.parse(a.comentario),
-    envios: JSON.parse(a.envios),
+    .select(
+      `*, Products (*, agregados (*), coment (*)),codeDiscount (*),comentTienda(*)`
+    )
+    .eq("sitioweb", params.tienda)
+    .single("*");
+
+  const storeData = {
+    ...tiendaData,
+    moneda: JSON.parse(tiendaData.moneda),
+    moneda_default: JSON.parse(tiendaData.moneda_default),
+    horario: JSON.parse(tiendaData.horario),
+    categoria: JSON.parse(tiendaData.categoria),
+    envios: JSON.parse(tiendaData.envios),
+    products: tiendaData.Products,
+    top: tiendaData.name,
   };
-  return NextResponse.json(b);
+  delete storeData.Products;
+  return NextResponse.json(storeData);
 }
 
 export async function POST(request, { params }) {

@@ -57,8 +57,17 @@ export async function GET(request, { params }) {
       data: convertedData,
       timestamp: Date.now(),
     };
-
-    return NextResponse.json(convertedData, {
+    const finishData = {
+      calcularPromedioVisitasPorDia:
+        calcularPromedioVisitasPorDia(convertedData),
+      countEntriesInLast30Days: countEntriesInLast30Days(convertedData),
+      filterDatesInLast30Days: filterDatesInLast30Days(convertedData),
+      filterDatesInLast7Days: filterDatesInLast7Days(convertedData),
+      contarVisitasPorHora: contarVisitasPorHora(convertedData),
+      promedioVisitasPorMes: promedioVisitasPorMes(convertedData),
+      cant: convertedData.length,
+    };
+    return NextResponse.json(finishData, {
       status: 200,
       headers: {
         "Cache-Control": "no-store",
@@ -128,4 +137,141 @@ function convertirDatos(datos) {
 // Función para verificar si el caché ha expirado
 function isCacheExpired(timestamp) {
   return Date.now() - timestamp > cacheTTL;
+}
+
+function convertDateToMonthDay(dateString) {
+  const parts = dateString.split("-");
+  const month = parts[1];
+  const day = parts[2];
+  return `${month}-${day}`;
+}
+
+function countEntriesInLast30Days(entries) {
+  const counts = {};
+  const currentDate = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(currentDate.getDate() - 32);
+  thirtyDaysAgo.setDate(currentDate.getDate() - 2);
+
+  // Inicializar el contador para cada uno de los últimos 30 días
+  for (let i = 0; i <= 30; i++) {
+    const date = new Date(thirtyDaysAgo);
+    date.setDate(thirtyDaysAgo.getDate() + i);
+    const dateString = date.toISOString().split("T")[0];
+    counts[dateString] = 0;
+  }
+  // Contar las entradas por fecha
+  entries.forEach((entry) => {
+    const date = entry.created_at.split("T")[0];
+    if (counts[date] != undefined) {
+      counts[date] += 1;
+    }
+  });
+
+  // Convertir el objeto counts en un arreglo de objetos
+  const result = Object.keys(counts).map((date) => ({
+    date: convertDateToMonthDay(date),
+    count: counts[date],
+  }));
+
+  return result;
+}
+
+const filterDatesInLast30Days = (entries) => {
+  const currentDate = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(currentDate.getDate() - 32);
+  currentDate.setDate(currentDate.getDate() - 2);
+  return entries.filter((entry) => {
+    const entryDate = new Date(entry.created_at.split(" ")[0]);
+    return entryDate >= thirtyDaysAgo && entryDate <= currentDate;
+  });
+};
+
+const filterDatesInLast7Days = (entries) => {
+  const currentDate = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(currentDate.getDate() - 7);
+
+  return entries.filter((entry) => {
+    const entryDate = new Date(entry.created_at.split(" ")[0]);
+    return entryDate >= sevenDaysAgo && entryDate <= currentDate;
+  });
+};
+
+function contarVisitasPorHora(fechaArray) {
+  // Inicializar un array para contar las visitas por hora
+  const contadorHoras = Array(24).fill(0); // Array para 24 horas, inicializado en 0
+
+  // Recorrer el arreglo de fechas
+  fechaArray.forEach((fecha) => {
+    const date = new Date(fecha.created_at);
+    const hora = date.getHours(); // Extraer la hora (0-23)
+
+    // Incrementar el contador para la hora correspondiente
+    contadorHoras[hora] += 1;
+  });
+
+  // Crear un array para devolver resultados en el formato requerido
+  const resultado = contadorHoras.map((cantidad, index) => ({
+    hora: `${index < 10 ? "0" : ""}${index}:00`, // Formato HH:00
+    cantidad: cantidad,
+  }));
+
+  return resultado;
+}
+function promedioVisitasPorMes(fechaArray) {
+  const contadorMeses = {};
+
+  // Recorrer el arreglo de fechas
+  fechaArray.forEach((fecha) => {
+    const date = new Date(fecha.created_at);
+    const mes = date.toLocaleString("default", { month: "long" }); // Obtener el nombre del mes
+    const anio = date.getFullYear(); // Obtener el año
+
+    // Crear una clave única para el mes y el año
+    const claveMes = `${mes} ${anio}`;
+
+    // Contar las ocurrencias de cada mes
+    contadorMeses[claveMes] = (contadorMeses[claveMes] || 0) + 1;
+  });
+
+  // Calcular el promedio
+  const totalMeses = Object.keys(contadorMeses).length; // Total de meses únicos
+  const totalOcurrencias = Object.values(contadorMeses).reduce(
+    (acc, curr) => acc + curr,
+    0
+  ); // Total de ocurrencias
+
+  const promedio = totalOcurrencias / totalMeses;
+  // Devolver el objeto con las ocurrencias por mes y el promedio
+  return {
+    contadorMeses,
+    promedio: Number.isNaN(promedio) ? 0 : promedio, // Evitar NaN si no hay fechas
+  };
+}
+
+// Función para calcular visitas promedio por día
+function calcularPromedioVisitasPorDia(datos) {
+  // Agrupar las visitas por fecha
+  const visitasPorDia = datos.reduce((acc, visita) => {
+    const fecha = visita.created_at.split("T")[0]; // Obtener solo la fecha
+    if (!acc[fecha]) {
+      acc[fecha] = 0;
+    }
+    acc[fecha] += 1; // Incrementar la cantidad de visitas para esa fecha
+    return acc;
+  }, {});
+
+  // Calcular el total de visitas y el número de días
+  const totalVisitas = Object.values(visitasPorDia).reduce(
+    (acc, visitas) => acc + visitas,
+    0
+  );
+  const numeroDeDias = Object.keys(visitasPorDia).length;
+
+  // Calcular el promedio
+  const promedio = totalVisitas / numeroDeDias;
+
+  return { visitasPorDia, promedio };
 }

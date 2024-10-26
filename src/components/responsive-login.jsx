@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +13,35 @@ export function ResponsiveLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+
+  async function fetchUserSession() {
+    try {
+      const res = await fetch("/api/login");
+      const data = await res.json();
+      if (res.ok && data?.user?.id) {
+        return data;
+      } else {
+        console.log("Usuario no encontrado o error en la respuesta:", data);
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Error al obtener la sesión del usuario:", error);
+      router.push("/");
+    }
+  }
+
+  useEffect(() => {
+    async function UserFetch() {
+      const userId = fetchUserSession();
+      if (!userId?.user?.id) {
+        router.push("/");
+        return;
+      } else {
+        router.push("/admin");
+      }
+    }
+    UserFetch();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
