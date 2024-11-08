@@ -19,6 +19,35 @@ const LogUser = async () => {
   });
 };
 
+async function updateProductsInBatches(products, batchSize = 10) {
+  for (let i = 0; i < products.length; i += batchSize) {
+    const batch = products.slice(i, i + batchSize);
+
+    // Procesa cada lote con Promise.all para paralelismo dentro del lote
+    await Promise.all(
+      batch.map(async (product) => {
+        const { productId, caja } = product;
+
+        // Intento de actualización en la tabla "Products"
+        const { error } = await supabase
+          .from("Products")
+          .update({ caja })
+          .eq("productId", productId);
+
+        // Si hay un error en la actualización, lo lanza
+        if (error) {
+          console.error(
+            `Error al actualizar el producto ${productId}: ${error.message}`
+          );
+          throw new Error(
+            `Error actualizando producto ${productId}: ${error.message}`
+          );
+        }
+      })
+    );
+  }
+}
+
 export async function POST(request, { params }) {
   await LogUser();
 
@@ -28,32 +57,17 @@ export async function POST(request, { params }) {
 
   try {
     // Actualiza la categoría de la tienda
-    const { data: tienda, error: tiendaError } = await supabase
+    const { error: tiendaError } = await supabase
       .from("Sitios")
       .update({ categoria })
-      .eq("sitioweb", params.tienda)
-      .select();
+      .eq("sitioweb", params.tienda);
 
     if (tiendaError) {
       return handleError(tiendaError);
     }
 
-    // Actualiza los productos usando Promise.all para paralelismo
-    await Promise.all(
-      products.map(async (product) => {
-        const { productId, caja } = product;
-        const { error: productError } = await supabase
-          .from("Products")
-          .update({ caja })
-          .eq("productId", productId);
-
-        if (productError) {
-          throw new Error(
-            `Error actualizando producto ${productId}: ${productError.message}`
-          );
-        }
-      })
-    );
+    // Llama a la función para actualizar productos en lotes
+    await updateProductsInBatches(products, 10);
 
     return NextResponse.json({
       message: "Categoría y productos actualizados correctamente.",

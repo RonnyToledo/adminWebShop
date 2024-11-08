@@ -46,12 +46,12 @@ export default function Links({ ThemeContext }) {
                     className="max-w-xs text-sm font-medium"
                     readOnly
                     type="text"
-                    value={`https://rh-menu.vercel.app/${webshop.store.variable}/${webshop.store.sitioweb}`}
+                    value={`https://randh-menu.vercel.app/${webshop.store.variable}/${webshop.store.sitioweb}`}
                   />
                   <Button
                     onClick={() =>
                       copyToClipboard(
-                        `https://rh-menu.vercel.app/${webshop.store.variable}/${webshop.store.sitioweb}`
+                        `https://randh-menu.vercel.app/${webshop.store.variable}/${webshop.store.sitioweb}`
                       )
                     }
                     size="icon"

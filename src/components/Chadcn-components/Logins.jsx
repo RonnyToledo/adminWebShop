@@ -35,21 +35,7 @@ export default function Logins({ ThemeContext }) {
   const [logins, setlogins] = useState({});
 
   useEffect(() => {
-    async function fetchData(tienda) {
-      try {
-        if (!(tienda === undefined)) {
-          const response = await fetch(`/api/tienda/${tienda}/GA`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          setlogins(data);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    }
-    fetchData(webshop.store.sitioweb);
+    setlogins(webshop?.ga);
   }, [webshop, logins.length]);
 
   return (

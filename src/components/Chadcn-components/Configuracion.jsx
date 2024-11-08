@@ -18,6 +18,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import provinciasData from "@/components/json/Site.json";
 import { useState, useEffect, useRef, useContext } from "react";
+import ConfimationOut from "../globalFunction/confimationOut";
 
 import {
   Roboto,
@@ -121,6 +122,8 @@ export default function Configuracion({ ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
+        setWebshop({ ...webshop, store: { ...webshop.store, ...store } });
+        form.current.reset();
       }
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
@@ -130,9 +133,7 @@ export default function Configuracion({ ThemeContext }) {
         description: "No se pudo actualizar la configuracion.",
       });
     } finally {
-      form.current.reset();
       setDownloading(false);
-      setWebshop({ ...webshop, store: { ...webshop.store, ...store } });
     }
   };
   async function Cambio(value) {
@@ -585,6 +586,7 @@ export default function Configuracion({ ThemeContext }) {
           </Button>
         </div>
       </form>
+      <ConfimationOut action={hasPendingChanges(store, webshop.store)} />
     </main>
   );
 }
@@ -638,3 +640,7 @@ function TrashIcon(props) {
     </svg>
   );
 }
+// Utilidad y helpers
+const hasPendingChanges = (data, store) => {
+  return JSON.stringify(data) !== JSON.stringify(store);
+};

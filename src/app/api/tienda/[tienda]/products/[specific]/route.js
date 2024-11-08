@@ -100,6 +100,7 @@ export async function PUT(request, { params }) {
         visible: data.get("visible"),
         agregados: data.get("agregados"),
         oldPrice: data.get("oldPrice"),
+        span: data.get("span"),
         image: res.secure_url,
       })
       .eq("productId", Id)
@@ -131,6 +132,7 @@ export async function PUT(request, { params }) {
         agotado: data.get("agotado"),
         visible: data.get("visible"),
         agregados: data.get("agregados"),
+        span: data.get("span"),
         oldPrice: data.get("oldPrice"),
       })
       .eq("productId", Id)

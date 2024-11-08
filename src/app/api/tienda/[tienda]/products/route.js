@@ -131,29 +131,7 @@ export async function PUT(request, { params }) {
   const products = JSON.parse(data.get("products"));
 
   try {
-    // Actualiza los productos usando Promise.all para paralelismo
-    await Promise.all(
-      products.map(async (product) => {
-        const { productId, agotado, order, title } = product;
-        console.log(productId, agotado, order, title);
-
-        // Intentamos hacer la actualización en la base de datos
-        const { error } = await supabase
-          .from("Products")
-          .update({ agotado: agotado, order: order })
-          .eq("productId", productId);
-
-        // Si ocurre algún error, lo lanzamos para ser capturado
-        if (error) {
-          console.error(
-            `Error al actualizar el producto ${title}: ${error.message}`
-          );
-          throw new Error(
-            `Error actualizando producto ${title}: ${error.message}`
-          );
-        }
-      })
-    );
+    await updateProductsInBatches(products, 10);
 
     return NextResponse.json({
       message: "Productos actualizados correctamente.",
@@ -163,6 +141,32 @@ export async function PUT(request, { params }) {
     return NextResponse.json(
       { message: `Error: ${error.message}` },
       { status: 500 }
+    );
+  }
+}
+
+async function updateProductsInBatches(products, batchSize = 10) {
+  for (let i = 0; i < products.length; i += batchSize) {
+    const batch = products.slice(i, i + batchSize);
+
+    await Promise.all(
+      batch.map(async (product) => {
+        const { productId, agotado, order, title } = product;
+
+        const { error } = await supabase
+          .from("Products")
+          .update({ agotado, order })
+          .eq("productId", productId);
+
+        if (error) {
+          console.error(
+            `Error al actualizar el producto ${title}: ${error.message}`
+          );
+          throw new Error(
+            `Error actualizando producto ${title}: ${error.message}`
+          );
+        }
+      })
     );
   }
 }

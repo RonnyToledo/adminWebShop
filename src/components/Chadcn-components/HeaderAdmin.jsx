@@ -1,16 +1,7 @@
 "use client";
 import React from "react";
-import {
-  LogOut,
-  Unlink2,
-  Home,
-  PanelLeft,
-  Palette,
-  BadgeDollarSign,
-  CircleOff,
-} from "lucide-react";
+
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
 import { useState, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supa";
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +20,19 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { Separator } from "../ui/separator";
-import Welcome from "../component/welcome";
+import CategoryRoundedIcon from "@mui/icons-material/CategoryRounded";
+import AddCircleRoundedIcon from "@mui/icons-material/AddCircleRounded";
+import AppRegistrationRoundedIcon from "@mui/icons-material/AppRegistrationRounded";
+import ExtensionOffRoundedIcon from "@mui/icons-material/ExtensionOffRounded";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import DatasetLinkedRoundedIcon from "@mui/icons-material/DatasetLinkedRounded";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
+import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
+import ColorLensRoundedIcon from "@mui/icons-material/ColorLensRounded";
+import AppSettingsAltRoundedIcon from "@mui/icons-material/AppSettingsAltRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
+import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 
 export default function HeaderAdmin({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -62,16 +64,16 @@ export default function HeaderAdmin({ ThemeContext }) {
     <>
       <div className="flex sticky top-0 w-full flex-col bg-muted/40 z-[10]">
         <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-          <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+          <nav className="flex flex-col items-center gap-2 px-2 sm:py-5">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/"
                     onClick={() => setIsOpen(false)}
                   >
-                    <Home className="h-5 w-5" />
+                    <HomeRoundedIcon />
                     <span className="sr-only">Inicio</span>
                   </Link>
                 </TooltipTrigger>
@@ -86,9 +88,9 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <TooltipTrigger asChild>
                     <Link
                       href="/admin/guia"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                      className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     >
-                      <CatIcon className="h-4 w-4" />
+                      <PreviewRoundedIcon />
                       <span className="sr-only">Guia</span>
                     </Link>
                   </TooltipTrigger>
@@ -101,9 +103,9 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/admin/link"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
-                    <Unlink2 className="h-4 w-4" />
+                    <DatasetLinkedRoundedIcon />
                     <span className="sr-only">Enlaces</span>
                   </Link>
                 </TooltipTrigger>
@@ -116,9 +118,9 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/admin/category"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
-                    <CatIcon className="h-4 w-4" />
+                    <CategoryRoundedIcon />
                     <span className="sr-only">Editar Categoria</span>
                   </Link>
                 </TooltipTrigger>
@@ -130,10 +132,10 @@ export default function HeaderAdmin({ ThemeContext }) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     href="/admin/newProduct"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <AddCircleRoundedIcon />
                     <span className="sr-only"> Nuevo Producto</span>
                   </Link>
                 </TooltipTrigger>
@@ -146,9 +148,9 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/admin/products"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
-                    <PackageIcon className="h-4 w-4" />
+                    <AppRegistrationRoundedIcon />
                     <span className="sr-only"> Editar Productos</span>
                   </Link>
                 </TooltipTrigger>
@@ -160,9 +162,9 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/admin/productsOffStock"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
-                    <CircleOff className="h-4 w-4" />
+                    <ExtensionOffRoundedIcon />
                     <span className="sr-only">Productos Agotados</span>
                   </Link>
                 </TooltipTrigger>
@@ -176,24 +178,24 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/admin/header"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
-                    <HeadingIcon className="h-4 w-4" />
+                    <EditNoteRoundedIcon />
                     <span className="sr-only">Editar Info</span>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">Editar Info</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {webshop.store.plan == "custom" && webshop.store.theme && (
+            {webshop.store?.plan == "a" && webshop.store?.theme && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link
                       href="/admin/theme"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                      className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     >
-                      <Palette className="h-4 w-4" />
+                      <ColorLensRoundedIcon />
                       <span className="sr-only">Temas</span>
                     </Link>
                   </TooltipTrigger>
@@ -201,15 +203,15 @@ export default function HeaderAdmin({ ThemeContext }) {
                 </Tooltip>
               </TooltipProvider>
             )}
-            {webshop.store.plan == "custom" && webshop.store.CodePromo && (
+            {webshop.store?.plan == "custom" && webshop.store?.CodePromo && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link
                       href="/admin/codeDiscount"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                      className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     >
-                      <BadgeDollarSign className="h-4 w-4" />
+                      <AttachMoneyRoundedIcon />
                       <span className="sr-only">Marketing</span>
                     </Link>
                   </TooltipTrigger>
@@ -224,9 +226,9 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/admin/configuracion"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                   >
-                    <SettingsIcon className="h-4 w-4" />
+                    <AppSettingsAltRoundedIcon />
                     <span className="sr-only">Configuracion</span>
                   </Link>
                 </TooltipTrigger>
@@ -238,10 +240,10 @@ export default function HeaderAdmin({ ThemeContext }) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                    className="flex items-center rounded-lg  text-gray-500 px-1 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={Log_Out}
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogoutRoundedIcon />
                     <span className="sr-only">Cerrar Session</span>
                   </Link>
                 </TooltipTrigger>
@@ -260,7 +262,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   variant="outline"
                   className="sm:hidden"
                 >
-                  <PanelLeft className="h-5 w-5" />
+                  <AlignHorizontalLeftRoundedIcon />
                   <span className="sr-only">Menu</span>
                 </Button>
               </SheetTrigger>
@@ -271,16 +273,17 @@ export default function HeaderAdmin({ ThemeContext }) {
                     href="/admin/"
                     onClick={() => setIsOpen(false)}
                   >
-                    <Home className="h-5 w-5" />
+                    <HomeRoundedIcon />
                     Inicio
                   </Link>
-                  {webshop.store.plan == "pro" && (
+                  {(webshop.store?.plan == "pro" ||
+                    webshop.store?.plan == "custom") && (
                     <Link
                       href="/admin/guia"
                       className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                       onClick={() => setIsOpen(false)}
                     >
-                      <CatIcon className="h-4 w-4" />
+                      <PreviewRoundedIcon />
                       Guia
                     </Link>
                   )}
@@ -289,7 +292,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <Unlink2 className="h-4 w-4" />
+                    <DatasetLinkedRoundedIcon />
                     Enlaces
                   </Link>
                   <Separator />
@@ -298,7 +301,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <CatIcon className="h-4 w-4" />
+                    <CategoryRoundedIcon />
                     Editar Categoria
                   </Link>
                   <Link
@@ -306,7 +309,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     href="/admin/newProduct"
                     onClick={() => setIsOpen(false)}
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <AddCircleRoundedIcon />
                     Nuevo Producto
                   </Link>
                   <Link
@@ -314,7 +317,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <PackageIcon className="h-4 w-4" />
+                    <AppRegistrationRoundedIcon />
                     Editar Productos
                   </Link>
 
@@ -323,7 +326,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <CircleOff className="h-4 w-4" />
+                    <ExtensionOffRoundedIcon />
                     Productos Agotados
                   </Link>
                   <Separator />
@@ -332,17 +335,17 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <HeadingIcon className="h-4 w-4" />
+                    <EditNoteRoundedIcon />
                     Editar Info
                   </Link>
-                  {webshop.store.plan == "custom" &&
-                    webshop.store.CodePromo && (
+                  {webshop.store?.plan == "custom" &&
+                    webshop.store?.CodePromo && (
                       <Link
                         href="/admin/codeDiscount"
                         className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                         onClick={() => setIsOpen(false)}
                       >
-                        <BadgeDollarSign className="h-4 w-4" />
+                        <AttachMoneyRoundedIcon />
                         Marketing
                       </Link>
                     )}
@@ -351,16 +354,16 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <SettingsIcon className="h-4 w-4" />
+                    <AppSettingsAltRoundedIcon />
                     Configuracion
                   </Link>
-                  {webshop.store.plan == "custom" && webshop.store.theme && (
+                  {webshop.store?.plan == "a" && webshop.store?.theme && (
                     <Link
                       href="/admin/theme"
                       className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                       onClick={() => setIsOpen(false)}
                     >
-                      <Palette className="h-4 w-4" />
+                      <ColorLensRoundedIcon />
                       Temas
                     </Link>
                   )}
@@ -371,7 +374,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                     className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
                     onClick={Log_Out}
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogoutRoundedIcon />
                     Cerrar Sesion
                   </Link>
                 </nav>
@@ -400,172 +403,5 @@ export default function HeaderAdmin({ ThemeContext }) {
         </div>
       </div>
     </>
-  );
-}
-
-function CatIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z" />
-      <path d="M8 14v.5" />
-      <path d="M16 14v.5" />
-      <path d="M11.25 16.25h1.5L12 17l-.75-.75Z" />
-    </svg>
-  );
-}
-
-function HeadingIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 12h12" />
-      <path d="M6 20V4" />
-      <path d="M18 20V4" />
-    </svg>
-  );
-}
-
-function HomeIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
-}
-
-function MenuIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="4" x2="20" y1="12" y2="12" />
-      <line x1="4" x2="20" y1="6" y2="6" />
-      <line x1="4" x2="20" y1="18" y2="18" />
-    </svg>
-  );
-}
-
-function Package2Icon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
-      <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
-      <path d="M12 3v6" />
-    </svg>
-  );
-}
-
-function PackageIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m7.5 4.27 9 5.15" />
-      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" />
-      <path d="M12 22V12" />
-    </svg>
-  );
-}
-
-function PlusIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  );
-}
-
-function SettingsIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
   );
 }

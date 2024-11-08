@@ -2,7 +2,48 @@ import { supabase } from "@/lib/supa";
 import { NextResponse } from "next/server";
 import { serialize } from "cookie";
 
-// Obtener la sesión almacenada
+// Función para renovar el access_token si ha expirado
+async function refreshAccessTokenIfNeeded(cookieValue) {
+  const parsedCookie = JSON.parse(cookieValue);
+  const { access_token, refresh_token } = parsedCookie;
+
+  // Verificar si el access_token es válido
+  const { data: user, error } = await supabase.auth.getUser(access_token);
+
+  if (error) {
+    // Si el access_token ha expirado, usar el refresh_token para renovarlo
+    const { data, error: refreshError } = await supabase.auth.refreshSession({
+      refresh_token,
+    });
+
+    if (refreshError) {
+      return { error: refreshError.message };
+    }
+
+    // Crear una nueva cookie con el nuevo access_token y refresh_token
+    const newCookieString = serialize(
+      "sb-access-token",
+      JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      }),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 7, // 7 días
+        path: "/",
+      }
+    );
+
+    // Retornar el nuevo token y la nueva cookie
+    return { newAccessToken: data.session.access_token, newCookieString };
+  }
+
+  // Si el access_token es válido, devolverlo sin cambios
+  return { newAccessToken: access_token };
+}
+
+// Endpoint para obtener la sesión almacenada
 export async function GET(req) {
   const cookie = req.cookies.get("sb-access-token");
 
@@ -13,24 +54,27 @@ export async function GET(req) {
     );
   }
 
-  // Parsear el valor de la cookie (ya que es un JSON stringificado)
-  const parsedCookie = JSON.parse(cookie.value);
+  const { newAccessToken, newCookieString, error } =
+    await refreshAccessTokenIfNeeded(cookie.value);
+
+  if (error) {
+    return NextResponse.json({ error }, { status: 401 });
+  }
 
   const {
     data: { user },
-    error,
-  } = await supabase.auth.getUser(parsedCookie.access_token);
+  } = await supabase.auth.getUser(newAccessToken);
 
-  if (user) {
-    return NextResponse.json({ user }, { status: 200 });
-  } else if (error) {
-    return NextResponse.json({ error: error.message }, { status: 401 });
-  } else {
-    return NextResponse.json({ error: "Error inesperado" }, { status: 500 });
+  const response = NextResponse.json({ user }, { status: 200 });
+
+  if (newCookieString) {
+    response.headers.append("Set-Cookie", newCookieString);
   }
+
+  return response;
 }
 
-// Iniciar sesión con email/password o Google
+// Endpoint para iniciar sesión con email/password o Google
 export async function POST(req) {
   const { email, password, provider, token } = await req.json();
   let data, error;
@@ -85,7 +129,7 @@ export async function POST(req) {
   return response;
 }
 
-// Cerrar sesión
+// Endpoint para cerrar sesión
 export async function DELETE(req) {
   const { error } = await supabase.auth.signOut();
 

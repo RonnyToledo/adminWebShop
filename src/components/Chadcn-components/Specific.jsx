@@ -19,7 +19,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
 import ImageUpload from "../component/ImageDND";
-import { supabase } from "@/lib/supa";
+import ConfimationOut from "../globalFunction/confimationOut";
 
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -38,9 +38,8 @@ export default function Specific({ specific, ThemeContext }) {
   const [newImage, setNewImage] = useState();
 
   useEffect(() => {
-    const [a] = webshop.products.filter((obj) => obj.productId == specific);
-    setProducts(a);
-  }, [webshop]);
+    setProducts(webshop.products.find((obj) => obj.productId == specific));
+  }, [webshop, specific]);
 
   const SaveData = async (e) => {
     e.preventDefault();
@@ -57,6 +56,7 @@ export default function Specific({ specific, ThemeContext }) {
     formData.append("visible", products.visible);
     formData.append("Id", products.productId);
     formData.append("oldPrice", products.oldPrice);
+    formData.append("span", products.span);
     if (newImage) {
       formData.append("newImage", newImage);
       if (products.image) formData.append("image", products.image);
@@ -359,6 +359,16 @@ export default function Specific({ specific, ThemeContext }) {
                       />
                       <Label htmlFor="visible">Visible</Label>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="visible"
+                        checked={products?.span}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, span: value })
+                        }
+                      />
+                      <Label htmlFor="visible">Doble Espacio</Label>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -462,6 +472,12 @@ export default function Specific({ specific, ThemeContext }) {
           </div>
         </form>
       </div>
+      <ConfimationOut
+        action={hasPendingChanges(
+          webshop.products.find((obj) => obj.productId == specific),
+          products
+        )}
+      />
     </main>
   );
 }
@@ -526,3 +542,7 @@ function TrashIcon(props) {
     </svg>
   );
 }
+// Utilidad y helpers
+const hasPendingChanges = (data, store) => {
+  return JSON.stringify(data) !== JSON.stringify(store);
+};

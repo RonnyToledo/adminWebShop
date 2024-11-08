@@ -7,6 +7,7 @@ import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Toaster as UiToaster } from "@/components/ui/toaster";
 import { toast } from "sonner";
+import useSWR from "swr";
 
 export const ThemeContext = createContext();
 
@@ -21,6 +22,20 @@ async function fetchPendingNotifications(userId) {
   } catch (error) {
     console.error("Error al obtener notificaciones pendientes:", error);
     throw error;
+  }
+}
+async function fetchUserSession() {
+  try {
+    const res = await fetch("/api/login");
+    const data = await res.json();
+    if (res.ok && data?.user?.id) {
+      return data;
+    } else {
+      console.log("Usuario no encontrado o error en la respuesta:", data);
+      return;
+    }
+  } catch (error) {
+    console.error("Error al obtener la sesión del usuario:", error);
   }
 }
 
@@ -39,35 +54,21 @@ export default function AdminLayout({ children }) {
     products: [],
     code: [],
     events: [],
+    ga: {},
   });
   const router = useRouter();
 
-  async function fetchUserSession() {
-    try {
-      const res = await fetch("/api/login");
-      const data = await res.json();
-      if (res.ok && data?.user?.id) {
-        return data;
-      } else {
-        console.log("Usuario no encontrado o error en la respuesta:", data);
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("Error al obtener la sesión del usuario:", error);
-      router.push("/");
-    }
-  }
+  console.log(webshop);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
         const userId = await fetchUserSession();
-        if (!userId.user.id) {
+
+        if (!userId?.user?.id) {
           router.push("/");
           return;
         }
-
-        setUser(userId.user.id);
 
         // Fetch and show pending notifications
         const pendingNotifications = await fetchPendingNotifications(
@@ -116,22 +117,25 @@ export default function AdminLayout({ children }) {
             ...event,
             desc: JSON.parse(event.desc),
           }));
+          const response = await fetch(`/api/tienda/${store.sitioweb}/GA`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
           setWebshop({
-            ...webshop,
             store: tiendaParsed,
             products: productosParsed,
             events: eventsParsed,
             code: tiendaParsed.codeDiscount,
+            ga: data,
           });
+          setUser(userId);
         }
-        /*else {
-          router.replace("/configPage");
-        }*/
       } catch (error) {
         console.error("Error inicializando datos:", error);
+        return {}; // Retorna un valor por defecto en caso de error
       }
     };
-
     initializeData();
   }, []);
 

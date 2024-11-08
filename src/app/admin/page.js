@@ -13,9 +13,10 @@ export default function usePage() {
     <div className="grid min-h-screen w-full overflow-hidden ">
       <div className="flex flex-col w-full">
         <main className="flex flex-1 flex-col">
-          {webshop.store.plan == "basic" ? (
+          {webshop.store?.plan == "basic" ? (
             <Guia ThemeContext={ThemeContext} />
-          ) : webshop.store.plan == "pro" || webshop.store.plan == "custom" ? (
+          ) : webshop.store?.plan == "pro" ||
+            webshop.store?.plan == "custom" ? (
             <>
               <Logins ThemeContext={ThemeContext} />
               <Dashboard ThemeContext={ThemeContext} />
