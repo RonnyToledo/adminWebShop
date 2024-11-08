@@ -31,8 +31,15 @@ export default function Header({ ThemeContext }) {
     e.preventDefault();
     setDownloading(true);
     const formData = new FormData(form.current);
+    formData.append("name", store.name);
+    formData.append("parrrafo", store.parrrafo);
     formData.append("horario", JSON.stringify(store.horario));
-
+    if (store.image) {
+      formData.append("urlPosterNew", store.image);
+      if (store.urlPoster) {
+        formData.append("urlPoster", store.urlPoster);
+      }
+    }
     try {
       const res = await axios.post(`/api/tienda/${store.sitioweb}/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
