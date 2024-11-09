@@ -328,8 +328,9 @@ export default function Specific({ specific, ThemeContext }) {
                   <CardTitle>Estado</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4">
-                    <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="out-of-stock ">Producto Agotado</Label>
                       <Switch
                         id="out-of-stock"
                         checked={products?.agotado}
@@ -337,9 +338,9 @@ export default function Specific({ specific, ThemeContext }) {
                           setProducts({ ...products, agotado: value })
                         }
                       />
-                      <Label htmlFor="out-of-stock ">Agotado</Label>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="favorite">Producto Destacado</Label>
                       <Switch
                         id="favorite"
                         checked={products?.favorito}
@@ -347,9 +348,9 @@ export default function Specific({ specific, ThemeContext }) {
                           setProducts({ ...products, favorito: value })
                         }
                       />
-                      <Label htmlFor="favorite">Favorito</Label>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="visible">Producto Visible</Label>
                       <Switch
                         id="visible"
                         checked={products?.visible}
@@ -357,9 +358,9 @@ export default function Specific({ specific, ThemeContext }) {
                           setProducts({ ...products, visible: value })
                         }
                       />
-                      <Label htmlFor="visible">Visible</Label>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="visible">Doble Espacio</Label>
                       <Switch
                         id="visible"
                         checked={products?.span}
@@ -367,7 +368,6 @@ export default function Specific({ specific, ThemeContext }) {
                           setProducts({ ...products, span: value })
                         }
                       />
-                      <Label htmlFor="visible">Doble Espacio</Label>
                     </div>
                   </div>
                 </CardContent>
