@@ -44,6 +44,7 @@ export async function PUT(request, { params }) {
   await LogUser();
 
   const data = await request.formData();
+  console.log(data);
   const Id = data.get("Id");
   const newImage = data.get("newImage");
   const image = data.get("image");
@@ -98,7 +99,6 @@ export async function PUT(request, { params }) {
         favorito: data.get("favorito"),
         agotado: data.get("agotado"),
         visible: data.get("visible"),
-        agregados: data.get("agregados"),
         oldPrice: data.get("oldPrice"),
         span: data.get("span"),
         image: res.secure_url,
@@ -131,7 +131,6 @@ export async function PUT(request, { params }) {
         favorito: data.get("favorito"),
         agotado: data.get("agotado"),
         visible: data.get("visible"),
-        agregados: data.get("agregados"),
         span: data.get("span"),
         oldPrice: data.get("oldPrice"),
       })

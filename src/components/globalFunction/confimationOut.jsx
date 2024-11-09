@@ -19,7 +19,6 @@ export default function ConfimationOut({ action }) {
   const [pendingRoute, setPendingRoute] = useState(null);
   const router = useRouter();
   const pathname = usePathname();
-  console.log(action);
   // Manejar cambios de ruta para confirmar si hay cambios pendientes
   useEffect(() => {
     const handleRouteChangeStart = (url) => {

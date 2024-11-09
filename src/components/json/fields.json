@@ -1,0 +1,75 @@
+[
+  {
+    "component": "InputStore",
+    "name": "Tarjeta Bancaria",
+    "value": "tarjeta",
+    "type": "text",
+    "helperText": "*Comercio Electronico y pagos por transferenica Bancaria"
+  },
+  {
+    "component": "SelectStore",
+    "title": "Fuente",
+    "placeholder": "store.font",
+    "value": "name",
+    "helperText": "*Seleccione una fuente"
+  },
+  {
+    "component": "InputStore",
+    "name": "Numero de telefono",
+    "value": "cell",
+    "type": "number"
+  },
+  {
+    "component": "InputStore",
+    "name": "Email",
+    "value": "email",
+    "type": "email"
+  },
+  {
+    "component": "SelectStore",
+    "title": "Provincia",
+    "placeholder": "store.Provincia",
+    "value": "nombre",
+    "helperText": "*Seleccione su ubicacion"
+  },
+  {
+    "component": "SelectStore",
+    "title": "Municipio",
+    "arraySource": "provincias.municipios",
+    "placeholder": "store.municipio",
+    "value": ""
+  },
+  {
+    "component": "InputStore",
+    "name": "Instagram",
+    "value": "insta",
+    "type": "text",
+    "helperText": "*URL de su cuenta Ej: https://www.instagram.com/r-and-h.menu"
+  },
+  {
+    "component": "SwitchStore",
+    "name": "local",
+    "title": "Local de Trabajo",
+    "helperText": "*Indique si dispone de un local para recibir personal"
+  },
+  {
+    "component": "SwitchStore",
+    "name": "domicilio",
+    "title": "Permite Domicilio",
+    "helperText": "*Guarde los cambios antes de ajustar los domicilio",
+    "additionalContent": "Link a definir domicilios"
+  },
+  {
+    "component": "SwitchStore",
+    "name": "reservas",
+    "title": "Permite Reservaciones",
+    "helperText": "*Indique si los clientes le pueden enviar reservacion"
+  },
+  {
+    "component": "SelectStore",
+    "title": "Seleccione la moneda por defecto",
+    "placeholder": "store.moneda_default.moneda",
+    "value": "moneda",
+    "helperText": "*Seleccione la moneda de venta de sus productos"
+  }
+]

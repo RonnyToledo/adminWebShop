@@ -113,13 +113,16 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRowsComponent product={webshop.products} />
                       <TableRowsComponent
-                        product={webshop.products
-                          .sort((a, b) => a.order - b.order)
-                          .filter(
-                            (obj) => !webshop.store.categoria.includes(obj.caja)
-                          )}
+                        product={OrderProducts(
+                          webshop.products,
+                          webshop.store.categoria
+                        )}
+                      />
+                      <TableRowsComponent
+                        product={webshop.products.filter(
+                          (obj) => !webshop.store.categoria.includes(obj.caja)
+                        )}
                       />{" "}
                     </TableBody>
                   </Table>
@@ -158,11 +161,14 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRowsComponent product={FilterAgotado} />
                       <TableRowsComponent
-                        product={FilterAgotado.sort(
-                          (a, b) => a.order - b.order
-                        ).filter(
+                        product={OrderProducts(
+                          FilterAgotado,
+                          webshop.store.categoria
+                        )}
+                      />
+                      <TableRowsComponent
+                        product={FilterAgotado.filter(
                           (obj) => !webshop.store.categoria.includes(obj.caja)
                         )}
                       />
@@ -203,7 +209,12 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRowsComponent product={FilterFavorito} />
+                      <TableRowsComponent
+                        product={OrderProducts(
+                          FilterFavorito,
+                          webshop.store.categoria
+                        )}
+                      />
                       <TableRowsComponent
                         product={FilterFavorito.sort(
                           (a, b) => a.order - b.order
@@ -236,4 +247,35 @@ const generatePDF = (products) => {
   });
 
   doc.save("productos.pdf");
+};
+
+function OrderProducts(productos, categorias) {
+  const productosOrdenados = {};
+
+  // Inicializar el objeto con categorías vacías
+  categorias.forEach((categoria) => {
+    productosOrdenados[categoria] = [];
+  });
+
+  // Llenar el objeto con productos según su categoría
+  productos
+    .sort((a, b) => a.order - b.order)
+    .forEach((producto) => {
+      if (productosOrdenados[producto.caja]) {
+        productosOrdenados[producto.caja].push(producto);
+      }
+    });
+  return asignarOrden(productosOrdenados);
+}
+const asignarOrden = (productos) => {
+  const resultadoFinal = [];
+  Object.keys(productos).forEach((categoria) => {
+    resultadoFinal.push(
+      ...productos[categoria].map((prod, index) => ({
+        ...prod,
+        order: index,
+      }))
+    );
+  });
+  return resultadoFinal;
 };

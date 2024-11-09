@@ -58,8 +58,6 @@ export default function AdminLayout({ children }) {
   });
   const router = useRouter();
 
-  console.log(webshop);
-
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -105,7 +103,6 @@ export default function AdminLayout({ children }) {
             moneda: JSON.parse(store.moneda),
             moneda_default: JSON.parse(store.moneda_default),
             horario: JSON.parse(store.horario),
-            comentario: JSON.parse(store.comentario),
             categoria: JSON.parse(store.categoria),
             envios: JSON.parse(store.envios),
           };
@@ -122,6 +119,7 @@ export default function AdminLayout({ children }) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.json();
+          delete tiendaParsed.Products;
           setWebshop({
             store: tiendaParsed,
             products: productosParsed,

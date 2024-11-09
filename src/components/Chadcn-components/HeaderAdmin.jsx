@@ -1,7 +1,7 @@
 "use client";
 import React, { useContext, useState } from "react";
 import Link from "next/link";
-import navLinks from "@/json/link.json"; // ruta donde esté guardado el JSON
+import navLinks from "@/components/json/link.json"; // ruta donde esté guardado el JSON
 import {
   Tooltip,
   TooltipProvider,

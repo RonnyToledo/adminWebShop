@@ -61,6 +61,7 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("newImage", newImage);
       if (products.image) formData.append("image", products.image);
     }
+    console.log(formData);
     try {
       const res = await axios.put(
         `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/`,

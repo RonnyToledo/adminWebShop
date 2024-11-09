@@ -1,25 +1,13 @@
 "use client";
 import React from "react";
-import {
-  SelectValue,
-  SelectTrigger,
-  SelectItem,
-  SelectGroup,
-  SelectContent,
-  Select,
-} from "@/components/ui/select";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
 import provinciasData from "@/components/json/Site.json";
 import { useState, useEffect, useRef, useContext } from "react";
 import ConfimationOut from "../globalFunction/confimationOut";
-
+import { InputStore, SelectStore, SwitchStore } from "./Input-Store";
 import {
   Roboto,
   Oswald,
@@ -32,6 +20,7 @@ import {
   Lato,
   Sevillana,
 } from "next/font/google";
+import { FromData } from "../globalFunction/fromData";
 
 const roboto = Roboto({ subsets: ["latin"], weight: "400" });
 const oswald = Oswald({ subsets: ["latin"], weight: "700" });
@@ -62,15 +51,11 @@ const fonts = [
 
 export default function Configuracion({ ThemeContext }) {
   const provincias = provinciasData.provincias;
-  const { webshop, setWebshop } = useContext(ThemeContext);
+  const { webshop } = useContext(ThemeContext);
   const [newAregados, setNewAgregados] = useState({
     moneda: "",
     valor: 0,
   });
-  const [downloading, setDownloading] = useState(false);
-  const [Parpadeo, setParpadeo] = useState(false);
-  const { toast } = useToast();
-  const form = useRef(null);
   const newForm = useRef(null);
   const [store, setStore] = useState({
     comentario: [],
@@ -80,308 +65,150 @@ export default function Configuracion({ ThemeContext }) {
     horario: [],
     envios: [],
   });
-  const pause = (duration) => {
-    return new Promise((resolve) => {
-      setTimeout(resolve, duration);
-    });
-  };
 
   useEffect(() => {
     setStore(webshop.store);
   }, [webshop]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setDownloading(true);
-    const formData = new FormData();
-    formData.append("tarjeta", store.tarjeta);
-    formData.append("act_tf", store.act_tf);
-    formData.append("cell", store.cell);
-    formData.append("email", store.email);
-    formData.append("insta", store.insta);
-    formData.append("Provincia", store.Provincia);
-    formData.append("municipio", store.municipio);
-    formData.append("local", store.local);
-    formData.append("domicilio", store.domicilio);
-    formData.append("font", store.font);
-    formData.append("reservas", store.reservas);
-    formData.append("moneda_default", JSON.stringify(store.moneda_default));
-    formData.append("moneda", JSON.stringify(store.moneda));
-    formData.append("envios", JSON.stringify(store.envios));
-    try {
-      const res = await axios.put(`/api/tienda/${store.sitioweb}/`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      if (res.status == 200) {
-        toast({
-          title: "Tarea Ejecutada",
-          description: "Informacion Actualizada",
-          action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-          ),
-        });
-        setWebshop({ ...webshop, store: { ...webshop.store, ...store } });
-        form.current.reset();
-      }
-    } catch (error) {
-      console.error("Error al enviar el comentario:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar la configuracion.",
-      });
-    } finally {
-      setDownloading(false);
-    }
-  };
-  async function Cambio(value) {
-    if (value) {
-      setParpadeo(true);
-      await pause(2000);
-      setParpadeo(false);
-    }
+  function MonedaDefault(value) {
+    const [h] = store.moneda.filter((obj) => obj.moneda == value);
+    setStore({
+      ...store,
+      moneda_default: h,
+      moneda: store.moneda.map((obj) => {
+        return {
+          ...obj,
+          valor: redondearAMultiploDe5(obj.valor / h.valor),
+        };
+      }),
+    });
   }
+
   return (
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
-      <form ref={form} className="grid gap-6" onSubmit={handleSubmit}>
+      <FromData store={store} ThemeContext={ThemeContext}>
         <div className="border rounded-2x p-5">
-          <div className="space-y-2 mb-2">
-            <Label htmlFor="transfers" className="mr-2">
-              Transfers
-            </Label>
-            <Switch
-              id="transfers"
-              checked={store.act_tf}
-              onCheckedChange={(value) =>
-                setStore({
-                  ...store,
-                  act_tf: value,
-                })
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bank-card">Tarjeta Bancaria</Label>
-            <Input
-              id="bank-card"
-              value={store.tarjeta}
-              type="text"
-              onChange={(e) =>
-                setStore({
-                  ...store,
-                  tarjeta: e.target.value,
-                })
-              }
-            />
-          </div>
+          <InputStore
+            name={"Tarjeta Bancaria"}
+            object={store}
+            value={"tarjeta"}
+            action={setStore}
+            type={"text"}
+          />
 
           <p className="text-xs text-muted-foreground mt-1">
             *Comercio Electronico y pagos por transferenica Bancaria
           </p>
         </div>
         <div className="border rounded-2x p-5">
-          <div className="space-y-2">
-            <Label htmlFor="region">Fuente</Label>
+          <SelectStore
+            title={"Fuente"}
+            array={fonts}
+            onSelectChange={(value) =>
+              setStore({
+                ...store,
+                font: value,
+              })
+            }
+            placeholder={store.font}
+            value={"name"}
+          />
 
-            <Select
-              id="category"
-              name="category"
-              onValueChange={(value) =>
-                setStore({
-                  ...store,
-                  font: value,
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={store.font} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {fonts.map((obj, ind) => (
-                    <SelectItem
-                      key={ind}
-                      value={obj.name}
-                      className={obj.clase}
-                    >
-                      {obj.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
           <p className="text-xs text-muted-foreground mt-1">
             *Seleccione una fuente
           </p>
         </div>
         <div className="border rounded-2x p-5">
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              placeholder="Enter your phone number"
-              type="number"
-              value={store.cell}
-              onChange={(e) =>
-                setStore({
-                  ...store,
-                  cell: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              placeholder="Enter your email"
-              type="email"
-              value={store.email}
-              onChange={(e) =>
-                setStore({
-                  ...store,
-                  email: e.target.value,
-                })
-              }
-            />
-          </div>
+          <InputStore
+            name={"Numero de telefono"}
+            object={store}
+            value={"cell"}
+            action={setStore}
+            type={"number"}
+          />
+          <InputStore
+            name={"Email"}
+            object={store}
+            value={"email"}
+            action={setStore}
+            type={"email"}
+          />
         </div>
         <div className="border rounded-2x p-5">
-          <div className="space-y-2">
-            <Label htmlFor="region">Provincia</Label>
+          <SelectStore
+            title={"Provincia"}
+            array={provincias}
+            onSelectChange={(value) => {
+              setStore({
+                ...store,
+                Provincia: value,
+                municipio: provincias.filter((env) => env.nombre == value)[0]
+                  ?.municipios[0],
+              });
+            }} // cambio aquí
+            placeholder={store.Provincia}
+            value={"nombre"}
+          />
+          <SelectStore
+            title={"Municipio"}
+            array={
+              provincias.filter((env) => env.nombre == store.Provincia)[0]
+                ?.municipios
+            }
+            onSelectChange={(value) => {
+              setStore({
+                ...store,
+                municipio: value,
+                envios: value
+                  ? provincias.filter((obj) => obj.nombre == store.Provincia)
+                  : [{ nombre: "", municipios: [] }],
+              });
+            }} // cambio aquí
+            placeholder={store.municipio}
+            value={""}
+          />
 
-            <Select
-              id="category"
-              name="category"
-              onValueChange={(value) =>
-                setStore({
-                  ...store,
-                  Provincia: value,
-                  municipio: provincias.filter((env) => env.nombre == value)[0]
-                    ?.municipios[0],
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={store.Provincia} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {provincias.map((obj, ind) => (
-                    <SelectItem key={ind} value={obj.nombre}>
-                      {obj.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Label htmlFor="region">Municipio</Label>
-
-            <Select
-              id="category"
-              name="category"
-              onValueChange={(value) =>
-                setStore({
-                  ...store,
-                  municipio: value,
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={store.municipio} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {provincias
-                    .filter((env) => env.nombre == store.Provincia)[0]
-                    ?.municipios.map((mun, index2) => (
-                      <SelectItem value={mun} key={index2}>
-                        {mun}
-                      </SelectItem>
-                    ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
           <p className="text-xs text-muted-foreground mt-1">
             *Seleccione su ubicacion
           </p>
         </div>
         <div className="border rounded-2x p-5">
-          <div className="space-y-2">
-            <Label htmlFor="instagram">Instagram</Label>
-            <Input
-              id="instagram"
-              placeholder="Enter your Instagram handle"
-              type="text"
-              value={store.insta}
-              onChange={(e) =>
-                setStore({
-                  ...store,
-                  insta: e.target.value,
-                })
-              }
-            />
-          </div>
+          <InputStore
+            name={"Instagram"}
+            object={store}
+            value={"insta"}
+            action={setStore}
+            type={"text"}
+          />
+
           <p className="text-xs text-muted-foreground mt-1">
             *URL de su cuenta Ej: https://www.instagram.com/r-and-h.menu
           </p>
         </div>
-
         <div className="border rounded-2x p-5">
-          <div className="space-y-2">
-            <Label htmlFor="available" className="mr-2">
-              Local de Trabajo
-            </Label>
-            <Switch
-              id="available"
-              checked={store.local}
-              onCheckedChange={(value) =>
-                setStore({
-                  ...store,
-                  local: value,
-                })
-              }
-            />
-          </div>
+          <SwitchStore
+            name={"local"}
+            object={store}
+            title={"Local de Trabajo"}
+            funcion={setStore}
+          />
+
           <p className="text-xs text-muted-foreground mt-1">
             *Indique si dispone de un local para recibir personal
           </p>
         </div>
         <div className="border rounded-2x p-5">
           <div className="  flex justify-between">
-            <div className="space-y-2 mb-2">
-              <Label htmlFor="delivery" className="mr-2">
-                Domicilio
-              </Label>
-              <Switch
-                id="delivery"
-                checked={store.domicilio}
-                onCheckedChange={(value) => {
-                  Cambio(store.domicilio);
-                  setStore({
-                    ...store,
-                    domicilio: value,
-                    envios: value
-                      ? provincias.filter(
-                          (obj) => obj.nombre == store.Provincia
-                        )
-                      : [{ nombre: "", municipios: [] }],
-                  });
-                }}
-              />
-            </div>
+            <SwitchStore
+              name={"domicilio"}
+              object={store}
+              title={"Permite Domicilio"}
+              funcion={setStore}
+            />
             {store.domicilio ? (
               <div className="max-w-max max-h-max">
                 <Link
-                  className={` ${
-                    Parpadeo && "animate-pulse duration-500"
-                  } border p-3 text-center`}
+                  className={`border p-1 text-center`}
                   href={`/admin/configuracion/domicilios`}
                 >
                   Definir Domicilios
@@ -396,66 +223,25 @@ export default function Configuracion({ ThemeContext }) {
           </p>
         </div>
         <div className="border rounded-2x p-5">
-          <div className="space-y-2">
-            <Label htmlFor="reservation" className="mr-2">
-              Reservation
-            </Label>
-            <Switch
-              id="reservation"
-              checked={store.reservas}
-              onCheckedChange={(value) =>
-                setStore({
-                  ...store,
-                  reservas: value,
-                })
-              }
-            />
-          </div>
+          <SwitchStore
+            name={"reservas"}
+            object={store}
+            title={"Permite Reservaciones"}
+            funcion={setStore}
+          />
           <p className="text-xs text-muted-foreground mt-1">
             *Indique si los clientes le pueden enviar reservacion
           </p>
         </div>
         <div className="border rounded-2x p-5">
-          <div>
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="category"
-            >
-              Moneda de trabajo
-            </Label>
-            <div className="mt-1">
-              <Select
-                id="category"
-                name="category"
-                onValueChange={(value) => {
-                  const [h] = store.moneda.filter((obj) => obj.moneda == value);
-                  setStore({
-                    ...store,
-                    moneda_default: h,
-                    moneda: store.moneda.map((obj) => {
-                      return {
-                        ...obj,
-                        valor: redondearAMultiploDe5(obj.valor / h.valor),
-                      };
-                    }),
-                  });
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={store.moneda_default.moneda} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {store.moneda.map((obj, ind) => (
-                      <SelectItem key={ind} value={obj.moneda}>
-                        {obj.moneda}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <SelectStore
+            title={"Seleccione la moneda por defecto"}
+            array={store.moneda}
+            onSelectChange={MonedaDefault} // cambio aquí
+            placeholder={store.moneda_default.moneda}
+            value={"moneda"}
+          />
+
           <p className="text-xs text-muted-foreground mt-1">
             *Seleccione la moneda de venta de sus productos
           </p>
@@ -573,19 +359,7 @@ export default function Configuracion({ ThemeContext }) {
             desactivarlas, darle valor de 0
           </p>
         </div>
-        <div className="bg-white p-2 flex justify-end sticky bottom-0">
-          <Button
-            type="submit"
-            className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
-              downloading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={downloading}
-            style={{ backgroundColor: store?.color }}
-          >
-            {downloading ? "Guardando..." : "Guardar"}
-          </Button>
-        </div>
-      </form>
+      </FromData>
       <ConfimationOut action={hasPendingChanges(store, webshop.store)} />
     </main>
   );
