@@ -30,8 +30,12 @@ export default function LogoutPage() {
           <h1 className="text-2xl font-bold ml-4">WebShop no existente</h1>
         </div>
         <p className="mb-6 text-lg text-center">
-          Por favor, comuníquese con los administradores para la creación de su
-          tienda online. Gracias y disculpe las molestias.
+          Su tienda parece no estar activa o no existe
+        </p>
+        <p className="mb-6 text-base text-center">
+          Por favor, comuníquese con los administradores para la
+          creación/activación de su tienda online. Gracias y disculpe las
+          molestias.
         </p>
         <Button onClick={Log_Out}>Cerrar sesión</Button>
       </div>

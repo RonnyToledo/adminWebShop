@@ -264,6 +264,9 @@ export default function MultiStepForm() {
                     setFormData({
                       ...formData,
                       Provincia: value,
+                      municipio: provincias.filter(
+                        (env) => env.nombre == value
+                      )[0]?.municipios[0],
                     })
                   }
                 >
