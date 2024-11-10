@@ -41,7 +41,7 @@ export function ResponsiveLogin() {
       }
     }
     UserFetch();
-  }, []);
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

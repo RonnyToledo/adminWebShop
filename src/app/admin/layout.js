@@ -135,7 +135,7 @@ export default function AdminLayout({ children }) {
       }
     };
     initializeData();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!user) return; // Si no hay un usuario, no hacemos nada
