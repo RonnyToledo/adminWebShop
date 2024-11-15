@@ -8,40 +8,37 @@ import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supa";
 
+async function fetchUserSession() {
+  try {
+    const res = await fetch("/api/login");
+    const data = await res.json();
+    if (res.ok && data?.user?.id) {
+      return data;
+    } else {
+      console.log("Usuario no encontrado o error en la respuesta:", data);
+    }
+  } catch (error) {
+    console.error("Error al obtener la sesión del usuario:", error);
+  }
+}
+
 export function ResponsiveLogin() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
-
-  async function fetchUserSession() {
-    try {
-      const res = await fetch("/api/login");
-      const data = await res.json();
-      if (res.ok && data?.user?.id) {
-        return data;
-      } else {
-        console.log("Usuario no encontrado o error en la respuesta:", data);
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("Error al obtener la sesión del usuario:", error);
-      router.push("/");
-    }
-  }
+  const [loading, setloading] = useState(false);
 
   useEffect(() => {
     async function UserFetch() {
-      const userId = fetchUserSession();
-      if (!userId?.user?.id) {
-        router.push("/");
-        return;
-      } else {
+      const userId = await fetchUserSession();
+      if (userId?.user?.id) {
         router.push("/admin");
+        return;
       }
     }
     UserFetch();
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +57,7 @@ export function ResponsiveLogin() {
     LlamadaApi(true, token); // Esto llamará a la función LlamadaApi() con el proveedor de Google
   };
   const LlamadaApi = async (value, token) => {
+    setloading(true);
     const res = await fetch("/api/login", {
       method: "POST",
       headers: {
@@ -82,6 +80,7 @@ export function ResponsiveLogin() {
       setError(data.error);
       console.error(data.error);
     }
+    setloading(false);
   };
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -145,12 +144,14 @@ export function ResponsiveLogin() {
                 </a>
               </div>
             </div> */}
-
             <Button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className={`w-full bg-purple-600 hover:bg-purple-700 rounded-xl ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={loading}
             >
-              Iniciar Sesion
+              {loading ? "Iniciando..." : "Iniciar"}
             </Button>
 
             <div className="relative">

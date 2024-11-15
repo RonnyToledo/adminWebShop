@@ -1,6 +1,10 @@
 import React from "react";
-import { Toaster } from "@/components/ui/toaster";
+import HeaderWelcome from "@/components/component/header-welcome";
 
 export default function RootLayout({ children }) {
-  return <main>{children}</main>;
+  return (
+    <main>
+      <HeaderWelcome>{children}</HeaderWelcome>
+    </main>
+  );
 }

@@ -73,16 +73,16 @@ export async function POST(request, { params }) {
 
   const data = await request.formData();
   const { data: tienda1 } = await supabase.from("Sitios").select("*");
-  console.log(data.get("name"));
+
   const NewStore = {
     ...datos,
     id: tienda1.length + 1,
     name: data.get("name"),
-    sitioweb: data.get("sitioweb"),
+    sitioweb: capitalizeAndRemoveSpaces(data.get("name")),
     Provincia: data.get("Provincia"),
     municipio: data.get("municipio"),
-    moneda: data.get("moneda"),
-    moneda_default: data.get("moneda_default"),
+    moneda: JSON.stringify(Moneda(data.get("moneda")).moneda),
+    moneda_default: JSON.stringify(Moneda(data.get("name")).moneda),
     Editor: data.get("user"),
     email: data.get("email"),
     cell: data.get("cell"),
@@ -104,11 +104,17 @@ export async function POST(request, { params }) {
 
   return NextResponse.json({ message: "Producto creado" });
 }
+const Moneda = (inputString) => {
+  return {
+    moneda: [{ valor: 1, moneda: inputString }],
+    moneda_default: { valor: 1, moneda: inputString },
+  };
+};
 const capitalizeAndRemoveSpaces = (inputString) => {
   // Capitaliza cada palabra y elimina espacios en blanco
   return inputString
     .split(" ") // Divide el string en palabras
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitaliza cada palabra
     .join("") // Une las palabras sin espacios
-    .replace(/\s+/g, ""); // Elimina espacios en blanco
+    .replace(/[^a-zA-Z0-9]/g, ""); // Elimina espacios en blanco
 };

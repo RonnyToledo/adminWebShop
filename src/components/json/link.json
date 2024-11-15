@@ -7,13 +7,7 @@
   {
     "label": "Guia",
     "href": "/admin/guia",
-    "icon": "PreviewRoundedIcon",
-    "condition": { "plan": ["pro", "custom"] }
-  },
-  {
-    "label": "Enlaces",
-    "href": "/admin/link",
-    "icon": "DatasetLinkedRoundedIcon"
+    "icon": "PreviewRoundedIcon"
   },
   {
     "separator": true
@@ -32,11 +26,6 @@
     "label": "Editar Productos",
     "href": "/admin/products",
     "icon": "AppRegistrationRoundedIcon"
-  },
-  {
-    "label": "Productos Agotados",
-    "href": "/admin/productsOffStock",
-    "icon": "ExtensionOffRoundedIcon"
   },
   {
     "separator": true

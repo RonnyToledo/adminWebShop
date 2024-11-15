@@ -201,8 +201,11 @@ function OrderProducts(productos, categorias) {
         productosOrdenados[producto.caja].push(producto);
       }
     });
+  const sin_category = productos.filter(
+    (prod) => !categorias.includes(prod.caja)
+  );
 
-  return asignarOrden(productosOrdenados);
+  return [...asignarOrden(productosOrdenados), ...sin_category];
 }
 const asignarOrden = (productos) => {
   const resultadoFinal = [];

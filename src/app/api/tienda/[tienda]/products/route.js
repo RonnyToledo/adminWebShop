@@ -12,7 +12,6 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -83,7 +82,7 @@ export async function POST(request, { params }) {
       ])
       .select();
     if (error) {
-      console.log(error);
+      console.error(error);
 
       return NextResponse.json(
         { message: error },
@@ -92,7 +91,6 @@ export async function POST(request, { params }) {
         }
       );
     }
-    console.log(tienda);
     return NextResponse.json(tienda);
   } else {
     const { data: tienda, error } = await supabase
@@ -111,7 +109,7 @@ export async function POST(request, { params }) {
       ])
       .select();
     if (error) {
-      console.log(error);
+      console.error(error);
 
       return NextResponse.json(
         { message: error },
@@ -120,13 +118,10 @@ export async function POST(request, { params }) {
         }
       );
     }
-    console.log(tienda);
     return NextResponse.json(tienda);
   }
 }
 export async function PUT(request, { params }) {
-  await LogUser();
-
   const data = await request.formData();
   const products = JSON.parse(data.get("products"));
 
@@ -146,18 +141,21 @@ export async function PUT(request, { params }) {
 }
 
 async function updateProductsInBatches(products, batchSize = 10) {
+  await LogUser();
+
   for (let i = 0; i < products.length; i += batchSize) {
     const batch = products.slice(i, i + batchSize);
 
     await Promise.all(
       batch.map(async (product) => {
-        const { productId, agotado, order, title } = product;
-
-        const { error } = await supabase
+        const { productId, agotado, order, title, caja } = product;
+        console.log(productId, agotado, order, title, caja);
+        const { data: prod, error } = await supabase
           .from("Products")
-          .update({ agotado, order })
-          .eq("productId", productId);
-
+          .update({ agotado, order, caja })
+          .eq("productId", productId)
+          .select("*");
+        console.log(prod);
         if (error) {
           console.error(
             `Error al actualizar el producto ${title}: ${error.message}`

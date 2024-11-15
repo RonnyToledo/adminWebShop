@@ -70,19 +70,21 @@ export default function NewProduct({ ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
+        const [a] = res.data;
+        setWebshop({
+          ...webshop,
+          products: [...webshop.products, a],
+        });
+        form.current.reset();
+        setProducts({
+          ...products,
+          favorito: false,
+          title: "",
+          descripcion: "",
+          discount: 0,
+          price: 0,
+        });
       }
-      const [a] = res.data;
-      setWebshop({
-        ...webshop,
-        products: [
-          ...webshop.products,
-          {
-            ...a,
-            coment: JSON.parse(a.coment),
-            agregados: JSON.parse(a.agregados),
-          },
-        ],
-      });
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({
@@ -91,15 +93,6 @@ export default function NewProduct({ ThemeContext }) {
         description: "No se pudo crear el producto.",
       });
     } finally {
-      form.current.reset();
-      setProducts({
-        ...products,
-        favorito: false,
-        title: "",
-        descripcion: "",
-        discount: 0,
-        price: 0,
-      });
       setDownloading(false);
     }
   };
@@ -258,9 +251,10 @@ export default function NewProduct({ ThemeContext }) {
           </div>
         </div>
 
-        <div className="bg-white p-2 flex justify-end sticky bottom-0">
+        <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
           <Button
-            className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+            type="submit"
+            className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
               downloading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={downloading}

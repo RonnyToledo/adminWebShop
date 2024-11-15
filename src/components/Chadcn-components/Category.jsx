@@ -283,7 +283,11 @@ const CategoryItem = ({
               </ScrollArea>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" onClick={() => onDelete(category)}>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => onDelete(category)}
+          >
             <TrashIcon className="h-4 w-4 text-red-500" />
           </Button>
         </div>

@@ -8,33 +8,69 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import React from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { Input } from "@/components/ui/input";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
+import QrCode from "@/components/Chadcn-components/QRcode";
+import { ThemeContext } from "@/app/admin/layout";
+import { CopyIcon } from "lucide-react";
 
-const GuideCard = ({ title, description, steps, link, buttonText }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="grid gap-4">
-        <div className="grid gap-2">
-          <h3 className="text-lg font-semibold">Pasos a seguir</h3>
-          <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
-            {steps.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
-          </ul>
-        </div>
-        <Link href={link}>
-          <Button>{buttonText}</Button>
-        </Link>
-      </div>
-    </CardContent>
-  </Card>
-);
+const GuideCard = ({ title, description, steps, link, buttonText }) => {
+  return (
+    <div className="grid  w-full overflow-hidden ">
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <h3 className="text-lg font-semibold">Pasos a seguir</h3>
+              <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+                {steps.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ul>
+            </div>
+            <Link href={link}>
+              <Button>{buttonText}</Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default function Guia() {
+  const { toast } = useToast();
+  const { webshop, setWebshop } = useContext(ThemeContext);
+
+  const copyToClipboard = (text) => {
+    if (navigator?.clipboard) {
+      try {
+        navigator.clipboard.writeText(text);
+        toast({
+          title: "Alerta",
+          description: "Texto copiado al portpapeles",
+          action: (
+            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+          ),
+        });
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: "Alerta",
+          description: "Error al copiar texto: " + err,
+          action: (
+            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+          ),
+        });
+      }
+    }
+  };
   const cardsData = [
     {
       title: "Agregar/Eliminar categorías",
@@ -106,6 +142,38 @@ export default function Guia() {
   return (
     <div className="grid min-h-screen w-full overflow-hidden">
       <div className="flex flex-col w-full">
+        <main className="flex flex-1 flex-col gap-8 p-6">
+          <h1 className="text-2xl font-bold">Sitio web</h1>
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <div className="flex items-center space-x-2 justify-center">
+              <Input
+                className="max-w-xs text-sm font-medium"
+                readOnly
+                type="text"
+                value={`https://randh-menu.vercel.app/${webshop.store.variable}/${webshop.store.sitioweb}`}
+              />
+              <Button
+                onClick={() =>
+                  copyToClipboard(
+                    `https://randh-menu.vercel.app/${webshop.store.variable}/${webshop.store.sitioweb}`
+                  )
+                }
+                size="icon"
+                variant="ghost"
+              >
+                <CopyIcon className="h-4 w-4" />
+                <span className="sr-only">Copy URL</span>
+              </Button>
+            </div>
+            <div className="flex items-center space-x-2 justify-center">
+              <QrCode
+                value={webshop.store.variable}
+                value2={webshop.store.sitioweb}
+                name={webshop.store.name}
+              />
+            </div>
+          </div>
+        </main>
         <main className="flex flex-1 flex-col gap-8 p-6">
           <div className="grid gap-6">
             <div className="grid gap-2">

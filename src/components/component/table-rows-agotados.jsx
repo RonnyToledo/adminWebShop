@@ -1,6 +1,21 @@
 "use client";
-import React, { useState, useContext, useMemo } from "react";
-import { TableBody, TableCell, TableRow } from "@/components/ui/table";
+import React, { useState, useContext, useEffect } from "react";
+import { TableCell } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,26 +26,18 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import axios from "axios";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { ThemeContext } from "@/app/admin/layout";
 import { Switch } from "../ui/switch";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 
-export default function TableRowsComponent({
-  products, // Cambia el valor predeterminado a un arreglo vacío
-  setProducts,
-  categoria,
-}) {
+export default function TableRowsComponentAgotados({ products, setProducts }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
-  const filteredProducts = useMemo(
-    () => products.filter((obj) => obj.caja === categoria),
-    [products, categoria]
-  );
 
   const deleteProduct = async (value, image) => {
     setDownloading(true);
@@ -69,144 +76,234 @@ export default function TableRowsComponent({
   };
 
   const DragAndDrop = (result) => {
-    const { source, destination } = result;
+    const { source, destination, draggableId } = result;
     if (!destination) return;
+    const sourceCategory = source.droppableId;
+    const destCategory = destination.droppableId;
+    const sourceIndex = source.index;
+    const destIndex = destination.index;
 
-    if (
-      source.index === destination.index &&
-      source.droppableId === destination.droppableId
-    )
-      return;
-    setProducts(
-      OrderProducts(
-        products,
-        webshop.store.categoria,
-        categoria,
-        source.index,
-        destination.index
-      )
-    );
+    if (sourceCategory === destCategory) {
+      // Reordenar dentro de la misma categoría
+      setProducts((prevProducts) =>
+        OrderProducts(
+          prevProducts,
+          webshop.store.categoria,
+          sourceIndex,
+          destIndex,
+          sourceCategory
+        )
+      );
+    } else {
+      // Mover el producto a una nueva categoría
+      setProducts((prevProducts) => {
+        console.log(prevProducts);
+        const newPrev = prevProducts.map((prod) =>
+          prod.productId === draggableId
+            ? { ...prod, caja: destCategory, order: destIndex }
+            : prod
+        );
+        console.log(newPrev);
+
+        const productToMove = newPrev.find(
+          (prod) => prod.productId === draggableId
+        );
+        if (productToMove) {
+          // Aplicar la nueva organización
+          return OrderProducts(
+            newPrev,
+            webshop.store.categoria,
+            sourceIndex,
+            destIndex
+          );
+        }
+        return newPrev;
+      });
+    }
   };
 
   return (
     <DragDropContext onDragEnd={DragAndDrop}>
-      <Droppable droppableId={"default"}>
-        {(droppableProvided) => (
-          <TableBody
-            {...droppableProvided.droppableProps}
-            ref={droppableProvided.innerRef}
-          >
-            {filteredProducts.map((obj, ind) => (
-              <Draggable
-                key={`${obj.productId}-${ind}`}
-                draggableId={String(obj.productId)}
-                index={ind}
-              >
-                {(draggableProvided) => (
-                  <TableRow
-                    {...draggableProvided.draggableProps}
-                    ref={draggableProvided.innerRef}
-                    {...draggableProvided.dragHandleProps}
-                  >
-                    <TableCell className="hidden sm:table-cell">
-                      <Image
-                        alt={obj.title || `Producto${ind}`}
-                        className="aspect-square rounded-md object-cover"
-                        height={64}
-                        src={
-                          obj.image ||
-                          "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                        }
-                        style={{ aspectRatio: "64/64", objectFit: "cover" }}
-                        width={64}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{obj.title}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={obj.agotado}
-                        onCheckedChange={(value) =>
-                          setProducts((prev) =>
-                            prev.map((prod) =>
-                              prod.productId === obj.productId
-                                ? { ...prod, agotado: value }
-                                : prod
-                            )
-                          )
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      ${Number(obj.price).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant="outline">
-                        {obj.caja || "Sin categoría"}{" "}
-                        {obj.order < 100000 && `-${obj.order}`}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {obj.favorito ? "Si" : "No"}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <div className="sr-only">Toggle menu</div>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <div className="flex flex-col gap-3 p-2">
-                            <Link
-                              className="flex gap-3 w-full justify-start items-center"
-                              href={`/admin/products/${obj.productId}`}
-                            >
-                              <Pencil className="h-3 w-3" />
-                              Edit
-                            </Link>
-                            <Button
-                              className="flex gap-3 w-full justify-start items-center"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() =>
-                                deleteProduct(obj.productId, obj.image)
-                              }
-                            >
-                              {!downloading ? (
-                                <Trash2 className="h-3 w-3" />
-                              ) : (
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                              )}
-                              Delete
-                            </Button>
-                          </div>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </Draggable>
-            ))}
-            {droppableProvided.placeholder}
-          </TableBody>
-        )}
-      </Droppable>
+      {webshop.store.categoria.map((categoria, ind) => (
+        <TableComponet
+          key={ind}
+          name={categoria}
+          ListProducts={products.filter((obj) => obj.caja == categoria)}
+          setProducts={setProducts}
+          downloading={downloading}
+          deleteProduct={deleteProduct}
+        />
+      ))}
+      {products.filter((prod) => !webshop.store.categoria.includes(prod.caja))
+        .length > 0 && (
+        <TableComponet
+          name={"Sin Categoria"}
+          ListProducts={products.filter(
+            (prod) => !webshop.store.categoria.includes(prod.caja)
+          )}
+          setProducts={setProducts}
+          downloading={downloading}
+          deleteProduct={deleteProduct}
+        />
+      )}
     </DragDropContext>
   );
 }
+function TableComponet({
+  name,
+  ListProducts,
+  setProducts,
+  downloading,
+  deleteProduct,
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{name}</CardTitle>
+        <CardDescription></CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Imagen </TableHead>
 
+              <TableHead>Nombre</TableHead>
+              <TableHead>Agotado</TableHead>
+              <TableHead className="hidden md:table-cell">Precio</TableHead>
+              <TableHead className="hidden md:table-cell">
+                Categoria-Orden
+              </TableHead>
+              <TableHead className="hidden md:table-cell">Favorito</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <Droppable droppableId={name}>
+            {(droppableProvided) => (
+              <TableBody
+                {...droppableProvided.droppableProps}
+                ref={droppableProvided.innerRef}
+              >
+                {ListProducts.length == 0 && <div className="min-h-20"></div>}
+                {ListProducts.map((obj, ind) => (
+                  <Draggable
+                    key={`${obj.productId}-${ind}`}
+                    draggableId={String(obj.productId)}
+                    index={ind}
+                  >
+                    {(draggableProvided) => (
+                      <TableRow
+                        {...draggableProvided.draggableProps}
+                        ref={draggableProvided.innerRef}
+                        {...draggableProvided.dragHandleProps}
+                      >
+                        <TableCell>
+                          <Image
+                            alt={obj.title || `Producto${ind}`}
+                            className="aspect-square rounded-md object-cover"
+                            height={64}
+                            src={
+                              obj.image ||
+                              "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                            }
+                            style={{
+                              aspectRatio: "64/64",
+                              objectFit: "cover",
+                            }}
+                            width={64}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium line-clamp-2">
+                          {obj.title}
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={obj.agotado}
+                            onCheckedChange={(value) =>
+                              setProducts((prev) =>
+                                prev.map((prod) =>
+                                  prod.productId === obj.productId
+                                    ? { ...prod, agotado: value }
+                                    : prod
+                                )
+                              )
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          ${Number(obj.price).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Badge variant="outline">
+                            {obj.caja || "Sin categoría"}{" "}
+                            {obj.order < 100000 && `-${obj.order}`}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {obj.favorito ? "Si" : "No"}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                aria-haspopup="true"
+                                size="icon"
+                                variant="ghost"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                                <div className="sr-only">Toggle menu</div>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <div className="flex flex-col gap-3 p-2">
+                                <Link
+                                  className="flex gap-3 w-full justify-start items-center"
+                                  href={`/admin/products/${obj.productId}`}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  Edit
+                                </Link>
+                                <Button
+                                  className="flex gap-3 w-full justify-start items-center"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    deleteProduct(obj.productId, obj.image)
+                                  }
+                                >
+                                  {!downloading ? (
+                                    <Trash2 className="h-3 w-3" />
+                                  ) : (
+                                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                  )}
+                                  Delete
+                                </Button>
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Draggable>
+                ))}
+                {droppableProvided.placeholder}
+              </TableBody>
+            )}
+          </Droppable>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 const reorder = (list, startIndex, endIndex) => {
   const result = [...list];
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
   return result;
 };
-function OrderProducts(productos, categorias, specific, startIndex, endIndex) {
+function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
   const productosOrdenados = {};
 
   // Inicializar el objeto con categorías vacías
@@ -221,16 +318,22 @@ function OrderProducts(productos, categorias, specific, startIndex, endIndex) {
     }
   });
 
-  // Reordenar los productos en la categoría específica
-  const reorderedProducts = reorder(
-    productos.filter((obj) => obj.caja == specific),
-    startIndex,
-    endIndex
+  if (specific !== "none" && specific != undefined) {
+    // Reordenar los productos en la categoría específica
+    const reorderedProducts = reorder(
+      productos.filter((obj) => obj.caja == specific),
+      startIndex,
+      endIndex
+    );
+    // Asignar el resultado de la categoría reordenada
+    productosOrdenados[specific] = reorderedProducts;
+  }
+  const sin_category = productos.filter(
+    (prod) => !categorias.includes(prod.caja)
   );
-  // Asignar el resultado de la categoría reordenada
-  productosOrdenados[specific] = reorderedProducts;
+
   // Retornar el resultado final con el orden asignado
-  return asignarOrden(productosOrdenados);
+  return [...asignarOrden(productosOrdenados), ...sin_category];
 }
 const asignarOrden = (productos) => {
   const resultadoFinal = [];
