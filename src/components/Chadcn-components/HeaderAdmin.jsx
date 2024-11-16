@@ -31,7 +31,14 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
+import {
+  SheetTrigger,
+  SheetContent,
+  Sheet,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import * as Icons from "@mui/icons-material";
 
 const iconMap = {
@@ -158,6 +165,12 @@ export default function HeaderAdmin({ ThemeContext }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="sm:max-w-xs">
+                <SheetHeader>
+                  <SheetTitle>Administracion</SheetTitle>
+                  <SheetDescription>
+                    Edite su tienda a su gusto{" "}
+                  </SheetDescription>
+                </SheetHeader>
                 <nav className="grid gap-2 text-lg font-medium">
                   {navLinks.map((link, index) => renderLinkNav(link, index))}
                 </nav>

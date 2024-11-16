@@ -5,10 +5,6 @@ import { NextResponse } from "next/server";
 const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
 const propertyId = process.env.NEXT_PUBLIC_GA_PROPERTY_ID;
 
-// Cache en memoria con TTL
-const storeCache = {};
-const cacheTTL = 60 * 60 * 1000; // 1 hora en milisegundos
-
 // Configura autenticación con Google Auth
 const auth = new GoogleAuth({
   credentials,
@@ -19,17 +15,6 @@ const analyticsDataClient = new BetaAnalyticsDataClient({ auth });
 
 export async function GET(request, { params }) {
   const tienda = params.tienda;
-
-  // Verificar si los datos están en caché y si no han expirado
-  if (storeCache[tienda] && !isCacheExpired(storeCache[tienda].timestamp)) {
-    console.log(`Datos en caché para la tienda: ${tienda}`);
-    return NextResponse.json(storeCache[tienda].data, {
-      status: 200,
-      headers: {
-        "Cache-Control": "no-store",
-      },
-    });
-  }
 
   try {
     const [response] = await analyticsDataClient.runReport({
@@ -48,15 +33,26 @@ export async function GET(request, { params }) {
       },
     });
 
+    const [response1] = await analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dimensions: [{ name: "pagePath" }, { name: "hour" }, { name: "date" }],
+      metrics: [{ name: "sessions" }],
+      dateRanges: [{ startDate: "365daysAgo", endDate: "today" }],
+      dimensionFilter: {
+        filter: {
+          fieldName: "pagePath",
+          stringFilter: {
+            matchType: "BEGINS_WITH",
+            value: `/t/${params.tienda}/products/`,
+          },
+        },
+      },
+    });
+
     // Formatea los datos de Analytics
     const formattedData = formatAnalyticsDataByDate(response, tienda);
     const convertedData = convertirDatos(formattedData);
 
-    // Almacena los datos en caché con el timestamp actual
-    storeCache[tienda] = {
-      data: convertedData,
-      timestamp: Date.now(),
-    };
     const finishData = {
       calcularPromedioVisitasPorDia:
         calcularPromedioVisitasPorDia(convertedData),
@@ -66,6 +62,7 @@ export async function GET(request, { params }) {
       contarVisitasPorHora: contarVisitasPorHora(convertedData),
       promedioVisitasPorMes: promedioVisitasPorMes(convertedData),
       cant: convertedData.length,
+      visitasProductos: getProductVisits(response1),
     };
     return NextResponse.json(finishData, {
       status: 200,
@@ -132,11 +129,6 @@ function convertirDatos(datos) {
   });
 
   return resultado;
-}
-
-// Función para verificar si el caché ha expirado
-function isCacheExpired(timestamp) {
-  return Date.now() - timestamp > cacheTTL;
 }
 
 function convertDateToMonthDay(dateString) {
@@ -274,4 +266,25 @@ function calcularPromedioVisitasPorDia(datos) {
   const promedio = totalVisitas / numeroDeDias;
 
   return { visitasPorDia, promedio };
+}
+function getProductVisits(response) {
+  const productVisits = {};
+
+  response.rows.forEach((row) => {
+    // Extraer el `pagePath` y la cantidad de sesiones
+    const pagePath = row.dimensionValues[0].value;
+    const sessions = parseInt(row.metricValues[0].value, 10);
+
+    // Extraer el `productId` de la ruta
+    const productId = pagePath.split("/products/")[1];
+
+    // Sumar las sesiones al total del `productId`
+    if (productVisits[productId]) {
+      productVisits[productId] += sessions;
+    } else {
+      productVisits[productId] = sessions;
+    }
+  });
+
+  return productVisits;
 }
