@@ -65,7 +65,6 @@ export default function HeaderAdmin({ ThemeContext }) {
 
   const Log_Out = async () => {
     const res = await fetch("/api/login", { method: "DELETE" });
-    if (res.ok) router.replace("/");
   };
 
   const renderLink = (link, index) => {
@@ -125,7 +124,14 @@ export default function HeaderAdmin({ ThemeContext }) {
             <Link
               href={link.href}
               className="flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
-              onClick={() => setIsOpen(false)}
+              onClick={
+                link.action === "Log_Out"
+                  ? () => {
+                      Log_Out();
+                      setIsOpen(false);
+                    }
+                  : () => setIsOpen(false)
+              }
             >
               <Icon />
               <span>{link.label}</span>
