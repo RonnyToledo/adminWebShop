@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supa";
 import { motion } from "framer-motion";
 import IllustrationLogin from "./icons/IllustrationLogin";
-import GoogleButton from "./icons/GoogleButton";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 
 async function fetchUserSession() {
@@ -58,8 +55,7 @@ export function ResponsiveLogin() {
           process.env.NEXT_PUBLIC_REDIRECT_URL || "http://localhost:4000/admin",
       },
     });
-    token: session.access_token;
-    LlamadaApi(true, token); // Esto llamará a la función LlamadaApi() con el proveedor de Google
+    LlamadaApi(true, session.access_token); // Esto llamará a la función LlamadaApi() con el proveedor de Google
   };
   const LlamadaApi = async (value, token) => {
     setloading(true);
@@ -153,16 +149,16 @@ export function ResponsiveLogin() {
               {loading ? "Iniciando..." : "Iniciar"}
             </Button>
           </form>
-          <div class="inline-flex items-center justify-center w-full">
-            <hr class="w-64 h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />
-            <span class="absolute px-3 font-medium text-gray-900 -translate-x-1/2 bg-white left-1/2 dark:text-white dark:bg-gray-900">
+          <div className="inline-flex items-center justify-center w-full">
+            <hr className="w-64 h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />
+            <span className="absolute px-3 font-medium text-gray-900 -translate-x-1/2 bg-white left-1/2 dark:text-white dark:bg-gray-900">
               or
             </span>
-            <hr class="w-64 h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />
+            <hr className="w-64 h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />
           </div>
           <Button
             variant="outline"
-            className="flex w-full py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
+            className="flex w-full py-3 rounded-xl hover:bg-gray-300 transition-colors font-medium"
             onClick={handleGoogleLogin}
           >
             <svg
