@@ -2,9 +2,11 @@ import { supabase } from "@/lib/supa";
 
 export async function fetchStoreData(userId) {
   const { data, error } = await supabase
-    .from("Sitios")
-    .select("*, Products (*, agregados(*)), Events (*) , codeDiscount (*)")
-    .eq("Editor", userId)
+    .from("user")
+    .select(
+      "*, Sitios(*, Products (*, agregados(*)), Events (*) , codeDiscount (*))"
+    )
+    .eq("id", userId)
     .single();
   return { data, error };
 }

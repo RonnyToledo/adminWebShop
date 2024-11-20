@@ -29,7 +29,7 @@ export function ResponsiveLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
-  const [loading, setloading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function UserFetch() {
@@ -44,44 +44,55 @@ export function ResponsiveLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    LlamadaApi(false, null); // Esto llamará a la función LlamadaApi() con el proveedor de Google
+    await handleApiCall(false, null);
   };
 
   const handleGoogleLogin = async () => {
-    const { user, session, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo:
-          process.env.NEXT_PUBLIC_REDIRECT_URL || "http://localhost:4000/admin",
-      },
-    });
-    LlamadaApi(true, session.access_token); // Esto llamará a la función LlamadaApi() con el proveedor de Google
-  };
-  const LlamadaApi = async (value, token) => {
-    setloading(true);
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: value ? null : email,
-        password: value ? null : password,
-        provider: value ? "google" : null,
-        token: value ? token : null,
-      }),
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      // Manejar la sesión o redirigir al dashboard
-      router.push("/admin");
-    } else {
-      // Mostrar el error
-      setError(data.error);
-      console.error(data.error);
+    try {
+      const { user, session, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+      });
+      console.log("a");
+      if (error) throw error;
+      await handleApiCall(true, session.access_token);
+    } catch (error) {
+      setError("Error al iniciar sesión con Google");
+      console.error(error);
     }
-    setloading(false);
+  };
+
+  const handleApiCall = async (isGoogleLogin, token) => {
+    setLoading(true);
+    setError(null);
+    console.log(email, password, token, isGoogleLogin);
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: isGoogleLogin ? null : email,
+          password: isGoogleLogin ? null : password,
+          provider: isGoogleLogin ? "google" : null,
+          token: isGoogleLogin ? token : null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.push("/admin");
+      } else {
+        setError(data.error || "Error al iniciar sesión");
+        console.error("Error en la respuesta:", data);
+      }
+    } catch (error) {
+      setError("Error al conectar con el servidor");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">

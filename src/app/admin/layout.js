@@ -66,35 +66,35 @@ export default function AdminLayout({ children }) {
         const { data: store, error } = await fetchStoreData(userId);
         if (error) throw error;
 
-        if (!store?.sitioweb) {
-          router.replace("welcome");
-          return;
-        }
-
-        if (!store?.active) {
+        if (!store?.login) {
           router.replace("configPage");
           return;
         }
 
+        if (!store?.Sitios?.sitioweb) {
+          router.replace("welcome");
+          return;
+        }
+
         const tiendaParsed = {
-          ...store,
-          moneda: JSON.parse(store.moneda),
-          moneda_default: JSON.parse(store.moneda_default),
-          horario: JSON.parse(store.horario),
-          categoria: JSON.parse(store.categoria),
-          envios: JSON.parse(store.envios),
+          ...store.Sitios,
+          moneda: JSON.parse(store.Sitios.moneda),
+          moneda_default: JSON.parse(store.Sitios.moneda_default),
+          horario: JSON.parse(store.Sitios.horario),
+          categoria: JSON.parse(store.Sitios.categoria),
+          envios: JSON.parse(store.Sitios.envios),
         };
 
-        const eventsParsed = store.Events.map((event) => ({
+        const eventsParsed = store.Sitios.Events.map((event) => ({
           ...event,
           desc: JSON.parse(event.desc),
         }));
 
         const productosParsed = OrderProducts(
-          store.Products,
+          store.Sitios.Products,
           tiendaParsed.categoria
         );
-
+        delete tiendaParsed.Products;
         setWebshop((prev) => ({
           ...prev,
           store: tiendaParsed,
