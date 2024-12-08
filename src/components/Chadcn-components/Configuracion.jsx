@@ -204,6 +204,18 @@ export default function Configuracion({ ThemeContext }) {
           </p>
         </div>
         <div className="border rounded-2x p-5">
+          <SwitchStore
+            name={"act_tf"}
+            object={store}
+            title={"Transferencias"}
+            funcion={setStore}
+          />
+
+          <p className="text-xs text-muted-foreground mt-1">
+            *Va a estar recibiendo transferencias bancarias
+          </p>
+        </div>
+        <div className="border rounded-2x p-5">
           <div className="  flex justify-between">
             <SwitchStore
               name={"domicilio"}

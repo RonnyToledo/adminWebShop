@@ -1,4 +1,4 @@
-// @/lib/notificaciones
+/* @/lib/notificaciones
 import { supabase } from "./supa";
 
 export const subscribeUserToPush = async () => {
@@ -63,3 +63,4 @@ async function fetchUserSession() {
     console.error("Error al obtener la sesión del usuario:", error);
   }
 }
+*/

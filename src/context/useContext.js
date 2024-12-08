@@ -32,7 +32,7 @@ export default function MyProvider({ children }) {
   const [storeDataReady, setStoreDataReady] = useState(false);
   const router = useRouter();
 
-  // Iniciar el service worker
+  /* Iniciar el service worker
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -44,7 +44,7 @@ export default function MyProvider({ children }) {
           console.error("Error registrando el Service Worker:", error);
         });
     }
-  }, []);
+  }, []);/*/
 
   // Primer useEffect: Inicializar datos y cargar tienda
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function MyProvider({ children }) {
 
         const userId = userSession.user.id;
         // Llama esta función al iniciar sesión o cuando el usuario acepte recibir notificaciones
-        await subscribeUserToPush();
+        //await subscribeUserToPush();
         // Fetch and handle pending notifications
         const { data: notifications } = await supabase
           .from("Notification")

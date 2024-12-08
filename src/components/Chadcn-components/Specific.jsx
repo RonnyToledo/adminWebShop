@@ -36,6 +36,7 @@ export default function Specific({ specific, ThemeContext }) {
     agregados: [],
   });
   const [newImage, setNewImage] = useState();
+  console.log("a");
 
   useEffect(() => {
     setProducts(webshop.products.find((obj) => obj.productId == specific));
@@ -315,8 +316,8 @@ export default function Specific({ specific, ThemeContext }) {
                       </SelectTrigger>
                       <SelectContent>
                         {webshop.store.categoria.map((obj, ind) => (
-                          <SelectItem key={ind} value={obj}>
-                            {obj}
+                          <SelectItem key={ind} value={obj.name}>
+                            {obj.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

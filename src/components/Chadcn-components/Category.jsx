@@ -147,7 +147,7 @@ export default function Category({ ThemeContext }) {
             ...prevData,
             category: [...prevData.category, res.data.data],
           }));
-          setNewCat("");
+          setNewCat({});
         }
       } catch (error) {
         toast({
@@ -157,6 +157,8 @@ export default function Category({ ThemeContext }) {
         });
         console.error(error);
       } finally {
+        setNewCat({});
+
         setAdd(false);
       }
       form.current?.reset();
@@ -204,7 +206,7 @@ export default function Category({ ThemeContext }) {
                   id="nameForCategoryNew"
                   placeholder="Ingresa el nombre de la categoría"
                   type="text"
-                  value={newCat?.name}
+                  value={newCat.name || ""}
                   onChange={(e) =>
                     setNewCat({ ...newCat, name: e.target.value })
                   }
@@ -213,7 +215,7 @@ export default function Category({ ThemeContext }) {
                   id="descriptionForCategoryNew"
                   placeholder="Ingresa la descripcion de la categoría"
                   type="text"
-                  value={newCat?.description}
+                  value={newCat.description || ""}
                   onChange={(e) =>
                     setNewCat({ ...newCat, description: e.target.value })
                   }
