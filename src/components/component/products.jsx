@@ -83,7 +83,12 @@ export function Dashboard() {
       setDownloading(false);
     }
   };
-
+  console.log(
+    products.filter(
+      (prod) =>
+        !webshop.store.categoria.map((obj) => obj.id).includes(prod.caja)
+    )
+  );
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <div className="flex flex-col sm:gap-4 sm:py-4 mt-6">

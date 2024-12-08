@@ -305,7 +305,7 @@ const CategoryItem = ({
           <div>
             <h3 className="font-medium">{category.name}</h3>
             <p className="text-gray-500 text-sm">
-              {products.filter((prod) => prod.caja === category.name).length}{" "}
+              {products.filter((prod) => prod.caja === category.id).length}{" "}
               Productos
             </p>
           </div>

@@ -49,6 +49,8 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("descripcion", products.descripcion);
+    formData.append("span", products.span);
+    formData.append("UID", webshop.store.UUID);
     formData.append("UID", webshop.store.UUID);
     formData.append("creado", getLocalISOString(now));
     if (products.image) formData.append("image", products.image);
@@ -71,7 +73,6 @@ export default function NewProduct({ ThemeContext }) {
           ),
         });
         const [a] = res.data;
-        console.log(a);
         setWebshop({
           ...webshop,
           products: [...webshop.products, a],
@@ -103,155 +104,179 @@ export default function NewProduct({ ThemeContext }) {
   }, [imageNew]);
 
   return (
-    <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
-      <form ref={form} onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="images"
-          >
-            Imágenes
-          </Label>
-          <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
-          {imageNew && (
+    <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
+      <form ref={form} onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4">
+          <div className="border rounded-2x p-5 col-span-3">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="images"
+            >
+              Imágenes
+            </Label>
+            <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
+          </div>
+          <div className="border rounded-2x p-5 md:col-span-3">
             <Image
               alt="Logo"
               className="rounded-xl  mx-auto my-1"
               height={200}
               width={150}
-              src={URL.createObjectURL(imageNew)}
+              src={
+                imageNew
+                  ? URL.createObjectURL(imageNew)
+                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+              }
               style={{
                 aspectRatio: "40/40",
                 objectFit: "cover",
               }}
             />
-          )}
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="title"
-          >
-            Título
-          </Label>
-          <div className="mt-1">
-            <Input
-              id="title"
-              name="title"
-              required
-              value={products.title}
-              type="text"
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  title: e.target.value,
-                })
-              }
-            />
           </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="price"
-          >
-            Precio
-          </Label>
-          <div className="mt-1">
-            <Input
-              id="price"
-              name="price"
-              required
-              value={products.price}
-              type="number"
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  price: e.target.value,
-                })
-              }
-            />
-          </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="category"
-          >
-            Categoría
-          </Label>
-          <div className="mt-1">
-            <Select
-              id="category"
-              name="category"
-              required
-              onValueChange={(value) =>
-                setProducts({
-                  ...products,
-                  caja: value,
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {webshop.store.categoria.map((obj, ind) => (
-                    <SelectItem key={ind} value={obj.id}>
-                      {obj.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex items-start">
-          <div className="flex items-center h-5">
-            <Switch
-              id="reservation"
-              checked={products.favorito}
-              onCheckedChange={(value) => {
-                setProducts({
-                  ...products,
-                  favorito: value,
-                });
-              }}
-            />
-          </div>
-          <div className="ml-3 text-sm">
+          <div className="border rounded-2x p-5 md:col-span-2">
             <Label
-              className="font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="special"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="title"
             >
-              Producto especial
+              Título
             </Label>
+            <div className="mt-1">
+              <Input
+                id="title"
+                name="title"
+                required
+                value={products.title}
+                type="text"
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    title: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="description"
-          >
-            Descripción
-          </Label>
-          <div className="mt-1">
-            <Textarea
-              id="description"
-              name="description"
-              value={products.descripcion}
-              rows={3}
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  descripcion: e.target.value,
-                })
-              }
-            />
+          <div className="border rounded-2x p-5 md:col-span-2">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="price"
+            >
+              Precio
+            </Label>
+            <div className="mt-1">
+              <Input
+                id="price"
+                name="price"
+                required
+                value={products.price}
+                type="number"
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    price: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-        </div>
+          <div className="border rounded-2x p-5 md:col-span-2">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="category"
+            >
+              Categoría
+            </Label>
+            <div className="mt-1">
+              <Select
+                id="category"
+                name="category"
+                required
+                onValueChange={(value) =>
+                  setProducts({
+                    ...products,
+                    caja: value,
+                  })
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {webshop.store.categoria.map((obj, ind) => (
+                      <SelectItem key={ind} value={obj.id}>
+                        {obj.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="border rounded-2x p-5 md:col-span-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="ml-3 text-sm flex flex-col space-y-2">
+                <Switch
+                  id="reservation"
+                  checked={products.favorito}
+                  onCheckedChange={(value) => {
+                    setProducts({
+                      ...products,
+                      favorito: value,
+                    });
+                  }}
+                />
+                <Label
+                  className="font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="special"
+                >
+                  Producto especial
+                </Label>
+              </div>
 
+              <div className="ml-3 text-sm flex flex-col space-y-2">
+                <Switch
+                  id="span"
+                  checked={products.span}
+                  onCheckedChange={(value) => {
+                    setProducts({
+                      ...products,
+                      span: value,
+                    });
+                  }}
+                />
+                <Label
+                  className="font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="special"
+                >
+                  Doble Espacio
+                </Label>
+              </div>
+            </div>
+          </div>
+          <div className="border rounded-2x p-5 md:col-span-3">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="description"
+            >
+              Descripción
+            </Label>
+            <div className="mt-1">
+              <Textarea
+                id="description"
+                name="description"
+                value={products.descripcion}
+                rows={3}
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    descripcion: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
         <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
           <Button
             type="submit"

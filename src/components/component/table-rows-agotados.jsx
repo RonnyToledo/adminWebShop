@@ -126,6 +126,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
         <TableComponet
           key={ind}
           name={categoria.name}
+          id={categoria.id}
           ListProducts={products.filter((obj) => obj.caja == categoria.id)}
           setProducts={setProducts}
           downloading={downloading}
@@ -158,6 +159,7 @@ function TableComponet({
   setProducts,
   downloading,
   deleteProduct,
+  id,
 }) {
   return (
     <Card>
@@ -183,7 +185,7 @@ function TableComponet({
               </TableHead>
             </TableRow>
           </TableHeader>
-          <Droppable droppableId={name}>
+          <Droppable droppableId={id}>
             {(droppableProvided) => (
               <TableBody
                 {...droppableProvided.droppableProps}
