@@ -80,7 +80,7 @@ export async function POST(request, { params }) {
           creado: data.get("creado"),
         },
       ])
-      .select();
+      .select("*, agregados (*)");
     if (error) {
       console.error(error);
 
@@ -107,7 +107,7 @@ export async function POST(request, { params }) {
           creado: data.get("creado"),
         },
       ])
-      .select();
+      .select("*, agregados (*)");
     if (error) {
       console.error(error);
 

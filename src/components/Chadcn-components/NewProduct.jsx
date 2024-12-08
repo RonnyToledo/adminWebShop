@@ -71,6 +71,7 @@ export default function NewProduct({ ThemeContext }) {
           ),
         });
         const [a] = res.data;
+        console.log(a);
         setWebshop({
           ...webshop,
           products: [...webshop.products, a],
