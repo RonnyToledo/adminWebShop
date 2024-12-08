@@ -44,7 +44,6 @@ export async function PUT(request, { params }) {
   await LogUser();
 
   const data = await request.formData();
-  console.log(data);
   const Id = data.get("Id");
   const newImage = data.get("newImage");
   const image = data.get("image");
@@ -106,8 +105,7 @@ export async function PUT(request, { params }) {
       .eq("productId", Id)
       .select("*, agregados (*)");
     if (error) {
-      console.log("Error");
-      console.log(error);
+      console.log("Error", error);
 
       return NextResponse.json(
         { message: error },
@@ -116,9 +114,10 @@ export async function PUT(request, { params }) {
         }
       );
     }
-    return NextResponse.json({ message: "Producto creado" });
+    return NextResponse.json(tienda);
   } else {
     console.log("estamos aca");
+    console.log(Id);
     //Si no tenemos nueva Imagen solo actualizamos los datos
     const { data: tienda, error } = await supabase
       .from("Products")
@@ -134,8 +133,8 @@ export async function PUT(request, { params }) {
         span: data.get("span"),
         oldPrice: data.get("oldPrice"),
       })
-      .eq("productId", Id)
-      .select("*, agregados (*)");
+      .select("*, agregados (*)")
+      .eq("productId", Id);
     if (error) {
       console.log(error);
 

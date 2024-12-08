@@ -125,7 +125,7 @@ export function Dashboard() {
               {products.filter(
                 (prod) =>
                   !webshop.store.categoria
-                    .map((obj) => obj.name)
+                    .map((obj) => obj.id)
                     .includes(prod.caja)
               ).length > 0 ? (
                 <Card x-chunk="dashboard-06-chunk-0">
@@ -160,7 +160,7 @@ export function Dashboard() {
                           product={products.filter(
                             (prod) =>
                               !webshop.store.categoria
-                                .map((obj) => obj.name)
+                                .map((obj) => obj.id)
                                 .includes(prod.caja)
                           )}
                         />
@@ -203,14 +203,17 @@ export function Dashboard() {
                       <TableRowsComponent
                         product={OrderProducts(
                           FilterFavorito,
-                          webshop.store.categoria
+                          webshop.store.categoria.map((obj) => obj.id)
                         )}
                       />
                       <TableRowsComponent
                         product={FilterFavorito.sort(
                           (a, b) => a.order - b.order
                         ).filter(
-                          (obj) => !webshop.store.categoria.includes(obj.caja)
+                          (obj) =>
+                            !webshop.store.categoria
+                              .map((obj) => obj.id)
+                              .includes(obj.caja)
                         )}
                       />
                     </TableBody>

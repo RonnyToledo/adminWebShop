@@ -197,7 +197,7 @@ export default function NewProduct({ ThemeContext }) {
               <SelectContent>
                 <SelectGroup>
                   {webshop.store.categoria.map((obj, ind) => (
-                    <SelectItem key={ind} value={obj.name}>
+                    <SelectItem key={ind} value={obj.id}>
                       {obj.name}
                     </SelectItem>
                   ))}

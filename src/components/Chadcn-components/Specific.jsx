@@ -36,7 +36,6 @@ export default function Specific({ specific, ThemeContext }) {
     agregados: [],
   });
   const [newImage, setNewImage] = useState();
-  console.log("a");
 
   useEffect(() => {
     setProducts(webshop.products.find((obj) => obj.productId == specific));
@@ -81,12 +80,13 @@ export default function Specific({ specific, ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
+        console.log(res.data);
+        const [a] = res.data;
+        const b = webshop.products.map((obj) =>
+          obj.productId == a.productId ? a : obj
+        );
+        setWebshop({ ...webshop, products: b });
       }
-      const [a] = res.data;
-      const b = webshop.products.map((obj) =>
-        obj.productId == a.productId ? a : obj
-      );
-      setWebshop({ ...webshop, products: b });
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({
@@ -316,7 +316,7 @@ export default function Specific({ specific, ThemeContext }) {
                       </SelectTrigger>
                       <SelectContent>
                         {webshop.store.categoria.map((obj, ind) => (
-                          <SelectItem key={ind} value={obj.name}>
+                          <SelectItem key={ind} value={obj.id}>
                             {obj.name}
                           </SelectItem>
                         ))}

@@ -88,7 +88,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
       setProducts((prevProducts) =>
         OrderProducts(
           prevProducts,
-          webshop.store.categoria.map((obj) => obj.name),
+          webshop.store.categoria.map((obj) => obj.id),
           sourceIndex,
           destIndex,
           sourceCategory
@@ -110,7 +110,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
           // Aplicar la nueva organización
           return OrderProducts(
             newPrev,
-            webshop.store.categoria.map((obj) => obj.name),
+            webshop.store.categoria.map((obj) => obj.id),
             sourceIndex,
             destIndex
           );
@@ -126,14 +126,16 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
         <TableComponet
           key={ind}
           name={categoria.name}
-          ListProducts={products.filter((obj) => obj.caja == categoria.name)}
+          ListProducts={products.filter((obj) => obj.caja == categoria.id)}
           setProducts={setProducts}
           downloading={downloading}
           deleteProduct={deleteProduct}
         />
       ))}
-      {products.filter((prod) => !webshop.store.categoria.includes(prod.caja))
-        .length > 0 && (
+      {products.filter(
+        (prod) =>
+          !webshop.store.categoria.map((obj) => obj.id).includes(prod.caja)
+      ).length > 0 && (
         <TableComponet
           name={"Sin Categoria"}
           ListProducts={products.filter(
