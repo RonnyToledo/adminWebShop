@@ -28,6 +28,7 @@ export default function NewProduct({ ThemeContext }) {
   const [imageNew, setImageNew] = useState();
   const [products, setProducts] = useState({
     favorito: false,
+    span: false,
     title: "",
     descripcion: "",
     discount: 0,
@@ -107,7 +108,7 @@ export default function NewProduct({ ThemeContext }) {
     <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4">
-          <div className="border rounded-2x p-5 col-span-3">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="images"
@@ -116,7 +117,7 @@ export default function NewProduct({ ThemeContext }) {
             </Label>
             <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
           </div>
-          <div className="border rounded-2x p-5 md:col-span-3">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
             <Image
               alt="Logo"
               className="rounded-xl  mx-auto my-1"
@@ -125,7 +126,8 @@ export default function NewProduct({ ThemeContext }) {
               src={
                 imageNew
                   ? URL.createObjectURL(imageNew)
-                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                  : webshop.store.urlPoster ||
+                    "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
               }
               style={{
                 aspectRatio: "40/40",
@@ -133,7 +135,7 @@ export default function NewProduct({ ThemeContext }) {
               }}
             />
           </div>
-          <div className="border rounded-2x p-5 md:col-span-2">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="title"
@@ -156,7 +158,7 @@ export default function NewProduct({ ThemeContext }) {
               />
             </div>
           </div>
-          <div className="border rounded-2x p-5 md:col-span-2">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="price"
@@ -179,7 +181,7 @@ export default function NewProduct({ ThemeContext }) {
               />
             </div>
           </div>
-          <div className="border rounded-2x p-5 md:col-span-2">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="category"
@@ -213,7 +215,7 @@ export default function NewProduct({ ThemeContext }) {
               </Select>
             </div>
           </div>
-          <div className="border rounded-2x p-5 md:col-span-3">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
             <div className="grid grid-cols-2 gap-4">
               <div className="ml-3 text-sm flex flex-col space-y-2">
                 <Switch
@@ -254,7 +256,7 @@ export default function NewProduct({ ThemeContext }) {
               </div>
             </div>
           </div>
-          <div className="border rounded-2x p-5 md:col-span-3">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="description"
