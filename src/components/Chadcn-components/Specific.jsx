@@ -379,7 +379,7 @@ export default function Specific({ specific, ThemeContext }) {
                   <CardTitle>Agregado</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {products?.agregados.length >= 0 &&
+                  {products?.agregados.length > 0 &&
                     products?.agregados.map((obj1, index) => (
                       <div
                         key={index}
