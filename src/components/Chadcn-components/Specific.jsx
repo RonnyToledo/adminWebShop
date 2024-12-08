@@ -254,7 +254,7 @@ export default function Specific({ specific, ThemeContext }) {
                       <Input
                         id="name"
                         type="text"
-                        value={products?.title}
+                        value={products?.title || "..."}
                         onChange={(e) =>
                           setProducts({ ...products, title: e.target.value })
                         }
@@ -265,7 +265,7 @@ export default function Specific({ specific, ThemeContext }) {
                       <Textarea
                         id="description"
                         rows={4}
-                        defaultValue={products?.descripcion}
+                        defaultValue={products?.descripcion || "..."}
                         onChange={(e) =>
                           setProducts({
                             ...products,
