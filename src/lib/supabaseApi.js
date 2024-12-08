@@ -4,7 +4,7 @@ export async function fetchStoreData(userId) {
   const { data, error } = await supabase
     .from("user")
     .select(
-      "*, Sitios(*, Products (*, agregados(*)), Events (*) , codeDiscount (*))"
+      "*, Sitios(*, categorias(*), Products (*, agregados(*)), Events (*) , codeDiscount (*))"
     )
     .eq("id", userId)
     .single();

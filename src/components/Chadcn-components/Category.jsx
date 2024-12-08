@@ -16,18 +16,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, TrashIcon, FolderIcon } from "lucide-react";
+import { Pencil, TrashIcon, FolderIcon, Loader } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ConfimationOut from "../globalFunction/confimationOut";
+import { Textarea } from "../ui/textarea";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
-  const [formVisible, setFormVisible] = useState(false);
-  const [newCat, setNewCat] = useState("");
-  const [data, setData] = useState({ category: [], products: [] });
+  const [deleting, setDeleting] = useState(false);
+  const [add, setAdd] = useState(false);
+  const [newCat, setNewCat] = useState({});
+  const [data, setData] = useState({ category: [], UUID: "" });
   const { toast } = useToast();
   const form = useRef(null);
 
@@ -36,36 +38,58 @@ export default function Category({ ThemeContext }) {
     if (webshop.store.categoria.length > 0) {
       setData({
         category: webshop.store.categoria,
-        products: webshop.products,
+        UUID: webshop.store.UUID,
       });
     }
   }, [webshop]);
 
-  const handleDelete = (categoryToDelete) => {
-    const updatedCategories = data.category.filter(
-      (item) => item !== categoryToDelete
-    );
-    setWebshop({
-      ...webshop,
-      store: { ...webshop.store, categoria: updatedCategories },
-    });
+  const handleDelete = async (categoryToDelete) => {
+    setDeleting(true);
+
+    try {
+      const res = await axios.delete(
+        `/api/tienda/${webshop.store.sitioweb}/categoria`,
+        {
+          data: { UUID: categoryToDelete }, // El cuerpo debe ir en `data`
+          headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
+        }
+      );
+
+      if (res.status === 200) {
+        toast({
+          title: "Tarea Ejecutada",
+          description: "Categoria Eliminada",
+          action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
+        });
+        const updatedCategories = data.category.filter(
+          (item) => item.id !== categoryToDelete
+        );
+        setWebshop({
+          ...webshop,
+          store: { ...webshop.store, categoria: updatedCategories },
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "No se pudo editar las categorías.",
+      });
+      console.error(error);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setDownloading(true);
 
-    const updatedProducts = data.products.filter((prod) =>
-      webshop.products.some(
-        (item) => item.id === prod.id && item.caja !== prod.caja
-      )
-    );
-
     const formData = new FormData();
     formData.append("categoria", JSON.stringify(data.category));
-    formData.append("products", JSON.stringify(updatedProducts));
+    formData.append("UUID", data.UUID);
     try {
-      const res = await axios.post(
+      const res = await axios.put(
         `/api/tienda/${webshop.store.sitioweb}/categoria`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
@@ -77,10 +101,10 @@ export default function Category({ ThemeContext }) {
           description: "Información actualizada",
           action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
         });
+        console.log(res?.data?.data);
         setWebshop({
           ...webshop,
-          store: { ...webshop.store, categoria: data.category },
-          products: data.products,
+          store: { ...webshop.store, categoria: res?.data?.data },
         });
       }
     } catch (error) {
@@ -95,15 +119,55 @@ export default function Category({ ThemeContext }) {
     }
   };
 
-  const addCategory = (e) => {
+  const addCategory = async (e) => {
     e.preventDefault();
-    setData((prevData) => ({
-      ...prevData,
-      category: [...prevData.category, newCat],
-    }));
-    setFormVisible(false);
-    setNewCat("");
-    form.current?.reset();
+    setAdd(true);
+    if (newCat.name) {
+      try {
+        const res = await axios.post(
+          `/api/tienda/${webshop.store.sitioweb}/categoria`,
+          {
+            data: {
+              ...newCat,
+              storeId: webshop.store.UUID,
+              order: data.length,
+            }, // El cuerpo debe ir en `data`
+            headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
+          }
+        );
+
+        if (res.status === 200) {
+          toast({
+            title: "Tarea Ejecutada",
+            description: "Categoria Creada",
+            action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
+          });
+          console.log(res.data.data);
+          setData((prevData) => ({
+            ...prevData,
+            category: [...prevData.category, res.data.data],
+          }));
+          setNewCat("");
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "No se pudo editar las categorías.",
+        });
+        console.error(error);
+      } finally {
+        setAdd(false);
+      }
+      form.current?.reset();
+    } else {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Tiene q agregar un nombre a la categoria.",
+      });
+      form.current?.reset();
+    }
   };
 
   const onDragEnd = (result) => {
@@ -116,23 +180,53 @@ export default function Category({ ThemeContext }) {
     );
     setData((prevData) => ({ ...prevData, category: reorderedCategories }));
   };
-
   return (
     <main className="py-2 px-6">
       <div className="p-4">
-        {!formVisible ? (
-          <Button size="sm" onClick={() => setFormVisible(!formVisible)}>
-            Agregar Categoria
-          </Button>
-        ) : (
-          <CategoryForm
-            onSubmit={addCategory}
-            newCat={newCat}
-            setNewCat={setNewCat}
-            formRef={form}
-            setFormVisible={setFormVisible}
-          />
-        )}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline"> Agregar Categoria</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <form
+              className="bg-white border rounded-lg p-2 space-y-2 flex flex-col align-center"
+              onSubmit={addCategory}
+            >
+              <DialogHeader>
+                <DialogTitle>Agregar Categoria</DialogTitle>
+                <DialogDescription>Crea una Categoria</DialogDescription>
+              </DialogHeader>
+              <div className="mt-8 mb-5 space-y-4">
+                <div className="flex justify-between">
+                  <h2 className="text-lg font-bold mb-4">Agregar Categoría</h2>
+                </div>
+                <Input
+                  id="nameForCategoryNew"
+                  placeholder="Ingresa el nombre de la categoría"
+                  type="text"
+                  value={newCat?.name}
+                  onChange={(e) =>
+                    setNewCat({ ...newCat, name: e.target.value })
+                  }
+                />
+                <Input
+                  id="descriptionForCategoryNew"
+                  placeholder="Ingresa la descripcion de la categoría"
+                  type="text"
+                  value={newCat?.description}
+                  onChange={(e) =>
+                    setNewCat({ ...newCat, description: e.target.value })
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={add}>
+                  {!add ? "Save changes" : "Saving"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <form onSubmit={handleSubmit} className="space-y-2">
@@ -143,21 +237,27 @@ export default function Category({ ThemeContext }) {
                 {...provided.droppableProps}
                 className="gap-4"
               >
-                {data.category.map((category, index) => (
-                  <CategoryItem
-                    key={index}
-                    index={index}
-                    category={category}
-                    products={data.products}
-                    onDelete={handleDelete}
-                    onUpdateProducts={(updatedProducts) =>
-                      setData((prev) => ({
-                        ...prev,
-                        products: updatedProducts,
-                      }))
-                    }
-                  />
-                ))}
+                {data.category
+                  .sort((a, b) => a.order - b.order)
+                  .map((category, index) => (
+                    <CategoryItem
+                      key={index}
+                      index={index}
+                      category={category}
+                      products={webshop.products}
+                      onDelete={handleDelete}
+                      deleting={deleting}
+                      setData={setData}
+                      handleSubmit={handleSubmit}
+                      downloading={downloading}
+                      onUpdateProducts={(updatedProducts) =>
+                        setData((prev) => ({
+                          ...prev,
+                          products: updatedProducts,
+                        }))
+                      }
+                    />
+                  ))}
                 {provided.placeholder}
               </div>
             )}
@@ -167,6 +267,8 @@ export default function Category({ ThemeContext }) {
               downloading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={downloading}
+            type="submit"
+            id="Guardar"
           >
             {downloading ? "Guardando..." : "Guardar"}
           </Button>
@@ -177,45 +279,16 @@ export default function Category({ ThemeContext }) {
   );
 }
 
-const CategoryForm = ({
-  onSubmit,
-  newCat,
-  setNewCat,
-  formRef,
-  setFormVisible,
-}) => (
-  <div className="mt-8 mb-5">
-    <div className="flex justify-between">
-      <h2 className="text-lg font-bold mb-4">Agregar Categoría</h2>
-      <Button size="icon" variant="gosth" onClick={() => setFormVisible(false)}>
-        <CloseRoundedIcon />
-      </Button>
-    </div>
-    <form
-      className="bg-white border rounded-lg p-2 space-y-2 flex flex-col align-center"
-      onSubmit={onSubmit}
-      ref={formRef}
-    >
-      <Input
-        id="nameForCategoryNew"
-        placeholder="Ingresa el nombre de la categoría"
-        type="text"
-        value={newCat}
-        onChange={(e) => setNewCat(e.target.value)}
-      />
-      <div className="p-2 bg-white sticky buttom-0 w-full">
-        <Button type="submit">Guardar</Button>
-      </div>
-    </form>
-  </div>
-);
-
 const CategoryItem = ({
   index,
   category,
   products,
   onDelete,
   onUpdateProducts,
+  deleting,
+  setData,
+  handleSubmit,
+  downloading,
 }) => (
   <Draggable draggableId={`draggable-${index}`} index={index}>
     {(provided) => (
@@ -228,9 +301,9 @@ const CategoryItem = ({
         <div className="flex items-center gap-4">
           <FolderIcon className="h-6 w-6 text-gray-500" />
           <div>
-            <h3 className="font-medium">{category}</h3>
+            <h3 className="font-medium">{category.name}</h3>
             <p className="text-gray-500 text-sm">
-              {products.filter((prod) => prod.caja === category).length}{" "}
+              {products.filter((prod) => prod.caja === category.name).length}{" "}
               Productos
             </p>
           </div>
@@ -239,56 +312,77 @@ const CategoryItem = ({
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline">
-                <Plus className="h-4 w-4" />
+                <Pencil className="h-4 w-4 text-gray-500" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[300px] sm:max-w-[425px] h-2/3">
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Agregar Productos</DialogTitle>
-                <DialogDescription>
-                  Indique los productos para la categoría ({category})
-                </DialogDescription>
+                <DialogTitle>Editar {category.name}</DialogTitle>
               </DialogHeader>
-              <ScrollArea className="h-full w-full rounded-md border p-4">
-                <div className="grid gap-4 py-4">
-                  {products
-                    .sort((a, b) => (a.caja === category ? -1 : 1))
-                    .map((prod) => (
-                      <div
-                        key={prod.productId}
-                        className="flex justify-between items-center gap-4"
-                      >
-                        <Label className="text-sm font-medium">
-                          {prod.title}
-                        </Label>
-                        <Checkbox
-                          checked={prod.caja === category}
-                          onCheckedChange={() =>
-                            onUpdateProducts(
-                              products.map((p) =>
-                                p.productId === prod.productId
-                                  ? {
-                                      ...p,
-                                      caja:
-                                        p.caja === category ? null : category,
-                                    }
-                                  : p
-                              )
-                            )
-                          }
-                        />
-                      </div>
-                    ))}
+              <div className="grid gap-4 py-4">
+                <div className=" gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Nombre
+                  </Label>
+                  <Input
+                    id="name"
+                    defaultValue={category.name}
+                    onChange={(e) => {
+                      setData((prevData) => ({
+                        ...prevData,
+                        category: prevData.category.map((obj) =>
+                          obj.id == category.id
+                            ? { ...obj, name: e.target.value }
+                            : obj
+                        ),
+                      }));
+                    }}
+                  />
                 </div>
-              </ScrollArea>
+                <div className="gap-4">
+                  <Label htmlFor="username" className="text-right">
+                    Descripcion
+                  </Label>
+                  <Textarea
+                    id="username"
+                    defaultValue={category.description}
+                    onChange={(e) => {
+                      setData((prevData) => ({
+                        ...prevData,
+                        category: prevData.category.map((obj) =>
+                          obj.id == category.id
+                            ? { ...obj, description: e.target.value }
+                            : obj
+                        ),
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={handleSubmit}
+                  className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+                    downloading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={downloading}
+                >
+                  {downloading ? "Guardando..." : "Guardar"}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
           <Button
             variant="outline"
+            id="deletingCat"
             type="button"
-            onClick={() => onDelete(category)}
+            onClick={() => onDelete(category.id)}
           >
-            <TrashIcon className="h-4 w-4 text-red-500" />
+            {!deleting ? (
+              <TrashIcon className="h-4 w-4 text-red-500" />
+            ) : (
+              <Loader className=" animate-spin h-4 w-4 text-red-500" />
+            )}
           </Button>
         </div>
       </div>
@@ -299,7 +393,6 @@ const CategoryItem = ({
 // Utilidad y helpers
 const hasPendingChanges = (data, webshop) => {
   return (
-    JSON.stringify(data.products) !== JSON.stringify(webshop.products) ||
     JSON.stringify(data.category) !== JSON.stringify(webshop.store.categoria)
   );
 };
@@ -308,5 +401,7 @@ const reorder = (list, startIndex, endIndex) => {
   const result = Array.from(list);
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
-  return result;
+  return result.map((obj, ind) => {
+    return { ...obj, order: ind };
+  });
 };

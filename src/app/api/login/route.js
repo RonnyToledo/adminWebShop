@@ -2,45 +2,58 @@ import { supabase } from "@/lib/supa";
 import { NextResponse } from "next/server";
 import { serialize } from "cookie";
 
+// Función para crear una cookie de sesión
+function createSessionCookie(session) {
+  return serialize(
+    "sb-access-token",
+    JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    }),
+    {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 7 días
+      path: "/",
+    }
+  );
+}
+
+// Función para eliminar la cookie de sesión
+function clearSessionCookie() {
+  return serialize("sb-access-token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: -1, // Expira la cookie
+    path: "/",
+  });
+}
+
 // Función para renovar el access_token si ha expirado
 async function refreshAccessTokenIfNeeded(cookieValue) {
-  console.log("Revisando si el access_token necesita ser renovado...");
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Revisando si el access_token necesita ser renovado...");
+  }
 
   const parsedCookie = JSON.parse(cookieValue);
   const { access_token, refresh_token } = parsedCookie;
 
-  // Verificar si el access_token es válido
   const { data: user, error } = await supabase.auth.getUser(access_token);
 
   if (error) {
     console.log("El access_token ha expirado, intentando renovar...");
 
-    // Si el access_token ha expirado, usar el refresh_token para renovarlo
     const { data, error: refreshError } = await supabase.auth.refreshSession({
       refresh_token,
     });
 
-    if (refreshError) {
-      console.error("Error al renovar el access_token:", refreshError.message);
-      return { error: refreshError.message };
+    if (refreshError || !data.session) {
+      console.error("Error al renovar el access_token:", refreshError?.message);
+      return { error: refreshError?.message || "Sesión inválida" };
     }
 
     console.log("access_token renovado exitosamente.");
-
-    // Crear una nueva cookie con el nuevo access_token y refresh_token
-    const newCookieString = serialize(
-      "sb-access-token",
-      JSON.stringify({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      }),
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24 * 7, // 7 días
-        path: "/",
-      }
-    );
+    const newCookieString = createSessionCookie(data.session);
 
     return { newAccessToken: data.session.access_token, newCookieString };
   }
@@ -91,19 +104,35 @@ export async function POST(req) {
   console.log("Procesando POST /api/login");
 
   const { email, password, provider, token } = await req.json();
-  console.log("Datos recibidos en el cuerpo:", { email, provider });
+
+  if (!provider) {
+    return NextResponse.json(
+      { error: "El proveedor es obligatorio" },
+      { status: 400 }
+    );
+  }
+
+  if (provider === "google" && !token) {
+    return NextResponse.json(
+      { error: "El token es obligatorio para Google" },
+      { status: 400 }
+    );
+  }
+
+  if (provider === "email" && (!email || !password)) {
+    return NextResponse.json(
+      { error: "El email y password son obligatorios" },
+      { status: 400 }
+    );
+  }
 
   let data, error;
 
   if (provider === "google") {
-    console.log("Intentando login con Google...");
+    console.log("Intentando login con Google...", token);
     ({ data, error } = await supabase.auth.signInWithIdToken({
       provider: "google",
       token,
-      options: {
-        redirectTo:
-          process.env.NEXT_PUBLIC_REDIRECT_URL || "http://localhost:4000/admin",
-      },
     }));
   } else {
     console.log("Intentando login con email y password...");
@@ -128,23 +157,9 @@ export async function POST(req) {
 
   console.log("Sesión obtenida correctamente:", data.session);
 
-  const cookieString = serialize(
-    "sb-access-token",
-    JSON.stringify({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-    }),
-    {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 7 días
-      path: "/",
-    }
-  );
+  const cookieString = createSessionCookie(data.session);
 
-  const response = NextResponse.json({
-    session: data.session,
-  });
+  const response = NextResponse.json({ session: data.session });
   response.headers.append("Set-Cookie", cookieString);
 
   return response;
@@ -154,6 +169,15 @@ export async function POST(req) {
 export async function DELETE(req) {
   console.log("Procesando DELETE /api/login");
 
+  const cookie = req.cookies.get("sb-access-token");
+
+  if (!cookie) {
+    return NextResponse.json(
+      { error: "No hay sesión activa para cerrar" },
+      { status: 401 }
+    );
+  }
+
   const { error } = await supabase.auth.signOut();
 
   if (error) {
@@ -162,13 +186,7 @@ export async function DELETE(req) {
   }
 
   console.log("Sesión cerrada exitosamente.");
-
-  const cookieString = serialize("sb-access-token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: -1, // Expira la cookie
-    path: "/",
-  });
+  const cookieString = clearSessionCookie();
 
   const response = NextResponse.json({ message: "Logout exitoso" });
   response.headers.append("Set-Cookie", cookieString);

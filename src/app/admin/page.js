@@ -1,6 +1,6 @@
 "use client";
-import React, { useContext } from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import React, { useContext, useEffect } from "react";
+import { ThemeContext } from "../../context/useContext";
 import Dashboard from "@/components/Chadcn-components/Compras";
 import Logins from "@/components/Chadcn-components/Logins";
 import Guia from "@/components/Chadcn-components/Guia";

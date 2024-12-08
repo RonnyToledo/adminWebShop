@@ -28,7 +28,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 import { Switch } from "../ui/switch";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
@@ -88,7 +88,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
       setProducts((prevProducts) =>
         OrderProducts(
           prevProducts,
-          webshop.store.categoria,
+          webshop.store.categoria.map((obj) => obj.name),
           sourceIndex,
           destIndex,
           sourceCategory
@@ -97,13 +97,11 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
     } else {
       // Mover el producto a una nueva categoría
       setProducts((prevProducts) => {
-        console.log(prevProducts);
         const newPrev = prevProducts.map((prod) =>
           prod.productId === draggableId
             ? { ...prod, caja: destCategory, order: destIndex }
             : prod
         );
-        console.log(newPrev);
 
         const productToMove = newPrev.find(
           (prod) => prod.productId === draggableId
@@ -112,7 +110,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
           // Aplicar la nueva organización
           return OrderProducts(
             newPrev,
-            webshop.store.categoria,
+            webshop.store.categoria.map((obj) => obj.name),
             sourceIndex,
             destIndex
           );
@@ -127,8 +125,8 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
       {webshop.store.categoria.map((categoria, ind) => (
         <TableComponet
           key={ind}
-          name={categoria}
-          ListProducts={products.filter((obj) => obj.caja == categoria)}
+          name={categoria.name}
+          ListProducts={products.filter((obj) => obj.caja == categoria.name)}
           setProducts={setProducts}
           downloading={downloading}
           deleteProduct={deleteProduct}
@@ -139,7 +137,10 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
         <TableComponet
           name={"Sin Categoria"}
           ListProducts={products.filter(
-            (prod) => !webshop.store.categoria.includes(prod.caja)
+            (prod) =>
+              !webshop.store.categoria
+                .map((obj) => obj.name)
+                .includes(prod.caja)
           )}
           setProducts={setProducts}
           downloading={downloading}

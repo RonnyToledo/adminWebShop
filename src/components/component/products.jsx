@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 import { useState, useContext, useRef, useEffect } from "react";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
@@ -43,10 +43,6 @@ export function Dashboard() {
     setFilterFavorito(webshop.products.filter((product) => product.favorito));
   }, [webshop]);
 
-  console.log(webshop.products);
-  console.log(products);
-
-  console.log(obtenerProductosModificados(webshop.products, products));
   const SaveData = async () => {
     setDownloading(true);
     const formData = new FormData();
@@ -127,7 +123,10 @@ export function Dashboard() {
             </TabsContent>
             <TabsContent value="agotado">
               {products.filter(
-                (prod) => !webshop.store.categoria.includes(prod.caja)
+                (prod) =>
+                  !webshop.store.categoria
+                    .map((obj) => obj.name)
+                    .includes(prod.caja)
               ).length > 0 ? (
                 <Card x-chunk="dashboard-06-chunk-0">
                   <CardHeader>
@@ -160,7 +159,9 @@ export function Dashboard() {
                         <TableRowsComponent
                           product={products.filter(
                             (prod) =>
-                              !webshop.store.categoria.includes(prod.caja)
+                              !webshop.store.categoria
+                                .map((obj) => obj.name)
+                                .includes(prod.caja)
                           )}
                         />
                       </TableBody>
@@ -257,7 +258,7 @@ function OrderProducts(productos, categorias) {
 
   // Inicializar el objeto con categorías vacías
   categorias.forEach((categoria) => {
-    productosOrdenados[categoria] = [];
+    productosOrdenados[categoria.name] = [];
   });
 
   // Llenar el objeto con productos según su categoría

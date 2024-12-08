@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import QrCode from "@/components/Chadcn-components/QRcode";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 import { CopyIcon } from "lucide-react";
 
 const GuideCard = ({ title, description, steps, link, buttonText }) => {

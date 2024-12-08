@@ -167,7 +167,13 @@ export default function Configuracion({ ThemeContext }) {
             placeholder={store.municipio}
             value={""}
           />
-
+          <InputStore
+            name={"Direccion"}
+            object={store}
+            value={"direccion"}
+            action={setStore}
+            type={"text"}
+          />
           <p className="text-xs text-muted-foreground mt-1">
             *Seleccione su ubicacion
           </p>

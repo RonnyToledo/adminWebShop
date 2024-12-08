@@ -27,7 +27,7 @@ import { useState, useContext } from "react";
 import axios from "axios";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 
 export default function TableRowsComponent({ product }) {
   const { webshop, setWebshop } = useContext(ThemeContext);

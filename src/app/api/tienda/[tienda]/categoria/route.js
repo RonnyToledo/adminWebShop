@@ -11,7 +11,6 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -19,58 +18,93 @@ const LogUser = async () => {
   });
 };
 
-async function updateProductsInBatches(products, batchSize = 10) {
-  for (let i = 0; i < products.length; i += batchSize) {
-    const batch = products.slice(i, i + batchSize);
-
-    // Procesa cada lote con Promise.all para paralelismo dentro del lote
-    await Promise.all(
-      batch.map(async (product) => {
-        const { productId, caja } = product;
-
-        // Intento de actualización en la tabla "Products"
-        const { error } = await supabase
-          .from("Products")
-          .update({ caja })
-          .eq("productId", productId);
-
-        // Si hay un error en la actualización, lo lanza
-        if (error) {
-          console.error(
-            `Error al actualizar el producto ${productId}: ${error.message}`
-          );
-          throw new Error(
-            `Error actualizando producto ${productId}: ${error.message}`
-          );
-        }
-      })
-    );
-  }
-}
-
 export async function POST(request, { params }) {
-  await LogUser();
-
-  const data = await request.formData();
-  const categoria = data.get("categoria");
-  const products = JSON.parse(data.get("products"));
-
+  // Obtenemos el cuerpo enviado desde el cliente
+  const data = await request.json();
+  console.log(data);
   try {
     // Actualiza la categoría de la tienda
-    const { error: tiendaError } = await supabase
-      .from("Sitios")
-      .update({ categoria })
-      .eq("sitioweb", params.tienda);
+    await LogUser();
+
+    const { data: newData, error: tiendaError } = await supabase
+      .from("categorias")
+      .insert([data.data])
+      .select("*")
+      .single();
+    console.log(newData);
 
     if (tiendaError) {
       return handleError(tiendaError);
     }
 
-    // Llama a la función para actualizar productos en lotes
-    await updateProductsInBatches(products, 10);
+    // Si hay un error en la actualización, lo lanza
+    if (tiendaError) {
+      console.error(
+        `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
+      );
+      throw new Error(
+        `Error actualizando producto ${cat.id}: ${tiendaError.message}`
+      );
+    }
 
     return NextResponse.json({
       message: "Categoría y productos actualizados correctamente.",
+      data: newData,
+    });
+  } catch (error) {
+    console.error("Error en la actualización:", error.message);
+    return NextResponse.json(
+      { message: `Error: ${error.message}` },
+      { status: 500 }
+    );
+  }
+}
+export async function PUT(request, { params }) {
+  const data = await request.formData();
+  const categoria = JSON.parse(data.get("categoria"));
+  const products = JSON.parse(data.get("products"));
+  const UUID = data.get("UUID");
+
+  try {
+    // Actualiza la categoría de la tienda
+    await LogUser();
+
+    await Promise.all(
+      categoria.map(async (cat) => {
+        const { error: tiendaError } = await supabase
+          .from("categorias")
+          .upsert(cat);
+
+        if (tiendaError) {
+          return handleError(tiendaError);
+        }
+
+        // Si hay un error en la actualización, lo lanza
+        if (tiendaError) {
+          console.error(
+            `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
+          );
+          throw new Error(
+            `Error actualizando producto ${cat.id}: ${tiendaError.message}`
+          );
+        }
+      })
+    );
+    console.log("categorias ok");
+
+    console.log(UUID);
+    const { data: categoryNew, error: tiendaError } = await supabase
+      .from("categorias")
+      .select("*")
+      .eq("storeId", UUID);
+
+    if (tiendaError) {
+      console.error(tiendaError);
+    }
+
+    return NextResponse.json({
+      message: "Categoría y productos actualizados correctamente.",
+      data: categoryNew,
     });
   } catch (error) {
     console.error("Error en la actualización:", error.message);
@@ -87,4 +121,42 @@ function handleError(error) {
     { message: error.message || "Ocurrió un error desconocido" },
     { status: 400 }
   );
+}
+
+export async function DELETE(request, { params }) {
+  // Obtenemos el cuerpo enviado desde el cliente
+  const { UUID } = await request.json();
+  try {
+    // Actualiza la categoría de la tienda
+    await LogUser();
+
+    const { error: tiendaError } = await supabase
+      .from("categorias")
+      .delete()
+      .eq("id", UUID);
+
+    if (tiendaError) {
+      return handleError(tiendaError);
+    }
+
+    // Si hay un error en la actualización, lo lanza
+    if (tiendaError) {
+      console.error(
+        `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
+      );
+      throw new Error(
+        `Error actualizando producto ${cat.id}: ${tiendaError.message}`
+      );
+    }
+
+    return NextResponse.json({
+      message: "Categoría y productos actualizados correctamente.",
+    });
+  } catch (error) {
+    console.error("Error en la actualización:", error.message);
+    return NextResponse.json(
+      { message: `Error: ${error.message}` },
+      { status: 500 }
+    );
+  }
 }

@@ -1,6 +1,6 @@
 "use client";
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Dialog,

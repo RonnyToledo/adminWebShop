@@ -1,5 +1,5 @@
 "use client";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import Link from "next/link";
 import navLinks from "@/components/json/link.json"; // ruta donde esté guardado el JSON
 import {
@@ -39,7 +39,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import * as Icons from "@mui/icons-material";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -206,4 +205,16 @@ export default function HeaderAdmin({ ThemeContext }) {
       </div>
     </>
   );
+}
+async function fetchUserSession() {
+  try {
+    const res = await fetch("/api/login");
+    const data = await res.json();
+    if (res.ok && data?.user?.id) {
+      return data;
+    } else {
+    }
+  } catch (error) {
+    console.error("Error al obtener la sesión del usuario:", error);
+  }
 }

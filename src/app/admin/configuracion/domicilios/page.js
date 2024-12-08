@@ -1,5 +1,5 @@
 import React from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 import Domicilios from "@/components/Chadcn-components/Domicilios";
 
 export default function page() {

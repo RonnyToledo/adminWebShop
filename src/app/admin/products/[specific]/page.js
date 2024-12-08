@@ -1,5 +1,5 @@
 import React from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import { ThemeContext } from "@/context/useContext";
 import Specific from "@/components/Chadcn-components/Specific";
 
 export default function page({ params }) {
