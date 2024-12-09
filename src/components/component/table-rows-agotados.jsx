@@ -141,10 +141,9 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
           name={"Sin Categoria"}
           ListProducts={products.filter(
             (prod) =>
-              !webshop.store.categoria
-                .map((obj) => obj.name)
-                .includes(prod.caja)
+              !webshop.store.categoria.map((obj) => obj.id).includes(prod.caja)
           )}
+          id={"00000000-0000-0000-0000-000000000000"}
           setProducts={setProducts}
           downloading={downloading}
           deleteProduct={deleteProduct}
@@ -176,9 +175,7 @@ function TableComponet({
               <TableHead>Nombre</TableHead>
               <TableHead>Agotado</TableHead>
               <TableHead className="hidden md:table-cell">Precio</TableHead>
-              <TableHead className="hidden md:table-cell">
-                Categoria-Orden
-              </TableHead>
+              <TableHead className="hidden md:table-cell">Orden</TableHead>
               <TableHead className="hidden md:table-cell">Favorito</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
@@ -242,8 +239,7 @@ function TableComponet({
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <Badge variant="outline">
-                            {obj.caja || "Sin categoría"}{" "}
-                            {obj.order < 100000 && `-${obj.order}`}
+                            {obj.order < 100000 && `${obj.order}`}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
