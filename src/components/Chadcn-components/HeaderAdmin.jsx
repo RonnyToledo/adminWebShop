@@ -23,6 +23,7 @@ import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
 import AppSettingsAltRoundedIcon from "@mui/icons-material/AppSettingsAltRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
+import ListIcon from "@mui/icons-material/List";
 import { Button } from "../ui/button";
 import {
   Breadcrumb,
@@ -46,6 +47,7 @@ const iconMap = {
   DatasetLinkedRoundedIcon,
   CategoryRoundedIcon,
   AddCircleRoundedIcon,
+  ListIcon,
   AppRegistrationRoundedIcon,
   ExtensionOffRoundedIcon,
   EditNoteRoundedIcon,

@@ -10,6 +10,11 @@
     "icon": "PreviewRoundedIcon"
   },
   {
+    "label": "Pedidos",
+    "href": "/admin/orders",
+    "icon": "ListIcon"
+  },
+  {
     "separator": true
   },
   {
