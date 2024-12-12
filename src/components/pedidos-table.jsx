@@ -12,7 +12,7 @@ import { useContext, useState, useEffect } from "react";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import axios from "axios";
-import { Loader } from "lucide-react";
+import { Loader, Loader2, Trash2, MoreHorizontal } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import WidgetsIcon from "@mui/icons-material/Widgets";
@@ -28,13 +28,20 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { ThemeContext } from "@/context/useContext";
+import { Badge } from "./ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export function PedidosTable({ ThemeContext }) {
+export function PedidosTable() {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [pedidosState, setPedidosState] = useState(webshop.events);
   const [WhatsApp, setWhatsApp] = useState(false);
   const [PDF, setPDF] = useState(false);
-
+  const [downloading, setdownloading] = useState(false);
   useEffect(() => {
     setPedidosState(webshop.events.filter((obj) => !obj.visto));
   }, [webshop.events]);
@@ -100,7 +107,7 @@ export function PedidosTable({ ThemeContext }) {
           <TableRow>
             <TableHead>Cliente</TableHead>
             <TableHead>Identificador</TableHead>
-            <TableHead>Productos</TableHead>
+            <TableHead>Accion</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -109,10 +116,32 @@ export function PedidosTable({ ThemeContext }) {
               <TableCell>{pedido.desc.people}</TableCell>
               <TableCell>{pedido.UID_Venta}</TableCell>
               <TableCell>
-                <DialogComponent
-                  pedido={pedido.desc.pedido}
-                  setWebshop={setWebshop}
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Toggle menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <div className="flex flex-col gap-3 p-2">
+                      <DialogComponent
+                        Order={pedido}
+                        setWebshop={setWebshop}
+                        UID_Venta={pedido.UID_Venta}
+                      />
+
+                      <Button
+                        variant="outline"
+                        className="flex gap-2"
+                        onClick={() => deleteProduct(obj.productId, obj.image)}
+                      >
+                        {!downloading ? <Trash2 /> : <Loader2 />}
+                        Eliminar
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
@@ -123,12 +152,12 @@ export function PedidosTable({ ThemeContext }) {
 }
 
 export async function exportToPDF(pedidos, store, setWebshop, setPDF) {
-  await updateEvents(
+  /* await updateEvents(
     store.sitioweb,
     pedidos.map((obj) => obj.UID_Venta),
     setWebshop,
     setPDF
-  );
+  ); /*/
   const doc = new jsPDF();
 
   doc.text("Pedidos en Espera", 14, 15);
@@ -160,24 +189,23 @@ export async function exportToPDF(pedidos, store, setWebshop, setPDF) {
           producto.Cant,
           `$${totalProducto.toFixed(2)}`,
         ]);
-
-        // Si el producto tiene agregados, agregarlos a la tabla
-        producto.agregados.forEach((agregado) => {
-          if (agregado.cantidad > 0) {
-            const totalAgregado =
-              agregado.cantidad * (producto.price + agregado.valor);
-            totalPedido += totalAgregado; // Agregar al total del pedido
-
-            productos.push([
-              "No disponible", // Columna de imagen que se omite
-              `${producto.title} - ${agregado.nombre} (agregado)`,
-              `$${(producto.price + agregado.valor).toFixed(2)}`,
-              agregado.cantidad,
-              `$${totalAgregado.toFixed(2)}`,
-            ]);
-          }
-        });
       }
+      // Si el producto tiene agregados, agregarlos a la tabla
+      producto.agregados.forEach((agregado) => {
+        if (agregado.cantidad > 0) {
+          const totalAgregado =
+            agregado.cantidad * (producto.price + agregado.valor);
+          totalPedido += totalAgregado; // Agregar al total del pedido
+
+          productos.push([
+            "No disponible", // Columna de imagen que se omite
+            `${producto.title} - ${agregado.nombre} (agregado)`,
+            `$${(producto.price + agregado.valor).toFixed(2)}`,
+            agregado.cantidad,
+            `$${totalAgregado.toFixed(2)}`,
+          ]);
+        }
+      });
     });
 
     // Agregar el total de la venta al final de la tabla
@@ -216,12 +244,12 @@ export async function exportToPDF(pedidos, store, setWebshop, setPDF) {
 }
 
 export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
-  await updateEvents(
+  /* await updateEvents(
     store.sitioweb,
     pedidos.map((obj) => obj.UID_Venta),
     setWebshop,
     setWhatsApp
-  );
+  );*/
   let mensaje = "";
   let totalPedido = 0; // Variable para el precio total de cada pedido
 
@@ -273,15 +301,6 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
     totalPedido += compra.desc.total * (1 - compra.desc.code.discount / 100); // Variable para el precio total de cada pedido
   });
 
-  /* Crear un mensaje con los detalles de los pedidos
-  let message = "Pedidos en Espera:\n\n";
-  pedidos.forEach((pedido) => {
-    message += `ID: ${pedido.id}\n`;
-    message += `Cliente: ${pedido.cliente}\n`;
-    message += `Fecha: ${pedido.fecha}\n`;
-    message += `Total: $${pedido.total.toFixed(2)}\n`;
-    message += `Estado: ${pedido.estado}\n\n`;
-  });*/
   mensaje += `- Total de la orden: ${totalPedido}`;
   // Codificar el mensaje para la URL
   const encodedMessage = encodeURIComponent(mensaje);
@@ -321,13 +340,53 @@ const updateEvents = async (sitioweb, uids, setWebshop, setState) => {
     setState(false);
   }
 };
-function DialogComponent({ pedido, setWebshop }) {
-  const [Order, setOrder] = useState(pedido);
+function DialogComponent({ Order, UID_Venta }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
+  const [newOrder, setNewOrder] = useState({});
+  useEffect(() => {
+    console.log("a");
+    setNewOrder(Order);
+  }, [Order]);
+
+  const handleAgregadoUpdate = (pedido, name) => {
+    if (name) {
+      //Codigo si es con agregado
+      const updatedAgregados = pedido.agregados.map((obj) =>
+        obj.nombre === name ? { ...obj, cantidad: obj.cantidad - 1 } : obj
+      );
+      setNewOrder({
+        ...newOrder,
+        desc: {
+          ...newOrder.desc,
+          pedido: newOrder.desc.pedido.map((obj) =>
+            pedido.productId == obj.productId
+              ? { ...obj, agregados: updatedAgregados }
+              : obj
+          ),
+        },
+      });
+
+      //Ingresar codigo para atualizar setWebshop
+    } else {
+      setNewOrder({
+        ...newOrder,
+        desc: {
+          ...newOrder.desc,
+          pedido: newOrder.desc.pedido.map((obj) =>
+            pedido.productId == obj.productId
+              ? { ...obj, Cant: obj.Cant - 1 }
+              : obj
+          ),
+        },
+      });
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <WidgetsIcon />
+        <Button variant="outline" className="flex gap-2">
+          <WidgetsIcon /> <span>Editar</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -340,9 +399,15 @@ function DialogComponent({ pedido, setWebshop }) {
         </DialogHeader>
         <ScrollArea className="h-96 rounded-md border">
           <div className="p-4">
-            {Order.map((item, i) => (
+            {newOrder?.desc?.pedido.map((item, i) => (
               <div key={i}>
-                <ListProducts pedido={item} />
+                {item.Cant > 0 && (
+                  <ListProducts
+                    pedido={item}
+                    UID_Venta={UID_Venta}
+                    handleAgregadoUpdate={handleAgregadoUpdate}
+                  />
+                )}
                 {item.agregados.map(
                   (agregate, ind3) =>
                     agregate.cantidad > 0 && (
@@ -350,6 +415,8 @@ function DialogComponent({ pedido, setWebshop }) {
                         pedido={item}
                         key={ind3}
                         agregate={agregate}
+                        UID_Venta={UID_Venta}
+                        handleAgregadoUpdate={handleAgregadoUpdate}
                       />
                     )
                 )}
@@ -358,25 +425,13 @@ function DialogComponent({ pedido, setWebshop }) {
           </div>
         </ScrollArea>
         <DialogFooter>
-          <Button type="submit">Save changes</Button>
+          <Button>Save changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-function ListProducts({ pedido, agregate }) {
-  const handleAgregadoUpdate = (nombre, incremento) => {
-    const updatedAgregados = prod.agregados.map((obj) =>
-      obj.nombre === nombre
-        ? { ...obj, cantidad: obj.cantidad + incremento }
-        : obj
-    );
-    dispatchStore({
-      type: "AddCart",
-      payload: JSON.stringify({ ...prod, agregados: updatedAgregados }),
-    });
-    AnimationCart();
-  };
+function ListProducts({ pedido, agregate, handleAgregadoUpdate }) {
   return (
     <div className="bg-white rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
       <Image
@@ -401,12 +456,18 @@ function ListProducts({ pedido, agregate }) {
             : Number(pedido.price).toFixed(2)}
         </p>
       </div>
+      <Badge>{agregate?.cantidad > 0 ? agregate.cantidad : pedido.Cant}</Badge>
       <div className="flex flex-col items-center justify-center">
         <Button
           size="icon"
           variant="outline"
-          className="h-8 w-8 rounded-full"
-          onClick={() => handleAgregadoUpdate(pedido.productId)}
+          className="h-8 w-8 rounded-full text-red-500"
+          onClick={() =>
+            handleAgregadoUpdate(
+              pedido,
+              agregate?.nombre ? agregate.nombre : false
+            )
+          }
           type="button"
         >
           <DeleteOutlineIcon />
