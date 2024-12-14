@@ -312,7 +312,13 @@ export default function Specific({ specific, ThemeContext }) {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={products?.caja} />
+                        <SelectValue
+                          placeholder={
+                            webshop.store.categoria.find(
+                              (obj) => obj.id == products?.caja
+                            )?.name
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {webshop.store.categoria.map((obj, ind) => (

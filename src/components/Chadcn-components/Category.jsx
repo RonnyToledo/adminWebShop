@@ -191,7 +191,7 @@ export default function Category({ ThemeContext }) {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <form
-              className="bg-white border rounded-lg p-2 space-y-2 flex flex-col align-center"
+              className="bg-white rounded-lg p-2 space-y-2 flex flex-col align-center"
               onSubmit={addCategory}
             >
               <DialogHeader>
@@ -199,9 +199,6 @@ export default function Category({ ThemeContext }) {
                 <DialogDescription>Crea una Categoria</DialogDescription>
               </DialogHeader>
               <div className="mt-8 mb-5 space-y-4">
-                <div className="flex justify-between">
-                  <h2 className="text-lg font-bold mb-4">Agregar Categoría</h2>
-                </div>
                 <Input
                   id="nameForCategoryNew"
                   placeholder="Ingresa el nombre de la categoría"
