@@ -41,7 +41,7 @@ export function PedidosTable() {
   const [pedidosState, setPedidosState] = useState(webshop.events);
   const [WhatsApp, setWhatsApp] = useState(false);
   const [PDF, setPDF] = useState(false);
-  const [downloading, setdownloading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   useEffect(() => {
     setPedidosState(webshop.events.filter((obj) => !obj.visto));
   }, [webshop.events]);
@@ -134,7 +134,14 @@ export function PedidosTable() {
                       <Button
                         variant="outline"
                         className="flex gap-2"
-                        onClick={() => deleteProduct(obj.productId, obj.image)}
+                        onClick={() =>
+                          EliminateDesc(
+                            webshop.store.sitioweb,
+                            pedido.UID_Venta,
+                            setDownloading,
+                            setWebshop
+                          )
+                        }
                       >
                         {!downloading ? <Trash2 /> : <Loader2 />}
                         Eliminar
@@ -244,12 +251,12 @@ export async function exportToPDF(pedidos, store, setWebshop, setPDF) {
 }
 
 export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
-  /* await updateEvents(
+  await updateEvents(
     store.sitioweb,
     pedidos.map((obj) => obj.UID_Venta),
     setWebshop,
     setWhatsApp
-  );*/
+  );
   let mensaje = "";
   let totalPedido = 0; // Variable para el precio total de cada pedido
 
@@ -326,9 +333,7 @@ const updateEvents = async (sitioweb, uids, setWebshop, setState) => {
       setWebshop((prev) => {
         return {
           ...prev,
-          events: prev.events.map((obj) => {
-            return { ...obj, visto: true };
-          }),
+          events: response.data.data,
         };
       });
     } else {
@@ -343,10 +348,20 @@ const updateEvents = async (sitioweb, uids, setWebshop, setState) => {
 function DialogComponent({ Order, UID_Venta }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [newOrder, setNewOrder] = useState({});
+  const [downloading, setDownloading] = useState(false);
   useEffect(() => {
     console.log("a");
     setNewOrder(Order);
   }, [Order]);
+
+  async function Update() {
+    await updateDesc(
+      webshop.store.sitioweb,
+      newOrder,
+      setWebshop,
+      setDownloading
+    );
+  }
 
   const handleAgregadoUpdate = (pedido, name) => {
     if (name) {
@@ -424,8 +439,14 @@ function DialogComponent({ Order, UID_Venta }) {
             ))}
           </div>
         </ScrollArea>
-        <DialogFooter>
-          <Button>Save changes</Button>
+        <DialogFooter className="flex items-center justify-center">
+          <Button
+            className="w-full max-w-48 rounded-full"
+            onClick={() => Update()}
+            disabled={downloading}
+          >
+            {!downloading ? "Save changes" : "Saving"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -476,3 +497,67 @@ function ListProducts({ pedido, agregate, handleAgregadoUpdate }) {
     </div>
   );
 }
+const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
+  setState(true);
+  console.log(Event);
+  try {
+    const response = await axios.put(
+      `/api/tienda/${sitioweb}/checkOrders`,
+      Event,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      console.log("Registros actualizados:", response.data);
+      setWebshop((prev) => {
+        return {
+          ...prev,
+          events: prev.events.map((obj) =>
+            obj.UID_Venta == response.data.data.UID_Venta
+              ? response.data.data
+              : obj
+          ),
+        };
+      });
+    } else {
+      console.error("Error en la respuesta:", response.data.error);
+    }
+  } catch (error) {
+    console.error("Error al conectar con la API:", error.message);
+  } finally {
+    setState(false);
+  }
+};
+const EliminateDesc = async (sitioweb, UID_Venta, setState, setWebshop) => {
+  setState(true);
+
+  try {
+    const response = await fetch(`/api/tienda/${sitioweb}/checkOrders`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ uid: UID_Venta }), // Aquí va el cuerpo de la solicitud
+    });
+
+    if (response.status === 200) {
+      console.log("Registros actualizados:", response.data);
+      setWebshop((prev) => {
+        return {
+          ...prev,
+          events: prev.events.filter((obj) => obj.UID_Venta !== UID_Venta),
+        };
+      });
+    } else {
+      console.error("Error en la respuesta:", response.data.error);
+    }
+  } catch (error) {
+    console.error("Error al conectar con la API:", error.message);
+  } finally {
+    setState(false);
+  }
+};

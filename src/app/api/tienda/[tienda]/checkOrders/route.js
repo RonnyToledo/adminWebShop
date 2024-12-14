@@ -62,3 +62,76 @@ export async function POST(request, { params }) {
     });
   }
 }
+export async function PUT(request, { params }) {
+  await LogUser();
+
+  try {
+    const body = await request.json(); // Obtener el cuerpo de la solicitud
+
+    // Actualizar los registros en la tabla Events
+    const { data, error } = await supabase
+      .from("Events")
+      .upsert({ ...body, desc: JSON.stringify(body.desc) }) // Cambiar 'visto' a true
+      .select(); // Filtrar por los uids dados
+
+    if (error) {
+      console.error(error.message);
+      throw error;
+    }
+    console.log(data);
+    return new Response(
+      JSON.stringify({ message: "Registros actualizados exitosamente", data }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+export async function DELETE(request) {
+  await LogUser();
+
+  try {
+    const body = await request.text(); // Intenta leer el cuerpo como texto
+    console.log("Cuerpo recibido:", body);
+
+    if (!body) {
+      throw new Error("El cuerpo de la solicitud está vacío.");
+    }
+
+    const parsedBody = JSON.parse(body); // Intenta convertirlo a JSON
+    const { uid } = parsedBody;
+
+    console.log("UID recibido:", uid);
+
+    // Actualizar los registros en la tabla Events
+    const { error } = await supabase
+      .from("Events")
+      .delete()
+      .eq("UID_Venta", uid);
+
+    if (error) {
+      console.error(error.message);
+      throw error;
+    }
+
+    return new Response(
+      JSON.stringify({ message: "Registros actualizados exitosamente" }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.log(error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
