@@ -344,7 +344,10 @@ export default function Logins({ ThemeContext }) {
             <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
               {obtenerMejoresYPeoresProductos(webshop.products).mejores.map(
                 (obj, ind) => (
-                  <li key={ind}>{obj.title}</li>
+                  <li key={ind} className="flex justify-between items-center">
+                    <span>{obj.title}</span>
+                    <span>{obj.visitas}</span>
+                  </li>
                 )
               )}
             </ul>
@@ -361,7 +364,10 @@ export default function Logins({ ThemeContext }) {
             <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
               {obtenerMejoresYPeoresProductos(webshop.products).peores.map(
                 (obj, ind) => (
-                  <li key={ind}>{obj.title}</li>
+                  <li key={ind} className="flex justify-between items-center">
+                    <span>{obj.title}</span>
+                    <span>{obj.visitas}</span>
+                  </li>
                 )
               )}
             </ul>
