@@ -166,14 +166,14 @@ function TableComponet({
         <CardTitle>{name}</CardTitle>
         <CardDescription></CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2 md:p-6">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Imagen </TableHead>
 
               <TableHead>Nombre</TableHead>
-              <TableHead>Agotado</TableHead>
+              <TableHead>Agot.</TableHead>
               <TableHead className="hidden md:table-cell">Precio</TableHead>
               <TableHead className="hidden md:table-cell">Orden</TableHead>
               <TableHead className="hidden md:table-cell">Favorito</TableHead>
@@ -217,10 +217,10 @@ function TableComponet({
                             width={64}
                           />
                         </TableCell>
-                        <TableCell className="font-medium line-clamp-2">
+                        <TableCell className=" text-sm max-w-24 w-full line-clamp-2 overflow-hidden h-14">
                           {obj.title}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="p-1">
                           <Switch
                             checked={obj.agotado}
                             onCheckedChange={(value) =>
