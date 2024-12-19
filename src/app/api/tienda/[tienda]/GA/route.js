@@ -14,7 +14,7 @@ const auth = new GoogleAuth({
 const analyticsDataClient = new BetaAnalyticsDataClient({ auth });
 
 export async function GET(request, { params }) {
-  const tienda = params.tienda;
+  const tienda = (await params).tienda;
 
   try {
     const [response] = await analyticsDataClient.runReport({
@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
           fieldName: "pagePath",
           stringFilter: {
             matchType: "BEGINS_WITH",
-            value: `/t/${params.tienda}`,
+            value: `/t/${tienda}`,
           },
         },
       },
@@ -43,7 +43,7 @@ export async function GET(request, { params }) {
           fieldName: "pagePath",
           stringFilter: {
             matchType: "BEGINS_WITH",
-            value: `/t/${params.tienda}/products/`,
+            value: `/t/${tienda}/products/`,
           },
         },
       },
@@ -56,9 +56,9 @@ export async function GET(request, { params }) {
     const finishData = {
       calcularPromedioVisitasPorDia:
         calcularPromedioVisitasPorDia(convertedData),
-      countEntriesInLast30Days: countEntriesInLast30Days(convertedData),
-      filterDatesInLast30Days: filterDatesInLast30Days(convertedData),
-      filterDatesInLast7Days: filterDatesInLast7Days(convertedData),
+      countEntriesInLast90Days: countEntriesInLast90Days(convertedData),
+      countEntriesInLast7Days: countEntriesInLast7Days(convertedData),
+      filterDatesInLast30Days: filterDatesInLast30Days(convertedData).length,
       contarVisitasPorHora: contarVisitasPorHora(convertedData),
       promedioVisitasPorMes: promedioVisitasPorMes(convertedData),
       cant: convertedData.length,
@@ -133,20 +133,21 @@ function convertirDatos(datos) {
 
 function convertDateToMonthDay(dateString) {
   const parts = dateString.split("-");
+  const year = parts[0];
   const month = parts[1];
   const day = parts[2];
-  return `${month}-${day}`;
+  return `${year}-${month}-${day}`;
 }
 
-function countEntriesInLast30Days(entries) {
+function countEntriesInLast90Days(entries) {
   const counts = {};
   const currentDate = new Date();
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(currentDate.getDate() - 32);
-  thirtyDaysAgo.setDate(currentDate.getDate() - 2);
+  thirtyDaysAgo.setDate(currentDate.getDate() - 92);
+  thirtyDaysAgo.setDate(currentDate.getDate() - 1);
 
   // Inicializar el contador para cada uno de los últimos 30 días
-  for (let i = 0; i <= 30; i++) {
+  for (let i = 0; i <= 90; i++) {
     const date = new Date(thirtyDaysAgo);
     date.setDate(thirtyDaysAgo.getDate() + i);
     const dateString = date.toISOString().split("T")[0];
@@ -156,6 +157,36 @@ function countEntriesInLast30Days(entries) {
   entries.forEach((entry) => {
     const date = entry.created_at.split("T")[0];
     if (counts[date] != undefined) {
+      counts[date] += 1;
+    }
+  });
+
+  // Convertir el objeto counts en un arreglo de objetos
+  const result = Object.keys(counts).map((date) => ({
+    date: convertDateToMonthDay(date),
+    count: counts[date],
+  }));
+
+  return result;
+}
+function countEntriesInLast7Days(entries) {
+  const counts = {};
+  const currentDate = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(currentDate.getDate() - 7);
+
+  // Inicializar el contador para cada uno de los últimos 7 días
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + i);
+    const dateString = date.toISOString().split("T")[0];
+    counts[dateString] = 0;
+  }
+
+  // Contar las entradas por fecha
+  entries.forEach((entry) => {
+    const date = entry.created_at.split("T")[0]; // Asegúrate de que entries tenga este formato
+    if (counts[date] !== undefined) {
       counts[date] += 1;
     }
   });

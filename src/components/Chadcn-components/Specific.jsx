@@ -467,9 +467,9 @@ export default function Specific({ specific, ThemeContext }) {
               </Card>
             </div>
           </div>
-          <div className="bg-white p-2 flex justify-end sticky bottom-0 w-full">
+          <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">
             <Button
-              className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+              className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
                 downloading ? "opacity-50 cursor-not-allowed" : ""
               }`}
               disabled={downloading}

@@ -22,7 +22,11 @@ const initialState = {
   products: [],
   code: [],
   events: [],
-  ga: {},
+  ga: {
+    filterDatesInLast30Days: [],
+    filterDatesInLast7Days: [],
+    contarVisitasPorHora: [],
+  },
 };
 
 export default function MyProvider({ children }) {
@@ -65,7 +69,6 @@ export default function MyProvider({ children }) {
           .from("Notification")
           .select("*")
           .eq("userID", userId);
-
         if (notifications?.length) {
           const toastPromises = notifications.map(async (notification) => {
             toast("Notificación", {
@@ -84,7 +87,6 @@ export default function MyProvider({ children }) {
           router.replace("configPage");
           return;
         }
-
         if (!store?.Sitios?.sitioweb) {
           router.replace("welcome");
           return;
@@ -130,7 +132,7 @@ export default function MyProvider({ children }) {
   useEffect(() => {
     const fetchGAData = async () => {
       try {
-        if (!webshop.store?.sitioweb) return;
+        if (!webshop.store.sitioweb) return;
         const response = await fetch(
           `/api/tienda/${webshop.store.sitioweb}/GA`
         );
@@ -154,7 +156,6 @@ export default function MyProvider({ children }) {
       fetchGAData(); // Ejecutar cuando los datos iniciales estén listos
     }
   }, [storeDataReady, webshop.store?.sitioweb]);
-
   useEffect(() => {
     if (!user) return;
 

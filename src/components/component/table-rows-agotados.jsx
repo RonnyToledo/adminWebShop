@@ -16,11 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
@@ -31,8 +26,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { ThemeContext } from "@/context/useContext";
 import { Switch } from "../ui/switch";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { v4 as uuidv4 } from "uuid";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import axios from "axios";
+import LowPriorityIcon from "@mui/icons-material/LowPriority";
+import { RadioGroupItem, RadioGroup } from "../ui/radio-group";
+import { Label } from "../ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 export default function TableRowsComponentAgotados({ products, setProducts }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -160,21 +168,134 @@ function TableComponet({
   deleteProduct,
   id,
 }) {
+  // Estado para el criterio de ordenamiento
+  const [sortCriteria, setSortCriteria] = useState("none");
+
+  const handleSortChange = (criteria) => {
+    setSortCriteria(criteria);
+
+    // Ordenar según el criterio seleccionado
+    const sortedProducts = [...ListProducts];
+    switch (criteria) {
+      case "price-asc":
+        sortedProducts.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        sortedProducts.sort((a, b) => b.price - a.price);
+        break;
+      case "name-asc":
+        sortedProducts.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "name-desc":
+        sortedProducts.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case "visitas-asc":
+        sortedProducts.sort((a, b) => {
+          a.visitas === b.visitas ? a.order - b.order : a.visitas - b.visitas;
+        });
+        break;
+      case "visitas-desc":
+        sortedProducts.sort((a, b) => {
+          a.visitas === b.visitas ? a.order - b.order : b.visitas - a.visitas;
+        });
+        break;
+      case "rating-asc":
+        sortedProducts.sort((a, b) => {
+          Promedio(a.coment, "star") === Promedio(b.coment, "star")
+            ? a.order - b.order
+            : Promedio(b.coment, "star") - Promedio(a.coment, "star");
+        });
+        break;
+
+      case "none":
+      default:
+        // Restaurar el orden original o mantenerlo
+        sortedProducts.sort((a, b) => a.order - b.order);
+        break;
+    }
+
+    // Actualizar la lista ordenada
+
+    const newArray = sortedProducts.map((obj, index) => {
+      return { ...obj, order: index };
+    });
+    console.log(newArray);
+    setProducts((productsMap) => {
+      const updatedArray = productsMap.map((item1) => {
+        const item2 = newArray.find(
+          (item) => item.productId === item1.productId
+        );
+        return item2 ? item2 : item1;
+      });
+      console.log(updatedArray);
+      return updatedArray;
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{name}</CardTitle>
+        <CardTitle className="flex justify-between">
+          {name}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost">
+                <LowPriorityIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80 p-2">
+              <RadioGroup
+                onValueChange={handleSortChange}
+                defaultValue={sortCriteria}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="none" id="r1" />
+                  <Label htmlFor="r1">Nada</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="price-asc" id="r2" />
+                  <Label htmlFor="r2">Precio Ascendente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="price-desc" id="r3" />
+                  <Label htmlFor="r3">Precio Descendente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="name-asc" id="r4" />
+                  <Label htmlFor="r4">Nombre Descendente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="name-desc" id="r5" />
+                  <Label htmlFor="r5">Nombre Descendente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="visitas-asc" id="r4" />
+                  <Label htmlFor="r4">Mas Frecuentes</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="visitas-desc" id="r5" />
+                  <Label htmlFor="r5">Menos Frecuentes</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="rating-desc" id="r5" />
+                  <Label htmlFor="r5">Rating Descendente</Label>
+                </div>
+              </RadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardTitle>
         <CardDescription></CardDescription>
       </CardHeader>
       <CardContent className="p-2 md:p-6">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Imagen </TableHead>
+              <TableHead className="hidden md:table-cell">Imagen </TableHead>
 
               <TableHead>Nombre</TableHead>
               <TableHead>Agot.</TableHead>
-              <TableHead className="hidden md:table-cell">Precio</TableHead>
+              <TableHead>Precio</TableHead>
               <TableHead className="hidden md:table-cell">Orden</TableHead>
               <TableHead className="hidden md:table-cell">Favorito</TableHead>
               <TableHead>
@@ -189,106 +310,106 @@ function TableComponet({
                 ref={droppableProvided.innerRef}
               >
                 {ListProducts.length == 0 && <div className="min-h-20"></div>}
-                {ListProducts.map((obj, ind) => (
-                  <Draggable
-                    key={`${obj.productId}-${ind}`}
-                    draggableId={String(obj.productId)}
-                    index={ind}
-                  >
-                    {(draggableProvided) => (
-                      <TableRow
-                        {...draggableProvided.draggableProps}
-                        ref={draggableProvided.innerRef}
-                        {...draggableProvided.dragHandleProps}
-                      >
-                        <TableCell>
-                          <Image
-                            alt={obj.title || `Producto${ind}`}
-                            className="aspect-square rounded-md object-cover"
-                            height={64}
-                            src={
-                              obj.image ||
-                              "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                            }
-                            style={{
-                              aspectRatio: "64/64",
-                              objectFit: "cover",
-                            }}
-                            width={64}
-                          />
-                        </TableCell>
-                        <TableCell className=" text-sm max-w-24 w-full line-clamp-2 overflow-hidden h-14">
-                          {obj.title}
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Switch
-                            checked={obj.agotado}
-                            onCheckedChange={(value) =>
-                              setProducts((prev) =>
-                                prev.map((prod) =>
-                                  prod.productId === obj.productId
-                                    ? { ...prod, agotado: value }
-                                    : prod
+                {ListProducts.sort((a, b) => a.order - b.order).map(
+                  (obj, ind) => (
+                    <Draggable
+                      key={`${obj.productId}-${ind}`}
+                      draggableId={String(obj.productId)}
+                      index={ind}
+                    >
+                      {(draggableProvided) => (
+                        <TableRow
+                          {...draggableProvided.draggableProps}
+                          ref={draggableProvided.innerRef}
+                          {...draggableProvided.dragHandleProps}
+                        >
+                          <TableCell className="hidden md:table-cell">
+                            <Image
+                              alt={obj.title || `Producto${ind}`}
+                              className="aspect-square rounded-md object-cover"
+                              height={64}
+                              src={
+                                obj.image ||
+                                "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                              }
+                              style={{
+                                aspectRatio: "64/64",
+                                objectFit: "cover",
+                              }}
+                              width={64}
+                            />
+                          </TableCell>
+                          <TableCell className="p-1 w-full text-sm max-w-24 w-full line-clamp-3 overflow-hidden h-20">
+                            <HoverComponent obj={obj} />
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Switch
+                              checked={obj.agotado}
+                              onCheckedChange={(value) =>
+                                setProducts((prev) =>
+                                  prev.map((prod) =>
+                                    prod.productId === obj.productId
+                                      ? { ...prod, agotado: value }
+                                      : prod
+                                  )
                                 )
-                              )
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          ${Number(obj.price).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Badge variant="outline">
-                            {obj.order < 100000 && `${obj.order}`}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {obj.favorito ? "Si" : "No"}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                aria-haspopup="true"
-                                size="icon"
-                                variant="ghost"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <div className="sr-only">Toggle menu</div>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <div className="flex flex-col gap-3 p-2">
-                                <Link
-                                  className="flex gap-3 w-full justify-start items-center"
-                                  href={`/admin/products/${obj.productId}`}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                  Edit
-                                </Link>
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>${Number(obj.price).toFixed(2)}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Badge variant="outline">
+                              {obj.order < 100000 && `${obj.order}`}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {obj.favorito ? "Si" : "No"}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                                 <Button
-                                  className="flex gap-3 w-full justify-start items-center"
+                                  aria-haspopup="true"
                                   size="icon"
                                   variant="ghost"
-                                  onClick={() =>
-                                    deleteProduct(obj.productId, obj.image)
-                                  }
                                 >
-                                  {!downloading ? (
-                                    <Trash2 className="h-3 w-3" />
-                                  ) : (
-                                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                                  )}
-                                  Delete
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <div className="sr-only">Toggle menu</div>
                                 </Button>
-                              </div>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Draggable>
-                ))}
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <div className="flex flex-col gap-3 p-2">
+                                  <Link
+                                    className="flex gap-3 w-full justify-start items-center"
+                                    href={`/admin/products/${obj.productId}`}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                    Edit
+                                  </Link>
+                                  <Button
+                                    className="flex gap-3 w-full justify-start items-center"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      deleteProduct(obj.productId, obj.image)
+                                    }
+                                  >
+                                    {!downloading ? (
+                                      <Trash2 className="h-3 w-3" />
+                                    ) : (
+                                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                    )}
+                                    Delete
+                                  </Button>
+                                </div>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Draggable>
+                  )
+                )}
                 {droppableProvided.placeholder}
               </TableBody>
             )}
@@ -358,3 +479,44 @@ const asignarOrden = (productos) => {
 
   return resultadoFinal;
 };
+export const Promedio = (array, field) => {
+  if (!array?.length) return 0;
+  const total = array.reduce((acc, obj) => acc + (obj[field] || 0), 0);
+  return total / array.length;
+};
+function HoverComponent({ obj }) {
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <Button
+          variant="link"
+          className="line-clamp-3 h-full w-full whitespace-normal p-0"
+        >
+          {obj.title}
+        </Button>
+      </HoverCardTrigger>
+      <HoverCardContent>
+        <div className="flex justify-between space-x-4">
+          <Avatar>
+            <AvatarImage
+              src={
+                obj.image ||
+                "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+              }
+            />
+            <AvatarFallback>{obj.title}</AvatarFallback>
+          </Avatar>
+          <div className="space-y-1">
+            <h4 className="text-sm font-semibold">{obj.title}</h4>
+            <p className="text-sm line-clamp-2">{obj.description}</p>
+            <div className="flex items-center pt-2">
+              <span className="text-xs text-muted-foreground">
+                ${Number(obj.price).toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}

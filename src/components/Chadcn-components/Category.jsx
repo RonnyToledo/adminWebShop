@@ -15,13 +15,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Pencil, TrashIcon, FolderIcon, Loader } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ConfimationOut from "../globalFunction/confimationOut";
 import { Textarea } from "../ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import LowPriorityIcon from "@mui/icons-material/LowPriority";
+import { RadioGroupItem, RadioGroup } from "../ui/radio-group";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -182,9 +186,84 @@ export default function Category({ ThemeContext }) {
     );
     setData((prevData) => ({ ...prevData, category: reorderedCategories }));
   };
+
+  // Estado para el criterio de ordenamiento
+  const [sortCriteria, setSortCriteria] = useState("none");
+
+  const handleSortChange = (criteria) => {
+    setSortCriteria(criteria);
+
+    // Crear una copia de las categorías para evitar mutaciones
+    const categoriasCopia = [...data.category];
+    let sortedCategories;
+
+    switch (criteria) {
+      case "price-asc":
+        sortedCategories = ordenarCategorias(
+          categoriasCopia,
+          webshop.products,
+          "price",
+          "asc"
+        );
+        break;
+
+      case "price-desc":
+        sortedCategories = ordenarCategorias(
+          categoriasCopia,
+          webshop.products,
+          "price",
+          "desc"
+        );
+        break;
+
+      case "name-asc":
+        sortedCategories = categoriasCopia.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        break;
+
+      case "name-desc":
+        sortedCategories = categoriasCopia.sort((a, b) =>
+          b.name.localeCompare(a.name)
+        );
+        break;
+
+      case "visitas-asc":
+        sortedCategories = ordenarCategorias(
+          categoriasCopia,
+          webshop.products,
+          "visitas",
+          "desc" //MAyor frecuencia es de mayor a menor
+        );
+        break;
+
+      case "visitas-desc":
+        sortedCategories = ordenarCategorias(
+          categoriasCopia,
+          webshop.products,
+          "visitas",
+          "asc" //
+        );
+        break;
+
+      case "none":
+      default:
+        // Restaurar el orden original basado en el campo `order`
+        sortedCategories = categoriasCopia.sort((a, b) => a.order - b.order);
+        break;
+    }
+
+    // Actualizar el estado con las categorías ordenadas
+    setData((prevState) => ({
+      ...prevState,
+      category: sortedCategories.map((obj, index) => {
+        return { ...obj, order: index };
+      }),
+    }));
+  };
   return (
     <main className="py-2 px-6">
-      <div className="p-4">
+      <div className="flex items-center justify-between p-4">
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline"> Agregar Categoria</Button>
@@ -226,6 +305,48 @@ export default function Category({ ThemeContext }) {
             </form>
           </DialogContent>
         </Dialog>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost">
+              <LowPriorityIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-80 p-2">
+            <RadioGroup
+              onValueChange={handleSortChange}
+              defaultValue={sortCriteria}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="none" id="r1" />
+                <Label htmlFor="r1">Nada</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="price-asc" id="r2" />
+                <Label htmlFor="r2">Rentabilidad Ascendente</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="price-desc" id="r3" />
+                <Label htmlFor="r3">Rentabilidad Descendente</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="name-asc" id="r4" />
+                <Label htmlFor="r4">Nombre Descendente</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="name-desc" id="r5" />
+                <Label htmlFor="r5">Nombre Descendente</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="visitas-asc" id="r4" />
+                <Label htmlFor="r4">Mas Frecuentes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="visitas-desc" id="r5" />
+                <Label htmlFor="r5">Menos Frecuentes</Label>
+              </div>
+            </RadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <form onSubmit={handleSubmit} className="space-y-2">
@@ -261,16 +382,18 @@ export default function Category({ ThemeContext }) {
               </div>
             )}
           </Droppable>
-          <Button
-            className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
-              downloading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={downloading}
-            type="submit"
-            id="Guardar"
-          >
-            {downloading ? "Guardando..." : "Guardar"}
-          </Button>
+          <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">
+            <Button
+              className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
+                downloading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={downloading}
+              type="submit"
+              id="Guardar"
+            >
+              {downloading ? "Guardando..." : "Guardar"}
+            </Button>
+          </div>
         </form>
       </DragDropContext>
       <ConfimationOut action={hasPendingChanges(data, webshop)} />
@@ -403,4 +526,39 @@ const reorder = (list, startIndex, endIndex) => {
   return result.map((obj, ind) => {
     return { ...obj, order: ind };
   });
+};
+
+const ordenarCategorias = (categorias, productos, campo, orden = "asc") => {
+  if (!["price", "visitas"].includes(campo)) {
+    throw new Error("El campo debe ser 'precio' o 'visitas'.");
+  }
+
+  // Calcular el total del campo (precio o visitas) para cada categoría
+  const categoriasOrdenadas = categorias.map((categoria) => {
+    const productosFiltrados = productos.filter(
+      (producto) => producto.caja === categoria.id
+    );
+
+    const totalCampo = productosFiltrados.reduce(
+      (total, producto) => total + (producto[campo] || 0),
+      0
+    );
+
+    return {
+      ...categoria,
+      total: totalCampo,
+    };
+  });
+
+  // Ordenar según el total del campo, en ascendente o descendente
+  categoriasOrdenadas.sort((a, b) => {
+    if (orden === "asc") {
+      return a.total - b.total;
+    } else if (orden === "desc") {
+      return b.total - a.total;
+    }
+    return 0;
+  });
+
+  return categoriasOrdenadas;
 };
