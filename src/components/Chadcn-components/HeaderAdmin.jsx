@@ -256,9 +256,6 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
                 ))}
               </ul>
             </div>
-            <Link href={link}>
-              <Button>{buttonText}</Button>
-            </Link>
           </div>
         </CardContent>
       </Card>
