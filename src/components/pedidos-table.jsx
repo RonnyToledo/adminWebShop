@@ -53,7 +53,6 @@ export function PedidosTable() {
   const handleSendToWhatsApp = () => {
     sendToWhatsApp(pedidosState, webshop.store, setWebshop, setWhatsApp);
   };
-  console.log(pedidosState);
   return (
     <div>
       <div className="flex justify-between items-center p-4">

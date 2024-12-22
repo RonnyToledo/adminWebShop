@@ -294,8 +294,7 @@ function TableComponet({
           <TableHeader>
             <TableRow>
               <TableHead>
-                {" "}
-                <MenuRoundedIcon />
+                <UnfoldMoreDoubleRoundedIcon />
               </TableHead>
               <TableHead className="hidden md:table-cell">Imagen </TableHead>
 
@@ -335,7 +334,7 @@ function TableComponet({
                             {...draggableProvided.dragHandleProps} // Solo aquí se aplican los dragHandleProps
                           >
                             <div className="flex items-center justify-center text-gray-700">
-                              <UnfoldMoreDoubleRoundedIcon />
+                              <MenuRoundedIcon />
                             </div>
                           </TableCell>
 
