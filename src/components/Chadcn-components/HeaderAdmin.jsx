@@ -23,6 +23,7 @@ import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
 import AppSettingsAltRoundedIcon from "@mui/icons-material/AppSettingsAltRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ListIcon from "@mui/icons-material/List";
 import { Button } from "../ui/button";
 import {
@@ -40,6 +41,15 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -67,7 +77,7 @@ export default function HeaderAdmin({ ThemeContext }) {
   const Log_Out = async () => {
     const res = await fetch("/api/login", { method: "DELETE" });
   };
-
+  console.log(pathname);
   const renderLink = (link, index) => {
     if (
       link.condition &&
@@ -158,50 +168,70 @@ export default function HeaderAdmin({ ThemeContext }) {
           </nav>
         </aside>
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  onClick={() => setIsOpen(true)}
-                  size="icon"
-                  variant="outline"
-                  className="sm:hidden"
-                >
-                  <AlignHorizontalLeftRoundedIcon />
-                  <span className="sr-only">Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="sm:max-w-xs">
-                <SheetHeader>
-                  <SheetTitle>Administracion</SheetTitle>
-                  <SheetDescription>
-                    Edite su tienda a su gusto{" "}
-                  </SheetDescription>
-                </SheetHeader>
-                <nav className="grid gap-2 text-lg font-medium">
-                  {navLinks.map((link, index) => renderLinkNav(link, index))}
-                </nav>
-              </SheetContent>
-            </Sheet>
-            <Breadcrumb>
-              <BreadcrumbList>
-                {breadcrumbs.map((obj, ind) => (
-                  <div key={ind} className="flex items-center">
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild>
-                        <Link
-                          href={obj.href}
-                          className="capitalize truncate  max-w-20"
-                        >
-                          {obj.label}
-                        </Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                  </div>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
+          <header className="sticky flex justify-between top-0 z-30 h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+            <div className="flex items-center gap-4">
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    onClick={() => setIsOpen(true)}
+                    size="icon"
+                    variant="outline"
+                    className="sm:hidden"
+                  >
+                    <AlignHorizontalLeftRoundedIcon />
+                    <span className="sr-only">Menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="sm:max-w-xs">
+                  <SheetHeader>
+                    <SheetTitle>Administracion</SheetTitle>
+                    <SheetDescription>
+                      Edite su tienda a su gusto{" "}
+                    </SheetDescription>
+                  </SheetHeader>
+                  <nav className="grid gap-2 text-lg font-medium">
+                    {navLinks.map((link, index) => renderLinkNav(link, index))}
+                  </nav>
+                </SheetContent>
+              </Sheet>
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumbs.map((obj, ind) => (
+                    <div key={ind} className="flex items-center">
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                          <Link
+                            href={obj.href}
+                            className="capitalize truncate  max-w-20"
+                          >
+                            {obj.label}
+                          </Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                    </div>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+            <div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="rounded-full p-2">
+                    <InfoOutlinedIcon />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Edit profile</DialogTitle>
+                    <DialogDescription>
+                      Make changes to your profile here. Click save when you're
+                      done.
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </div>
           </header>
         </div>
       </div>

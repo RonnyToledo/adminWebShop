@@ -41,6 +41,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import UnfoldMoreDoubleRoundedIcon from "@mui/icons-material/UnfoldMoreDoubleRounded";
 
 export default function TableRowsComponentAgotados({ products, setProducts }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -291,11 +293,15 @@ function TableComponet({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>
+                {" "}
+                <MenuRoundedIcon />
+              </TableHead>
               <TableHead className="hidden md:table-cell">Imagen </TableHead>
 
               <TableHead>Nombre</TableHead>
               <TableHead>Agot.</TableHead>
-              <TableHead>Precio</TableHead>
+              <TableHead className="hidden md:table-cell">Precio</TableHead>
               <TableHead className="hidden md:table-cell">Orden</TableHead>
               <TableHead className="hidden md:table-cell">Favorito</TableHead>
               <TableHead>
@@ -309,7 +315,7 @@ function TableComponet({
                 {...droppableProvided.droppableProps}
                 ref={droppableProvided.innerRef}
               >
-                {ListProducts.length == 0 && <div className="min-h-20"></div>}
+                {ListProducts.length === 0 && <div className="min-h-20"></div>}
                 {ListProducts.sort((a, b) => a.order - b.order).map(
                   (obj, ind) => (
                     <Draggable
@@ -321,8 +327,19 @@ function TableComponet({
                         <TableRow
                           {...draggableProvided.draggableProps}
                           ref={draggableProvided.innerRef}
-                          {...draggableProvided.dragHandleProps}
+                          className="container"
                         >
+                          {/* Columna de las tres barras como drag handle */}
+                          <TableCell
+                            className="cursor-grab"
+                            {...draggableProvided.dragHandleProps} // Solo aquí se aplican los dragHandleProps
+                          >
+                            <div className="flex items-center justify-center text-gray-700">
+                              <UnfoldMoreDoubleRoundedIcon />
+                            </div>
+                          </TableCell>
+
+                          {/* Columna de imagen */}
                           <TableCell className="hidden md:table-cell">
                             <Image
                               alt={obj.title || `Producto${ind}`}
@@ -339,9 +356,13 @@ function TableComponet({
                               width={64}
                             />
                           </TableCell>
+
+                          {/* Columna de descripción */}
                           <TableCell className="p-1 w-full text-sm max-w-24 line-clamp-3 overflow-hidden h-20">
                             <HoverComponent obj={obj} />
                           </TableCell>
+
+                          {/* Columna del switch */}
                           <TableCell className="p-1">
                             <Switch
                               checked={obj.agotado}
@@ -356,15 +377,25 @@ function TableComponet({
                               }
                             />
                           </TableCell>
-                          <TableCell>${Number(obj.price).toFixed(2)}</TableCell>
+
+                          {/* Columna de precio */}
+                          <TableCell className="hidden md:table-cell">
+                            ${Number(obj.price).toFixed(2)}
+                          </TableCell>
+
+                          {/* Orden */}
                           <TableCell className="hidden md:table-cell">
                             <Badge variant="outline">
                               {obj.order < 100000 && `${obj.order}`}
                             </Badge>
                           </TableCell>
+
+                          {/* Favorito */}
                           <TableCell className="hidden md:table-cell">
                             {obj.favorito ? "Si" : "No"}
                           </TableCell>
+
+                          {/* Menú de opciones */}
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
