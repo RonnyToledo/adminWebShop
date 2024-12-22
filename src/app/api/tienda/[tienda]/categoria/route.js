@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
 import { cookies } from "next/headers"; // Importar cookies desde headers
+import { extractPublicId } from "cloudinary-build-url";
+import cloudinary from "@/lib/cloudinary";
 
 const LogUser = async () => {
   const cookie = cookies().get("sb-access-token");
@@ -125,11 +127,27 @@ function handleError(error) {
 
 export async function DELETE(request, { params }) {
   // Obtenemos el cuerpo enviado desde el cliente
-  const { UUID } = await request.json();
+  const { UUID, image } = await request.json();
   try {
     // Actualiza la categoría de la tienda
     await LogUser();
+    if (image) {
+      const publicId = extractPublicId(image);
+      cloudinary.uploader.destroy(publicId, (error, result) => {
+        if (error) {
+          console.error("Error eliminando imagen:", error);
 
+          return NextResponse.json(
+            { message: error },
+            {
+              status: 402,
+            }
+          );
+        } else {
+          console.log("Imagen eliminada:", result);
+        }
+      });
+    }
     const { error: tiendaError } = await supabase
       .from("categorias")
       .delete()

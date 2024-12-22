@@ -49,9 +49,10 @@ export default function UsageChart() {
       const data = webshop.ga?.countEntriesInLast90Days;
       setcountEntriesInLast90Days(data);
       settotalVisits(data.reduce((sum, day) => sum + day.count, 0));
-      setaverageVisits(Math.round(totalVisits / data.length));
+      setaverageVisits((totalVisits / data.length).toFixed(2));
     }
-  }, [webshop.ga]);
+  }, [webshop.ga, totalVisits]);
+  console.log(averageVisits);
 
   return (
     <Card className="max-w-xs" x-chunk="charts-01-chunk-1">

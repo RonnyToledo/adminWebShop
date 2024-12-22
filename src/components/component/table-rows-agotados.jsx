@@ -339,7 +339,7 @@ function TableComponet({
                               width={64}
                             />
                           </TableCell>
-                          <TableCell className="p-1 w-full text-sm max-w-24 w-full line-clamp-3 overflow-hidden h-20">
+                          <TableCell className="p-1 w-full text-sm max-w-24 line-clamp-3 overflow-hidden h-20">
                             <HoverComponent obj={obj} />
                           </TableCell>
                           <TableCell className="p-1">

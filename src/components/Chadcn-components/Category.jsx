@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LowPriorityIcon from "@mui/icons-material/LowPriority";
 import { RadioGroupItem, RadioGroup } from "../ui/radio-group";
+import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -47,14 +49,14 @@ export default function Category({ ThemeContext }) {
     }
   }, [webshop]);
 
-  const handleDelete = async (categoryToDelete) => {
+  const handleDelete = async (categoryToDelete, image) => {
     setDeleting(true);
 
     try {
       const res = await axios.delete(
         `/api/tienda/${webshop.store.sitioweb}/categoria`,
         {
-          data: { UUID: categoryToDelete }, // El cuerpo debe ir en `data`
+          data: { UUID: categoryToDelete, iamge }, // El cuerpo debe ir en `data`
           headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
         }
       );
@@ -431,81 +433,39 @@ const CategoryItem = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Pencil className="h-4 w-4 text-gray-500" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button aria-haspopup="true" size="icon" variant="ghost">
+                <MoreHorizontal className="h-4 w-4" />
+                <div className="sr-only">Toggle menu</div>
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Editar {category.name}</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className=" gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Nombre
-                  </Label>
-                  <Input
-                    id="name"
-                    defaultValue={category.name}
-                    onChange={(e) => {
-                      setData((prevData) => ({
-                        ...prevData,
-                        category: prevData.category.map((obj) =>
-                          obj.id == category.id
-                            ? { ...obj, name: e.target.value }
-                            : obj
-                        ),
-                      }));
-                    }}
-                  />
-                </div>
-                <div className="gap-4">
-                  <Label htmlFor="username" className="text-right">
-                    Descripcion
-                  </Label>
-                  <Textarea
-                    id="username"
-                    defaultValue={category.description}
-                    onChange={(e) => {
-                      setData((prevData) => ({
-                        ...prevData,
-                        category: prevData.category.map((obj) =>
-                          obj.id == category.id
-                            ? { ...obj, description: e.target.value }
-                            : obj
-                        ),
-                      }));
-                    }}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  onClick={handleSubmit}
-                  className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
-                    downloading ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  disabled={downloading}
-                >
-                  {downloading ? "Guardando..." : "Guardar"}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div className="flex flex-col gap-3 p-2">
+                <Button variant="outline" asChild>
+                  <Link
+                    className="flex gap-3 w-full justify-start items-center"
+                    href={`/admin/category/${category.id}`}
+                  >
+                    <Pencil className=" text-gray-500" />
+                    Edit
+                  </Link>
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Button
-            variant="outline"
-            id="deletingCat"
-            type="button"
-            onClick={() => onDelete(category.id)}
-          >
-            {!deleting ? (
-              <TrashIcon className="h-4 w-4 text-red-500" />
-            ) : (
-              <Loader className=" animate-spin h-4 w-4 text-red-500" />
-            )}
-          </Button>
+                <Button
+                  className="flex gap-3 w-full items-center"
+                  variant="destructive"
+                  onClick={() => onDelete(category.id, category.image)}
+                >
+                  {!deleting ? (
+                    <Trash2 className="h-3 w-3" />
+                  ) : (
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  )}
+                  Delete
+                </Button>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     )}
