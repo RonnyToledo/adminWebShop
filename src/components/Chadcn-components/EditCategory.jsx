@@ -58,7 +58,7 @@ export default function EditCategory({ ThemeContext, uid }) {
           },
         }
       );
-      /*  if (res.status == 200) {
+      if (res.status == 200) {
         toast({
           title: "Tarea Ejecutada",
           description: "Informacion Actualizada",
@@ -66,14 +66,18 @@ export default function EditCategory({ ThemeContext, uid }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
+        console.log(res.data);
         setWebshop({
           ...webshop,
-          categoria: webshop.store?.categoria.map((obj) =>
-            obj.id == category?.id ? res.data.data : obj
-          ),
+          store: {
+            ...webshop.store,
+            categoria: webshop.store?.categoria.map((obj) =>
+              obj.id == category?.id ? res.data : obj
+            ),
+          },
         });
         form.current.reset();
-      }*/
+      }
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({

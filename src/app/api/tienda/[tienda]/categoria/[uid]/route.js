@@ -20,81 +20,79 @@ export async function PUT(request, { params }) {
 
   const data = await request.formData();
   const object = formDataToObject(data);
+  console.log(object);
 
-  //Si tenemos imagen nueva
-  if (object.newImage) {
-    //Eliminamos la vieja
-    if (object.image) {
-      console.log("Acaso estas aqui");
+  // Si tenemos nueva imagen
+  if (object.newImage && object.newImage !== "undefined") {
+    // Verificar si newImage es un archivo válido
+    if (object.newImage instanceof File || object.newImage instanceof Blob) {
+      // Eliminar imagen vieja si existe
+      if (object.image) {
+        console.log("Acaso estas aqui");
 
-      const publicId = extractPublicId(object.image);
-      cloudinary.uploader.destroy(publicId, (error, result) => {
-        if (error) {
-          console.error("Error eliminando imagen:", error);
-
-          return NextResponse.json(
-            { message: error },
-            {
-              status: 401,
-            }
-          );
-        } else {
-          console.log("Imagen eliminada:", result);
-        }
-      });
-    }
-    console.log("salto la eliminacion");
-
-    //Subimos la nueva
-    const byte = await object.newImage.arrayBuffer();
-    const buffer = Buffer.from(byte);
-    const res = await new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream({ resource_type: "image" }, (err, result) => {
-          if (err) {
-            reject(err);
+        const publicId = extractPublicId(object.image);
+        cloudinary.uploader.destroy(publicId, (error, result) => {
+          if (error) {
+            console.error("Error eliminando imagen:", error);
+            return NextResponse.json({ message: error }, { status: 401 });
+          } else {
+            console.log("Imagen eliminada:", result);
           }
-          resolve(result);
-        })
-        .end(buffer);
-    });
-    console.log(res.secure_url);
-    delete object.newImage;
-    //Subimos a la BD los datos
-    const { data: tienda, error } = await supabase
-      .from("categorias")
-      .update({ ...object, image: res.secure_url })
-      .eq("id", object.id)
-      .select("*");
+        });
+      }
+      console.log("Salto la eliminación");
 
-    if (error) {
-      console.log("Error", error);
+      // Subimos la nueva
+      const byte = await object.newImage.arrayBuffer();
+      const buffer = Buffer.from(byte);
+      const res = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ resource_type: "image" }, (err, result) => {
+            if (err) {
+              reject(err);
+            }
+            resolve(result);
+          })
+          .end(buffer);
+      });
 
+      console.log(res.secure_url);
+      delete object.newImage;
+
+      // Subimos a la BD los datos
+      const { data: tienda, error } = await supabase
+        .from("categorias")
+        .update({ ...object, image: res.secure_url })
+        .eq("id", object.id)
+        .select("*")
+        .single();
+
+      if (error) {
+        console.log("Error", error);
+        return NextResponse.json({ message: error }, { status: 402 });
+      }
+      return NextResponse.json(tienda);
+    } else {
+      console.error("newImage no es un archivo válido.");
       return NextResponse.json(
-        { message: error },
-        {
-          status: 402,
-        }
+        { message: "newImage no es un archivo válido." },
+        { status: 400 }
       );
     }
-    return NextResponse.json(tienda);
   } else {
-    //Si no tenemos nueva Imagen solo actualizamos los datos
+    // Si no hay nueva imagen, solo actualizamos los datos
+    delete object.newImage;
+
     const { data: tienda, error } = await supabase
       .from("categorias")
       .update(object)
       .eq("id", object.id)
-      .select("*");
+      .select("*")
+      .single();
 
     if (error) {
       console.log(error);
-
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 401,
-        }
-      );
+      return NextResponse.json({ message: error }, { status: 401 });
     }
     console.log(tienda);
     return NextResponse.json(tienda);
