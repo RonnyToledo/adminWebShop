@@ -7,6 +7,7 @@ import { Label } from "../ui/label";
 import Image from "next/image";
 import ConfimationOut from "../globalFunction/confimationOut";
 import { FromData } from "../globalFunction/fromData";
+import ProfileHeader from "../profile-header";
 
 export default function Header({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
@@ -21,27 +22,31 @@ export default function Header({ ThemeContext }) {
 
   const handleChange = (field, value) =>
     setStore((prev) => ({ ...prev, [field]: value }));
+  console.log(store);
   return (
-    <main className="container mx-auto py-12 px-6">
+    <main>
       <FromData store={store} ThemeContext={ThemeContext}>
-        <ImageUpload
-          image={store.urlPosterNew ? store.urlPosterNew : store.urlPoster}
-          onChange={(file) => handleChange("urlPosterNew", file)}
-        />
-        <TextInput
-          label="Nombre del negocio"
-          value={store.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-        />
-        <TextAreaInput
-          label="Mensaje de Bienvenida"
-          value={store.parrrafo}
-          onChange={(e) => handleChange("parrrafo", e.target.value)}
-        />
-        <HorarioControl
-          horario={store.horario}
-          onHorarioChange={(horario) => handleChange("horario", horario)}
-        />
+        <ProfileHeader store={store} setStore={setStore} />
+        <div className="mx-6">
+          <TextInput
+            label="Nombre del negocio"
+            value={store.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+          />
+        </div>
+        <div className="mx-6">
+          <TextAreaInput
+            label="Mensaje de Bienvenida"
+            value={store.parrrafo}
+            onChange={(e) => handleChange("parrrafo", e.target.value)}
+          />
+        </div>
+        <div className="mx-6">
+          <HorarioControl
+            horario={store.horario}
+            onHorarioChange={(horario) => handleChange("horario", horario)}
+          />
+        </div>
       </FromData>
       <ConfimationOut action={hasPendingChanges(store, webshop.store)} />
     </main>

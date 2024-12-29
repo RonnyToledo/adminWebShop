@@ -45,65 +45,43 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  const tienda = (await params).tienda;
   const data = await request.formData();
   const storeObject = formDataToObject(data);
+  let res1;
+  let res2;
   delete storeObject.Events;
   delete storeObject.codeDiscount;
   if (storeObject?.urlPosterNew) {
     if (storeObject?.urlPoster) {
-      const publicId = extractPublicId(storeObject?.urlPoster);
-      cloudinary.uploader.destroy(publicId, (error, result) => {
-        if (error) {
-          console.error("Error eliminando imagen:", error);
-          return NextResponse.json(
-            { message: error },
-            {
-              status: 401,
-            }
-          );
-        } else {
-          console.info("Imagen eliminada:", result);
-        }
-      });
+      await DeleteImage(storeObject.urlPoster);
     }
-    const byte = await storeObject.urlPosterNew.arrayBuffer();
-    const buffer = Buffer.from(byte);
-    const res = await new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream({ resource_type: "image" }, (err, result) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(result);
-        })
-        .end(buffer);
-    });
+    res1 = await UploadImage(storeObject.urlPosterNew);
+    console.log(res1);
     //Preparando nueva Imagen
-    delete storeObject.urlPosterNew;
-
-    await RefreshSupabase(
-      {
-        ...storeObject,
-        urlPoster: res.secure_url,
-        envios: storeObject.envios.map((obj) => {
-          return { nombre: obj.nombre, municipios: obj.municipios };
-        }),
-      },
-
-      params.tienda
-    );
-  } else {
-    await RefreshSupabase(
-      {
-        ...storeObject,
-        envios: storeObject.envios.map((obj) => {
-          return { nombre: obj.nombre, municipios: obj.municipios };
-        }),
-      },
-      params.tienda
-    );
+    if (res1) delete storeObject.urlPosterNew;
   }
+  if (storeObject?.bannerNew) {
+    if (storeObject?.banner) {
+      await DeleteImage(storeObject.banner);
+    }
+    res2 = await UploadImage(storeObject.bannerNew);
+    console.log(res2);
 
+    //Preparando nueva Imagen
+    if (res2) delete storeObject.bannerNew;
+  }
+  await RefreshSupabase(
+    {
+      ...storeObject,
+      banner: res2.secure_url || storeObject.banner,
+      urlPoster: res1.secure_url || storeObject.urlPoster,
+      envios: storeObject.envios.map((obj) => {
+        return { nombre: obj.nombre, municipios: obj.municipios };
+      }),
+    },
+    tienda
+  );
   return NextResponse.json({ message: "Producto creado" });
 }
 
@@ -145,4 +123,35 @@ async function RefreshSupabase(object, eq) {
       }
     );
   }
+}
+async function DeleteImage(image) {
+  const publicId = extractPublicId(image);
+  cloudinary.uploader.destroy(publicId, (error, result) => {
+    if (error) {
+      console.error("Error eliminando imagen:", error);
+      return NextResponse.json(
+        { message: error },
+        {
+          status: 401,
+        }
+      );
+    } else {
+      console.info("Imagen eliminada:", result);
+    }
+  });
+}
+async function UploadImage(image) {
+  const byte = await image.arrayBuffer();
+  const buffer = Buffer.from(byte);
+  const res = await new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream({ resource_type: "image" }, (err, result) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(result);
+      })
+      .end(buffer);
+  });
+  return res;
 }
