@@ -74,8 +74,8 @@ export async function PUT(request, { params }) {
   await RefreshSupabase(
     {
       ...storeObject,
-      banner: res2.secure_url || storeObject.banner,
-      urlPoster: res1.secure_url || storeObject.urlPoster,
+      banner: res2?.secure_url || storeObject.banner,
+      urlPoster: res1?.secure_url || storeObject.urlPoster,
       envios: storeObject.envios.map((obj) => {
         return { nombre: obj.nombre, municipios: obj.municipios };
       }),

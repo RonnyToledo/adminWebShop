@@ -90,3 +90,41 @@ function CloudUploadIcon(props) {
     </svg>
   );
 }
+export function ImageUploadWithProps({ setImageNew, campo, children }) {
+  const handleDrop = useCallback(
+    (acceptedFiles) => {
+      // Aquí puedes manejar los archivos aceptados
+      setImageNew((prev) => ({ ...prev, [campo]: acceptedFiles[0] }));
+    },
+    [setImageNew, campo]
+  );
+
+  const onDragEnd = (result) => {
+    // Manejar el final del drag and drop si es necesario
+    console.log("Finally");
+  };
+
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable droppableId="image-dropzone">
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            onDrop={(event) => {
+              event.preventDefault();
+              const files = Array.from(event.dataTransfer.files);
+              const imageFiles = files.filter((file) =>
+                file.type.startsWith("image/")
+              );
+              handleDrop(imageFiles);
+            }}
+            onDragOver={(event) => event.preventDefault()}
+          >
+            {children}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
+  );
+}
