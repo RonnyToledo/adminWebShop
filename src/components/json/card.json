@@ -1,7 +1,7 @@
 [
   {
     "title": "Agregar/Eliminar categorías",
-    "key": "Category",
+    "llave": "Category",
     "description": "Organiza tus productos en categorías.",
     "steps": [
       "Crea nuevas categorías",
@@ -15,7 +15,7 @@
   },
   {
     "title": "Editar categorías",
-    "key": "Category UID",
+    "llave": "Category UID",
     "description": "Organiza tus productos en categorías.",
     "steps": [
       "Edita el nombre y la descripcion de la categoría",
@@ -26,7 +26,7 @@
   },
   {
     "title": "Crear producto",
-    "key": "New Product",
+    "llave": "New Product",
     "description": "Aprende a crear nuevos productos en tu tienda.",
     "steps": [
       "Selecciona una imagen",
@@ -40,7 +40,7 @@
   },
   {
     "title": "Editar productos General",
-    "key": "Products",
+    "llave": "Products",
     "description": "Actualiza la información de tus productos existentes.",
     "steps": [
       "Selecciona el producto a editar",
@@ -57,7 +57,7 @@
   },
   {
     "title": "Editar productos Individual",
-    "key": "Product Specific",
+    "llave": "Product Specific",
     "description": "Actualiza la información de tu producto.",
     "steps": [
       "Actualiza el orden de los productos solicitada",
@@ -70,7 +70,7 @@
   },
   {
     "title": "Pedidos",
-    "key": "Orders",
+    "llave": "Orders",
     "description": "Acepta, Edita o Elimina compras de tus clientes.",
     "steps": [
       "Acepta las compras hechas enviandolas a Whatsapp o exportandola como PDF",
@@ -82,7 +82,7 @@
   },
   {
     "title": "Editar perfil",
-    "key": "Header",
+    "llave": "Header",
     "description": "Personaliza tu perfil de administrador.",
     "steps": [
       "Actualiza tu información de negocio",
@@ -94,7 +94,7 @@
   },
   {
     "title": "Configurar perfil",
-    "key": "Configuracion",
+    "llave": "Configuracion",
     "description": "Personaliza tu perfil de administrador.",
     "steps": [
       "Actualiza tu número de teléfono",
@@ -109,7 +109,7 @@
   },
   {
     "title": "Domicilios",
-    "key": "Configuración Domicilios",
+    "llave": "Configuración Domicilios",
     "description": "Personaliza tu envios.",
     "steps": [
       "Selecciona una provincia para agregarla",
@@ -122,7 +122,7 @@
   },
   {
     "title": "Dashboard Empresarial",
-    "key": "Dashboard",
+    "llave": "Dashboard",
     "description": "Personaliza tu perfil de administrador.",
     "steps": [
       "Vas a tener todo los relacionado con esatdisticas sobre el uso y ventas grnerales de su sitio web",
@@ -133,7 +133,7 @@
   },
   {
     "title": "Marketing",
-    "key": "Code Discount",
+    "llave": "Code Discount",
     "description": "Colabora para poder poner codigos de descuentos a clientes q llegan con codigos de descuentos",
     "steps": [
       "Selecciona si vas a mantener activo o no los codigos",
@@ -145,7 +145,7 @@
   },
   {
     "title": "Guía",
-    "key": "Guía",
+    "llave": "Guía",
     "description": "Guia sobre como usar nuestro admin",
     "steps": [
       "Le dejaremos su Qr y su link para difundirlo adecuedamente",

@@ -56,7 +56,7 @@ export default function Category({ ThemeContext }) {
       const res = await axios.delete(
         `/api/tienda/${webshop.store.sitioweb}/categoria`,
         {
-          data: { UUID: categoryToDelete, iamge }, // El cuerpo debe ir en `data`
+          data: { UUID: categoryToDelete, image }, // El cuerpo debe ir en `data`
           headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
         }
       );

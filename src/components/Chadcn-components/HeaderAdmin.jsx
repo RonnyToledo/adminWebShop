@@ -225,7 +225,7 @@ export default function HeaderAdmin({ ThemeContext }) {
                   <DialogDescription></DialogDescription>
                 </DialogHeader>
                 {dataCards
-                  .filter((obj) => obj.key == identifyRoute(pathname))
+                  .filter((obj) => obj.llave == identifyRoute(pathname))
                   .map((card, index) => (
                     <GuideCard key={index} {...card} />
                   ))}
