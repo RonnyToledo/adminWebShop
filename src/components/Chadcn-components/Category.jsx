@@ -28,6 +28,8 @@ import LowPriorityIcon from "@mui/icons-material/LowPriority";
 import { RadioGroupItem, RadioGroup } from "../ui/radio-group";
 import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
+import MovingIcon from "@mui/icons-material/Moving";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -90,7 +92,7 @@ export default function Category({ ThemeContext }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setDownloading(true);
-
+    console.log(data.category);
     const formData = new FormData();
     formData.append("categoria", JSON.stringify(data.category));
     formData.append("UUID", data.UUID);
@@ -254,7 +256,11 @@ export default function Category({ ThemeContext }) {
         sortedCategories = categoriasCopia.sort((a, b) => a.order - b.order);
         break;
     }
-
+    console.log(
+      sortedCategories.map((obj, index) => {
+        return { ...obj, order: index };
+      })
+    );
     // Actualizar el estado con las categorías ordenadas
     setData((prevState) => ({
       ...prevState,
@@ -324,15 +330,20 @@ export default function Category({ ThemeContext }) {
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="price-asc" id="r2" />
-                <Label htmlFor="r2">Rentabilidad Ascendente</Label>
+                <Label htmlFor="r2">
+                  Rentabilidad Ascendente <MovingIcon className="h-4 w-4" />
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="price-desc" id="r3" />
-                <Label htmlFor="r3">Rentabilidad Descendente</Label>
+                <Label htmlFor="r3">
+                  Rentabilidad Descendente{" "}
+                  <TrendingDownIcon className="h-4 w-4" />
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="name-asc" id="r4" />
-                <Label htmlFor="r4">Nombre Descendente</Label>
+                <Label htmlFor="r4">Nombre Ascendente</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="name-desc" id="r5" />
@@ -519,6 +530,5 @@ const ordenarCategorias = (categorias, productos, campo, orden = "asc") => {
     }
     return 0;
   });
-
-  return categoriasOrdenadas;
+  return categoriasOrdenadas.map(({ total, ...rest }) => rest);
 };

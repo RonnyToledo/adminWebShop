@@ -64,9 +64,8 @@ export async function POST(request, { params }) {
 export async function PUT(request, { params }) {
   const data = await request.formData();
   const categoria = JSON.parse(data.get("categoria"));
-  const products = JSON.parse(data.get("products"));
   const UUID = data.get("UUID");
-
+  console.log(categoria);
   try {
     // Actualiza la categoría de la tienda
     await LogUser();
