@@ -26,6 +26,7 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ListIcon from "@mui/icons-material/List";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "../ui/button";
 import {
   Breadcrumb,
@@ -247,16 +248,19 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <h3 className="text-lg font-semibold">Pasos a seguir</h3>
-              <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
-                {steps.map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ul>
+          <ScrollArea className="h-[50vh] relative flex items-center">
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <h3 className="text-lg font-semibold">Pasos a seguir</h3>
+                <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+                  {steps.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+            <ScrollBar />
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

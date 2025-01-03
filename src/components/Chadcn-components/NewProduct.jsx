@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import ImageUpload from "../component/ImageDND";
+import { Trash2 } from "lucide-react";
 
 export default function NewProduct({ ThemeContext }) {
   const [downloading, setDownloading] = useState(false);
@@ -101,40 +102,56 @@ export default function NewProduct({ ThemeContext }) {
   };
 
   useEffect(() => {
-    setProducts({ ...products, image: imageNew });
+    setProducts((prev) => ({ ...prev, image: imageNew }));
   }, [imageNew]);
 
   return (
     <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4">
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="images"
-            >
-              Imágenes
-            </Label>
-            <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
+          <div className="relative border rounded-2x p-5 col-span-1 md:col-span-3 h-64">
+            {!imageNew ? (
+              <>
+                <Label
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="images"
+                >
+                  Imágenes
+                </Label>
+                <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
+              </>
+            ) : (
+              <>
+                <Image
+                  alt="Logo"
+                  className="rounded-xl  mx-auto my-1"
+                  height={200}
+                  width={150}
+                  src={
+                    imageNew
+                      ? URL.createObjectURL(imageNew)
+                      : webshop.store.urlPoster ||
+                        "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                  }
+                  style={{
+                    objectFit: "cover",
+                  }}
+                />
+                <div className="absolute top-1 right-1 z-[1]">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="rounded-full p-2 h-8 w-8"
+                    size="icon"
+                    onClick={() => setImageNew(null)}
+                  >
+                    <Trash2 />{" "}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
-            <Image
-              alt="Logo"
-              className="rounded-xl  mx-auto my-1"
-              height={200}
-              width={150}
-              src={
-                imageNew
-                  ? URL.createObjectURL(imageNew)
-                  : webshop.store.urlPoster ||
-                    "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-              }
-              style={{
-                aspectRatio: "40/40",
-                objectFit: "cover",
-              }}
-            />
-          </div>
+
           <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
