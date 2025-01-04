@@ -10,33 +10,6 @@ import {
 import { ChartContainer } from "@/components/ui/chart";
 import { ThemeContext } from "@/context/useContext";
 import { useState, useContext, useEffect } from "react";
-// Datos proporcionados
-const countEntriesInLast90Days = [
-  {
-    date: "09-18",
-    count: 0,
-  },
-  {
-    date: "09-19",
-    count: 1,
-  },
-  {
-    date: "09-20",
-    count: 0,
-  },
-  {
-    date: "09-21",
-    count: 0,
-  },
-  {
-    date: "09-22",
-    count: 0,
-  },
-  {
-    date: "09-23",
-    count: 3,
-  },
-];
 
 export default function UsageChart() {
   const { webshop } = useContext(ThemeContext);
@@ -52,7 +25,6 @@ export default function UsageChart() {
       setaverageVisits((totalVisits / data.length).toFixed(2));
     }
   }, [webshop.ga, totalVisits]);
-  console.log(averageVisits);
 
   return (
     <Card className="max-w-xs" x-chunk="charts-01-chunk-1">
@@ -105,9 +77,6 @@ function HeatmapChart({ data }) {
             className={`w-4 h-4 rounded-sm ${getColor(day.count, maxValue)}`}
             title={`${day.date}: ${day.count} visitas`}
           ></div>
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-            {day.date}: {day.count} visitas
-          </div>
         </div>
       ))}
     </div>
@@ -116,9 +85,14 @@ function HeatmapChart({ data }) {
 
 function getColor(value, maxValue) {
   const intensity = value / maxValue;
-  if (intensity < 0.2) return "bg-orange-100";
-  if (intensity < 0.4) return "bg-orange-300";
-  if (intensity < 0.6) return "bg-orange-500";
-  if (intensity < 0.8) return "bg-orange-700";
-  return "bg-orange-900";
+  if (intensity < 0.1) return "bg-orange-100";
+  if (intensity < 0.2) return "bg-orange-200";
+  if (intensity < 0.3) return "bg-orange-300";
+  if (intensity < 0.4) return "bg-orange-400";
+  if (intensity < 0.5) return "bg-orange-500";
+  if (intensity < 0.6) return "bg-orange-600";
+  if (intensity < 0.7) return "bg-orange-700";
+  if (intensity < 0.8) return "bg-orange-800";
+  if (intensity < 0.9) return "bg-orange-900";
+  return "bg-orange-950";
 }

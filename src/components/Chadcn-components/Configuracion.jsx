@@ -22,33 +22,6 @@ import {
 } from "next/font/google";
 import { FromData } from "../globalFunction/fromData";
 
-const roboto = Roboto({ subsets: ["latin"], weight: "400" });
-const oswald = Oswald({ subsets: ["latin"], weight: "700" });
-const open_Sans = Open_Sans({ subsets: ["latin"], weight: "400" });
-const playfair_Display = Playfair_Display({
-  subsets: ["latin"],
-  weight: "400",
-});
-const merriweather = Merriweather({ subsets: ["latin"], weight: "400" });
-const inter = Inter({ subsets: ["latin"], weight: "400" });
-const poppins = Poppins({ subsets: ["latin"], weight: "400" });
-const montserrat = Montserrat({ subsets: ["latin"], weight: "400" });
-const lato = Lato({ subsets: ["latin"], weight: "400" });
-const sevillana = Sevillana({ subsets: ["latin"], weight: "400" });
-
-const fonts = [
-  { name: "Roboto", clase: roboto.className },
-  { name: "Oswald", clase: oswald.className },
-  { name: "Inter", clase: inter.className },
-  { name: "Open_Sans", clase: open_Sans.className },
-  { name: "Playfair_Display", clase: playfair_Display.className },
-  { name: "Merriweather", clase: merriweather.className },
-  { name: "Poppins", clase: poppins.className },
-  { name: "Montserrat", clase: montserrat.className },
-  { name: "Lato", clase: lato.className },
-  { name: "Sevillana", clase: sevillana.className },
-];
-
 export default function Configuracion({ ThemeContext }) {
   const provincias = provinciasData.provincias;
   const { webshop } = useContext(ThemeContext);
@@ -88,7 +61,7 @@ export default function Configuracion({ ThemeContext }) {
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
       <FromData store={store} ThemeContext={ThemeContext}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-          <div className="border rounded-2x p-5">
+          {/* <div className="border rounded-2x p-5">
             <InputStore
               name={"Tarjeta Bancaria"}
               object={store}
@@ -100,8 +73,8 @@ export default function Configuracion({ ThemeContext }) {
             <p className="text-xs text-muted-foreground mt-1">
               *Comercio Electronico y pagos por transferenica Bancaria
             </p>
-          </div>
-          <div className="border rounded-2x p-5">
+          </div> */}
+          {/* <div className="border rounded-2x p-5">
             <SelectStore
               title={"Fuente"}
               array={fonts}
@@ -118,7 +91,7 @@ export default function Configuracion({ ThemeContext }) {
             <p className="text-xs text-muted-foreground mt-1">
               *Seleccione una fuente
             </p>
-          </div>
+          </div> */}
           <div className="border rounded-2x p-5">
             <InputStore
               name={"Numero de telefono"}
@@ -134,6 +107,10 @@ export default function Configuracion({ ThemeContext }) {
               action={setStore}
               type={"email"}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              *Numero de telefono para recivir encargos o domicilios y correo
+              electronico para contactar con los clientes
+            </p>
           </div>
           <div className="border rounded-2x p-5">
             <SelectStore
@@ -152,6 +129,7 @@ export default function Configuracion({ ThemeContext }) {
             />
             <SelectStore
               title={"Municipio"}
+              disabled={store.Provincia ? false : true}
               array={
                 provincias.filter((env) => env.nombre == store.Provincia)[0]
                   ?.municipios
@@ -164,7 +142,7 @@ export default function Configuracion({ ThemeContext }) {
                     ? provincias.filter((obj) => obj.nombre == store.Provincia)
                     : [{ nombre: "", municipios: [] }],
                 });
-              }} // cambio aquí
+              }}
               placeholder={store.municipio}
               value={""}
             />
@@ -217,7 +195,7 @@ export default function Configuracion({ ThemeContext }) {
             </p>
           </div>
           <div className="border rounded-2x p-5">
-            <div className="  flex justify-between">
+            <div className="  flex justify-between items-center">
               <SwitchStore
                 name={"domicilio"}
                 object={store}
@@ -226,19 +204,19 @@ export default function Configuracion({ ThemeContext }) {
               />
               {store.domicilio ? (
                 <div className="max-w-max max-h-max">
-                  <Link
-                    className={`border p-1 text-center`}
-                    href={`/admin/configuracion/domicilios`}
-                  >
-                    Definir Domicilios
-                  </Link>
+                  <Button type="link" variant="outline">
+                    <Link href={`/admin/configuracion/domicilios`}>
+                      Definir Domicilios
+                    </Link>
+                  </Button>
                 </div>
               ) : (
                 <></>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              *Guarde los cambios antes de ajustar los domicilio
+              *Escencial para activar la funcionabilidad del carrito en su
+              tienda
             </p>
           </div>
           <div className="border rounded-2x p-5">

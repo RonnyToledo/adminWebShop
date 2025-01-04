@@ -14,10 +14,8 @@ async function fetchUserSession() {
   try {
     const res = await fetch("/api/login");
     const data = await res.json();
-    if (res.ok && data?.user?.id) {
+    if (res.ok) {
       return data;
-    } else {
-      console.log("Usuario no encontrado o error en la respuesta:", data);
     }
   } catch (error) {
     console.error("Error al obtener la sesión del usuario:", error);
@@ -35,7 +33,7 @@ export function ResponsiveLogin() {
   useEffect(() => {
     async function UserFetch() {
       const userId = await fetchUserSession();
-      if (userId?.user?.id) {
+      if (userId) {
         router.push("/admin");
         return;
       }
@@ -57,7 +55,6 @@ export function ResponsiveLogin() {
         },
       });
       if (error) throw error;
-      console.log("Redireccionando para completar el inicio de sesión...");
     } catch (error) {
       setError("Error al iniciar sesión con Google");
       console.error(error);
@@ -67,7 +64,6 @@ export function ResponsiveLogin() {
   const handleApiCall = async (isGoogleLogin, token) => {
     setLoading(true);
     setError(null);
-    console.log(email, password, token, isGoogleLogin);
     try {
       const res = await fetch("/api/login", {
         method: "POST",

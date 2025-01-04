@@ -57,6 +57,7 @@ export function SelectStore({
   onSelectChange,
   value,
   title,
+  disabled = false,
   className = "",
 }) {
   return (
@@ -68,7 +69,12 @@ export function SelectStore({
         {title}
       </Label>
       <div className="mt-1">
-        <Select id="category" name="category" onValueChange={onSelectChange}>
+        <Select
+          id="category"
+          name="category"
+          disabled={disabled}
+          onValueChange={onSelectChange}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>

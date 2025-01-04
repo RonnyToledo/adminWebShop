@@ -29,46 +29,32 @@ const initialState = {
   },
 };
 
-export default function MyProvider({ children }) {
+export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(initialState);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [user, setUser] = useState(null);
-  const [storeDataReady, setStoreDataReady] = useState(false);
   const router = useRouter();
-
-  /* Iniciar el service worker
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/service-worker.js")
-        .then((registration) => {
-          console.log("Service Worker registrado:", registration);
-        })
-        .catch((error) => {
-          console.error("Error registrando el Service Worker:", error);
-        });
+    if (!user) router.push("/");
+  }, [user]);
+
+  useEffect(() => {
+    if (!data.user.login) {
+      router.push("/createAccount");
+      setIsNewUser(true);
+    } else {
+      setWebshop(data);
     }
-  }, []);/*/
+  }, [data]);
 
   // Primer useEffect: Inicializar datos y cargar tienda
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const userSession = await fetchUserSession();
-
-        if (!userSession?.user?.id) {
-          router.push("/");
-          return;
-        }
-
-        const userId = userSession.user.id;
-        // Llama esta función al iniciar sesión o cuando el usuario acepte recibir notificaciones
-        //await subscribeUserToPush();
         // Fetch and handle pending notifications
         const { data: notifications } = await supabase
           .from("Notification")
           .select("*")
-          .eq("userID", userId);
+          .eq("userID", user);
         if (notifications?.length) {
           const toastPromises = notifications.map(async (notification) => {
             toast("Notificación", {
@@ -79,48 +65,6 @@ export default function MyProvider({ children }) {
           });
           await Promise.all(toastPromises);
         }
-
-        // Fetch store data
-        const { data: store, error } = await fetchStoreData(userId);
-        if (error) throw error;
-        if (!store?.login) {
-          router.replace("configPage");
-          return;
-        }
-        if (!store?.Sitios?.sitioweb) {
-          router.replace("welcome");
-          return;
-        }
-
-        const tiendaParsed = {
-          ...store.Sitios,
-          moneda: JSON.parse(store.Sitios.moneda),
-          moneda_default: JSON.parse(store.Sitios.moneda_default),
-          horario: JSON.parse(store.Sitios.horario),
-          categoria: store.Sitios.categorias.sort((a, b) => a.order - b.order),
-          envios: JSON.parse(store.Sitios.envios),
-        };
-
-        const eventsParsed = store.Sitios.Events.map((event) => ({
-          ...event,
-          desc: JSON.parse(event.desc),
-        }));
-
-        const productosParsed = OrderProducts(
-          store.Sitios.Products,
-          tiendaParsed.categoria
-        );
-        delete tiendaParsed.Products;
-        delete tiendaParsed.categorias;
-        setWebshop((prev) => ({
-          ...prev,
-          store: tiendaParsed,
-          products: productosParsed,
-          events: eventsParsed,
-          code: tiendaParsed.codeDiscount,
-        }));
-        setUser(userSession.user);
-        setStoreDataReady(true); // Marcar que los datos iniciales están listos
       } catch (error) {
         console.error("Error inicializando datos:", error);
       }
@@ -128,34 +72,6 @@ export default function MyProvider({ children }) {
     initializeData();
   }, [router]);
 
-  // Segundo useEffect: Llamada a la API de Google Analytics
-  useEffect(() => {
-    const fetchGAData = async () => {
-      try {
-        if (!webshop.store.sitioweb) return;
-        const response = await fetch(
-          `/api/tienda/${webshop.store.sitioweb}/GA`
-        );
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const gaData = await response.json();
-        setWebshop((prev) => ({
-          ...prev,
-          ga: gaData,
-          products: prev.products.map((obj) => ({
-            ...obj,
-            visitas: gaData.visitasProductos[obj.productId] || 0,
-          })),
-        }));
-      } catch (error) {
-        console.error("Error obteniendo datos de GA:", error);
-      }
-    };
-
-    if (storeDataReady) {
-      fetchGAData(); // Ejecutar cuando los datos iniciales estén listos
-    }
-  }, [storeDataReady, webshop.store?.sitioweb]);
   useEffect(() => {
     if (!user) return;
 
@@ -199,17 +115,4 @@ export default function MyProvider({ children }) {
       {children}
     </ThemeContext.Provider>
   );
-}
-
-async function fetchUserSession() {
-  try {
-    const res = await fetch("/api/login");
-    const data = await res.json();
-    if (res.ok && data?.user?.id) {
-      return data;
-    } else {
-    }
-  } catch (error) {
-    console.error("Error al obtener la sesión del usuario:", error);
-  }
 }
