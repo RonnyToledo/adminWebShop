@@ -61,7 +61,7 @@ async function refreshAccessTokenIfNeeded(cookieValue) {
 
 // GET: Obtener la sesión almacenada
 export async function GET(req) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const cookie = cookieStore.get("sb-access-token");
 
   if (!cookie) {
@@ -143,7 +143,7 @@ export async function POST(req) {
   // Crear la cookie de sesión
   const sessionCookie = createSessionCookie(session.session);
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set(
     sessionCookie.name,
     sessionCookie.value,

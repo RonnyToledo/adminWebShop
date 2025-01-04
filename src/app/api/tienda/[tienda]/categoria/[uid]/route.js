@@ -141,7 +141,7 @@ export async function DELETE(request, { params }) {
   return NextResponse.json(tienda);
 }
 const LogUser = async () => {
-  const cookie = cookies().get("sb-access-token");
+  const cookie = await cookies().get("sb-access-token");
   if (!cookie) {
     return NextResponse.json(
       { message: "No se encontró la cookie de sesión" },
@@ -156,7 +156,6 @@ const LogUser = async () => {
     refresh_token: parsedCookie.refresh_token,
   });
 };
-
 function formDataToObject(formData) {
   const object = {};
 

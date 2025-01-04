@@ -10,19 +10,7 @@ import IllustrationLogin from "./icons/IllustrationLogin";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
-async function fetchUserSession() {
-  try {
-    const res = await fetch("/api/login");
-    const data = await res.json();
-    if (res.ok) {
-      return data;
-    }
-  } catch (error) {
-    console.error("Error al obtener la sesión del usuario:", error);
-  }
-}
-
-export function ResponsiveLogin() {
+export function ResponsiveLogin({ user }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -31,15 +19,11 @@ export function ResponsiveLogin() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function UserFetch() {
-      const userId = await fetchUserSession();
-      if (userId) {
-        router.push("/admin");
-        return;
-      }
+    if (user) {
+      router.push("/admin");
+      return;
     }
-    UserFetch();
-  }, []);
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
