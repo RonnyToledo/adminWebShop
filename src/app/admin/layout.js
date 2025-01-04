@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
   const data = await initializeData(user);
-
+  console.log(user, data);
   return (
     <MyProvider user={user} data={data || {}}>
       <main className="sm:pl-14">{children}</main>

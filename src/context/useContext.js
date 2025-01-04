@@ -34,17 +34,16 @@ export default function MyProvider({ children, user, data }) {
   const [isNewUser, setIsNewUser] = useState(false);
   const router = useRouter();
   useEffect(() => {
+    console.log(user, data);
     if (!user) router.push("/");
-  }, [user]);
 
-  useEffect(() => {
-    if (!data.user.login) {
+    if (!data?.user?.login) {
       router.push("/createAccount");
       setIsNewUser(true);
     } else {
       setWebshop(data);
     }
-  }, [data]);
+  }, [data, user]);
 
   // Primer useEffect: Inicializar datos y cargar tienda
   useEffect(() => {
