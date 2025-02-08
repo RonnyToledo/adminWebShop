@@ -62,7 +62,6 @@
   },
   {
     "label": "Cerrar Sesion",
-    "href": "/",
     "icon": "LogoutRoundedIcon",
     "action": "Log_Out"
   }

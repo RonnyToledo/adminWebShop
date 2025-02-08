@@ -5,7 +5,7 @@ import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "@/lib/cloudinary";
 
 const LogUser = async () => {
-  const cookie = await cookies().get("sb-access-token");
+  const cookie = (await cookies()).get("sb-access-token");
   if (!cookie) {
     return NextResponse.json(
       { message: "No se encontró la cookie de sesión" },

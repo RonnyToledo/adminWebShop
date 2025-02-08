@@ -8,6 +8,7 @@ import Image from "next/image";
 import ConfimationOut from "../globalFunction/confimationOut";
 import { FromData } from "../globalFunction/fromData";
 import ProfileHeader from "../profile-header";
+import WeeklyAvailability from "../WeeklyAvailability";
 
 export default function Header({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
@@ -21,7 +22,9 @@ export default function Header({ ThemeContext }) {
   useEffect(() => setStore(webshop.store), [webshop]);
 
   const handleChange = (field, value) =>
-    setStore((prev) => ({ ...prev, [field]: value }));
+    setStore((prev) => {
+      return { ...prev, [field]: value };
+    });
   console.log(store);
   return (
     <main>
@@ -42,7 +45,7 @@ export default function Header({ ThemeContext }) {
           />
         </div>
         <div className="mx-6">
-          <HorarioControl
+          <WeeklyAvailability
             horario={store.horario}
             onHorarioChange={(horario) => handleChange("horario", horario)}
           />

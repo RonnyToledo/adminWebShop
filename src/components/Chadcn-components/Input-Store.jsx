@@ -15,40 +15,32 @@ import { cn } from "@/lib/utils";
 
 export function InputStore({ name, object, value, action, type }) {
   return (
-    <div className="space-y-2 p-2">
-      <Label htmlFor={value}>{name}</Label>
-      <Input
-        id={value}
-        value={object[value] || ""}
-        type={type}
-        onChange={(e) =>
-          action({
-            ...object,
-            [value]: e.target.value,
-          })
-        }
-      />
-    </div>
+    <Input
+      id={value}
+      value={object[value] || ""}
+      type={type}
+      onChange={(e) =>
+        action({
+          ...object,
+          [value]: e.target.value,
+        })
+      }
+    />
   );
 }
 
 export function SwitchStore({ name, object, title, funcion }) {
   return (
-    <div className="space-y-2 flex items-center">
-      <Label htmlFor="reservation" className="mr-2">
-        {title}
-      </Label>
-      <Switch
-        id="reservation"
-        checked={object[name]}
-        onCheckedChange={(value) =>
-          funcion({
-            ...object,
-            [name]: value,
-          })
-        }
-      />
-    </div>
+    <Switch
+      id="reservation"
+      checked={object[name]}
+      onCheckedChange={(value) =>
+        funcion({
+          ...object,
+          [name]: value,
+        })
+      }
+    />
   );
 }
 export function SelectStore({
@@ -58,6 +50,7 @@ export function SelectStore({
   value,
   title,
   disabled = false,
+  icon,
   className = "",
 }) {
   return (
@@ -76,6 +69,7 @@ export function SelectStore({
           onValueChange={onSelectChange}
         >
           <SelectTrigger className="w-full">
+            {icon}
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>

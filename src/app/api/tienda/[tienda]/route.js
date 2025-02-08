@@ -5,7 +5,7 @@ import cloudinary from "@/lib/cloudinary";
 import { cookies } from "next/headers"; // Importar cookies desde headers
 
 const LogUser = async () => {
-  const cookie = await cookies().get("sb-access-token");
+  const cookie = (await cookies()).get("sb-access-token");
   if (!cookie) {
     return NextResponse.json(
       { message: "No se encontró la cookie de sesión" },

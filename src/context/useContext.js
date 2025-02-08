@@ -33,11 +33,11 @@ export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(initialState);
   const [isNewUser, setIsNewUser] = useState(false);
   const router = useRouter();
-  useEffect(() => {
-    console.log(user, data);
-    if (!user) router.push("/");
 
-    if (!data?.user?.login) {
+  useEffect(() => {
+    if (!user || user == undefined) router.push("/");
+
+    if (data?.user?.login == false) {
       router.push("/createAccount");
       setIsNewUser(true);
     } else {

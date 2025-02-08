@@ -5,14 +5,14 @@ import { cookies } from "next/headers";
 export default async function usePage() {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
-
+  console.log("user de login", user);
   return <ResponsiveLogin user={user} />;
 }
 
 async function fetchUserSessionServer() {
   const cookieStore = await cookies(); // Obtiene las cookies en el servidor
   const sessionCookie = cookieStore.get("sb-access-token");
-
+  console.log("sessionCooie login", sessionCookie);
   if (!sessionCookie) {
     console.warn("No hay cookie de sesión disponible en el servidor.");
     return null;

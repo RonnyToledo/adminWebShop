@@ -20,6 +20,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
 import ImageUpload from "../component/ImageDND";
 import ConfimationOut from "../globalFunction/confimationOut";
+import { Trash2 } from "lucide-react";
 
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -31,7 +32,6 @@ export default function Specific({ specific, ThemeContext }) {
   });
   const { toast } = useToast();
   const form = useRef(null);
-
   const [products, setProducts] = useState({
     agregados: [],
   });
@@ -190,9 +190,10 @@ export default function Specific({ specific, ThemeContext }) {
       });
     }
   };
+
   return (
     <main className="grid min-h-screen w-full ">
-      <div className="flex flex-col gap-6 w-full ">
+      <div className="flex flex-col p-3 w-full ">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Editar producto</h1>
         </div>
@@ -203,43 +204,52 @@ export default function Specific({ specific, ThemeContext }) {
                 <CardHeader>
                   <CardTitle>Imagen del producto</CardTitle>
                 </CardHeader>
-                <CardContent className="flex justify-center">
-                  <Image
-                    src={
-                      newImage
-                        ? URL.createObjectURL(newImage)
-                        : products?.image
-                        ? products?.image
-                        : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                    }
-                    alt={products?.title ? products?.title : `Product`}
-                    width={100}
-                    style={{
-                      aspectRatio: "200/300",
-                      objectFit: "cover",
-                    }}
-                    height={150}
-                    className="object-contain"
-                  />
-                </CardContent>
-              </Card>
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle>Cambiar Imagen</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div>
-                    <Label
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      htmlFor="images"
-                    >
-                      Imágenes
-                    </Label>
-                    <ImageUpload
-                      setImageNew={setNewImage}
-                      imageNew={newImage}
-                    />
-                  </div>
+                <CardContent className=" flex justify-center h-64">
+                  {newImage ? (
+                    <div className="relative">
+                      <Image
+                        src={
+                          newImage
+                            ? URL.createObjectURL(newImage)
+                            : products?.image
+                            ? products?.image
+                            : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                        }
+                        alt={products?.title ? products?.title : `Product`}
+                        width={100}
+                        style={{
+                          aspectRatio: "200/300",
+                          objectFit: "cover",
+                        }}
+                        height={150}
+                        className="object-contain"
+                      />
+                      <div className="absolute top-1 right-1 z-[1]">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="rounded-full p-2 h-8 w-8"
+                          size="icon"
+                          onClick={() => setNewImage(null)}
+                        >
+                          <Trash2 />{" "}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full">
+                      <Label
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        htmlFor="images"
+                      >
+                        Imágenes
+                      </Label>
+                      <ImageUpload
+                        setImageNew={setNewImage}
+                        imageNew={newImage}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

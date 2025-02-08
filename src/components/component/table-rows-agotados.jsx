@@ -43,8 +43,13 @@ import {
 } from "@/components/ui/hover-card";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import UnfoldMoreDoubleRoundedIcon from "@mui/icons-material/UnfoldMoreDoubleRounded";
+import { ExtraerCategorias } from "../globalFunction/function";
 
-export default function TableRowsComponentAgotados({ products, setProducts }) {
+export default function TableRowsComponentAgotados({
+  products,
+  setProducts,
+  moveElements,
+}) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
@@ -132,7 +137,10 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
 
   return (
     <DragDropContext onDragEnd={DragAndDrop}>
-      {webshop.store.categoria.map((categoria, ind) => (
+      {(moveElements
+        ? ExtraerCategorias(webshop.store.categoria, products)
+        : webshop.store.categoria
+      ).map((categoria, ind) => (
         <TableComponet
           key={ind}
           name={categoria.name}
@@ -141,6 +149,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
           setProducts={setProducts}
           downloading={downloading}
           deleteProduct={deleteProduct}
+          moveElements={moveElements}
         />
       ))}
       {products.filter(
@@ -157,6 +166,7 @@ export default function TableRowsComponentAgotados({ products, setProducts }) {
           setProducts={setProducts}
           downloading={downloading}
           deleteProduct={deleteProduct}
+          moveElements={moveElements}
         />
       )}
     </DragDropContext>
@@ -169,6 +179,7 @@ function TableComponet({
   downloading,
   deleteProduct,
   id,
+  moveElements,
 }) {
   // Estado para el criterio de ordenamiento
   const [sortCriteria, setSortCriteria] = useState("none");
@@ -321,6 +332,7 @@ function TableComponet({
                       key={`${obj.productId}-${ind}`}
                       draggableId={String(obj.productId)}
                       index={ind}
+                      isDragDisabled={moveElements}
                     >
                       {(draggableProvided) => (
                         <TableRow
@@ -333,7 +345,13 @@ function TableComponet({
                             className="cursor-grab"
                             {...draggableProvided.dragHandleProps} // Solo aquí se aplican los dragHandleProps
                           >
-                            <div className="flex items-center justify-center text-gray-700">
+                            <div
+                              className={`flex items-center justify-center ${
+                                !moveElements
+                                  ? "text-gray-700"
+                                  : "text-gray-300"
+                              }`}
+                            >
                               <MenuRoundedIcon />
                             </div>
                           </TableCell>

@@ -1,46 +1,38 @@
 "use client";
 import { File, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "../ui/input";
 import { ThemeContext } from "@/context/useContext";
 import { useState, useContext, useRef, useEffect } from "react";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import TableRowsComponentAgotados from "./table-rows-agotados";
-import TableRowsComponent from "./table-rows";
 import ConfimationOut from "../globalFunction/confimationOut";
 import axios from "axios";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
+import Fuse from "fuse.js";
+
+const options = {
+  includeScore: true,
+  threshold: 0.3,
+  location: 0,
+  distance: 100,
+  maxPatternLength: 32,
+  minMatchCharLength: 1,
+  keys: ["title"],
+};
 
 export function Dashboard() {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
-  const [FilterAgotado, setFilterAgotado] = useState([]);
-  const [FilterFavorito, setFilterFavorito] = useState([]);
+  const [SearchProduct, setSearchProduct] = useState("");
   const [products, setProducts] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
     setProducts(webshop.products);
-    setFilterAgotado(webshop.products.filter((product) => product.agotado));
-    setFilterFavorito(webshop.products.filter((product) => product.favorito));
   }, [webshop]);
 
   const SaveData = async () => {
@@ -83,15 +75,15 @@ export function Dashboard() {
       setDownloading(false);
     }
   };
-  console.log(
-    products.filter(
-      (prod) =>
-        !webshop.store.categoria.map((obj) => obj.id).includes(prod.caja)
-    )
-  );
+  function SearchData() {
+    const fuse = new Fuse(products, options);
+    const results = fuse.search(SearchProduct);
+
+    return results.length == 0 ? products : results.map((obj) => obj.item);
+  }
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <div className="flex flex-col sm:gap-4 sm:py-4 mt-6">
+      <div className="flex flex-col mt-3">
         <div className="flex items-center">
           <div className="ml-auto flex items-center gap-2 p-2">
             <Button
@@ -111,122 +103,28 @@ export function Dashboard() {
             </Link>
           </div>
         </div>
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-          <Tabs defaultValue="todos">
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 ">
+          <div className="space-y-2">
             <div className="flex items-center">
-              <TabsList>
-                <TabsTrigger value="todos">Todos</TabsTrigger>
-                <TabsTrigger value="agotado">Sin Categorias</TabsTrigger>
-                <TabsTrigger value="favorito">Favoritos</TabsTrigger>
-              </TabsList>
+              <div className="rounded-3xl  w-full overflow-hidden">
+                {" "}
+                <Input
+                  type="text"
+                  value={SearchProduct}
+                  placeholder="Search products..."
+                  onChange={(e) => setSearchProduct(e.target.value)}
+                  className="flex-grow rounded-3xl"
+                />
+              </div>
             </div>
-            <TabsContent value="todos">
+            <div>
               <TableRowsComponentAgotados
                 setProducts={setProducts}
-                products={products}
+                products={SearchData()}
+                moveElements={SearchProduct ? true : false}
               />
-            </TabsContent>
-            <TabsContent value="agotado">
-              {products.filter(
-                (prod) =>
-                  !webshop.store.categoria
-                    .map((obj) => obj.id)
-                    .includes(prod.caja)
-              ).length > 0 ? (
-                <Card x-chunk="dashboard-06-chunk-0">
-                  <CardHeader>
-                    <CardTitle>Products</CardTitle>
-                    <CardDescription></CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Imagen </TableHead>
-
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Categoria-Prioridad</TableHead>
-                          <TableHead className="hidden md:table-cell">
-                            Precio
-                          </TableHead>
-                          <TableHead className="hidden md:table-cell">
-                            Agotado
-                          </TableHead>
-                          <TableHead className="hidden md:table-cell">
-                            Favorito
-                          </TableHead>
-                          <TableHead>
-                            <span className="sr-only">Actions</span>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRowsComponent
-                          product={products.filter(
-                            (prod) =>
-                              !webshop.store.categoria
-                                .map((obj) => obj.id)
-                                .includes(prod.caja)
-                          )}
-                        />
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div>NO hay</div>
-              )}
-            </TabsContent>
-            <TabsContent value="favorito">
-              <Card x-chunk="dashboard-06-chunk-0">
-                <CardHeader>
-                  <CardTitle>Products</CardTitle>
-                  <CardDescription></CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Imagen </TableHead>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Categoria-Prioridad</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Precio
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Agotado
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Favorito
-                        </TableHead>
-                        <TableHead>
-                          <span className="sr-only">Actions</span>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRowsComponent
-                        product={OrderProducts(
-                          FilterFavorito,
-                          webshop.store.categoria.map((obj) => obj.id)
-                        )}
-                      />
-                      <TableRowsComponent
-                        product={FilterFavorito.sort(
-                          (a, b) => a.order - b.order
-                        ).filter(
-                          (obj) =>
-                            !webshop.store.categoria
-                              .map((obj) => obj.id)
-                              .includes(obj.caja)
-                        )}
-                      />
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </main>
       </div>
       <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">

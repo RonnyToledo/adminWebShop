@@ -59,6 +59,9 @@ import {
   Card,
 } from "@/components/ui/card";
 import data from "@/components/json/card.json";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
+
 const iconMap = {
   HomeRoundedIcon,
   PreviewRoundedIcon,
@@ -77,12 +80,33 @@ const iconMap = {
 };
 
 export default function HeaderAdmin({ ThemeContext }) {
+  const { toast } = useToast();
   const { webshop } = useContext(ThemeContext);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const Log_Out = async () => {
-    await fetch("/api/login", { method: "DELETE" });
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        router.push("/");
+      } else {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Error Cerrando Sesion",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: `error: ${error.message}`,
+      });
+      console.error("Error en la respuesta:", error);
+    }
   };
 
   const renderLink = (link, index) => {
@@ -105,7 +129,7 @@ export default function HeaderAdmin({ ThemeContext }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
-              href={link.href}
+              href={link.href || pathname}
               className="flex items-center rounded-lg text-gray-500 px-1 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
               onClick={link.action === "Log_Out" ? Log_Out : null}
             >
@@ -139,7 +163,7 @@ export default function HeaderAdmin({ ThemeContext }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
-              href={link.href}
+              href={link.href || pathname}
               className="flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
               onClick={() => {
                 if (link.action === "Log_Out") {

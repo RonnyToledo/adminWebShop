@@ -13,7 +13,7 @@ async function fetchUserSession() {
   try {
     const res = await fetch("/api/login");
     const data = await res.json();
-    if (res.ok && data?.user?.id) {
+    if (res.ok && data?.user?.user?.id) {
       return data;
     } else {
       console.log("Usuario no encontrado o error en la respuesta:", data);
@@ -34,7 +34,7 @@ export default function CreateAccount() {
   useEffect(() => {
     async function UserFetch() {
       const userId = await fetchUserSession();
-      if (userId?.user?.id) {
+      if (userId?.user?.user?.id) {
         router.push("/admin");
         return;
       }

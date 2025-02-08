@@ -75,7 +75,7 @@ export default function TableRowsComponent({ product }) {
     <>
       {product.map((obj, ind) => (
         <TableRow key={ind}>
-          <TableCell className="p-1 sm:md:p-2 md:p-4">
+          <TableCell className="p-1 sm:p-2 md:p-4">
             <Image
               alt={obj.title ? obj.title : `Producto${ind}`}
               className="aspect-square rounded-md object-cover"
@@ -92,23 +92,23 @@ export default function TableRowsComponent({ product }) {
               width={64}
             />
           </TableCell>
-          <TableCell className="font-medium p-1 sm:md:p-2 md:p-4">
+          <TableCell className="font-medium p-1 sm:p-2 md:p-4">
             {obj.title}
           </TableCell>
-          <TableCell className="p-1 sm:md:p-2 md:p-4">
+          <TableCell className="p-1 sm:p-2 md:p-4">
             <Badge variant="outline">
               {" "}
               {obj.caja ? obj.caja : "Sin categoria"}{" "}
               {obj.order < 100000 && `-${obj.order}`}
             </Badge>
           </TableCell>
-          <TableCell className="hidden md:table-cell p-1 sm:md:p-2 md:p-4">
+          <TableCell className="hidden md:table-cell p-1 sm:p-2 md:p-4">
             ${Number(obj.price).toFixed(2)}
           </TableCell>
-          <TableCell className="hidden md:table-cell p-1 sm:md:p-2 md:p-4">
+          <TableCell className="hidden md:table-cell p-1 sm:p-2 md:p-4">
             {obj.agotado ? "Si" : "No"}
           </TableCell>
-          <TableCell className="hidden md:table-cell p-1 sm:md:p-2 md:p-4">
+          <TableCell className="hidden md:table-cell p-1 sm:p-2 md:p-4">
             {obj.favorito ? "Si" : "No"}
           </TableCell>
           <TableCell>

@@ -19,9 +19,8 @@ export function ResponsiveLogin({ user }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && user !== undefined) {
       router.push("/admin");
-      return;
     }
   }, [user]);
 
