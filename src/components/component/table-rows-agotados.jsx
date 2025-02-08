@@ -44,6 +44,8 @@ import {
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import UnfoldMoreDoubleRoundedIcon from "@mui/icons-material/UnfoldMoreDoubleRounded";
 import { ExtraerCategorias } from "../globalFunction/function";
+import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 
 export default function TableRowsComponentAgotados({
   products,
@@ -427,16 +429,40 @@ function TableComponet({
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <div className="flex flex-col gap-3 p-2">
-                                  <Link
-                                    className="flex gap-3 w-full justify-start items-center"
-                                    href={`/admin/products/${obj.productId}`}
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                    Edit
-                                  </Link>
                                   <Button
-                                    className="flex gap-3 w-full justify-start items-center"
-                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      setProducts((prev) =>
+                                        prev.map((prodMap) =>
+                                          prodMap.productId == obj.productId
+                                            ? { ...obj, visible: !obj.visible }
+                                            : prodMap
+                                        )
+                                      )
+                                    }
+                                  >
+                                    {obj.visible ? (
+                                      <>
+                                        <RemoveRedEyeOutlinedIcon />
+                                        Visible
+                                      </>
+                                    ) : (
+                                      <>
+                                        <VisibilityOffOutlinedIcon />
+                                        Oculto
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button variant="ghost" asChild>
+                                    <Link
+                                      className="flex gap-3 w-full justify-start items-center"
+                                      href={`/admin/products/${obj.productId}`}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                      Edit
+                                    </Link>
+                                  </Button>
+                                  <Button
                                     variant="ghost"
                                     onClick={() =>
                                       deleteProduct(obj.productId, obj.image)
