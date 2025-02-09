@@ -127,7 +127,7 @@ export async function POST(request, { params }) {
 export async function PUT(request, { params }) {
   const data = await request.formData();
   const products = JSON.parse(data.get("products"));
-
+  console.log(products);
   try {
     await updateProductsInBatches(products, 10);
 

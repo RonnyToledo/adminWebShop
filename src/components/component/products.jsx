@@ -206,6 +206,7 @@ const obtenerProductosModificados = (productosOriginales, productosNuevos) => {
       productoOriginal &&
       (productoOriginal.agotado !== productoNuevo.agotado ||
         productoOriginal.order !== productoNuevo.order ||
+        productoOriginal.visible !== productoNuevo.visible ||
         productoOriginal.caja !== productoNuevo.caja)
     );
   });
