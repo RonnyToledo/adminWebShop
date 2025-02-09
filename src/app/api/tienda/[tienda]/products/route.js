@@ -151,11 +151,10 @@ async function updateProductsInBatches(products, batchSize = 10) {
 
     await Promise.all(
       batch.map(async (product) => {
-        const { productId, agotado, order, title, caja } = product;
-        console.log(productId, agotado, order, title, caja);
+        const { productId, agotado, order, title, caja, visible } = product;
         const { data: prod, error } = await supabase
           .from("Products")
-          .update({ agotado, order, caja })
+          .update({ agotado, order, caja, visible })
           .eq("productId", productId)
           .select("*");
         console.log(prod);
