@@ -315,7 +315,7 @@ function TableComponet({
               <TableHead>Agot.</TableHead>
               <TableHead className="hidden md:table-cell">Precio</TableHead>
               <TableHead className="hidden md:table-cell">Orden</TableHead>
-              <TableHead className="hidden md:table-cell">Favorito</TableHead>
+              <TableHead className="hidden md:table-cell">Visible</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -411,7 +411,7 @@ function TableComponet({
 
                           {/* Favorito */}
                           <TableCell className="hidden md:table-cell">
-                            {obj.favorito ? "Si" : "No"}
+                            {obj.visible ? "Si" : "No"}
                           </TableCell>
 
                           {/* Menú de opciones */}
