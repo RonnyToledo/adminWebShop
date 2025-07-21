@@ -18,14 +18,18 @@ import { useToast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
+import ImageUpload from "../component/ImageDND";
+import { Trash2 } from "lucide-react";
 
 export default function NewProduct({ ThemeContext }) {
   const [downloading, setDownloading] = useState(false);
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const { toast } = useToast();
   const form = useRef(null);
+  const [imageNew, setImageNew] = useState();
   const [products, setProducts] = useState({
     favorito: false,
+    span: false,
     title: "",
     descripcion: "",
     discount: 0,
@@ -47,7 +51,8 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("descripcion", products.descripcion);
-    formData.append("discount", products.discount);
+    formData.append("span", products.span);
+    formData.append("UID", webshop.store.UUID);
     formData.append("UID", webshop.store.UUID);
     formData.append("creado", getLocalISOString(now));
     if (products.image) formData.append("image", products.image);
@@ -69,19 +74,22 @@ export default function NewProduct({ ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
+        const [a] = res.data;
+        setWebshop({
+          ...webshop,
+          products: [...webshop.products, a],
+        });
+        form.current.reset();
+        setProducts({
+          ...products,
+          favorito: false,
+          title: "",
+          descripcion: "",
+          discount: 0,
+          price: 0,
+        });
+        setImageNew(null);
       }
-      const [a] = res.data;
-      setwebshop({
-        ...webshop,
-        products: [
-          ...webshop.products,
-          {
-            ...a,
-            coment: JSON.parse(a.coment),
-            agregados: JSON.parse(a.agregados),
-          },
-        ],
-      });
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({
@@ -90,221 +98,209 @@ export default function NewProduct({ ThemeContext }) {
         description: "No se pudo crear el producto.",
       });
     } finally {
-      form.current.reset();
       setDownloading(false);
     }
   };
+
+  useEffect(() => {
+    setProducts((prev) => ({ ...prev, image: imageNew }));
+  }, [imageNew]);
+
   return (
-    <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
-      <form ref={form} onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="images"
-          >
-            Imágenes
-          </Label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                <label
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+    <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
+      <form ref={form} onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4">
+          <div className="relative border rounded-2x p-5 col-span-1 md:col-span-3 h-64">
+            {!imageNew ? (
+              <>
+                <Label
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   htmlFor="images"
                 >
-                  <span>Subir archivos</span>
-                  <input
-                    className="sr-only"
-                    id="images"
-                    name="images"
-                    type="file"
-                    onChange={(e) =>
-                      setProducts({
-                        ...products,
-                        image: e.target.files[0],
-                      })
-                    }
-                  />
-                </label>
-                <p className="pl-1">o arrastrar y soltar</p>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                PNG, JPG, GIF hasta 10MB
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">*Opcional</p>
+                  Imágenes
+                </Label>
+                <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
+              </>
+            ) : (
+              <>
+                <Image
+                  alt="Logo"
+                  className="rounded-xl  mx-auto my-1"
+                  height={200}
+                  width={150}
+                  src={
+                    imageNew
+                      ? URL.createObjectURL(imageNew)
+                      : webshop.store.urlPoster ||
+                        "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                  }
+                  style={{
+                    objectFit: "cover",
+                  }}
+                />
+                <div className="absolute top-1 right-1 z-[1]">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="rounded-full p-2 h-8 w-8"
+                    size="icon"
+                    onClick={() => setImageNew(null)}
+                  >
+                    <Trash2 />{" "}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="title"
+            >
+              Título
+            </Label>
+            <div className="mt-1">
+              <Input
+                id="title"
+                name="title"
+                required
+                value={products.title}
+                type="text"
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    title: e.target.value,
+                  })
+                }
+              />
             </div>
           </div>
-          {products?.image && (
-            <Image
-              alt="Logo"
-              className="rounded-xl  mx-auto my-1"
-              height={200}
-              width={150}
-              src={URL.createObjectURL(products.image)}
-              style={{
-                aspectRatio: "40/40",
-                objectFit: "cover",
-              }}
-            />
-          )}
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="title"
-          >
-            Título
-          </Label>
-          <div className="mt-1">
-            <Input
-              id="title"
-              name="title"
-              required
-              value={products.title}
-              type="text"
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  title: e.target.value,
-                })
-              }
-            />
-          </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="price"
-          >
-            Precio
-          </Label>
-          <div className="mt-1">
-            <Input
-              id="price"
-              name="price"
-              required
-              value={products.price}
-              type="number"
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  price: e.target.value,
-                })
-              }
-            />
-          </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="category"
-          >
-            Categoría
-          </Label>
-          <div className="mt-1">
-            <Select
-              id="category"
-              name="category"
-              required
-              onValueChange={(value) =>
-                setProducts({
-                  ...products,
-                  caja: value,
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {webshop.store.categoria.map((obj, ind) => (
-                    <SelectItem key={ind} value={obj}>
-                      {obj}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex items-start">
-          <div className="flex items-center h-5">
-            <Switch
-              id="reservation"
-              checked={products.favorito}
-              onCheckedChange={(value) => {
-                setProducts({
-                  ...products,
-                  favorito: value,
-                });
-              }}
-            />
-          </div>
-          <div className="ml-3 text-sm">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
             <Label
-              className="font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="special"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="price"
             >
-              Producto especial
+              Precio
             </Label>
+            <div className="mt-1">
+              <Input
+                id="price"
+                name="price"
+                required
+                value={products.price}
+                type="number"
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    price: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="description"
-          >
-            Descripción
-          </Label>
-          <div className="mt-1">
-            <Textarea
-              id="description"
-              name="description"
-              value={products.descripcion}
-              rows={3}
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  descripcion: e.target.value,
-                })
-              }
-            />
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="category"
+            >
+              Categoría
+            </Label>
+            <div className="mt-1">
+              <Select
+                id="category"
+                name="category"
+                required
+                onValueChange={(value) =>
+                  setProducts({
+                    ...products,
+                    caja: value,
+                  })
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {webshop.store.categoria.map((obj, ind) => (
+                      <SelectItem key={ind} value={obj.id}>
+                        {obj.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
-        <div>
-          <Label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="discount"
-          >
-            Descuento
-          </Label>
-          <div className="mt-1 flex items-center">
-            <Input
-              id="discount"
-              max="100"
-              min="0"
-              name="discount"
-              required
-              value={products.discount}
-              step="1"
-              type="number"
-              onChange={(e) =>
-                setProducts({
-                  ...products,
-                  discount: e.target.value,
-                })
-              }
-            />
-            <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
-              %
-            </span>
-          </div>
-        </div>
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="ml-3 text-sm flex flex-col space-y-2">
+                <Switch
+                  id="reservation"
+                  checked={products.favorito}
+                  onCheckedChange={(value) => {
+                    setProducts({
+                      ...products,
+                      favorito: value,
+                    });
+                  }}
+                />
+                <Label
+                  className="font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="special"
+                >
+                  Producto especial
+                </Label>
+              </div>
 
-        <div className="bg-white p-2 flex justify-end sticky bottom-0">
+              <div className="ml-3 text-sm flex flex-col space-y-2">
+                <Switch
+                  id="span"
+                  checked={products.span}
+                  onCheckedChange={(value) => {
+                    setProducts({
+                      ...products,
+                      span: value,
+                    });
+                  }}
+                />
+                <Label
+                  className="font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="special"
+                >
+                  Doble Espacio
+                </Label>
+              </div>
+            </div>
+          </div>
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="description"
+            >
+              Descripción
+            </Label>
+            <div className="mt-1">
+              <Textarea
+                id="description"
+                name="description"
+                value={products.descripcion}
+                rows={3}
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    descripcion: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+        <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
           <Button
-            className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+            type="submit"
+            className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
               downloading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={downloading}

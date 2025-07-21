@@ -1,0 +1,68 @@
+[
+  {
+    "label": "Inicio",
+    "href": "/admin/",
+    "icon": "HomeRoundedIcon"
+  },
+  {
+    "label": "Guia",
+    "href": "/admin/guia",
+    "icon": "PreviewRoundedIcon"
+  },
+  {
+    "label": "Pedidos",
+    "href": "/admin/orders",
+    "icon": "ListIcon"
+  },
+  {
+    "separator": true
+  },
+  {
+    "label": "Editar Categoria",
+    "href": "/admin/category",
+    "icon": "CategoryRoundedIcon"
+  },
+  {
+    "label": "Nuevo Producto",
+    "href": "/admin/newProduct",
+    "icon": "AddCircleRoundedIcon"
+  },
+  {
+    "label": "Editar Productos",
+    "href": "/admin/products",
+    "icon": "AppRegistrationRoundedIcon"
+  },
+  {
+    "separator": true
+  },
+  {
+    "label": "Editar Info",
+    "href": "/admin/header",
+    "icon": "EditNoteRoundedIcon"
+  },
+  {
+    "label": "Temas",
+    "href": "/admin/theme",
+    "icon": "ColorLensRoundedIcon",
+    "condition": { "plan": ["a"], "theme": true }
+  },
+  {
+    "label": "Marketing",
+    "href": "/admin/codeDiscount",
+    "icon": "AttachMoneyRoundedIcon",
+    "condition": { "plan": ["custom"], "CodePromo": true }
+  },
+  {
+    "label": "Configuracion",
+    "href": "/admin/configuracion",
+    "icon": "AppSettingsAltRoundedIcon"
+  },
+  {
+    "separator": true
+  },
+  {
+    "label": "Cerrar Sesion",
+    "icon": "LogoutRoundedIcon",
+    "action": "Log_Out"
+  }
+]

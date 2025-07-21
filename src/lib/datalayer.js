@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supa";
 
 export async function initializeAnalytics(dato) {
   const supabase = createClient();

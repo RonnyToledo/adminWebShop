@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supa";
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "@/lib/cloudinary";
 

@@ -45,120 +45,138 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Dashboard({ ThemeContext }) {
-  const supabase = createClient();
-  const { webshop, setwebshop } = useContext(ThemeContext);
-  const [busqueda, setbusqueda] = useState("");
-  const [event, setevent] = useState({
+  const { webshop } = useContext(ThemeContext);
+  const [busqueda, setBusqueda] = useState("");
+  const [event, setEvent] = useState({
     envio: "pickup",
     pago: "cash",
     pedido: [],
     total: 0,
   });
-  const [logins, setlogins] = useState(
-    webshop.events.filter((obj) => obj.events == "inicio")
-  );
-  const [compras, setcompras] = useState(
+
+  const [compras, setCompras] = useState(
     webshop.events
-      .filter((obj) => obj.events == "compra")
-      .map((obj) => {
-        return { ...obj.desc, created_at: obj.created_at };
-      })
+      .filter((obj) => obj.events === "compra")
+      .map((obj) => ({ ...obj.desc, created_at: obj.created_at }))
   );
 
   useEffect(() => {
-    setlogins(webshop.events.filter((obj) => obj.events == "inicio"));
-    const a = webshop.events.filter((obj) => obj.events == "compra");
-    setcompras(
-      a.map((obj) => {
-        return { ...obj.desc, created_at: obj.created_at, uid: obj.uid };
-      })
+    const comprasFiltradas = webshop.events.filter(
+      (obj) => obj.events === "compra"
     );
-    console.log(a);
+    setCompras(
+      comprasFiltradas.map((obj) => ({
+        ...obj.desc,
+        created_at: obj.created_at,
+        uid: obj.uid,
+      }))
+    );
   }, [webshop]);
 
-  async function BuscarEvents() {
-    let { data: Events, error } = await supabase
+  async function buscarEvents() {
+    const { data: Events, error } = await supabase
       .from("Events")
       .select("*")
-      .eq("uid", busqueda);
-    const [a] = Events;
-    setevent(JSON.parse(a.desc));
+      .eq("UID_Venta", busqueda);
+    if (Events?.length) {
+      const [result] = Events;
+      setEvent(JSON.parse(result.desc));
+    }
   }
+
+  const renderPedidos = () => {
+    return event.pedido.map(
+      (pedido, index) =>
+        pedido.Cant > 0 && (
+          <TableRow key={index}>
+            <TableCell className="font-medium">{pedido.title}</TableCell>
+            <TableCell>
+              <Badge variant="outline">{pedido.Cant}</Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              {pedido.price.toFixed(2)}
+            </TableCell>
+          </TableRow>
+        )
+    );
+  };
+
+  const renderAgregados = (pedido) => {
+    return pedido.agregados.map(
+      (agregado, index) =>
+        agregado.cantidad > 0 && (
+          <TableRow key={index}>
+            <TableCell className="font-medium">
+              {pedido.title} - {agregado.nombre}
+            </TableCell>
+            <TableCell>
+              <Badge variant="outline">{agregado.cantidad}</Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              {(pedido.price + Number(agregado.valor)).toFixed(2)}
+            </TableCell>
+          </TableRow>
+        )
+    );
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        {/* Tarjetas de métricas */}
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          <Card x-chunk="dashboard-01-chunk-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total de Ventas
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${Number(sumTotalField(compras)).toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">Venta general</p>
-            </CardContent>
-          </Card>
-          <Card x-chunk="dashboard-01-chunk-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Cantidad de pedidos
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{compras.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Cantidad de pedidos realizadas
-              </p>
-            </CardContent>
-          </Card>
-          <Card x-chunk="dashboard-01-chunk-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Cantidad de Productos
-              </CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {sumLengthOfPedido(compras)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Cantidad de Productos vendidos
-              </p>
-            </CardContent>
-          </Card>
-          <Card x-chunk="dashboard-01-chunk-3">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Ventas de 24 horas
-              </CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${sumarTotalUltimas24Horas(compras)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Total recaudado en las ultimas 24 horas
-              </p>
-            </CardContent>
-          </Card>
+          {[
+            {
+              title: "Total de Ventas",
+              value: `$${Number(sumTotalField(compras)).toFixed(2)}`,
+              description: "Venta general",
+              icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
+            },
+            {
+              title: "Cantidad de pedidos",
+              value: compras.length,
+              description: "Cantidad de pedidos realizadas",
+              icon: <Users className="h-4 w-4 text-muted-foreground" />,
+            },
+            {
+              title: "Cantidad de Productos",
+              value: sumLengthOfPedido(compras),
+              description: "Cantidad de productos vendidos",
+              icon: <CreditCard className="h-4 w-4 text-muted-foreground" />,
+            },
+            {
+              title: "Ventas de 24 horas",
+              value: `$${sumarTotalUltimas24Horas(compras)}`,
+              description: "Total recaudado en las últimas 24 horas",
+              icon: <Activity className="h-4 w-4 text-muted-foreground" />,
+            },
+          ].map((card, index) => (
+            <Card key={index}>
+              <CardHeader className="flex items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
+                {card.icon}
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{card.value}</div>
+                <p className="text-xs text-muted-foreground">
+                  {card.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <div className="grid gap-4 md:gap-8 lg:grid-cols-2 ">
-          <Card className="flex flex-col w-full" x-chunk="charts-01-chunk-1">
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2 [&>div]:flex-1">
-              <div>
-                <CardDescription>Total de Ventas</CardDescription>
-              </div>
+
+        {/* Gráfico y tabla */}
+        <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
+          <Card className="flex flex-col w-full">
+            <CardHeader>
+              <CardDescription>Total de Ventas</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-1 items-center">
               <ChartContainer
@@ -171,13 +189,8 @@ export default function Dashboard({ ThemeContext }) {
                 className="w-full"
               >
                 <LineChart
-                  accessibilityLayer
-                  margin={{
-                    left: 14,
-                    right: 14,
-                    top: 10,
-                  }}
                   data={sumarComprasUltimos7Dias(compras)}
+                  margin={{ left: 14, right: 14, top: 10 }}
                 >
                   <CartesianGrid
                     strokeDasharray="4 4"
@@ -190,27 +203,21 @@ export default function Dashboard({ ThemeContext }) {
                   <Line
                     dataKey="suma"
                     type="natural"
-                    fill="var(--color-resting)"
                     stroke="var(--color-resting)"
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{
-                      fill: "var(--color-resting)",
-                      stroke: "var(--color-resting)",
-                      r: 4,
-                    }}
                   />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
                         indicator="line"
-                        labelFormatter={(value) => {
-                          return new Date(value).toLocaleDateString("en-US", {
+                        labelFormatter={(value) =>
+                          new Date(value).toLocaleDateString("en-US", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",
-                          });
-                        }}
+                          })
+                        }
                       />
                     }
                     cursor={false}
@@ -219,139 +226,62 @@ export default function Dashboard({ ThemeContext }) {
               </ChartContainer>
             </CardContent>
           </Card>
-          <Card x-chunk="dashboard-01-chunk-5">
-            <CardHeader>
-              <div className="flex items-center justify-between p-4 gap-2">
-                <CardTitle>Recent Sales</CardTitle>
-                <CardDescription>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="ml-auto gap-1">
-                        Buscar
-                        <ArrowUpRight className="h-4 w-4" />
+
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Buscar Pedido</CardTitle>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-1">
+                    Buscar
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Buscar Pedido</DialogTitle>
+                    <DialogDescription>
+                      Ingrese el ID de la compra para buscar características
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Input
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        className="col-span-3"
+                      />
+                      <Button onClick={buscarEvents}>
+                        <Search className="h-5 w-5" />
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Buscar Pedido</DialogTitle>
-                        <DialogDescription>
-                          Ingrese el ID de la compra para buscar caracteristicas
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Input
-                            id="idEvents"
-                            defaultValue="Pedro Duarte"
-                            className="col-span-3"
-                            value={busqueda}
-                            onChange={(e) => setbusqueda(e.target.value)}
-                          />
-                          <Button
-                            variant="gosth"
-                            onClick={() => BuscarEvents()}
-                          >
-                            <Search className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <ScrollArea className="h-3/4 w-full rounded-md border">
-                          <Table>
-                            <TableCaption>
-                              A list of your recent invoices.
-                            </TableCaption>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[100px]">
-                                  Producto
-                                </TableHead>
-                                <TableHead className="w-[50px]">
-                                  Cantidad
-                                </TableHead>
-                                <TableHead className="text-right w-[50px]">
-                                  PxU
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {event.pedido.map((pedido, ind2) => (
-                                <>
-                                  {pedido.Cant > 0 && (
-                                    <TableRow key={ind2}>
-                                      <TableCell className="font-medium">
-                                        {pedido.title}
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex justify-between items-center gap-1">
-                                          <Badge variant="outline">
-                                            {pedido.Cant}
-                                          </Badge>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        {pedido.price.toFixed(2)}{" "}
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                  {pedido.agregados.length > 0 &&
-                                    pedido.agregados.map(
-                                      (agregate, ind3) =>
-                                        agregate.cantidad > 0 && (
-                                          <TableRow key={ind3}>
-                                            <TableCell className="font-medium">
-                                              {pedido.title} - {agregate.nombre}
-                                            </TableCell>
-                                            <TableCell>
-                                              <div className="flex justify-between items-center gap-1">
-                                                <Badge variant="outline">
-                                                  {agregate.cantidad}
-                                                </Badge>
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              {(
-                                                pedido.price +
-                                                Number(agregate.valor)
-                                              ).toFixed(2)}{" "}
-                                            </TableCell>
-                                          </TableRow>
-                                        )
-                                    )}
-                                </>
-                              ))}
-                            </TableBody>
-                            <TableFooter>
-                              <TableRow>
-                                <TableCell colSpan={2}>Total</TableCell>
-                                <TableCell className="text-right">
-                                  $
-                                  {event.total.toFixed(2) +
-                                    " " +
-                                    webshop.store.moneda_default.moneda}
-                                </TableCell>
-                              </TableRow>
-                            </TableFooter>
-                          </Table>
-                        </ScrollArea>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardDescription>
-              </div>
+                    </div>
+                    <ScrollArea className="h-3/4 w-full rounded-md border">
+                      <Table>
+                        <TableCaption>
+                          A list of your recent invoices.
+                        </TableCaption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Producto</TableHead>
+                            <TableHead>Cantidad</TableHead>
+                            <TableHead className="text-right">PxU</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>{renderPedidos()}</TableBody>
+                        <TableFooter>
+                          <TableRow>
+                            <TableCell colSpan={2}>Total</TableCell>
+                            <TableCell className="text-right">
+                              ${event.total.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        </TableFooter>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
-            <CardContent className="grid gap-8">
-              {obtenerPrimerosCincoAntiguos(compras).map((obj, ind) => (
-                <div key={ind} className="flex items-center gap-4">
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      {obj.uid}
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">
-                    +${Number(obj.total).toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
           </Card>
         </div>
       </main>

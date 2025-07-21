@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 import cloudinary from "@/lib/cloudinary";
 import { extractPublicId } from "cloudinary-build-url";
+import { cookies } from "next/headers"; // Importar cookies desde headers
 
 export async function GET(request, { params }) {
-  const supabase = createClient();
+  await LogUser();
+
   const { data: tienda } = await supabase
     .from(params.tienda)
     .select("*")
@@ -13,7 +15,8 @@ export async function GET(request, { params }) {
   return NextResponse.json(...new Set(tienda));
 }
 export async function POST(request, { params }) {
-  const supabase = createClient();
+  await LogUser();
+
   const data = await request.formData();
   const { data: tienda, error } = await supabase
     .from("Products")
@@ -22,7 +25,7 @@ export async function POST(request, { params }) {
         coment: data.get("comentario"),
       },
     ])
-    .select()
+    .select("*, agregados (*)")
     .eq("productId", params.specific);
   if (error) {
     console.log(error);
@@ -38,7 +41,8 @@ export async function POST(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const supabase = createClient();
+  await LogUser();
+
   const data = await request.formData();
   const Id = data.get("Id");
   const newImage = data.get("newImage");
@@ -89,19 +93,19 @@ export async function PUT(request, { params }) {
         title: data.get("title"),
         descripcion: data.get("descripcion"),
         price: data.get("price"),
-        discount: data.get("discount"),
+        order: data.get("order"),
         caja: data.get("caja"),
         favorito: data.get("favorito"),
         agotado: data.get("agotado"),
         visible: data.get("visible"),
-        agregados: data.get("agregados"),
+        oldPrice: data.get("oldPrice"),
+        span: data.get("span"),
         image: res.secure_url,
       })
       .eq("productId", Id)
-      .select();
+      .select("*, agregados (*)");
     if (error) {
-      console.log("Error");
-      console.log(error);
+      console.log("Error", error);
 
       return NextResponse.json(
         { message: error },
@@ -110,9 +114,10 @@ export async function PUT(request, { params }) {
         }
       );
     }
-    return NextResponse.json({ message: "Producto creado" });
+    return NextResponse.json(tienda);
   } else {
     console.log("estamos aca");
+    console.log(Id);
     //Si no tenemos nueva Imagen solo actualizamos los datos
     const { data: tienda, error } = await supabase
       .from("Products")
@@ -120,15 +125,16 @@ export async function PUT(request, { params }) {
         title: data.get("title"),
         descripcion: data.get("descripcion"),
         price: data.get("price"),
-        discount: data.get("discount"),
+        order: data.get("order"),
         caja: data.get("caja"),
         favorito: data.get("favorito"),
         agotado: data.get("agotado"),
         visible: data.get("visible"),
-        agregados: data.get("agregados"),
+        span: data.get("span"),
+        oldPrice: data.get("oldPrice"),
       })
-      .eq("productId", Id)
-      .select();
+      .select("*, agregados (*)")
+      .eq("productId", Id);
     if (error) {
       console.log(error);
 
@@ -144,7 +150,8 @@ export async function PUT(request, { params }) {
   }
 }
 export async function DELETE(request, { params }) {
-  const supabase = createClient();
+  await LogUser();
+
   const data = await request.formData();
   const imageOld = data.get("image");
   const Id = data.get("Id");
@@ -183,3 +190,19 @@ export async function DELETE(request, { params }) {
   console.log(tienda);
   return NextResponse.json(tienda);
 }
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};

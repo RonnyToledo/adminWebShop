@@ -1,342 +1,321 @@
 "use client";
-import React from "react";
-import { LogOut, Unlink2, CircleArrowOutUpRight } from "lucide-react";
-import {
-  Command,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
+import React, { useContext, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
-import { usePathname } from "next/navigation";
-import { useState, useContext } from "react";
+import navLinks from "@/components/json/link.json"; // ruta donde esté guardado el JSON
+import dataCards from "@/components/json/card.json";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { usePathname, useRouter } from "next/navigation";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
+import DatasetLinkedRoundedIcon from "@mui/icons-material/DatasetLinked";
+import CategoryRoundedIcon from "@mui/icons-material/CategoryRounded";
+import AddCircleRoundedIcon from "@mui/icons-material/AddCircleRounded";
+import AppRegistrationRoundedIcon from "@mui/icons-material/AppRegistrationRounded";
+import ExtensionOffRoundedIcon from "@mui/icons-material/ExtensionOffRounded";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
+import ColorLensRoundedIcon from "@mui/icons-material/ColorLensRounded";
+import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
+import AppSettingsAltRoundedIcon from "@mui/icons-material/AppSettingsAltRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ListIcon from "@mui/icons-material/List";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Button } from "../ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
+  SheetTrigger,
+  SheetContent,
+  Sheet,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  CardTitle,
+  CardDescription,
+  CardHeader,
+  CardContent,
+  Card,
+} from "@/components/ui/card";
+import data from "@/components/json/card.json";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
+
+const iconMap = {
+  HomeRoundedIcon,
+  PreviewRoundedIcon,
+  DatasetLinkedRoundedIcon,
+  CategoryRoundedIcon,
+  AddCircleRoundedIcon,
+  ListIcon,
+  AppRegistrationRoundedIcon,
+  ExtensionOffRoundedIcon,
+  EditNoteRoundedIcon,
+  ColorLensRoundedIcon,
+  AttachMoneyRoundedIcon,
+  AppSettingsAltRoundedIcon,
+  LogoutRoundedIcon,
+  AlignHorizontalLeftRoundedIcon,
+};
 
 export default function HeaderAdmin({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
-
+  const { toast } = useToast();
+  const { webshop } = useContext(ThemeContext);
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
   const pathname = usePathname();
   const Log_Out = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      alert(error);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        router.push("/");
+      } else {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Error Cerrando Sesion",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: `error: ${error.message}`,
+      });
+      console.error("Error en la respuesta:", error);
     }
   };
 
+  const renderLink = (link, index) => {
+    if (
+      link.condition &&
+      ((link.condition.plan &&
+        !link.condition.plan.includes(webshop.store?.plan)) ||
+        (link.condition.theme && !webshop.store?.theme) ||
+        (link.condition.CodePromo && !webshop.store?.CodePromo))
+    ) {
+      return null;
+    }
+
+    const Icon = iconMap[link.icon] || HomeRoundedIcon;
+
+    return link.separator ? (
+      <Separator key={index} />
+    ) : (
+      <TooltipProvider key={index}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={link.href || pathname}
+              className="flex items-center rounded-lg text-gray-500 px-1 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
+              onClick={link.action === "Log_Out" ? Log_Out : null}
+            >
+              <Icon />
+              <span className="sr-only">{link.label}</span>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">{link.label}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  const renderLinkNav = (link, index) => {
+    if (
+      link.condition &&
+      ((link.condition.plan &&
+        !link.condition.plan.includes(webshop.store?.plan)) ||
+        (link.condition.theme && !webshop.store?.theme) ||
+        (link.condition.CodePromo && !webshop.store?.CodePromo))
+    ) {
+      return null;
+    }
+
+    const Icon = iconMap[link.icon] || HomeRoundedIcon;
+
+    return link.separator ? (
+      <Separator key={index} />
+    ) : (
+      <TooltipProvider key={index}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={link.href || pathname}
+              className="flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
+              onClick={() => {
+                if (link.action === "Log_Out") {
+                  Log_Out();
+                }
+                setIsOpen(false);
+              }}
+            >
+              <Icon />
+              <span>{link.label}</span>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">{link.label}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  const pathParts = pathname.split("/").filter((part) => part);
+  const breadcrumbs = pathParts.map((part, index) => {
+    const href = "/" + pathParts.slice(0, index + 1).join("/");
+    return { href, label: part };
+  });
+
   return (
-    <header
-      className="flex items-center justify-between px-4 py-3 bg-gray-100 z-[10]"
-      style={{ position: "sticky", top: 0 }}
-    >
-      <Link
-        className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-50"
-        href="#"
-      >
-        <Package2Icon className="h-6 w-6" />
-        <span>
-          {pathname == "/admin/newProduct"
-            ? "Agregar Producto"
-            : pathname == "/admin/products"
-            ? "Editar Productos"
-            : pathname == "/admin/header"
-            ? "Editar Informacion"
-            : pathname == "/admin/configuracion"
-            ? "Configuracion"
-            : pathname == "/admin/category"
-            ? "Editar Categorias"
-            : "Admin"}
-        </span>
-      </Link>
-
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button size="icon" variant="outline" onClick={() => setIsOpen(true)}>
-            <MenuIcon className="h-6 w-6" />
-            <span className="sr-only">Toggle navigation menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right">
-          <Command>
-            <CommandList>
-              <CommandGroup heading="Inicio">
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <HomeIcon className="h-4 w-4" />
-                    Inicio
-                  </Link>
-                </CommandItem>
-                {webshop.store.plan == "basic" && (
-                  <CommandItem>
-                    <Link
-                      className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                      href="/admin/guia"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <CircleArrowOutUpRight className="h-4 w-4" />
-                      Guia
-                    </Link>
-                  </CommandItem>
-                )}
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/link"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Unlink2 className="h-4 w-4" />
-                    Enlaces
-                  </Link>
-                </CommandItem>
-              </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup heading="Productos">
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/category"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <CatIcon className="h-4 w-4" />
-                    Editar Categoria
-                  </Link>
-                </CommandItem>
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/newProduct"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Nuevo Producto
-                  </Link>
-                </CommandItem>
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/products"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <PackageIcon className="h-4 w-4" />
-                    Editar Productos
-                  </Link>
-                </CommandItem>
-              </CommandGroup>
-              <CommandSeparator />
-
-              <CommandGroup heading="Perfil de Negocio">
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/header"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <HeadingIcon className="h-4 w-4" />
-                    Editar Info
-                  </Link>
-                </CommandItem>
-                <CommandItem>
-                  <Link
-                    className="flex items-center gap-3 rounded-lg  text-gray-500 px-3 py-2 transition-all hover:text-gray-700  dark:text-gray-50 dark:hover:text-gray-50"
-                    href="/admin/configuracion"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <SettingsIcon className="h-4 w-4" />
-                    Configuracion
-                  </Link>
-                </CommandItem>
-              </CommandGroup>
-              <CommandSeparator />
-
-              <CommandGroup heading="Usuario">
-                <CommandItem>
-                  <Button
-                    variant="gosth"
-                    className=" flex items-center gap-2 text-sm font-medium hover:underline mt-5 underline-offset-4 dark:text-gray-400 dark:hover:text-gray-50"
-                    onClick={Log_Out}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Cerrar cesion
-                  </Button>
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </SheetContent>
-      </Sheet>
-    </header>
+    <div className="flex sticky top-0 w-full flex-col bg-muted/40 z-[10]">
+      <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+        <nav className="flex flex-col items-center gap-2 px-2 sm:py-5">
+          {navLinks.map(renderLink)}
+        </nav>
+      </aside>
+      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+        <header className="sticky flex justify-between top-0 z-30 h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+          <div className="flex items-center gap-4">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="outline" className="sm:hidden">
+                  <AlignHorizontalLeftRoundedIcon />
+                  <span className="sr-only">Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="sm:max-w-xs">
+                <SheetHeader>
+                  <SheetTitle>Administración</SheetTitle>
+                  <SheetDescription>
+                    Edite su tienda a su gusto
+                  </SheetDescription>
+                </SheetHeader>
+                <nav className="grid gap-2 text-lg font-medium">
+                  {navLinks.map(renderLinkNav)}
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <Breadcrumb>
+              <BreadcrumbList>
+                {breadcrumbs.map((obj, ind) => (
+                  <div key={ind} className="flex items-center">
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link
+                          href={obj.href}
+                          className="capitalize truncate max-w-20"
+                        >
+                          {obj.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                  </div>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          <div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="rounded-full p-2">
+                  <InfoOutlinedIcon />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Edit profile</DialogTitle>
+                  <DialogDescription></DialogDescription>
+                </DialogHeader>
+                {dataCards
+                  .filter((obj) => obj.llave == identifyRoute(pathname))
+                  .map((card, index) => (
+                    <GuideCard key={index} {...card} />
+                  ))}
+              </DialogContent>
+            </Dialog>
+          </div>
+        </header>
+      </div>
+    </div>
   );
 }
 
-function CatIcon(props) {
+const GuideCard = ({ title, description, steps, link, buttonText }) => {
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z" />
-      <path d="M8 14v.5" />
-      <path d="M16 14v.5" />
-      <path d="M11.25 16.25h1.5L12 17l-.75-.75Z" />
-    </svg>
+    <div className="grid  w-full overflow-hidden ">
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[50vh] relative flex items-center">
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <h3 className="text-lg font-semibold">Pasos a seguir</h3>
+                <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+                  {steps.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <ScrollBar />
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
   );
-}
+};
+const identifyRoute = (pathname) => {
+  // Define un mapa de identificadores
+  const routeMap = {
+    "/admin/category/[uid]": "Category UID",
+    "/admin/category": "Category",
+    "/admin/codeDiscount": "Code Discount",
+    "/admin/configuracion/domicilios": "Configuración Domicilios",
+    "/admin/guia": "Guía",
+    "/admin/configuracion": "Configuracion",
+    "/admin/header": "Header",
+    "/admin/newProduct": "New Product",
+    "/admin/orders": "Orders",
+    "/admin/products/[specific]": "Product Specific",
+    "/admin/products": "Products",
+    "/admin": "Dashboard",
+  };
 
-function HeadingIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 12h12" />
-      <path d="M6 20V4" />
-      <path d="M18 20V4" />
-    </svg>
-  );
-}
+  // Encuentra la ruta dinámica con regex
+  const matchedRoute = Object.keys(routeMap).find((route) => {
+    const routeRegex = new RegExp(
+      `^${route
+        .replace(/\[.*?\]/g, "([^/]+)") // Reemplaza `[param]` por un patrón dinámico
+        .replace(/\//g, "\\/")}$`
+    );
+    return routeRegex.test(pathname);
+  });
 
-function HomeIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
-}
-
-function MenuIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="4" x2="20" y1="12" y2="12" />
-      <line x1="4" x2="20" y1="6" y2="6" />
-      <line x1="4" x2="20" y1="18" y2="18" />
-    </svg>
-  );
-}
-
-function Package2Icon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
-      <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
-      <path d="M12 3v6" />
-    </svg>
-  );
-}
-
-function PackageIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m7.5 4.27 9 5.15" />
-      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" />
-      <path d="M12 22V12" />
-    </svg>
-  );
-}
-
-function PlusIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  );
-}
-
-function SettingsIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
+  return routeMap[matchedRoute] || "Unknown Route";
+};

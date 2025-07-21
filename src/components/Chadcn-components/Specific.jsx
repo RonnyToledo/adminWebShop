@@ -18,10 +18,12 @@ import { GitMerge } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
-import { ThemeContext } from "@/app/admin/layout";
+import ImageUpload from "../component/ImageDND";
+import ConfimationOut from "../globalFunction/confimationOut";
+import { Trash2 } from "lucide-react";
 
 export default function Specific({ specific, ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const [newAregados, setNewAgregados] = useState({
     nombre: "",
@@ -30,16 +32,14 @@ export default function Specific({ specific, ThemeContext }) {
   });
   const { toast } = useToast();
   const form = useRef(null);
-
   const [products, setProducts] = useState({
     agregados: [],
   });
   const [newImage, setNewImage] = useState();
-
+  const [deleteOriginal, setDeleteOriginal] = useState(false);
   useEffect(() => {
-    const [a] = webshop.products.filter((obj) => obj.productId == specific);
-    setProducts(a);
-  }, [webshop]);
+    setProducts(webshop.products.find((obj) => obj.productId == specific));
+  }, [webshop, specific]);
 
   const SaveData = async (e) => {
     e.preventDefault();
@@ -49,17 +49,19 @@ export default function Specific({ specific, ThemeContext }) {
     formData.append("title", products.title);
     formData.append("descripcion", products.descripcion);
     formData.append("price", products.price);
-    formData.append("discount", products.discount);
+    formData.append("order", products.order);
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("agotado", products.agotado);
     formData.append("visible", products.visible);
-    formData.append("agregados", JSON.stringify(products.agregados));
     formData.append("Id", products.productId);
+    formData.append("oldPrice", products.oldPrice);
+    formData.append("span", products.span);
     if (newImage) {
       formData.append("newImage", newImage);
       if (products.image) formData.append("image", products.image);
     }
+    console.log(formData);
     try {
       const res = await axios.put(
         `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/`,
@@ -78,18 +80,13 @@ export default function Specific({ specific, ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
+        console.log(res.data);
+        const [a] = res.data;
+        const b = webshop.products.map((obj) =>
+          obj.productId == a.productId ? a : obj
+        );
+        setWebshop({ ...webshop, products: b });
       }
-      const [a] = res.data;
-      const b = webshop.products.map((obj) =>
-        obj.productId == a.productId
-          ? {
-              ...a,
-              coment: JSON.parse(a.coment),
-              agregados: JSON.parse(a.agregados),
-            }
-          : obj
-      );
-      setwebshop({ ...webshop, products: b });
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({
@@ -102,311 +99,400 @@ export default function Specific({ specific, ThemeContext }) {
       setDownloading(false);
     }
   };
+  const SubirAgregado = async (e) => {
+    e.preventDefault();
+    try {
+      if (newAregados.nombre && newAregados.valor) {
+        const formData = new FormData();
+
+        formData.append("nombre", newAregados.nombre);
+        formData.append("valor", newAregados.valor);
+        formData.append("cantidad", newAregados.cantidad);
+        const res = await axios.post(
+          `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/agregado`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        if (res.status == 200) {
+          toast({
+            title: "Tarea Ejecutada",
+            description: "Informacion Actualizada",
+            action: (
+              <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+            ),
+          });
+          setProducts({
+            ...products,
+            agregados: [...products?.agregados, res?.data?.value],
+          });
+          setNewAgregados({
+            nombre: "",
+            valor: 0,
+            cantidad: 0,
+          });
+        } else {
+          toast({
+            title: "Error",
+            variant: "destructive",
+
+            description: "No hay datos.",
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        variant: "destructive",
+
+        description: "No se actualizar el producto.",
+      });
+    }
+  };
+  const Delete = async (e, id) => {
+    e.preventDefault();
+    try {
+      const formData = new FormData();
+
+      formData.append("id", id);
+      const res = await axios.post(
+        `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/agregado`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (res.status == 200) {
+        toast({
+          title: "Tarea Ejecutada",
+          description: "Informacion Actualizada",
+          action: (
+            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
+          ),
+        });
+        setProducts({
+          ...products,
+          agregados: products?.agregados.filter((fil) => fil.id != id),
+        });
+      }
+    } catch (error) {
+      console.error("Error al enviar el comentario:", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+
+        description: "No se actualizar el producto.",
+      });
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-6 p-6 md:p-8 lg:p-10">
-      <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold">Editar producto</h1>
-      </div>
-      <form onSubmit={SaveData}>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Imagen del producto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <Image
-                  src={
-                    newImage
-                      ? URL.createObjectURL(newImage)
-                      : products?.image
-                      ? products?.image
-                      : "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg"
-                  }
-                  alt={products?.title ? products?.title : `Product`}
-                  width={300}
-                  height={300}
-                  className="object-contain"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Cambiar Imagen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <Label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="images"
-                >
-                  Imágenes
-                </Label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                      <label
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+    <main className="grid min-h-screen w-full ">
+      <div className="flex flex-col p-3 w-full ">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Editar producto</h1>
+        </div>
+        <form onSubmit={SaveData} className="flex flex-1 flex-col gap-8 p-6">
+          <div className="grid gap-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Imagen del producto</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center h-64">
+                  {newImage ? (
+                    <div className="relative">
+                      <Image
+                        src={URL.createObjectURL(newImage)}
+                        alt={products?.title || "Product"}
+                        width={100}
+                        height={150}
+                        style={{ aspectRatio: "200/300", objectFit: "cover" }}
+                        className="object-contain"
+                      />
+                      <div className="absolute top-1 right-1 z-[1]">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="rounded-full p-2 h-8 w-8"
+                          size="icon"
+                          onClick={() => setNewImage(null)} // Borra la nueva imagen
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : !deleteOriginal && products?.image ? (
+                    <div className="relative">
+                      <Image
+                        src={products.image}
+                        alt={products?.title || "Product"}
+                        width={100}
+                        height={150}
+                        style={{ aspectRatio: "200/300", objectFit: "cover" }}
+                        className="object-contain"
+                      />
+                      <div className="absolute top-1 right-1 z-[1]">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="rounded-full p-2 h-8 w-8"
+                          size="icon"
+                          onClick={() => setDeleteOriginal(true)} // Marca la original para borrar
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full">
+                      <Label
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                         htmlFor="images"
                       >
-                        <span>Subir archivos</span>
-                        <input
-                          className="sr-only"
-                          id="images"
-                          name="images"
-                          type="file"
-                          onChange={(e) => setNewImage(e.target.files[0])}
-                        />
-                      </label>
-                      <p className="pl-1">o arrastrar y soltar</p>
+                        Imágenes
+                      </Label>
+                      <ImageUpload
+                        setImageNew={setNewImage} // Permite subir nueva imagen
+                        imageNew={newImage}
+                      />
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PNG, JPG, GIF hasta 10MB
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      *Opcional
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalles del producto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={products?.title}
-                    onChange={(e) =>
-                      setProducts({ ...products, title: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    rows={4}
-                    defaultValue={products?.descripcion}
-                    onChange={(e) =>
-                      setProducts({ ...products, descripcion: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Precio</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    defaultValue={products?.price}
-                    onChange={(e) =>
-                      setProducts({
-                        ...products,
-                        price: Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Descuento</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    defaultValue={products?.discount}
-                    onChange={(e) =>
-                      setProducts({
-                        ...products,
-                        discount: Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Categoría</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                <Label htmlFor="category">Categoría</Label>
-                <Select
-                  id="category"
-                  onValueChange={(value) => {
-                    setProducts({
-                      ...products,
-                      caja: value,
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={products?.caja} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {webshop.store.categoria.map((obj, ind) => (
-                      <SelectItem key={ind} value={obj}>
-                        {obj}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Estado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="out-of-stock"
-                    checked={products?.agotado}
-                    onCheckedChange={(value) =>
-                      setProducts({ ...products, agotado: value })
-                    }
-                  />
-                  <Label htmlFor="out-of-stock ">Agotado</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="favorite"
-                    checked={products?.favorito}
-                    onCheckedChange={(value) =>
-                      setProducts({ ...products, favorito: value })
-                    }
-                  />
-                  <Label htmlFor="favorite">Favorito</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="visible"
-                    checked={products?.visible}
-                    onCheckedChange={(value) =>
-                      setProducts({ ...products, visible: value })
-                    }
-                  />
-                  <Label htmlFor="visible">Visible</Label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Agregado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {products?.agregados.length >= 0 &&
-                products?.agregados.map((obj1, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between "
-                  >
-                    <div className="flex items-center gap-2">
-                      <GitMerge className="h-5 w-5 text-primary" />
-                      <p className="text-base font-medium">{obj1.nombre}</p>
-                      <p className="text-base font-medium">${obj1.valor}</p>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Detalles del producto</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name">Nombre</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={products?.title || "..."}
+                        onChange={(e) =>
+                          setProducts({ ...products, title: e.target.value })
+                        }
+                      />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.preventDefault();
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Descripción</Label>
+                      <Textarea
+                        id="description"
+                        rows={4}
+                        defaultValue={products?.descripcion || "..."}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            descripcion: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="price">Precio</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        defaultValue={products?.price}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            oldPrice:
+                              Number(e.target.value) < products.price
+                                ? products.price
+                                : Number(e.target.value),
+                            price: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Categoría</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-2">
+                    <Label htmlFor="category">Categoría</Label>
+                    <Select
+                      id="category"
+                      onValueChange={(value) => {
                         setProducts({
                           ...products,
-                          agregados: products?.agregados.filter(
-                            (fil) => fil != obj1
-                          ),
+                          caja: value,
                         });
                       }}
                     >
-                      <TrashIcon className="h-5 w-5" />
-                      <span className="sr-only">Eliminar</span>
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            webshop.store.categoria.find(
+                              (obj) => obj.id == products?.caja
+                            )?.name
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {webshop.store.categoria.map((obj, ind) => (
+                          <SelectItem key={ind} value={obj.id}>
+                            {obj.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-              <div className="flex items-center justify-between">
-                <form
-                  ref={form}
-                  className="space-x-6 flex items-center justify-between"
-                >
-                  <div>
-                    <Label
-                      htmlFor="new-subcategory"
-                      className="text-base font-medium"
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Estado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="out-of-stock ">Producto Agotado</Label>
+                      <Switch
+                        id="out-of-stock"
+                        checked={products?.agotado}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, agotado: value })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="favorite">Producto Destacado</Label>
+                      <Switch
+                        id="favorite"
+                        checked={products?.favorito}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, favorito: value })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="visible">Producto Visible</Label>
+                      <Switch
+                        id="visible"
+                        checked={products?.visible}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, visible: value })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
+                      <Label htmlFor="visible">Doble Espacio</Label>
+                      <Switch
+                        id="visible"
+                        checked={products?.span}
+                        onCheckedChange={(value) =>
+                          setProducts({ ...products, span: value })
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Agregado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {products?.agregados.length > 0 &&
+                    products?.agregados.map((obj1, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between "
+                      >
+                        <div className="flex items-center gap-2">
+                          <GitMerge className="h-5 w-5 text-primary" />
+                          <p className="text-base font-medium">{obj1.nombre}</p>
+                          <p className="text-base font-medium">${obj1.valor}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={(e) => Delete(e, obj1.id)}
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                          <span className="sr-only">Eliminar</span>
+                        </Button>
+                      </div>
+                    ))}
+                  <div className="flex items-center justify-between">
+                    <form
+                      ref={form}
+                      className="space-x-6 flex items-center justify-between"
                     >
-                      Nombre
-                    </Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      required
-                      value={newAregados.nombre}
-                      type="text"
-                      onChange={(e) =>
-                        setNewAgregados({
-                          ...newAregados,
-                          nombre: e.target.value,
-                        })
-                      }
-                    />
+                      <div>
+                        <Label
+                          htmlFor="new-subcategory"
+                          className="text-base font-medium"
+                        >
+                          Nombre
+                        </Label>
+                        <Input
+                          id="title"
+                          name="title"
+                          required
+                          value={newAregados.nombre}
+                          type="text"
+                          onChange={(e) =>
+                            setNewAgregados({
+                              ...newAregados,
+                              nombre: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="new-subcategory"
+                          className="text-base font-medium"
+                        >
+                          Valor
+                        </Label>
+                        <Input
+                          id="value"
+                          name="value"
+                          required
+                          value={newAregados.valor}
+                          type="number"
+                          onChange={(e) =>
+                            setNewAgregados({
+                              ...newAregados,
+                              valor: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <Button
+                        variant="outline m-2"
+                        className="w-16"
+                        onClick={SubirAgregado}
+                      >
+                        <PlusIcon className="h-5 w-5" />
+                      </Button>
+                    </form>
                   </div>
-                  <div>
-                    <Label
-                      htmlFor="new-subcategory"
-                      className="text-base font-medium"
-                    >
-                      Valor
-                    </Label>
-                    <Input
-                      id="value"
-                      name="value"
-                      required
-                      value={newAregados.valor}
-                      type="number"
-                      onChange={(e) =>
-                        setNewAgregados({
-                          ...newAregados,
-                          valor: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <Button
-                    variant="outline m-2"
-                    className="w-16"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setProducts({
-                        ...products,
-                        agregados: Array.from(
-                          new Set([...products?.agregados, newAregados])
-                        ),
-                      });
-                      setNewAgregados({ nombre: "", valor: 0, cantidad: 0 });
-                    }}
-                  >
-                    <PlusIcon className="h-5 w-5" />
-                  </Button>
-                </form>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="bg-white p-2 flex justify-end sticky bottom-0 gap-2">
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">
             <Button
-              className={`bg-black hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded ${
+              className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
                 downloading ? "opacity-50 cursor-not-allowed" : ""
               }`}
               disabled={downloading}
@@ -415,11 +501,18 @@ export default function Specific({ specific, ThemeContext }) {
               {downloading ? "Guardando..." : "Guardar"}
             </Button>
           </div>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+      <ConfimationOut
+        action={hasPendingChanges(
+          webshop.products.find((obj) => obj.productId == specific),
+          products
+        )}
+      />
+    </main>
   );
 }
+
 function CloudUploadIcon(props) {
   return (
     <svg
@@ -480,3 +573,7 @@ function TrashIcon(props) {
     </svg>
   );
 }
+// Utilidad y helpers
+const hasPendingChanges = (data, store) => {
+  return JSON.stringify(data) !== JSON.stringify(store);
+};

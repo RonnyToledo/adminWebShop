@@ -1,0 +1,157 @@
+[
+  {
+    "title": "Agregar/Eliminar categorías",
+    "llave": "Category",
+    "description": "Organiza tus productos en categorías.",
+    "steps": [
+      "Crea nuevas categorías",
+      "Elimina las que no uses",
+      "Cada categoría muestra la cantaidad productos asignados",
+      "Organiza el orden arrastrandola hasta la posicion deseada",
+      "Guarda los cambios antes de salir"
+    ],
+    "link": "/admin/category",
+    "buttonText": "Editar categorías"
+  },
+  {
+    "title": "Editar categorías",
+    "llave": "Category UID",
+    "description": "Organiza tus productos en categorías.",
+    "steps": [
+      "Edita el nombre y la descripcion de la categoría",
+      "Agrega imagen de portada",
+      "Decide si va a mostrar o no en los producos a travez de subienda",
+      "Decide si va a estar activa o no"
+    ]
+  },
+  {
+    "title": "Crear producto",
+    "llave": "New Product",
+    "description": "Aprende a crear nuevos productos en tu tienda.",
+    "steps": [
+      "Selecciona una imagen",
+      "Ingresa todos los campos solicitados",
+      "Selecciona una categoría",
+      "Indica si es especial de la casa",
+      "Con doble espacio la el producto sera el doble de ancho que lo normal"
+    ],
+    "link": "/admin/newProduct",
+    "buttonText": "Crear producto"
+  },
+  {
+    "title": "Editar productos General",
+    "llave": "Products",
+    "description": "Actualiza la información de tus productos existentes.",
+    "steps": [
+      "Selecciona el producto a editar",
+      "Actualiza el orden de los productos solicitada",
+      "Puedes cambiar de categoria un producto arrastrandolo y soltandolo en la categoria deseada",
+      "Los productos se desplazan agarrandolos por las tres barras horizontales a la izquierda del nombre",
+      "El orden mostrado en la cetagoria es el en q apareceran en la pagina",
+      "Puedes ordenerar los productos atendiendo a otras especificaiones en el boton junto al nombre de la categoria",
+      "Elimina productos no deseados",
+      "Tocando sobre el nombre del productos puedes ver la informacion del mismo"
+    ],
+    "link": "/admin/products",
+    "buttonText": "Editar producto"
+  },
+  {
+    "title": "Editar productos Individual",
+    "llave": "Product Specific",
+    "description": "Actualiza la información de tu producto.",
+    "steps": [
+      "Actualiza el orden de los productos solicitada",
+      "Con doble espacio la el producto sera el doble de ancho que lo normal",
+      "Si quitas la visibilidad del proucto no aparecera en la tienda",
+      "La opcion de agotado mostrara el producto pero no dejara al cliente comprarlo",
+      "La opcion de destacado mostrara el producto en un carrusel en la entrada de la pagina web",
+      "Si tu producto lleva agregados puedes agregarlo añadiendo el agregado (No hace falta el nombre del producto nuevamente) y su precio por encima del precio del producto (Si el producto cuesta 200 y el agregado 50 solo tiene q ingresar 50)"
+    ]
+  },
+  {
+    "title": "Pedidos",
+    "llave": "Orders",
+    "description": "Acepta, Edita o Elimina compras de tus clientes.",
+    "steps": [
+      "Acepta las compras hechas enviandolas a Whatsapp o exportandola como PDF",
+      "Edita las compras de tus clientes si han rechado algunos encargos de sus pedidos",
+      "Elimina Pedidos rechazados en su totalidad"
+    ],
+    "link": "/admin/orders",
+    "buttonText": "Editar Ordenes"
+  },
+  {
+    "title": "Editar perfil",
+    "llave": "Header",
+    "description": "Personaliza tu perfil de administrador.",
+    "steps": [
+      "Actualiza tu información de negocio",
+      "Cambia el poster de Bienvenida",
+      "Selecciona los horarios de trabajo"
+    ],
+    "link": "/admin/header",
+    "buttonText": "Editar perfil"
+  },
+  {
+    "title": "Configurar perfil",
+    "llave": "Configuracion",
+    "description": "Personaliza tu perfil de administrador.",
+    "steps": [
+      "Actualiza tu número de teléfono",
+      "Rectifica tu email",
+      "Añade tu Instagram de negocio",
+      "Indica la provincia sede de tu negocio",
+      "Activa si tienes local de trabajo, domicilio y turnos reservados",
+      "Identifica la moneda aceptada y sus tipos de cambio"
+    ],
+    "link": "/admin/configuracion",
+    "buttonText": "Configurar perfil"
+  },
+  {
+    "title": "Domicilios",
+    "llave": "Configuración Domicilios",
+    "description": "Personaliza tu envios.",
+    "steps": [
+      "Selecciona una provincia para agregarla",
+      "Al final de cada provincia agregada puede agregar sus municipios",
+      "EL boton de eliminar al lado de cada provincia eliminara la provincia y sus municipios",
+      "EL boton de eliminar al lado de cada municipio eliminara el municipio"
+    ],
+    "link": "/admin/configuracion/domicilios",
+    "buttonText": "Configurar perfil"
+  },
+  {
+    "title": "Dashboard Empresarial",
+    "llave": "Dashboard",
+    "description": "Personaliza tu perfil de administrador.",
+    "steps": [
+      "Vas a tener todo los relacionado con esatdisticas sobre el uso y ventas grnerales de su sitio web",
+      "Podras ver las informacion de las compras poniendo el Indentificador universal de la compra en el recuadro q sale al final de la pagina"
+    ],
+    "link": "/admin",
+    "buttonText": "Dashboard"
+  },
+  {
+    "title": "Marketing",
+    "llave": "Code Discount",
+    "description": "Colabora para poder poner codigos de descuentos a clientes q llegan con codigos de descuentos",
+    "steps": [
+      "Selecciona si vas a mantener activo o no los codigos",
+      "Crea nuevos codigos usando el nombre del codigo (Seran en Mayus por defecto), el porcentaje de descuento y la fecha de expiracion",
+      "Elimina los codigos no deseados o ya expirados"
+    ],
+    "link": "/admin/codeDiscount",
+    "buttonText": "Dashboard"
+  },
+  {
+    "title": "Guía",
+    "llave": "Guía",
+    "description": "Guia sobre como usar nuestro admin",
+    "steps": [
+      "Le dejaremos su Qr y su link para difundirlo adecuedamente",
+      "Le mostramos las tarjetas para el uso de cada seccion"
+    ],
+    "link": "/admin/codeDiscount",
+    "buttonText": "Dashboard"
+  }
+]
