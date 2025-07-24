@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supa";
 
 export const subscribeToNotifications = async (userId) => {
-  console.log(userId);
   const channel = supabase
     .channel("custom-insert-channel")
     .on(
@@ -12,8 +11,6 @@ export const subscribeToNotifications = async (userId) => {
         table: "Notification",
       },
       (payload) => {
-        console.log("Nueva notificación:", payload.new);
-
         // Envía la notificación al Service Worker
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((registration) => {

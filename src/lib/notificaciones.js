@@ -27,7 +27,6 @@ export const subscribeUserToPush = async () => {
     ),
   });
 
-  console.log("Suscripción exitosa:", subscription);
 
   // Guarda la suscripción en tu tabla `subscriptions` de Supabase
   const { data, error } = await supabase.from("subscriptions").upsert([
@@ -40,7 +39,6 @@ export const subscribeUserToPush = async () => {
   if (error) {
     console.error("Error guardando la suscripción:", error);
   } else {
-    console.log("Suscripción guardada correctamente:", data);
   }
 };
 

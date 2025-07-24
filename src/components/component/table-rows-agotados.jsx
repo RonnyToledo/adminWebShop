@@ -234,7 +234,6 @@ function TableComponet({
     const newArray = sortedProducts.map((obj, index) => {
       return { ...obj, order: index };
     });
-    console.log(newArray);
     setProducts((productsMap) => {
       const updatedArray = productsMap.map((item1) => {
         const item2 = newArray.find(
@@ -242,7 +241,6 @@ function TableComponet({
         );
         return item2 ? item2 : item1;
       });
-      console.log(updatedArray);
       return updatedArray;
     });
   };
@@ -327,7 +325,13 @@ function TableComponet({
                 {...droppableProvided.droppableProps}
                 ref={droppableProvided.innerRef}
               >
-                {ListProducts.length === 0 && <div className="min-h-20"></div>}
+                {ListProducts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="min-h-[5rem] text-center">
+                      No hay productos en esta categoría
+                    </TableCell>
+                  </TableRow>
+                )}
                 {ListProducts.sort((a, b) => a.order - b.order).map(
                   (obj, ind) => (
                     <Draggable
@@ -449,7 +453,7 @@ function TableComponet({
                                   <Button variant="ghost" asChild>
                                     <Link
                                       className="flex gap-3 w-full justify-start items-center"
-                                      href={`/admin/products/${obj.productId}`}
+                                      href={`/products/${obj.productId}`}
                                     >
                                       <Pencil className="h-3 w-3" />
                                       Edit

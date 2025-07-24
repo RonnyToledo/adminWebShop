@@ -61,6 +61,7 @@ async function refreshAccessTokenIfNeeded(cookieValue) {
 
 // GET: Obtener la sesión almacenada
 export async function GET(req) {
+  console.log("GET /api/login called");
   const cookieStore = await cookies();
   const cookie = cookieStore.get("sb-access-token");
 
@@ -76,10 +77,12 @@ export async function GET(req) {
   );
 
   if (error) {
+    console.log(error);
     return NextResponse.json({ error }, { status: 401 });
   }
 
   const { data: user } = await supabase.auth.getUser(newAccessToken);
+  console.log("User de Supabase", user);
 
   const response = NextResponse.json({ user }, { status: 200 });
 

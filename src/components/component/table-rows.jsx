@@ -123,7 +123,7 @@ export default function TableRowsComponent({ product }) {
                 <div className="flex flex-col gap-3 p-2">
                   <Link
                     className="flex gap-3 w-full justify-start items-center"
-                    href={`/admin/products/${obj.productId}`}
+                    href={`/products/${obj.productId}`}
                   >
                     <Pencil className="h-3 w-3" />
                     Edit

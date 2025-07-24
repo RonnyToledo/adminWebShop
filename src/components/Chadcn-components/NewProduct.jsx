@@ -53,7 +53,6 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("descripcion", products.descripcion);
     formData.append("span", products.span);
     formData.append("UID", webshop.store.UUID);
-    formData.append("UID", webshop.store.UUID);
     formData.append("creado", getLocalISOString(now));
     if (products.image) formData.append("image", products.image);
     try {
@@ -61,12 +60,12 @@ export default function NewProduct({ ThemeContext }) {
         `/api/tienda/${webshop.store.sitioweb}/products`,
         formData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true, // ← incluye cookies
         }
       );
-      if (res.status == 200) {
+      console.log(res);
+      if (res.status === 200 || res.status === 201) {
         toast({
           title: "Tarea Ejecutada",
           description: "Producto creado",
@@ -74,10 +73,9 @@ export default function NewProduct({ ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
-        const [a] = res.data;
         setWebshop({
           ...webshop,
-          products: [...webshop.products, a],
+          products: [...webshop.products, res.data],
         });
         form.current.reset();
         setProducts({
@@ -91,7 +89,7 @@ export default function NewProduct({ ThemeContext }) {
         setImageNew(null);
       }
     } catch (error) {
-      console.error("Error al enviar el comentario:", error);
+      console.error("Crear el producto:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -105,7 +103,6 @@ export default function NewProduct({ ThemeContext }) {
   useEffect(() => {
     setProducts((prev) => ({ ...prev, image: imageNew }));
   }, [imageNew]);
-
   return (
     <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit}>

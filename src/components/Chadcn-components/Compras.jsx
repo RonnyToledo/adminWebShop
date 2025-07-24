@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useContext, useEffect, useState } from "react";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
   Activity,
   CreditCard,
@@ -10,12 +10,12 @@ import {
   ArrowUpRight,
   Search,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
+  CardFooter,
   CardTitle,
 } from "@/components/ui/card";
 import {
@@ -28,7 +28,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -47,6 +46,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supa";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TrendingUp } from "lucide-react";
+
+const chartConfig = {
+  suma: {
+    label: "Total",
+    color: "var(--chart-1)",
+  },
+};
 
 export default function Dashboard({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
@@ -104,26 +111,6 @@ export default function Dashboard({ ThemeContext }) {
         )
     );
   };
-
-  const renderAgregados = (pedido) => {
-    return pedido.agregados.map(
-      (agregado, index) =>
-        agregado.cantidad > 0 && (
-          <TableRow key={index}>
-            <TableCell className="font-medium">
-              {pedido.title} - {agregado.nombre}
-            </TableCell>
-            <TableCell>
-              <Badge variant="outline">{agregado.cantidad}</Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              {(pedido.price + Number(agregado.valor)).toFixed(2)}
-            </TableCell>
-          </TableRow>
-        )
-    );
-  };
-
   return (
     <div className="flex min-h-screen w-full flex-col">
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -174,55 +161,43 @@ export default function Dashboard({ ThemeContext }) {
 
         {/* Gráfico y tabla */}
         <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
-          <Card className="flex flex-col w-full">
+          <Card>
             <CardHeader>
-              <CardDescription>Total de Ventas</CardDescription>
+              <CardTitle>Balance Mensual</CardTitle>
+              <CardDescription>
+                Ultimos 7 meses de ventas de la página
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-1 items-center">
-              <ChartContainer
-                config={{
-                  suma: {
-                    label: "Suma",
-                    color: "hsl(var(--chart-1))",
-                  },
-                }}
-                className="w-full"
-              >
-                <LineChart
-                  data={sumarComprasUltimos7Dias(compras)}
-                  margin={{ left: 14, right: 14, top: 10 }}
+            <CardContent>
+              <ChartContainer config={chartConfig}>
+                <AreaChart
+                  accessibilityLayer
+                  data={sumarComprasUltimos7Meses(compras)}
+                  margin={{
+                    left: 12,
+                    right: 12,
+                  }}
                 >
-                  <CartesianGrid
-                    strokeDasharray="4 4"
-                    vertical={false}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeOpacity={0.5}
-                  />
-                  <YAxis hide domain={["dataMin - 10", "dataMax + 10"]} />
-                  <XAxis dataKey="dia" />
-                  <Line
-                    dataKey="suma"
-                    type="natural"
-                    stroke="var(--color-resting)"
-                    strokeWidth={2}
-                    dot={false}
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="mes"
+                    tickLine={true}
+                    axisLine={true}
+                    tickMargin={1}
+                    tickFormatter={(value) => value.slice(0, 3)}
                   />
                   <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        indicator="line"
-                        labelFormatter={(value) =>
-                          new Date(value).toLocaleDateString("en-US", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
-                        }
-                      />
-                    }
-                    cursor={false}
+                    cursor={true}
+                    content={<ChartTooltipContent indicator="line" />}
                   />
-                </LineChart>
+                  <Area
+                    dataKey="suma"
+                    type="natural"
+                    fill="var(--color-desktop)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-desktop)"
+                  />
+                </AreaChart>
               </ChartContainer>
             </CardContent>
           </Card>
@@ -291,51 +266,44 @@ export default function Dashboard({ ThemeContext }) {
 function sumTotalField(products) {
   return products.reduce((sum, product) => sum + product.total, 0);
 }
-function sumarComprasUltimos7Dias(data) {
+function sumarComprasUltimos7Meses(data) {
   const hoy = new Date();
-  const sieteDiasAtras = new Date(hoy);
-  sieteDiasAtras.setDate(hoy.getDate() - 7);
+  // Fecha de inicio: primero del mes, hace 6 meses
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1);
 
-  // Objeto para almacenar las sumas de compras por día
-  const comprasPorDia = {};
+  // Objeto para almacenar las sumas por mes: clave 'YYYY-MM'
+  const comprasPorMes = {};
 
-  // Recorrer los últimos 7 días
+  // Inicializar los últimos 7 meses
   for (let i = 0; i < 7; i++) {
-    const fecha = new Date(sieteDiasAtras);
-    fecha.setDate(fecha.getDate() + i);
-    const dia = fecha.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-
-    // Inicializar el día en el objeto con 0
-    comprasPorDia[dia] = 0;
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - 6 + i, 1);
+    const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+    comprasPorMes[key] = 0;
   }
 
-  // Recorrer el arreglo de datos
+  // Sumar totales
   data.forEach((item) => {
     const fecha = new Date(item.created_at);
-
-    // Verificar si la fecha está dentro de los últimos 7 días
-    if (fecha >= sieteDiasAtras && fecha <= hoy) {
-      const dia = fecha.toISOString().split("T")[0]; // Formato YYYY-MM-DD
-      if (!comprasPorDia[dia]) {
-        comprasPorDia[dia] = 0;
-      }
-      comprasPorDia[dia] += item.total;
+    if (fecha >= inicio && fecha <= hoy) {
+      const key = `${fecha.getFullYear()}-${String(
+        fecha.getMonth() + 1
+      ).padStart(2, "0")}`;
+      if (key in comprasPorMes) comprasPorMes[key] += item.total;
     }
   });
 
-  // Convertir el objeto a un array de resultados
-  const resultado = Object.entries(comprasPorDia).map(([dia, suma]) => ({
-    dia: convertDateToMonthDay(dia),
-    suma,
-  }));
-
-  return resultado;
-}
-function convertDateToMonthDay(dateString) {
-  const parts = dateString.split("-");
-  const month = parts[1];
-  const day = parts[2];
-  return `${month}-${day}`;
+  // Convertir a array y formatear nombre del mes
+  return Object.entries(comprasPorMes).map(([key, suma]) => {
+    const [year, month] = key.split("-");
+    const nombreMes = new Date(Number(year), Number(month) - 1).toLocaleString(
+      "es-ES",
+      { month: "long", year: "numeric" } // <-- aquí cambiamos "large" por "long"
+    );
+    return { mes: nombreMes, suma };
+  });
 }
 
 function sumLengthOfPedido(products) {
@@ -356,13 +324,4 @@ function sumarTotalUltimas24Horas(data) {
   const sumaTotal = datosRecientes.reduce((acc, item) => acc + item.total, 0);
 
   return sumaTotal;
-}
-function obtenerPrimerosCincoAntiguos(data) {
-  // Ordenar el arreglo por el campo 'created_at' de más antiguo a más reciente
-  const ordenado = data.sort(
-    (a, b) => new Date(a.created_at) - new Date(b.created_at)
-  );
-
-  // Devolver los primeros 5 elementos
-  return ordenado.slice(0, 5);
 }

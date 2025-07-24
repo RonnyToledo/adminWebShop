@@ -66,7 +66,6 @@ export default function EditCategory({ ThemeContext, uid }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
-        console.log(res.data);
         setWebshop({
           ...webshop,
           store: {

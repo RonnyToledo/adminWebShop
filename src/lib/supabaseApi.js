@@ -4,10 +4,11 @@ export async function fetchStoreData(userId) {
   const { data, error } = await supabase
     .from("user")
     .select(
-      "*, Sitios(*, categorias(*), Products (*, agregados(*) ,coment(*)), Events (*), codeDiscount (*))"
+      "*, Sitios(*, categorias(*), Products (*, coment(*)), Events (*), codeDiscount (*))"
     )
     .eq("id", userId)
     .single();
+
   return { data, error };
 }
 

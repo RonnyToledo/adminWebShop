@@ -53,7 +53,7 @@ export default function CambiarContrasenaForm() {
       });
 
       if (authError) {
-        console.log(authError);
+        console.error(authError);
         throw new Error(authError);
       }
 

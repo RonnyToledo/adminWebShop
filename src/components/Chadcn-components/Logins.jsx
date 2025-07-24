@@ -152,7 +152,7 @@ export default function Logins({ ThemeContext }) {
                   }}
                   data={[
                     {
-                      date: "30 dias",
+                      date: "Ultimos 30 dias",
                       steps: logins?.filterDatesInLast30Days
                         ? logins.filterDatesInLast30Days
                         : 0,
@@ -205,7 +205,7 @@ export default function Logins({ ThemeContext }) {
                   }}
                   data={[
                     {
-                      date: "Promedio Mensual",
+                      date: "Ultimos 12 meses",
                       steps: logins?.promedioVisitasPorMes?.promedio.toFixed(2),
                     },
                   ]}

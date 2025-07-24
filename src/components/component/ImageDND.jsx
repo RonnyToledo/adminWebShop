@@ -12,7 +12,6 @@ export default function ImageUpload({ imageNew, setImageNew }) {
 
   const onDragEnd = (result) => {
     // Manejar el final del drag and drop si es necesario
-    console.log("Finally");
   };
 
   return (
@@ -101,7 +100,6 @@ export function ImageUploadWithProps({ setImageNew, campo, children }) {
 
   const onDragEnd = (result) => {
     // Manejar el final del drag and drop si es necesario
-    console.log("Finally");
   };
 
   return (

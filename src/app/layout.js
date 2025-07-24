@@ -1,31 +1,52 @@
+// app/layout.js
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Toaster as UiToaster } from "@/components/ui/toaster";
 import styles from "./Sonner.module.css";
-import MyProvider from "../context/useContext";
-import { cookies } from "next/headers";
+import MyProvider from "@/context/useContext";
 import { fetchStoreData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
+import { cookies } from "next/headers";
+import "./globals.css";
 
+export const metadata = {
+  title: "ADMIN",
+  description: "ADMIN R&H",
+  openGraph: {
+    title: "ADMIN",
+    description: "ADMIN R&H",
+    images: [
+      "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg",
+    ],
+  },
+};
 export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
   const data = await initializeData(userSession?.user?.user?.id);
 
   return (
-    <MyProvider user={user} data={data || {}}>
-      <main className="sm:pl-14">{children}</main>
+    <html lang="en">
+      <body>
+        <MyProvider user={user} data={data || {}}>
+          <main className="sm:pl-14">{children}</main>
 
-      <SonnerToaster className={styles.sonner_dark} />
-      <UiToaster />
-    </MyProvider>
+          <SonnerToaster className={styles.sonner_dark} />
+          <UiToaster />
+        </MyProvider>
+      </body>
+    </html>
   );
 }
 
-const initializeData = async (userId) => {
+export const initializeData = async (userId) => {
   try {
     if (!userId) return null;
 
     const { data: store, error } = await fetchStoreData(userId);
+    if (error) {
+      console.error("Error fetching store data:", error);
+      return null;
+    }
     if (error || !store?.login || !store?.Sitios?.sitioweb) return null;
 
     const tiendaParsed = {
@@ -75,9 +96,9 @@ const initializeData = async (userId) => {
     console.error("Error inicializando datos:", error);
   }
 };
-async function fetchUserSessionServer() {
-  const cookieStore = await cookies(); // Obtiene las cookies en el servidor
-  const sessionCookie = cookieStore.get("sb-access-token");
+export async function fetchUserSessionServer() {
+  const Allcookies = await cookies();
+  const sessionCookie = Allcookies.get("sb-access-token");
 
   if (!sessionCookie) {
     console.warn("No hay cookie de sesión disponible en el servidor.");

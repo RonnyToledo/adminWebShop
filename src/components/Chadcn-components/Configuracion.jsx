@@ -277,7 +277,7 @@ export default function Configuracion({ ThemeContext }) {
                   {store?.domicilio ? (
                     <div className="w-full flex justify-center max-h-max">
                       <Button type="link" variant="outline">
-                        <Link href={`/admin/configuracion/domicilios`}>
+                        <Link href={`/configuracion/domicilios`}>
                           Definir Domicilios
                         </Link>
                       </Button>

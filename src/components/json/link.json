@@ -1,17 +1,17 @@
 [
   {
     "label": "Inicio",
-    "href": "/admin/",
+    "href": "/",
     "icon": "HomeRoundedIcon"
   },
   {
     "label": "Guia",
-    "href": "/admin/guia",
+    "href": "/guia",
     "icon": "PreviewRoundedIcon"
   },
   {
     "label": "Pedidos",
-    "href": "/admin/orders",
+    "href": "/orders",
     "icon": "ListIcon"
   },
   {
@@ -19,17 +19,17 @@
   },
   {
     "label": "Editar Categoria",
-    "href": "/admin/category",
+    "href": "/category",
     "icon": "CategoryRoundedIcon"
   },
   {
     "label": "Nuevo Producto",
-    "href": "/admin/newProduct",
+    "href": "/newProduct",
     "icon": "AddCircleRoundedIcon"
   },
   {
     "label": "Editar Productos",
-    "href": "/admin/products",
+    "href": "/products",
     "icon": "AppRegistrationRoundedIcon"
   },
   {
@@ -37,25 +37,32 @@
   },
   {
     "label": "Editar Info",
-    "href": "/admin/header",
+    "href": "/header",
     "icon": "EditNoteRoundedIcon"
   },
-  {
-    "label": "Temas",
-    "href": "/admin/theme",
-    "icon": "ColorLensRoundedIcon",
-    "condition": { "plan": ["a"], "theme": true }
-  },
+
   {
     "label": "Marketing",
-    "href": "/admin/codeDiscount",
-    "icon": "AttachMoneyRoundedIcon",
-    "condition": { "plan": ["custom"], "CodePromo": true }
+    "href": "/codeDiscount",
+    "icon": "AttachMoneyRoundedIcon"
   },
   {
     "label": "Configuracion",
-    "href": "/admin/configuracion",
+    "href": "/configuracion",
     "icon": "AppSettingsAltRoundedIcon"
+  },
+  {
+    "separator": true
+  },
+  {
+    "label": "Analitycs",
+    "href": "/analytics",
+    "icon": "BarChartIcon"
+  },
+  {
+    "label": "Ventas",
+    "href": "/ventas",
+    "icon": "AddCardIcon"
   },
   {
     "separator": true

@@ -41,7 +41,6 @@ export function PedidosTable() {
   const handleSendToWhatsApp = () => {
     sendToWhatsApp(pedidosState, webshop.store, setWebshop, setWhatsApp);
   };
-  console.log(pedidosState);
   return (
     <div>
       <div className="flex justify-between items-center p-4">
@@ -132,7 +131,7 @@ export function PedidosTable() {
                           variant="outline"
                           className="flex gap-2"
                           onClick={() =>
-                            router.push(`/admin/orders/${pedido.UID_Venta}`)
+                            router.push(`/orders/${pedido.UID_Venta}`)
                           }
                         >
                           <Eye />
@@ -340,7 +339,6 @@ const updateEvents = async (sitioweb, uids, setWebshop, setState) => {
     );
 
     if (response.status === 200) {
-      console.log("Registros actualizados:", response.data);
       setWebshop((prev) => {
         return {
           ...prev,
@@ -370,7 +368,6 @@ const EliminateDesc = async (sitioweb, UID_Venta, setState, setWebshop) => {
     });
 
     if (response.status === 200) {
-      console.log("Registros actualizados:", response.data);
       setWebshop((prev) => {
         return {
           ...prev,

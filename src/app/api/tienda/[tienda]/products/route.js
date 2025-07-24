@@ -31,98 +31,46 @@ export async function POST(request, { params }) {
   await LogUser();
 
   const data = await request.formData();
-  const image = data.get("image");
+  const imageFile = data.get("image");
   const Ui = data.get("UID");
-  const { data: a, error1 } = await supabase.from("Products").select("id");
-  const arrayOfNumbers = a.map((obj) => obj.id);
-  if (error1) {
-    return NextResponse.json(
-      { message: "Fallo al primer paso" },
-      {
-        status: 400,
-      }
-    );
-  }
 
-  function findFirstMissingValue(arr) {
-    let i = 0; // Iniciar desde 0
-    while (true) {
-      if (!arr.includes(i)) {
-        return i; // Retorna el primer valor que no está en el array
-      }
-      i++; // Incrementar el valor a verificar
-    }
-  }
-  if (image) {
-    const byte = await image.arrayBuffer();
-    const buffer = Buffer.from(byte);
-    const res = await new Promise((resolve, reject) => {
+  // 2) Subida a Cloudinary (si hay imagen)
+  let imageUrl = null;
+  if (imageFile) {
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    const uploadRes = await new Promise((res, rej) => {
       cloudinary.uploader
-        .upload_stream({ resource_type: "image" }, (err, result) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(result);
-        })
+        .upload_stream({ resource_type: "image" }, (err, result) =>
+          err ? rej(err) : res(result)
+        )
         .end(buffer);
     });
-    const { data: tienda, error } = await supabase
-      .from("Products")
-      .insert([
-        {
-          id: findFirstMissingValue(arrayOfNumbers),
-          title: data.get("title"),
-          price: data.get("price"),
-          caja: data.get("caja"),
-          favorito: data.get("favorito"),
-          descripcion: data.get("descripcion"),
-          span: data.get("span"),
-          image: res.secure_url,
-          storeId: Ui,
-          creado: data.get("creado"),
-        },
-      ])
-      .select("*, agregados (*)");
-    if (error) {
-      console.error(error);
-
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 401,
-        }
-      );
-    }
-    return NextResponse.json(tienda);
-  } else {
-    const { data: tienda, error } = await supabase
-      .from("Products")
-      .insert([
-        {
-          id: findFirstMissingValue(arrayOfNumbers),
-          title: data.get("title"),
-          price: data.get("price"),
-          caja: data.get("caja"),
-          favorito: data.get("favorito"),
-          descripcion: data.get("descripcion"),
-          span: data.get("span"),
-          storeId: Ui,
-          creado: data.get("creado"),
-        },
-      ])
-      .select("*, agregados (*)");
-    if (error) {
-      console.error(error);
-
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 401,
-        }
-      );
-    }
-    return NextResponse.json(tienda);
+    imageUrl = uploadRes.secure_url;
   }
+
+  // 3) Llamada RPC
+  const { data: newProduct, error } = await supabase
+    .rpc("create_product", {
+      _title: data.get("title"),
+      _price: Number(data.get("price")),
+      _caja: data.get("caja"),
+      _favorito: data.get("favorito") === "true",
+      _descripcion: data.get("descripcion"),
+      _span: data.get("span") === "true",
+      _image_url: imageUrl,
+      _storeid: Ui, // <- CAMBIO AQUÍ
+      _creado: data.get("creado"),
+    })
+    .single();
+
+  if (error) {
+    console.error("RPC create_product error:", error);
+    return NextResponse.json(
+      { message: error.message, details: error.details },
+      { status: error.code === "PGRST400" ? 400 : 500 }
+    );
+  }
+  return NextResponse.json(newProduct, { status: 201 });
 }
 export async function PUT(request, { params }) {
   const data = await request.formData();

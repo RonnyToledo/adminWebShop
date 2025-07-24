@@ -176,7 +176,7 @@ export default function MultiStepForm() {
       });
     } finally {
       setDownloading(false);
-      router.replace("/admin");
+      router.replace("/");
     }
   };
   // Renderizar diferentes pasos del formulario

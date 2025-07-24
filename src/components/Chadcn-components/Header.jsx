@@ -25,7 +25,6 @@ export default function Header({ ThemeContext }) {
     setStore((prev) => {
       return { ...prev, [field]: value };
     });
-  console.log(store);
   return (
     <main>
       <FromData store={store} ThemeContext={ThemeContext}>

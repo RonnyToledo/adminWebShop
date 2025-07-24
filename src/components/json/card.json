@@ -10,7 +10,7 @@
       "Organiza el orden arrastrandola hasta la posicion deseada",
       "Guarda los cambios antes de salir"
     ],
-    "link": "/admin/category",
+    "link": "/category",
     "buttonText": "Editar categorías"
   },
   {
@@ -35,7 +35,7 @@
       "Indica si es especial de la casa",
       "Con doble espacio la el producto sera el doble de ancho que lo normal"
     ],
-    "link": "/admin/newProduct",
+    "link": "/newProduct",
     "buttonText": "Crear producto"
   },
   {
@@ -52,7 +52,7 @@
       "Elimina productos no deseados",
       "Tocando sobre el nombre del productos puedes ver la informacion del mismo"
     ],
-    "link": "/admin/products",
+    "link": "/products",
     "buttonText": "Editar producto"
   },
   {
@@ -77,7 +77,7 @@
       "Edita las compras de tus clientes si han rechado algunos encargos de sus pedidos",
       "Elimina Pedidos rechazados en su totalidad"
     ],
-    "link": "/admin/orders",
+    "link": "/orders",
     "buttonText": "Editar Ordenes"
   },
   {
@@ -89,7 +89,7 @@
       "Cambia el poster de Bienvenida",
       "Selecciona los horarios de trabajo"
     ],
-    "link": "/admin/header",
+    "link": "/header",
     "buttonText": "Editar perfil"
   },
   {
@@ -104,7 +104,7 @@
       "Activa si tienes local de trabajo, domicilio y turnos reservados",
       "Identifica la moneda aceptada y sus tipos de cambio"
     ],
-    "link": "/admin/configuracion",
+    "link": "/configuracion",
     "buttonText": "Configurar perfil"
   },
   {
@@ -117,7 +117,7 @@
       "EL boton de eliminar al lado de cada provincia eliminara la provincia y sus municipios",
       "EL boton de eliminar al lado de cada municipio eliminara el municipio"
     ],
-    "link": "/admin/configuracion/domicilios",
+    "link": "/configuracion/domicilios",
     "buttonText": "Configurar perfil"
   },
   {
@@ -128,7 +128,7 @@
       "Vas a tener todo los relacionado con esatdisticas sobre el uso y ventas grnerales de su sitio web",
       "Podras ver las informacion de las compras poniendo el Indentificador universal de la compra en el recuadro q sale al final de la pagina"
     ],
-    "link": "/admin",
+    "link": "/",
     "buttonText": "Dashboard"
   },
   {
@@ -140,7 +140,7 @@
       "Crea nuevos codigos usando el nombre del codigo (Seran en Mayus por defecto), el porcentaje de descuento y la fecha de expiracion",
       "Elimina los codigos no deseados o ya expirados"
     ],
-    "link": "/admin/codeDiscount",
+    "link": "/codeDiscount",
     "buttonText": "Dashboard"
   },
   {
@@ -151,7 +151,7 @@
       "Le dejaremos su Qr y su link para difundirlo adecuedamente",
       "Le mostramos las tarjetas para el uso de cada seccion"
     ],
-    "link": "/admin/codeDiscount",
+    "link": "/codeDiscount",
     "buttonText": "Dashboard"
   }
 ]

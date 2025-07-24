@@ -35,7 +35,7 @@ export default function CreateAccount() {
     async function UserFetch() {
       const userId = await fetchUserSession();
       if (userId?.user?.user?.id) {
-        router.push("/admin");
+        router.push("/");
         return;
       }
     }
@@ -84,7 +84,7 @@ export default function CreateAccount() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push("/admin");
+        router.push("/");
       } else {
         setError(data.error || "Error al iniciar sesión");
         console.error("Error en la respuesta:", data);

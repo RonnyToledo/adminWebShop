@@ -115,7 +115,7 @@ export function CrearClienteComponent() {
               description: result.success,
             });
             form.reset();
-            router.replace("/admin");
+            router.replace("/");
           }
         } catch (error) {
           toast({

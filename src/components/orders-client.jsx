@@ -71,10 +71,6 @@ export default function Component({ ThemeContext, specific }) {
   const [dataPedido, setDataPedido] = useState(initialState);
   const [downloading, setDownloading] = useState(false);
 
-  console.log(
-    "Webshop:",
-    webshop.events.find((obj) => obj.UID_Venta === specific)
-  );
   useEffect(() => {
     setDataPedido(webshop.events.find((obj) => obj.UID_Venta === specific));
   }, [specific, webshop.events]);
@@ -266,7 +262,6 @@ export default function Component({ ThemeContext, specific }) {
 }
 const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
   setState(true);
-  console.log(Event);
   try {
     const response = await axios.put(
       `/api/tienda/${sitioweb}/checkOrders`,
@@ -275,7 +270,6 @@ const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
     );
 
     if (response.status === 200) {
-      console.log("Registros actualizados:", response.data);
       setWebshop((prev) => {
         return {
           ...prev,

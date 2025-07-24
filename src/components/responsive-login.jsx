@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supa";
 import { motion } from "framer-motion";
 import IllustrationLogin from "./icons/IllustrationLogin";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
@@ -20,28 +19,13 @@ export function ResponsiveLogin({ user }) {
 
   useEffect(() => {
     if (user && user !== undefined) {
-      router.push("/admin");
+      router.push("/");
     }
-  }, [user]);
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await handleApiCall(false, null);
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_REDIRECT_URL}`,
-        },
-      });
-      if (error) throw error;
-    } catch (error) {
-      setError("Error al iniciar sesión con Google");
-      console.error(error);
-    }
   };
 
   const handleApiCall = async (isGoogleLogin, token) => {
@@ -64,7 +48,7 @@ export function ResponsiveLogin({ user }) {
       const data = await res.json();
 
       if (res.ok) {
-        router.push("/admin");
+        router.refresh();
       } else {
         setError(data.error || "Error al iniciar sesión");
         console.error("Error en la respuesta:", data);

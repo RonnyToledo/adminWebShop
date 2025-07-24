@@ -25,7 +25,9 @@ import AppSettingsAltRoundedIcon from "@mui/icons-material/AppSettingsAltRounded
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import BarChartIcon from "@mui/icons-material/BarChart";
 import ListIcon from "@mui/icons-material/List";
+import AddCardIcon from "@mui/icons-material/AddCard";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "../ui/button";
 import {
@@ -58,8 +60,6 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import data from "@/components/json/card.json";
-import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 
 const iconMap = {
@@ -67,6 +67,8 @@ const iconMap = {
   PreviewRoundedIcon,
   DatasetLinkedRoundedIcon,
   CategoryRoundedIcon,
+  BarChartIcon,
+  AddCardIcon,
   AddCircleRoundedIcon,
   ListIcon,
   AppRegistrationRoundedIcon,
@@ -78,36 +80,35 @@ const iconMap = {
   LogoutRoundedIcon,
   AlignHorizontalLeftRoundedIcon,
 };
-
+export const Log_Out = async (router) => {
+  try {
+    const res = await fetch(`./api/login`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      router.refresh();
+    } else {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Error Cerrando Sesion",
+      });
+    }
+  } catch (error) {
+    console.error("Error en la respuesta:", error);
+    toast({
+      title: "Error",
+      variant: "destructive",
+      description: `error: ${error.message}`,
+    });
+  }
+};
 export default function HeaderAdmin({ ThemeContext }) {
   const { toast } = useToast();
   const { webshop } = useContext(ThemeContext);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const Log_Out = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        router.push("/");
-      } else {
-        toast({
-          title: "Error",
-          variant: "destructive",
-          description: "Error Cerrando Sesion",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        variant: "destructive",
-        description: `error: ${error.message}`,
-      });
-      console.error("Error en la respuesta:", error);
-    }
-  };
 
   const renderLink = (link, index) => {
     if (
@@ -128,14 +129,20 @@ export default function HeaderAdmin({ ThemeContext }) {
       <TooltipProvider key={index}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link
-              href={link.href || pathname}
+            <Button
+              variant="ghost"
               className="flex items-center rounded-lg text-gray-500 px-1 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
-              onClick={link.action === "Log_Out" ? Log_Out : null}
+              onClick={() => {
+                if (link.action === "Log_Out") {
+                  Log_Out(router);
+                } else {
+                  router.push(link.href || pathname);
+                }
+              }}
             >
               <Icon />
               <span className="sr-only">{link.label}</span>
-            </Link>
+            </Button>
           </TooltipTrigger>
           <TooltipContent side="right">{link.label}</TooltipContent>
         </Tooltip>
@@ -167,7 +174,7 @@ export default function HeaderAdmin({ ThemeContext }) {
               className="flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
               onClick={() => {
                 if (link.action === "Log_Out") {
-                  Log_Out();
+                  Log_Out(router);
                 }
                 setIsOpen(false);
               }}
@@ -190,7 +197,7 @@ export default function HeaderAdmin({ ThemeContext }) {
 
   return (
     <div className="flex sticky top-0 w-full flex-col bg-muted/40 z-[10]">
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+      <aside className="fixed inset-y-0 left-0 z-10 w-14 hidden flex-col border-r bg-background sm:flex">
         <nav className="flex flex-col items-center gap-2 px-2 sm:py-5">
           {navLinks.map(renderLink)}
         </nav>
@@ -217,25 +224,42 @@ export default function HeaderAdmin({ ThemeContext }) {
                 </nav>
               </SheetContent>
             </Sheet>
-            <Breadcrumb>
-              <BreadcrumbList>
-                {breadcrumbs.map((obj, ind) => (
-                  <div key={ind} className="flex items-center">
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild>
-                        <Link
-                          href={obj.href}
-                          className="capitalize truncate max-w-20"
-                        >
-                          {obj.label}
-                        </Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                  </div>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
+            {pathname === "/" ? (
+              <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-8">
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  Bienvenido a Rou-Admin
+                </h1>
+                <div className="text-sm text-gray-600">
+                  Tienes preguntas?
+                  <Link
+                    href={"https://wa.me/5352489105"}
+                    className="text-blue-600 hover:underline"
+                  >
+                    <span className="font-medium">+53 52489105</span>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumbs.map((obj, ind) => (
+                    <div key={ind} className="flex items-center">
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                          <Link
+                            href={obj.href}
+                            className="capitalize truncate max-w-20"
+                          >
+                            {obj.label}
+                          </Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                    </div>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            )}
           </div>
           <div>
             <Dialog>
@@ -246,8 +270,10 @@ export default function HeaderAdmin({ ThemeContext }) {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Edit profile</DialogTitle>
-                  <DialogDescription></DialogDescription>
+                  <DialogTitle>Info</DialogTitle>
+                  <DialogDescription>
+                    Panel de información sobre la pantalla
+                  </DialogDescription>
                 </DialogHeader>
                 {dataCards
                   .filter((obj) => obj.llave == identifyRoute(pathname))
@@ -293,18 +319,18 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
 const identifyRoute = (pathname) => {
   // Define un mapa de identificadores
   const routeMap = {
-    "/admin/category/[uid]": "Category UID",
-    "/admin/category": "Category",
-    "/admin/codeDiscount": "Code Discount",
-    "/admin/configuracion/domicilios": "Configuración Domicilios",
-    "/admin/guia": "Guía",
-    "/admin/configuracion": "Configuracion",
-    "/admin/header": "Header",
-    "/admin/newProduct": "New Product",
-    "/admin/orders": "Orders",
-    "/admin/products/[specific]": "Product Specific",
-    "/admin/products": "Products",
-    "/admin": "Dashboard",
+    "/category/[uid]": "Category UID",
+    "/category": "Category",
+    "/codeDiscount": "Code Discount",
+    "/configuracion/domicilios": "Configuración Domicilios",
+    "/guia": "Guía",
+    "/configuracion": "Configuracion",
+    "/header": "Header",
+    "/newProduct": "New Product",
+    "/orders": "Orders",
+    "/products/[specific]": "Product Specific",
+    "/products": "Products",
+    "/": "Dashboard",
   };
 
   // Encuentra la ruta dinámica con regex

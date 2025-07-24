@@ -1,12 +1,11 @@
 "use client";
 import React, { createContext, useEffect, useReducer, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supa";
-import { fetchStoreData, deleteNotification } from "@/lib/supabaseApi";
-import { OrderProducts } from "@/utils/products";
+import { deleteNotification } from "@/lib/supabaseApi";
 import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
-import { subscribeUserToPush } from "@/lib/notificaciones";
+import { Log_Out } from "@/components/Chadcn-components/HeaderAdmin";
 
 export const ThemeContext = createContext();
 
@@ -33,17 +32,24 @@ export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(initialState);
   const [isNewUser, setIsNewUser] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!user || user == undefined) router.push("/");
-
+    if (!user && user == undefined) {
+      router.push("/login");
+    }
+  }, [user, router]);
+  console.log("user", data);
+  useEffect(() => {
     if (data?.user?.login == false) {
       router.push("/createAccount");
       setIsNewUser(true);
+    } else if (data?.store?.login == false) {
+      Log_Out(router);
     } else {
       setWebshop(data);
     }
-  }, [data, user]);
+  }, [data, user, router]);
 
   // Primer useEffect: Inicializar datos y cargar tienda
   useEffect(() => {
@@ -109,7 +115,9 @@ export default function MyProvider({ children, user, data }) {
 
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
-      {!isNewUser && <HeaderAdmin ThemeContext={ThemeContext} />}
+      {!isNewUser && pathname !== "/login" && (
+        <HeaderAdmin ThemeContext={ThemeContext} />
+      )}
 
       {children}
     </ThemeContext.Provider>

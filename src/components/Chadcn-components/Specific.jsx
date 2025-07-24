@@ -40,6 +40,7 @@ export default function Specific({ specific, ThemeContext }) {
   useEffect(() => {
     setProducts(webshop.products.find((obj) => obj.productId == specific));
   }, [webshop, specific]);
+  console.log("Products:", products);
 
   const SaveData = async (e) => {
     e.preventDefault();
@@ -61,7 +62,6 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("newImage", newImage);
       if (products.image) formData.append("image", products.image);
     }
-    console.log(formData);
     try {
       const res = await axios.put(
         `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/`,
@@ -80,7 +80,6 @@ export default function Specific({ specific, ThemeContext }) {
             <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
           ),
         });
-        console.log(res.data);
         const [a] = res.data;
         const b = webshop.products.map((obj) =>
           obj.productId == a.productId ? a : obj

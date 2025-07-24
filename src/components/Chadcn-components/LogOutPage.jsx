@@ -1,9 +1,7 @@
 "use client";
 import React from "react";
-import { supabase } from "@/lib/supa";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -13,9 +11,9 @@ export default function LogoutPage() {
       method: "DELETE",
     });
 
-    if (res.ok) {
+    if (!res.ok) {
       // Redirigir al usuario a la página de inicio o login
-      router.replace("/");
+      router.refresh();
     } else {
       const data = await res.json();
       console.error("Error al cerrar sesión:", data.error);

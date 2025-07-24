@@ -92,7 +92,6 @@ export default function Category({ ThemeContext }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setDownloading(true);
-    console.log(data.category);
     const formData = new FormData();
     formData.append("categoria", JSON.stringify(data.category));
     formData.append("UUID", data.UUID);
@@ -109,7 +108,6 @@ export default function Category({ ThemeContext }) {
           description: "Información actualizada",
           action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
         });
-        console.log(res?.data?.data);
         setWebshop({
           ...webshop,
           store: { ...webshop.store, categoria: res?.data?.data },
@@ -150,7 +148,6 @@ export default function Category({ ThemeContext }) {
             description: "Categoria Creada",
             action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
           });
-          console.log(res.data.data);
           setData((prevData) => ({
             ...prevData,
             category: [...prevData.category, res.data.data],
@@ -256,11 +253,7 @@ export default function Category({ ThemeContext }) {
         sortedCategories = categoriasCopia.sort((a, b) => a.order - b.order);
         break;
     }
-    console.log(
-      sortedCategories.map((obj, index) => {
-        return { ...obj, order: index };
-      })
-    );
+
     // Actualizar el estado con las categorías ordenadas
     setData((prevState) => ({
       ...prevState,
@@ -456,7 +449,7 @@ const CategoryItem = ({
                 <Button variant="outline" asChild>
                   <Link
                     className="flex gap-3 w-full justify-start items-center"
-                    href={`/admin/category/${category.id}`}
+                    href={`/category/${category.id}`}
                   >
                     <Pencil className=" text-gray-500" />
                     Edit

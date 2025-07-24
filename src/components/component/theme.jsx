@@ -53,7 +53,7 @@ export default function Theme({ ThemeContext }) {
           action: (
             <ToastAction
               altText="Ir a la programación"
-              onClick={() => router.push("/admin/link")}
+              onClick={() => router.push("/link")}
             >
               Ir a la web
             </ToastAction>
