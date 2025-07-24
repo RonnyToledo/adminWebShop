@@ -6,7 +6,7 @@
     "dev": "next dev -p 4000",
     "build": "next build",
     "start": "next start",
-    "gitadd": "git add . && git commit -m \"Descripción de los cambios\" && git push && vercel --prod",
+    "gitadd": "git add . && git commit -m \"Descripción de los cambios\" && git push -f origin master && vercel --prod",
     "lint": "next lint"
   },
   "dependencies": {
