@@ -59,7 +59,7 @@ export function CrearClienteComponent() {
 
   async function fetchUserSession() {
     try {
-      const res = await fetch("/api/login");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`);
       const data = await res.json();
       if (res.ok && data?.user?.id) {
         return data.user.id;

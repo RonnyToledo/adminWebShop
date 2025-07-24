@@ -139,11 +139,15 @@ export default function MultiStepForm() {
     form.append("email", formData.email);
     form.append("cell", formData.cell);
     try {
-      const res = await axios.post(`/api/tienda/`, form, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_PATH}/api/tienda/`,
+        form,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       if (res.status == 200) {
         toast({
           title: "Tarea Ejecutada",

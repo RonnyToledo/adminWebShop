@@ -32,7 +32,7 @@ export function ResponsiveLogin({ user }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

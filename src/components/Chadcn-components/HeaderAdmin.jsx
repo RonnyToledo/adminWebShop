@@ -82,7 +82,7 @@ const iconMap = {
 };
 export const Log_Out = async (router) => {
   try {
-    const res = await fetch(`./api/login`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
       method: "DELETE",
     });
     if (res.ok) {

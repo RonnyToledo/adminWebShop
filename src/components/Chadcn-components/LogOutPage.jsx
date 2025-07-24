@@ -7,7 +7,7 @@ export default function LogoutPage() {
   const router = useRouter();
 
   const Log_Out = async () => {
-    const res = await fetch("/api/login", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
       method: "DELETE",
     });
 

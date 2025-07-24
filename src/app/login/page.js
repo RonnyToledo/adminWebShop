@@ -17,7 +17,7 @@ async function fetchUserSessionServer() {
   }
 
   try {
-    const res = await fetch(`/api/login`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
       method: "GET",
       headers: {
         Cookie: `sb-access-token=${sessionCookie.value}`, // Agrega la cookie manualmente
