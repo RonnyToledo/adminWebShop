@@ -69,9 +69,7 @@ export const initializeData = async (userId) => {
     );
 
     // Fetch Google Analytics data
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed.sitioweb}/GA`
-    );
+    const response = await fetch(`/api/tienda/${tiendaParsed.sitioweb}/GA`);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const gaData = await response.json();
 
