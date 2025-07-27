@@ -1,75 +1,53 @@
 [
   {
-    "label": "Inicio",
-    "href": "/",
-    "icon": "HomeRoundedIcon"
-  },
-  {
-    "label": "Guia",
-    "href": "/guia",
-    "icon": "PreviewRoundedIcon"
-  },
-  {
-    "label": "Pedidos",
-    "href": "/orders",
-    "icon": "ListIcon"
-  },
-  {
-    "separator": true
-  },
-  {
-    "label": "Editar Categoria",
-    "href": "/category",
-    "icon": "CategoryRoundedIcon"
-  },
-  {
-    "label": "Nuevo Producto",
-    "href": "/newProduct",
-    "icon": "AddCircleRoundedIcon"
-  },
-  {
-    "label": "Editar Productos",
-    "href": "/products",
-    "icon": "AppRegistrationRoundedIcon"
+    "group": "Productos",
+
+    "links": [
+      {
+        "label": "Editar Categoria",
+        "href": "/category",
+        "icon": "CategoryRoundedIcon"
+      },
+      {
+        "label": "Nuevo Producto",
+        "href": "/newProduct",
+        "icon": "AddCircleRoundedIcon"
+      },
+      {
+        "label": "Editar Productos",
+        "href": "/products",
+        "icon": "AppRegistrationRoundedIcon"
+      }
+    ]
   },
   {
     "separator": true
-  },
-  {
-    "label": "Editar Info",
-    "href": "/header",
-    "icon": "EditNoteRoundedIcon"
   },
 
   {
-    "label": "Marketing",
-    "href": "/codeDiscount",
-    "icon": "AttachMoneyRoundedIcon"
-  },
-  {
-    "label": "Configuracion",
-    "href": "/configuracion",
-    "icon": "AppSettingsAltRoundedIcon"
-  },
-  {
-    "separator": true
-  },
-  {
-    "label": "Analitycs",
-    "href": "/analytics",
-    "icon": "BarChartIcon"
-  },
-  {
-    "label": "Ventas",
-    "href": "/ventas",
-    "icon": "AddCardIcon"
-  },
-  {
-    "separator": true
-  },
-  {
-    "label": "Cerrar Sesion",
-    "icon": "LogoutRoundedIcon",
-    "action": "Log_Out"
+    "group": "Finanzas",
+
+    "links": [
+      {
+        "label": "Marketing",
+        "href": "/codeDiscount",
+        "icon": "AttachMoneyRoundedIcon"
+      },
+      {
+        "label": "Pedidos",
+        "href": "/orders",
+        "icon": "ListIcon"
+      },
+      {
+        "label": "Analitycs",
+        "href": "/analytics",
+        "icon": "BarChartIcon"
+      },
+      {
+        "label": "Ventas",
+        "href": "/ventas",
+        "icon": "AddCardIcon"
+      }
+    ]
   }
 ]

@@ -10,6 +10,7 @@ import Image from "next/image";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
+import { logoApp } from "@/utils/image";
 
 export default function EditCategory({ ThemeContext, uid }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -111,7 +112,7 @@ export default function EditCategory({ ThemeContext, uid }) {
                   ? URL.createObjectURL(category?.newImage)
                   : category?.image
                   ? category?.image
-                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                  : logoApp
               }
               alt={category?.name || `Category`}
               width={100}

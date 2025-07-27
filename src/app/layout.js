@@ -15,7 +15,7 @@ export const metadata = {
     title: "ADMIN",
     description: "ADMIN R&H",
     images: [
-      "https://res.cloudinary.com/dbgnyc842/image/upload/v1721753647/kiphxzqvoa66wisrc1qf.jpg",
+      "https://res.cloudinary.com/dbgnyc842/image/upload/v1753574413/ChatGPT_Image_26_jul_2025_19_51_29_lvng2w.png",
     ],
   },
 };
@@ -28,8 +28,7 @@ export default async function AdminLayout({ children }) {
     <html lang="en">
       <body>
         <MyProvider user={user} data={data || {}}>
-          <main className="sm:pl-14">{children}</main>
-
+          <main className="">{children}</main>
           <SonnerToaster className={styles.sonner_dark} />
           <UiToaster />
         </MyProvider>

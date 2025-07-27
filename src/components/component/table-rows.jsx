@@ -28,6 +28,7 @@ import axios from "axios";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { ThemeContext } from "@/context/useContext";
+import { logoApp } from "@/utils/image";
 
 export default function TableRowsComponent({ product }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -80,11 +81,7 @@ export default function TableRowsComponent({ product }) {
               alt={obj.title ? obj.title : `Producto${ind}`}
               className="aspect-square rounded-md object-cover"
               height={64}
-              src={
-                obj.image
-                  ? obj.image
-                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-              }
+              src={obj.image ? obj.image : logoApp}
               style={{
                 aspectRatio: "64/64",
                 objectFit: "cover",

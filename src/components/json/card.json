@@ -80,18 +80,7 @@
     "link": "/orders",
     "buttonText": "Editar Ordenes"
   },
-  {
-    "title": "Editar perfil",
-    "llave": "Header",
-    "description": "Personaliza tu perfil de administrador.",
-    "steps": [
-      "Actualiza tu información de negocio",
-      "Cambia el poster de Bienvenida",
-      "Selecciona los horarios de trabajo"
-    ],
-    "link": "/header",
-    "buttonText": "Editar perfil"
-  },
+
   {
     "title": "Configurar perfil",
     "llave": "Configuracion",
@@ -128,7 +117,7 @@
       "Vas a tener todo los relacionado con esatdisticas sobre el uso y ventas grnerales de su sitio web",
       "Podras ver las informacion de las compras poniendo el Indentificador universal de la compra en el recuadro q sale al final de la pagina"
     ],
-    "link": "/",
+    "link": "/analitycs",
     "buttonText": "Dashboard"
   },
   {

@@ -20,8 +20,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
 import ImageUpload from "../component/ImageDND";
 import ConfimationOut from "../globalFunction/confimationOut";
-import { Trash2 } from "lucide-react";
-
+import { Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
@@ -324,32 +337,62 @@ export default function Specific({ specific, ThemeContext }) {
                 <CardContent>
                   <div className="grid gap-2">
                     <Label htmlFor="category">Categoría</Label>
-                    <Select
-                      id="category"
-                      onValueChange={(value) => {
-                        setProducts({
-                          ...products,
-                          caja: value,
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            webshop.store.categoria.find(
-                              (obj) => obj.id == products?.caja
-                            )?.name
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {webshop.store.categoria.map((obj, ind) => (
-                          <SelectItem key={ind} value={obj.id}>
-                            {obj.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={openCategory} onOpenChange={setOpenCategory}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openCategory}
+                          className="w-full justify-between bg-transparent"
+                        >
+                          {products.caja
+                            ? webshop.store.categoria.find(
+                                (category) => category.id === products.caja
+                              )?.name
+                            : "Selecciona una categoría..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar categoría..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              No se encontró ningúna categoría.
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {webshop.store.categoria.map((category, ind) => (
+                                <CommandItem
+                                  key={ind}
+                                  value={category.name}
+                                  onSelect={() => {
+                                    setProducts({
+                                      ...products,
+                                      caja:
+                                        category.id === products.caja
+                                          ? ""
+                                          : category.id,
+                                    });
+
+                                    setOpenCategory(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      products.caja === category.id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {category.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </CardContent>
               </Card>

@@ -7,6 +7,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { logoApp } from "@/utils/image";
 
 const color = [
   {
@@ -129,11 +130,7 @@ function Products({ array, color }) {
         <div className="p-1" key={index}>
           <div className="relative rounded-lg overflow-hidden">
             <Image
-              src={
-                prod.image
-                  ? prod.image
-                  : "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-              }
+              src={prod.image ? prod.image : logoApp}
               alt={prod.title ? prod.title : "Product"}
               width={40}
               height={40}

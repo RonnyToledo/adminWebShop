@@ -4,14 +4,6 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect, useRef, useContext } from "react";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
-import {
-  SelectValue,
-  SelectTrigger,
-  SelectItem,
-  SelectGroup,
-  SelectContent,
-  Select,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,9 +11,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import ImageUpload from "../component/ImageDND";
-import { Trash2 } from "lucide-react";
+import { Trash2, Check, ChevronsUpDown } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { logoApp } from "@/utils/image";
 
 export default function NewProduct({ ThemeContext }) {
+  const [openCategory, setOpenCategory] = useState(false);
+
   const [downloading, setDownloading] = useState(false);
   const { webshop, setWebshop } = useContext(ThemeContext);
   const { toast } = useToast();
@@ -48,6 +57,7 @@ export default function NewProduct({ ThemeContext }) {
     const formData = new FormData();
     formData.append("title", products.title);
     formData.append("price", products.price);
+    formData.append("priceCompra", products.priceCompra);
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("descripcion", products.descripcion);
@@ -99,6 +109,7 @@ export default function NewProduct({ ThemeContext }) {
       setDownloading(false);
     }
   };
+  console.log(products);
 
   useEffect(() => {
     setProducts((prev) => ({ ...prev, image: imageNew }));
@@ -106,8 +117,8 @@ export default function NewProduct({ ThemeContext }) {
   return (
     <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4">
-          <div className="relative border rounded-2x p-5 col-span-1 md:col-span-3 h-64">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4">
+          <div className="relative border rounded-2x p-5 col-span-1 md:col-span-2 h-64">
             {!imageNew ? (
               <>
                 <Label
@@ -128,8 +139,7 @@ export default function NewProduct({ ThemeContext }) {
                   src={
                     imageNew
                       ? URL.createObjectURL(imageNew)
-                      : webshop.store.urlPoster ||
-                        "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                      : webshop.store.urlPoster || logoApp
                   }
                   style={{
                     objectFit: "cover",
@@ -195,8 +205,29 @@ export default function NewProduct({ ThemeContext }) {
                 }
               />
             </div>
+            <Label
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              htmlFor="price"
+            >
+              Precio de compra
+            </Label>
+            <div className="mt-1">
+              <Input
+                id="price"
+                name="price"
+                required
+                value={products.priceCompra}
+                type="number"
+                onChange={(e) =>
+                  setProducts({
+                    ...products,
+                    priceCompra: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-2 ">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="category"
@@ -204,33 +235,65 @@ export default function NewProduct({ ThemeContext }) {
               Categoría
             </Label>
             <div className="mt-1">
-              <Select
-                id="category"
-                name="category"
-                required
-                onValueChange={(value) =>
-                  setProducts({
-                    ...products,
-                    caja: value,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {webshop.store.categoria.map((obj, ind) => (
-                      <SelectItem key={ind} value={obj.id}>
-                        {obj.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <Popover open={openCategory} onOpenChange={setOpenCategory}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCategory}
+                    className="w-full justify-between bg-transparent"
+                  >
+                    {products.caja
+                      ? webshop.store.categoria.find(
+                          (category) => category.id === products.caja
+                        )?.name
+                      : "Selecciona una categoría..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar categoría..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        No se encontró ningúna categoría.
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {webshop.store.categoria.map((category, ind) => (
+                          <CommandItem
+                            key={ind}
+                            value={category.name}
+                            onSelect={() => {
+                              setProducts({
+                                ...products,
+                                caja:
+                                  category.id === products.caja
+                                    ? ""
+                                    : category.id,
+                              });
+
+                              setOpenCategory(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                products.caja === category.id
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {category.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
+          <div className="border rounded-2x p-5 col-span-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="ml-3 text-sm flex flex-col space-y-2">
                 <Switch
@@ -271,7 +334,7 @@ export default function NewProduct({ ThemeContext }) {
               </div>
             </div>
           </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-3">
+          <div className="border rounded-2x p-5 col-span-1 md:col-span-4">
             <Label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="description"

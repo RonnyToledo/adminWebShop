@@ -17,7 +17,7 @@ export function InputStore({ name, object, value, action, type }) {
   return (
     <Input
       id={value}
-      value={object[value] || ""}
+      value={object[value]}
       type={type}
       onChange={(e) =>
         action({

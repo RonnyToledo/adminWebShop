@@ -10,7 +10,6 @@ import ConfimationOut from "../globalFunction/confimationOut";
 import { InputStore, SelectStore, SwitchStore } from "./Input-Store";
 import {
   MapPin,
-  Clock,
   Instagram,
   Phone,
   Mail,
@@ -22,7 +21,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -37,8 +35,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
+import ProfileHeader from "../profile-header";
+import WeeklyAvailability from "../WeeklyAvailability";
+import { Textarea } from "../ui/textarea";
 
 export default function Configuracion({ ThemeContext }) {
   const provincias = provinciasData.provincias;
@@ -93,6 +93,29 @@ export default function Configuracion({ ThemeContext }) {
   return (
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
       <FromData store={store} ThemeContext={ThemeContext}>
+        <Card>
+          <ProfileHeader store={store} setStore={setStore} />
+          <div className="mx-6">
+            <TextInput
+              label="Nombre del negocio"
+              value={store?.name || ""}
+              onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </div>
+          <div className="mx-6">
+            <TextAreaInput
+              label="Mensaje de Bienvenida"
+              value={store?.parrrafo || ""}
+              onChange={(e) => handleChange("parrrafo", e.target.value)}
+            />
+          </div>
+          <div className="mx-6">
+            <WeeklyAvailability
+              horario={store?.horario || []}
+              onHorarioChange={(horario) => handleChange("horario", horario)}
+            />
+          </div>
+        </Card>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
           <Card>
             <CardHeader>
@@ -493,3 +516,16 @@ function TrashIcon(props) {
 const hasPendingChanges = (data, store) => {
   return JSON.stringify(data) !== JSON.stringify(store);
 };
+const TextInput = ({ label, value, onChange }) => (
+  <div className="space-y-2 mt-4">
+    <Label>{label}</Label>
+    <Input type="text" value={value} onChange={onChange} />
+  </div>
+);
+
+const TextAreaInput = ({ label, value, onChange }) => (
+  <div className="space-y-2">
+    <Label>{label}</Label>
+    <Textarea value={value} rows={5} onChange={onChange} />
+  </div>
+);

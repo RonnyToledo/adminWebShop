@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Image from "next/image";
+import { logoApp } from "@/utils/image";
 
 export default function ProfileHeader({ store, setStore }) {
   const handleCoverUpload = (file) => {
@@ -28,11 +29,11 @@ export default function ProfileHeader({ store, setStore }) {
             className="relative h-40 bg-gradient-to-br from-rose-200 to-rose-300 group"
             style={{
               width: "100%",
-              backgroundImage: store.bannerNew
+              backgroundImage: store?.bannerNew
                 ? `url(${URL.createObjectURL(store.bannerNew)})`
-                : store.banner
+                : store?.banner
                 ? `url(${store.banner})`
-                : `url(${"https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"})`,
+                : `url(${logoApp})`,
               backgroundPosition: "center",
               backgroundSize: "cover",
             }}
@@ -65,10 +66,9 @@ export default function ProfileHeader({ store, setStore }) {
               <div className="w-full h-full rounded-full bg-rose-100 flex items-center justify-center overflow-hidden">
                 <Image
                   src={
-                    store.urlPosterNew
+                    store?.urlPosterNew
                       ? URL.createObjectURL(store.urlPosterNew)
-                      : store.urlPoster ||
-                        "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
+                      : store?.urlPoster || logoApp
                   }
                   alt="Profile"
                   className="w-full h-full object-cover"

@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+import { logoApp } from "@/utils/image";
 
 const imagenes = [
   "https://res.cloudinary.com/dbgnyc842/image/upload/v1749600395/wpr2ti7cgr588wasgjoh.webp",
@@ -45,74 +47,23 @@ export default function Component({ ThemeContext }) {
         </div>
 
         {/* Main Content Cards */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-12">
-          {/* Add Product Card */}
-          <Card className="p-6">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-6">
-                <Carousel
-                  plugins={[
-                    Autoplay({
-                      delay: 3000,
-                    }),
-                  ]}
-                >
-                  <CarouselContent>
-                    {((webshop?.products || []).length > 0
-                      ? webshop?.products
-                          .filter((item) => item.image)
-                          .sort(() => Math.random() - 0.5) // Mezcla aleatoriamente el array
-                          .slice(0, 3) // Toma los 3 primeros
-                          .map((item) => item.image)
-                      : imagenes
-                    ).map((imagenes, index) => (
-                      <CarouselItem className="flex justify-center" key={index}>
-                        <Image
-                          src={imagenes}
-                          alt={`Product Image ${index + 1}`}
-                          width={200}
-                          height={200}
-                          className="object-contain aspect-square rounded-lg"
-                        />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                </Carousel>
-              </div>
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-xl mb-2">
-                  {(webshop?.products || []).length > 0
-                    ? "Crear más productos"
-                    : "Agregar tu primer producto"}
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {(webshop?.products || []).length > 0
-                    ? "Agregue más "
-                    : " Comience agregando un "}{" "}
-                  {`producto(s) y algunos detalles clave. ¿No
-                  estás listo?`}{" "}
-                  <Link
-                    href="/newProduct"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Creemos uno nuevo
-                  </Link>
-                </CardDescription>
-              </CardHeader>
-              <div className="flex gap-3">
-                <Button
-                  variant="link"
-                  onClick={() => router.push("/newProduct")}
-                >
-                  Agregar
-                </Button>
-              </div>
-            </div>
-          </Card>
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          {!((webshop?.products || []).length > 0) ? (
+            <CarruselNew products={webshop?.products || []} />
+          ) : (
+            <PorductoNuevo
+              product={webshop?.products.reduce((masReciente, actual) => {
+                return new Date(actual.creado) > new Date(masReciente.creado)
+                  ? actual
+                  : masReciente;
+              })}
+            />
+          )}
 
           {/* Customize Store Card */}
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
+              <CardTitle className="text-xl mb-2">Edite su tienda</CardTitle>
               <div className="mb-6">
                 <Image
                   src={
@@ -126,17 +77,16 @@ export default function Component({ ThemeContext }) {
                 />
               </div>
               <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-xl mb-2">
-                  Edite su tienda Online
-                </CardTitle>
                 <CardDescription className="text-base">
                   Seleccione su foto de portada, foto de perfil, nombre de su
                   tienda y párrafo de presentación
                 </CardDescription>
               </CardHeader>
-              <Button variant="link" onClick={() => router.push("/header")}>
-                Editar
-              </Button>
+              <CardFooter>
+                <Button variant="link" onClick={() => router.push("/header")}>
+                  Editar
+                </Button>
+              </CardFooter>
             </div>
           </Card>
         </div>
@@ -204,5 +154,111 @@ export default function Component({ ThemeContext }) {
         </div>
       </div>
     </div>
+  );
+}
+function CarruselNew({ products }) {
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col items-center text-center">
+        <CardTitle className="text-xl mb-2">
+          {products.length > 0
+            ? "Crear más productos"
+            : "Agregar tu primer producto"}
+        </CardTitle>
+        <div className="mb-6">
+          <Carousel
+            plugins={[
+              Autoplay({
+                delay: 3000,
+              }),
+            ]}
+          >
+            <CarouselContent>
+              {products
+                .filter((item) => item.image)
+                .sort(() => Math.random() - 0.5) // Mezcla aleatoriamente el array
+                .slice(0, 3) // Toma los 3 primeros
+                .map((item) => item.image)
+                .map((imagenes, index) => (
+                  <CarouselItem className="flex justify-center" key={index}>
+                    <Image
+                      src={imagenes}
+                      alt={`Product Image ${index + 1}`}
+                      width={200}
+                      height={200}
+                      className="object-contain aspect-square rounded-lg"
+                    />
+                  </CarouselItem>
+                ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+        <CardHeader className="p-0 mb-4">
+          <CardDescription className="text-base">
+            {products.length > 0 ? "Agregue más " : " Comience agregando un "}{" "}
+            {`producto(s) y algunos detalles clave. ¿No
+                  estás listo?`}{" "}
+            <Link href="/newProduct" className="text-blue-600 hover:underline">
+              Creemos uno nuevo
+            </Link>
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="flex gap-3">
+          <Button variant="link" onClick={() => router.push("/newProduct")}>
+            Agregar
+          </Button>
+        </CardFooter>
+      </div>
+    </Card>
+  );
+}
+function PorductoNuevo({ product }) {
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col items-center text-center">
+        <CardTitle className="text-xl mb-2">{"Producto agregado!"}</CardTitle>
+        <CardContent className="p-0 mb-6">
+          <Link href={`/products/${product.productId}`}>
+            <div className={`relative rounded-2xl`}>
+              <div className=" rounded-lg overflow-hidden">
+                <Image
+                  id={`product-img-${product.productId}`}
+                  src={product.image || logoApp}
+                  alt={product.title || "Product"}
+                  className={`w-[200px] aspect-square object-cover`}
+                  height={200}
+                  width={200}
+                />
+              </div>
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end justify-end p-2 md:p-4 rounded-2xl">
+                <p className=" text-xs md:text-sm text-white font-semibold  line-clamp-2 text-start ">
+                  {product.title}
+                </p>
+                <p className="text-sm text-red-600 font-semibold  line-clamp-2 ">
+                  ${product.price}
+                </p>
+              </div>
+            </div>
+          </Link>
+        </CardContent>
+        <CardHeader className="p-0 mb-4">
+          <CardDescription className="text-base">
+            {`¡Genial! Tu producto ha sido agregado. Puedes editarlo o agregar más productos. `}
+            <Link
+              href={`/products/${product.productId}`}
+              className="text-blue-600 hover:underline"
+            >
+              Creemos otro
+            </Link>
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="flex gap-3">
+          <Button variant="link" onClick={() => router.push("/newProduct")}>
+            Agregar más productos
+          </Button>
+        </CardFooter>
+      </div>
+    </Card>
   );
 }

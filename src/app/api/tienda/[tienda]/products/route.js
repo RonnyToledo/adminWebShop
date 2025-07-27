@@ -53,6 +53,7 @@ export async function POST(request, { params }) {
     .rpc("create_product", {
       _title: data.get("title"),
       _price: Number(data.get("price")),
+      _pricecompra: Number(data.get("priceCompra")),
       _caja: data.get("caja"),
       _favorito: data.get("favorito") === "true",
       _descripcion: data.get("descripcion"),

@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supa";
 import { deleteNotification } from "@/lib/supabaseApi";
 import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
 import { Log_Out } from "@/components/Chadcn-components/HeaderAdmin";
+import AppSidebar from "@/components/Chadcn-components/AppSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export const ThemeContext = createContext();
 
@@ -34,13 +36,13 @@ export default function MyProvider({ children, user, data }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  console.log("data", data);
+  console.log("user", user);
   useEffect(() => {
-    if (!user && user == undefined) {
+    if (!user || user == undefined) {
       router.push("/login");
     }
-  }, [user, router]);
-  console.log("user", data);
-  useEffect(() => {
+
     if (data?.user?.login == false) {
       router.push("/createAccount");
       setIsNewUser(true);
@@ -75,7 +77,7 @@ export default function MyProvider({ children, user, data }) {
       }
     };
     initializeData();
-  }, [router]);
+  }, [router, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -115,11 +117,18 @@ export default function MyProvider({ children, user, data }) {
 
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
-      {!isNewUser && pathname !== "/login" && (
-        <HeaderAdmin ThemeContext={ThemeContext} />
-      )}
+      <SidebarProvider>
+        {!isNewUser && pathname !== "/login" && (
+          <AppSidebar ThemeContext={ThemeContext} />
+        )}
+        <div className="w-full">
+          {!isNewUser && pathname !== "/login" && (
+            <HeaderAdmin ThemeContext={ThemeContext} />
+          )}
 
-      {children}
+          {children}
+        </div>
+      </SidebarProvider>
     </ThemeContext.Provider>
   );
 }

@@ -46,6 +46,7 @@ import UnfoldMoreDoubleRoundedIcon from "@mui/icons-material/UnfoldMoreDoubleRou
 import { ExtraerCategorias } from "../globalFunction/function";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import { logoApp } from "@/utils/image";
 
 export default function TableRowsComponentAgotados({
   products,
@@ -374,10 +375,7 @@ function TableComponet({
                               alt={obj.title || `Producto${ind}`}
                               className="aspect-square rounded-md object-cover"
                               height={64}
-                              src={
-                                obj.image ||
-                                "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-                              }
+                              src={obj.image || logoApp}
                               style={{
                                 aspectRatio: "64/64",
                                 objectFit: "cover",
@@ -569,12 +567,7 @@ function HoverComponent({ obj }) {
       <HoverCardContent>
         <div className="flex justify-between space-x-4">
           <Avatar>
-            <AvatarImage
-              src={
-                obj.image ||
-                "https://res.cloudinary.com/dbgnyc842/image/upload/v1725399957/xmlctujxukncr5eurliu.png"
-              }
-            />
+            <AvatarImage src={obj.image || logoApp} />
             <AvatarFallback>{obj.title}</AvatarFallback>
           </Avatar>
           <div className="space-y-1">
