@@ -4,23 +4,22 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import axios from "axios";
-import { GitMerge } from "lucide-react";
+import { Eye } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useRef, useContext, useEffect } from "react";
 import ImageUpload from "../component/ImageDND";
 import ConfimationOut from "../globalFunction/confimationOut";
-import { Trash2, Check, ChevronsUpDown } from "lucide-react";
+import {
+  Trash2,
+  Check,
+  ChevronsUpDown,
+  DollarSign,
+  FileText,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Command,
@@ -35,6 +34,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Separator } from "../ui/separator";
+import { logoApp } from "@/utils/image";
+
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
@@ -50,6 +52,8 @@ export default function Specific({ specific, ThemeContext }) {
   });
   const [newImage, setNewImage] = useState();
   const [deleteOriginal, setDeleteOriginal] = useState(false);
+  const [openCategory, setOpenCategory] = useState(false);
+
   useEffect(() => {
     setProducts(webshop.products.find((obj) => obj.productId == specific));
   }, [webshop, specific]);
@@ -60,24 +64,24 @@ export default function Specific({ specific, ThemeContext }) {
     setDownloading(true);
     const formData = new FormData();
 
-    formData.append("title", products.title);
-    formData.append("descripcion", products.descripcion);
-    formData.append("price", products.price);
-    formData.append("order", products.order);
-    formData.append("caja", products.caja);
-    formData.append("favorito", products.favorito);
-    formData.append("agotado", products.agotado);
-    formData.append("visible", products.visible);
-    formData.append("Id", products.productId);
-    formData.append("oldPrice", products.oldPrice);
-    formData.append("span", products.span);
+    formData.append("title", products?.title);
+    formData.append("descripcion", products?.descripcion);
+    formData.append("price", products?.price);
+    formData.append("order", products?.order);
+    formData.append("caja", products?.caja);
+    formData.append("favorito", products?.favorito);
+    formData.append("agotado", products?.agotado);
+    formData.append("visible", products?.visible);
+    formData.append("Id", products?.productId);
+    formData.append("oldPrice", products?.oldPrice);
+    formData.append("span", products?.span);
     if (newImage) {
       formData.append("newImage", newImage);
-      if (products.image) formData.append("image", products.image);
+      if (products?.image) formData.append("image", products?.image);
     }
     try {
       const res = await axios.put(
-        `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/`,
+        `/api/tienda/${webshop.store.sitioweb}/products/${products?.productId}/`,
         formData,
         {
           headers: {
@@ -121,7 +125,7 @@ export default function Specific({ specific, ThemeContext }) {
         formData.append("valor", newAregados.valor);
         formData.append("cantidad", newAregados.cantidad);
         const res = await axios.post(
-          `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/agregado`,
+          `/api/tienda/${webshop.store.sitioweb}/products/${products?.productId}/agregado`,
           formData,
           {
             headers: {
@@ -171,7 +175,7 @@ export default function Specific({ specific, ThemeContext }) {
 
       formData.append("id", id);
       const res = await axios.post(
-        `/api/tienda/${webshop.store.sitioweb}/products/${products.productId}/agregado`,
+        `/api/tienda/${webshop.store.sitioweb}/products/${products?.productId}/agregado`,
         formData,
         {
           headers: {
@@ -210,8 +214,8 @@ export default function Specific({ specific, ThemeContext }) {
           <h1 className="text-2xl font-bold">Editar producto</h1>
         </div>
         <form onSubmit={SaveData} className="flex flex-1 flex-col gap-8 p-6">
-          <div className="grid gap-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid col-span-1 md:col-span-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Imagen del producto</CardTitle>
@@ -220,13 +224,20 @@ export default function Specific({ specific, ThemeContext }) {
                   {newImage ? (
                     <div className="relative">
                       <Image
-                        src={URL.createObjectURL(newImage)}
-                        alt={products?.title || "Product"}
-                        width={100}
-                        height={150}
-                        style={{ aspectRatio: "200/300", objectFit: "cover" }}
-                        className="object-contain"
+                        alt="Logo"
+                        className="rounded-xl  mx-auto my-1"
+                        height={300}
+                        width={300}
+                        src={
+                          imageNew
+                            ? URL.createObjectURL(newImage)
+                            : webshop.store.urlPoster || logoApp
+                        }
+                        style={{
+                          objectFit: "cover",
+                        }}
                       />
+
                       <div className="absolute top-1 right-1 z-[1]">
                         <Button
                           type="button"
@@ -242,12 +253,12 @@ export default function Specific({ specific, ThemeContext }) {
                   ) : !deleteOriginal && products?.image ? (
                     <div className="relative">
                       <Image
-                        src={products.image}
+                        src={products?.image || logoApp}
                         alt={products?.title || "Product"}
-                        width={100}
-                        height={150}
+                        width={300}
+                        height={300}
                         style={{ aspectRatio: "200/300", objectFit: "cover" }}
-                        className="object-contain"
+                        className="object-contain h-full w-full"
                       />
                       <div className="absolute top-1 right-1 z-[1]">
                         <Button
@@ -278,65 +289,114 @@ export default function Specific({ specific, ThemeContext }) {
                 </CardContent>
               </Card>
 
-              <Card className="w-full">
+              {/* Información Básica */}
+              <Card>
                 <CardHeader>
-                  <CardTitle>Detalles del producto</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Información Básica
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name">Nombre</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        value={products?.title || "..."}
-                        onChange={(e) =>
-                          setProducts({ ...products, title: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="description">Descripción</Label>
-                      <Textarea
-                        id="description"
-                        rows={4}
-                        defaultValue={products?.descripcion || "..."}
-                        onChange={(e) =>
-                          setProducts({
-                            ...products,
-                            descripcion: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="price">Precio</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        defaultValue={products?.price}
-                        onChange={(e) =>
-                          setProducts({
-                            ...products,
-                            oldPrice:
-                              Number(e.target.value) < products.price
-                                ? products.price
-                                : Number(e.target.value),
-                            price: Number(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-medium">
+                      Título del Producto *
+                    </Label>
+                    <Input
+                      id="title"
+                      placeholder="Ej: iPhone 15 Pro Max 256GB"
+                      value={products.title}
+                      onChange={(e) =>
+                        setProducts({
+                          ...products,
+                          title: e.target.value,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="description"
+                      className="text-sm font-medium"
+                    >
+                      Descripción
+                    </Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe las características principales del producto..."
+                      value={products.descripcion}
+                      onChange={(e) =>
+                        setProducts({
+                          ...products,
+                          descripcion: e.target.value,
+                        })
+                      }
+                      className="mt-1 min-h-[120px]"
+                    />
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full">
+
+              {/* Precio y Categoría */}
+              <Card>
                 <CardHeader>
-                  <CardTitle>Categoría</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Precio y Categoría
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-2">
-                    <Label htmlFor="category">Categoría</Label>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="price" className="text-sm font-medium">
+                      Precio de Venta *
+                    </Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="price"
+                        type="number"
+                        placeholder="0.00"
+                        value={products.price}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            price: e.target.value,
+                          })
+                        }
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="price" className="text-sm font-medium">
+                      Inversion
+                    </Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="price"
+                        type="number"
+                        placeholder="0.00"
+                        value={products.priceCompra}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            priceCompra: e.target.value,
+                          })
+                        }
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Categoría *</Label>
                     <Popover open={openCategory} onOpenChange={setOpenCategory}>
                       <PopoverTrigger asChild>
                         <Button
@@ -396,137 +456,140 @@ export default function Specific({ specific, ThemeContext }) {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full">
+
+              {/* Configuraciones */}
+              <Card>
                 <CardHeader>
-                  <CardTitle>Estado</CardTitle>
+                  <CardTitle>Configuraciones</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
-                      <Label htmlFor="out-of-stock ">Producto Agotado</Label>
-                      <Switch
-                        id="out-of-stock"
-                        checked={products?.agotado}
-                        onCheckedChange={(value) =>
-                          setProducts({ ...products, agotado: value })
-                        }
-                      />
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Producto Especial
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        Destacar en la tienda
+                      </p>
                     </div>
-                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
-                      <Label htmlFor="favorite">Producto Destacado</Label>
-                      <Switch
-                        id="favorite"
-                        checked={products?.favorito}
-                        onCheckedChange={(value) =>
-                          setProducts({ ...products, favorito: value })
-                        }
-                      />
+                    <Switch
+                      checked={products.favorito}
+                      onCheckedChange={(value) => {
+                        setProducts({
+                          ...products,
+                          favorito: value,
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Doble Espacio
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        Ocupa más espacio en grid
+                      </p>
                     </div>
-                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
-                      <Label htmlFor="visible">Producto Visible</Label>
-                      <Switch
-                        id="visible"
-                        checked={products?.visible}
-                        onCheckedChange={(value) =>
-                          setProducts({ ...products, visible: value })
-                        }
-                      />
+                    <Switch
+                      checked={products.span}
+                      onCheckedChange={(value) => {
+                        setProducts({
+                          ...products,
+                          span: value,
+                        });
+                      }}
+                    />
+                  </div>
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Producto Agotado
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        Disponible para comprarlo
+                      </p>
                     </div>
-                    <div className="flex flex-col justify-center p-3 items-center gap-2 ">
-                      <Label htmlFor="visible">Doble Espacio</Label>
-                      <Switch
-                        id="visible"
-                        checked={products?.span}
-                        onCheckedChange={(value) =>
-                          setProducts({ ...products, span: value })
-                        }
-                      />
+                    <Switch
+                      checked={products?.agotado}
+                      onCheckedChange={(value) =>
+                        setProducts({ ...products, agotado: value })
+                      }
+                    />
+                  </div>
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Producto Visible
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        Indica si este producto será visible por los usuarios en
+                        el catalogo
+                      </p>
                     </div>
+                    <Switch
+                      checked={products?.visible}
+                      onCheckedChange={(value) =>
+                        setProducts({ ...products, visible: value })
+                      }
+                    />
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full">
-                <CardHeader>
-                  <CardTitle>Agregado</CardTitle>
+            </div>
+            {/* Vista Previa */}
+            <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1">
+              <Card>
+                <CardHeader className="p-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="w-5 h-5" />
+                    Vista Previa
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {products?.agregados.length > 0 &&
-                    products?.agregados.map((obj1, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between "
-                      >
-                        <div className="flex items-center gap-2">
-                          <GitMerge className="h-5 w-5 text-primary" />
-                          <p className="text-base font-medium">{obj1.nombre}</p>
-                          <p className="text-base font-medium">${obj1.valor}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={(e) => Delete(e, obj1.id)}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                          <span className="sr-only">Eliminar</span>
-                        </Button>
-                      </div>
-                    ))}
-                  <div className="flex items-center justify-between">
-                    <form
-                      ref={form}
-                      className="space-x-6 flex items-center justify-between"
-                    >
-                      <div>
-                        <Label
-                          htmlFor="new-subcategory"
-                          className="text-base font-medium"
-                        >
-                          Nombre
-                        </Label>
-                        <Input
-                          id="title"
-                          name="title"
-                          required
-                          value={newAregados.nombre}
-                          type="text"
-                          onChange={(e) =>
-                            setNewAgregados({
-                              ...newAregados,
-                              nombre: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="new-subcategory"
-                          className="text-base font-medium"
-                        >
-                          Valor
-                        </Label>
-                        <Input
-                          id="value"
-                          name="value"
-                          required
-                          value={newAregados.valor}
-                          type="number"
-                          onChange={(e) =>
-                            setNewAgregados({
-                              ...newAregados,
-                              valor: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <Button
-                        variant="outline m-2"
-                        className="w-16"
-                        onClick={SubirAgregado}
-                      >
-                        <PlusIcon className="h-5 w-5" />
-                      </Button>
-                    </form>
+                <Separator />
+                <CardContent className="p-4">
+                  <div className=" rounded-lg  bg-white">
+                    <div className=" flex justify-center">
+                      <Image
+                        src={
+                          newImage
+                            ? URL.createObjectURL(newImage)
+                            : products.image ||
+                              webshop.store.urlPoster ||
+                              logoApp
+                        }
+                        alt="Vista previa"
+                        className={` object-cover rounded mb-1 ${
+                          products.span ? "w-full" : "w-auto"
+                        }`}
+                        style={{
+                          aspectRatio: products.span ? "16/9" : "4/5",
+                          filter: products.agotado
+                            ? "grayscale(100%)"
+                            : "grayscale(0)",
+                        }}
+                        width={300}
+                        height={300}
+                      />
+                    </div>
+                    <h3 className="font-medium text-sm truncate line-clamp-1">
+                      {products.title || "Título del producto"}
+                    </h3>
+                    <div className="grid grid-cols-4 items-center mt-2">
+                      <h3 className="col-span-3 font-medium text-xs line-clamp-2">
+                        {products.descripcion || "Descripcion"}
+                      </h3>
+                      <p className="col-span-1 text-end text-xs font-bold text-red-600">
+                        ${Number(products.price).toFixed(2) || "0.00"}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -552,27 +615,6 @@ export default function Specific({ specific, ThemeContext }) {
         )}
       />
     </main>
-  );
-}
-
-function CloudUploadIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-      <path d="M12 12v9" />
-      <path d="m16 16-4-4-4 4" />
-    </svg>
   );
 }
 

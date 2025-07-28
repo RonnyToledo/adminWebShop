@@ -1,11 +1,10 @@
 "use client";
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { TableCell } from "@/components/ui/table";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -44,9 +43,17 @@ import {
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import UnfoldMoreDoubleRoundedIcon from "@mui/icons-material/UnfoldMoreDoubleRounded";
 import { ExtraerCategorias } from "../globalFunction/function";
-import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
-import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { logoApp } from "@/utils/image";
+import {
+  Search,
+  Plus,
+  FileText,
+  GripVertical,
+  Eye,
+  EyeOff,
+  Package,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function TableRowsComponentAgotados({
   products,
@@ -184,140 +191,29 @@ function TableComponet({
   id,
   moveElements,
 }) {
-  // Estado para el criterio de ordenamiento
-  const [sortCriteria, setSortCriteria] = useState("none");
-
-  const handleSortChange = (criteria) => {
-    setSortCriteria(criteria);
-
-    // Ordenar según el criterio seleccionado
-    const sortedProducts = [...ListProducts];
-    switch (criteria) {
-      case "price-asc":
-        sortedProducts.sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        sortedProducts.sort((a, b) => b.price - a.price);
-        break;
-      case "name-asc":
-        sortedProducts.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "name-desc":
-        sortedProducts.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      case "visitas-asc":
-        sortedProducts.sort((a, b) => {
-          a.visitas === b.visitas ? a.order - b.order : a.visitas - b.visitas;
-        });
-        break;
-      case "visitas-desc":
-        sortedProducts.sort((a, b) => {
-          a.visitas === b.visitas ? a.order - b.order : b.visitas - a.visitas;
-        });
-        break;
-      case "rating-asc":
-        sortedProducts.sort((a, b) => {
-          Promedio(a.coment, "star") === Promedio(b.coment, "star")
-            ? a.order - b.order
-            : Promedio(b.coment, "star") - Promedio(a.coment, "star");
-        });
-        break;
-
-      case "none":
-      default:
-        // Restaurar el orden original o mantenerlo
-        sortedProducts.sort((a, b) => a.order - b.order);
-        break;
-    }
-
-    // Actualizar la lista ordenada
-
-    const newArray = sortedProducts.map((obj, index) => {
-      return { ...obj, order: index };
-    });
-    setProducts((productsMap) => {
-      const updatedArray = productsMap.map((item1) => {
-        const item2 = newArray.find(
-          (item) => item.productId === item1.productId
-        );
-        return item2 ? item2 : item1;
-      });
-      return updatedArray;
-    });
-  };
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Package className="h-5 w-5" />
           {name}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost">
-                <LowPriorityIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80 p-2">
-              <RadioGroup
-                onValueChange={handleSortChange}
-                defaultValue={sortCriteria}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="none" id="r1" />
-                  <Label htmlFor="r1">Nada</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="price-asc" id="r2" />
-                  <Label htmlFor="r2">Precio Ascendente</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="price-desc" id="r3" />
-                  <Label htmlFor="r3">Precio Descendente</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="name-asc" id="r4" />
-                  <Label htmlFor="r4">Nombre Descendente</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="name-desc" id="r5" />
-                  <Label htmlFor="r5">Nombre Descendente</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="visitas-asc" id="r4" />
-                  <Label htmlFor="r4">Mas Frecuentes</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="visitas-desc" id="r5" />
-                  <Label htmlFor="r5">Menos Frecuentes</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="rating-desc" id="r5" />
-                  <Label htmlFor="r5">Rating Descendente</Label>
-                </div>
-              </RadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Badge variant="secondary" className="ml-2">
+            {ListProducts.length} productos
+          </Badge>
         </CardTitle>
-        <CardDescription></CardDescription>
       </CardHeader>
       <CardContent className="p-2 md:p-6">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>
-                <UnfoldMoreDoubleRoundedIcon />
-              </TableHead>
+              <TableHead className="w-12"></TableHead>
               <TableHead className="hidden md:table-cell">Imagen </TableHead>
-
               <TableHead>Nombre</TableHead>
               <TableHead>Agot.</TableHead>
               <TableHead className="hidden md:table-cell">Precio</TableHead>
               <TableHead className="hidden md:table-cell">Orden</TableHead>
               <TableHead className="hidden md:table-cell">Visible</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <Droppable droppableId={id}>
@@ -345,7 +241,7 @@ function TableComponet({
                         <TableRow
                           {...draggableProvided.draggableProps}
                           ref={draggableProvided.innerRef}
-                          className={`container ${
+                          className={`${
                             !obj.visible
                               ? "bg-red-100 hover:bg-red-200"
                               : obj.agotado
@@ -358,79 +254,85 @@ function TableComponet({
                             className="cursor-grab"
                             {...draggableProvided.dragHandleProps} // Solo aquí se aplican los dragHandleProps
                           >
-                            <div
-                              className={`flex items-center justify-center ${
-                                !moveElements
-                                  ? "text-gray-700"
-                                  : "text-gray-300"
-                              }`}
-                            >
-                              <MenuRoundedIcon />
+                            <div className="cursor-grab hover:cursor-grabbing">
+                              <GripVertical className="h-4 w-4 text-slate-400" />
                             </div>
                           </TableCell>
 
                           {/* Columna de imagen */}
-                          <TableCell className="hidden md:table-cell">
-                            <Image
-                              alt={obj.title || `Producto${ind}`}
-                              className="aspect-square rounded-md object-cover"
-                              height={64}
-                              src={obj.image || logoApp}
-                              style={{
-                                aspectRatio: "64/64",
-                                objectFit: "cover",
-                              }}
-                              width={64}
-                            />
+                          <TableCell>
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-100">
+                              <Image
+                                src={obj.image || logoApp}
+                                alt={obj.title || `Producto${ind}`}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
                           </TableCell>
-
                           {/* Columna de descripción */}
                           <TableCell className="p-1 w-full text-sm max-w-24 line-clamp-3 overflow-hidden h-20">
-                            <HoverComponent obj={obj} />
+                            <div className="font-medium text-slate-900">
+                              <HoverComponent obj={obj} />
+                            </div>
                           </TableCell>
 
                           {/* Columna del switch */}
                           <TableCell className="p-1">
-                            <Switch
-                              checked={obj.agotado}
-                              onCheckedChange={(value) =>
-                                setProducts((prev) =>
-                                  prev.map((prod) =>
-                                    prod.productId === obj.productId
-                                      ? { ...prod, agotado: value }
-                                      : prod
+                            <div className="flex items-center justify-center">
+                              <Switch
+                                checked={obj.agotado}
+                                onCheckedChange={(value) =>
+                                  setProducts((prev) =>
+                                    prev.map((prod) =>
+                                      prod.productId === obj.productId
+                                        ? { ...prod, agotado: value }
+                                        : prod
+                                    )
                                   )
-                                )
-                              }
-                            />
+                                }
+                              />
+                            </div>
                           </TableCell>
 
                           {/* Columna de precio */}
                           <TableCell className="hidden md:table-cell">
-                            ${Number(obj.price).toFixed(2)}
+                            <span className="font-semibold text-slate-900">
+                              ${Number(obj.price).toFixed(2)}
+                            </span>
                           </TableCell>
 
                           {/* Orden */}
                           <TableCell className="hidden md:table-cell">
-                            <Badge variant="outline">
-                              {obj.order < 100000 && `${obj.order}`}
+                            <Badge variant="outline" className="font-mono">
+                              {obj.order}
                             </Badge>
                           </TableCell>
 
-                          {/* Favorito */}
+                          {/* Visible */}
                           <TableCell className="hidden md:table-cell">
-                            <Switch
-                              checked={obj.visible}
-                              onCheckedChange={(value) =>
-                                setProducts((prev) =>
-                                  prev.map((prod) =>
-                                    prod.productId === obj.productId
-                                      ? { ...prod, visible: value }
-                                      : prod
+                            <div className="flex items-center justify-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setProducts((prev) =>
+                                    prev.map((prod) =>
+                                      prod.productId === obj.productId
+                                        ? { ...prod, visible: !obj.visible }
+                                        : prod
+                                    )
                                   )
-                                )
-                              }
-                            />
+                                }
+                                className="h-8 w-8 p-0"
+                              >
+                                {obj.visible ? (
+                                  <Eye className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <EyeOff className="h-4 w-4 text-slate-400" />
+                                )}
+                              </Button>
+                            </div>
                           </TableCell>
 
                           {/* Menú de opciones */}

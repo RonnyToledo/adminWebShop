@@ -1,10 +1,8 @@
 "use client";
-import { File, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "../ui/input";
 import { ThemeContext } from "@/context/useContext";
 import { useState, useContext, useRef, useEffect } from "react";
-import Link from "next/link";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import TableRowsComponentAgotados from "./table-rows-agotados";
@@ -13,6 +11,9 @@ import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
 import Fuse from "fuse.js";
 import ConfimationOut from "../globalFunction/confimationOut";
+import { Search, Plus, FileText } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 const options = {
   includeScore: true,
@@ -30,6 +31,7 @@ export function Dashboard() {
   const [SearchProduct, setSearchProduct] = useState("");
   const [products, setProducts] = useState([]);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     setProducts(webshop.products);
@@ -82,50 +84,58 @@ export function Dashboard() {
     return results.length == 0 ? products : results.map((obj) => obj.item);
   }
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <div className="flex flex-col mt-3">
-        <div className="flex items-center">
-          <div className="ml-auto flex items-center gap-2 p-2">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40 p-6">
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Gestión de Productos
+            </h1>
+            <p className="text-slate-600 mt-1">
+              Organiza y administra tu catálogo de productos
+            </p>
+          </div>
+          <div className="flex gap-3">
             <Button
-              size="sm"
               variant="outline"
-              className="h-8 gap-1"
+              className="gap-2 bg-transparent"
               onClick={() => generatePDF(webshop.products)}
             >
-              <File className="h-3.5 w-3.5" />
-              <span className="whitespace-nowrap">Exportar PDF</span>
+              <FileText className="h-4 w-4" />
+              Exportar PDF
             </Button>
-            <Link href="/newProduct">
-              <Button size="sm" className="h-8 gap-1">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="whitespace-nowrap">Add Product</span>
-              </Button>
-            </Link>
+            <Button
+              className="gap-2 bg-slate-900 hover:bg-slate-800"
+              onClick={() => router.push("/newProduct")}
+            >
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
           </div>
         </div>
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 ">
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <div className="rounded-3xl  w-full overflow-hidden">
-                {" "}
-                <Input
-                  type="text"
-                  value={SearchProduct}
-                  placeholder="Search products..."
-                  onChange={(e) => setSearchProduct(e.target.value)}
-                  className="flex-grow rounded-3xl"
-                />
-              </div>
-            </div>
-            <div>
-              <TableRowsComponentAgotados
-                setProducts={setProducts}
-                products={SearchData()}
-                moveElements={SearchProduct ? true : false}
+
+        {/* Search Bar */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar productos..."
+                value={SearchProduct}
+                onChange={(e) => setSearchProduct(e.target.value)}
+                className="pl-10 bg-white border-slate-200"
               />
             </div>
-          </div>
-        </main>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-3">
+          <TableRowsComponentAgotados
+            setProducts={setProducts}
+            products={SearchData()}
+            moveElements={SearchProduct ? true : false}
+          />
+        </div>
       </div>
       <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
         <Button

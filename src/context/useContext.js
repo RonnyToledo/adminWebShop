@@ -30,6 +30,16 @@ const initialState = {
   },
 };
 
+const routesOffLogin = ["/conditions-of-service", "/team-of-service"];
+const routesAlternatives = [
+  "/welcome",
+  "/updatePassword",
+  "/createAccount",
+  "/configPage",
+  "/login",
+  "/resetPassword",
+];
+
 export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(initialState);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -37,9 +47,9 @@ export default function MyProvider({ children, user, data }) {
   const pathname = usePathname();
 
   console.log("data", data);
-  console.log("user", user);
+
   useEffect(() => {
-    if (!user || user == undefined) {
+    if ((!user || user == undefined) && !routesOffLogin.includes(pathname)) {
       router.push("/login");
     }
 
@@ -51,7 +61,7 @@ export default function MyProvider({ children, user, data }) {
     } else {
       setWebshop(data);
     }
-  }, [data, user, router]);
+  }, [data, user, router, pathname]);
 
   // Primer useEffect: Inicializar datos y cargar tienda
   useEffect(() => {
@@ -118,13 +128,17 @@ export default function MyProvider({ children, user, data }) {
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>
-        {!isNewUser && pathname !== "/login" && (
-          <AppSidebar ThemeContext={ThemeContext} />
-        )}
-        <div className="w-full">
-          {!isNewUser && pathname !== "/login" && (
-            <HeaderAdmin ThemeContext={ThemeContext} />
+        {!isNewUser &&
+          !routesOffLogin.includes(pathname) &&
+          !routesAlternatives.includes(pathname) && (
+            <AppSidebar ThemeContext={ThemeContext} />
           )}
+        <div className="w-full">
+          {!isNewUser &&
+            !routesOffLogin.includes(pathname) &&
+            !routesAlternatives.includes(pathname) && (
+              <HeaderAdmin ThemeContext={ThemeContext} />
+            )}
 
           {children}
         </div>

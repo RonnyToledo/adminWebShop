@@ -13,7 +13,7 @@ export default function LogoutPage() {
 
     if (!res.ok) {
       // Redirigir al usuario a la página de inicio o login
-      router.refresh();
+      router.push("/login");
     } else {
       const data = await res.json();
       console.error("Error al cerrar sesión:", data.error);

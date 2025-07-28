@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { logoApp } from "@/utils/image";
+import { Eye, DollarSign, FileText, ImageIcon } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export default function NewProduct({ ThemeContext }) {
   const [openCategory, setOpenCategory] = useState(false);
@@ -115,248 +118,330 @@ export default function NewProduct({ ThemeContext }) {
     setProducts((prev) => ({ ...prev, image: imageNew }));
   }, [imageNew]);
   return (
-    <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8 ">
+    <main className=" mx-auto  px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4">
-          <div className="relative border rounded-2x p-5 col-span-1 md:col-span-2 h-64">
-            {!imageNew ? (
-              <>
-                <Label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="images"
-                >
-                  Imágenes
-                </Label>
-                <ImageUpload setImageNew={setImageNew} imageNew={imageNew} />
-              </>
-            ) : (
-              <>
-                <Image
-                  alt="Logo"
-                  className="rounded-xl  mx-auto my-1"
-                  height={200}
-                  width={150}
-                  src={
-                    imageNew
-                      ? URL.createObjectURL(imageNew)
-                      : webshop.store.urlPoster || logoApp
-                  }
-                  style={{
-                    objectFit: "cover",
-                  }}
-                />
-                <div className="absolute top-1 right-1 z-[1]">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="rounded-full p-2 h-8 w-8"
-                    size="icon"
-                    onClick={() => setImageNew(null)}
-                  >
-                    <Trash2 />{" "}
-                  </Button>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className=" col-span-1 md:col-span-2 grid grid-cols-1 gap-2">
+            {/* Columna Principal */}
+            <div className="col-span-1  space-y-6">
+              {/* Información Básica */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Información Básica
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-medium">
+                      Título del Producto *
+                    </Label>
+                    <Input
+                      id="title"
+                      placeholder="Ej: iPhone 15 Pro Max 256GB"
+                      value={products.title}
+                      onChange={(e) =>
+                        setProducts({
+                          ...products,
+                          title: e.target.value,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="description"
+                      className="text-sm font-medium"
+                    >
+                      Descripción
+                    </Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe las características principales del producto..."
+                      value={products.descripcion}
+                      onChange={(e) =>
+                        setProducts({
+                          ...products,
+                          descripcion: e.target.value,
+                        })
+                      }
+                      className="mt-1 min-h-[120px]"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Imágenes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5" />
+                    Imágen del Producto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!imageNew ? (
+                    <>
+                      <ImageUpload
+                        setImageNew={setImageNew}
+                        imageNew={imageNew}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Image
+                        alt="Logo"
+                        className="rounded-xl  mx-auto my-1"
+                        height={200}
+                        width={150}
+                        src={
+                          imageNew
+                            ? URL.createObjectURL(imageNew)
+                            : webshop.store.urlPoster || logoApp
+                        }
+                        style={{
+                          objectFit: "cover",
+                        }}
+                      />
+                      <div className="absolute top-1 right-1 z-[1]">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="rounded-full p-2 h-8 w-8"
+                          size="icon"
+                          onClick={() => setImageNew(null)}
+                        >
+                          <Trash2 />{" "}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Precio y Categoría */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Precio y Categoría
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="price" className="text-sm font-medium">
+                      Precio de Venta *
+                    </Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="price"
+                        type="number"
+                        placeholder="0.00"
+                        value={products.price}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            price: e.target.value,
+                          })
+                        }
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="price" className="text-sm font-medium">
+                      Inversion
+                    </Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="price"
+                        type="number"
+                        placeholder="0.00"
+                        value={products.priceCompra}
+                        onChange={(e) =>
+                          setProducts({
+                            ...products,
+                            priceCompra: e.target.value,
+                          })
+                        }
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Categoría *</Label>
+                    <Popover open={openCategory} onOpenChange={setOpenCategory}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openCategory}
+                          className="w-full justify-between bg-transparent"
+                        >
+                          {products.caja
+                            ? webshop.store.categoria.find(
+                                (category) => category.id === products.caja
+                              )?.name
+                            : "Selecciona una categoría..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar categoría..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              No se encontró ningúna categoría.
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {webshop.store.categoria.map((category, ind) => (
+                                <CommandItem
+                                  key={ind}
+                                  value={category.name}
+                                  onSelect={() => {
+                                    setProducts({
+                                      ...products,
+                                      caja:
+                                        category.id === products.caja
+                                          ? ""
+                                          : category.id,
+                                    });
+
+                                    setOpenCategory(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      products.caja === category.id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {category.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Configuraciones */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuraciones</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Producto Especial
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        Destacar en la tienda
+                      </p>
+                    </div>
+                    <Switch
+                      checked={products.favorito}
+                      onCheckedChange={(value) => {
+                        setProducts({
+                          ...products,
+                          favorito: value,
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Doble Espacio
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        Ocupa más espacio en grid
+                      </p>
+                    </div>
+                    <Switch
+                      checked={products.span}
+                      onCheckedChange={(value) => {
+                        setProducts({
+                          ...products,
+                          span: value,
+                        });
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          {/* Vista Previa */}
+          <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1">
+            <Card>
+              <CardHeader className="p-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Vista Previa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className=" rounded-lg  bg-white">
+                  <div className="flex justify-center">
+                    <Image
+                      src={
+                        imageNew
+                          ? URL.createObjectURL(imageNew)
+                          : webshop.store.urlPoster || logoApp
+                      }
+                      alt="Vista previa"
+                      className={` object-cover rounded mb-1 ${
+                        products.span ? "w-full" : "w-auto"
+                      }`}
+                      style={
+                        products.span
+                          ? { aspectRatio: "16/9" }
+                          : { aspectRatio: "4/5" }
+                      }
+                      width={150}
+                      height={150}
+                    />
+                  </div>
+                  <h3 className="font-medium text-sm truncate line-clamp-1">
+                    {products.title || "Título del producto"}
+                  </h3>
+                  <div className="grid grid-cols-4 items-center mt-2">
+                    <h3 className="col-span-3 font-medium text-xs line-clamp-2">
+                      {products.descripcion || "Descripcion"}
+                    </h3>
+                    <p className="col-span-1 text-end text-xs font-bold text-red-600">
+                      ${Number(products.price).toFixed(2) || "0.00"}
+                    </p>
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="title"
-            >
-              Título
-            </Label>
-            <div className="mt-1">
-              <Input
-                id="title"
-                name="title"
-                required
-                value={products.title}
-                type="text"
-                onChange={(e) =>
-                  setProducts({
-                    ...products,
-                    title: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-2">
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="price"
-            >
-              Precio
-            </Label>
-            <div className="mt-1">
-              <Input
-                id="price"
-                name="price"
-                required
-                value={products.price}
-                type="number"
-                onChange={(e) =>
-                  setProducts({
-                    ...products,
-                    price: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="price"
-            >
-              Precio de compra
-            </Label>
-            <div className="mt-1">
-              <Input
-                id="price"
-                name="price"
-                required
-                value={products.priceCompra}
-                type="number"
-                onChange={(e) =>
-                  setProducts({
-                    ...products,
-                    priceCompra: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-2 ">
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="category"
-            >
-              Categoría
-            </Label>
-            <div className="mt-1">
-              <Popover open={openCategory} onOpenChange={setOpenCategory}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openCategory}
-                    className="w-full justify-between bg-transparent"
-                  >
-                    {products.caja
-                      ? webshop.store.categoria.find(
-                          (category) => category.id === products.caja
-                        )?.name
-                      : "Selecciona una categoría..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar categoría..." />
-                    <CommandList>
-                      <CommandEmpty>
-                        No se encontró ningúna categoría.
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {webshop.store.categoria.map((category, ind) => (
-                          <CommandItem
-                            key={ind}
-                            value={category.name}
-                            onSelect={() => {
-                              setProducts({
-                                ...products,
-                                caja:
-                                  category.id === products.caja
-                                    ? ""
-                                    : category.id,
-                              });
-
-                              setOpenCategory(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                products.caja === category.id
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                            />
-                            {category.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          <div className="border rounded-2x p-5 col-span-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="ml-3 text-sm flex flex-col space-y-2">
-                <Switch
-                  id="reservation"
-                  checked={products.favorito}
-                  onCheckedChange={(value) => {
-                    setProducts({
-                      ...products,
-                      favorito: value,
-                    });
-                  }}
-                />
-                <Label
-                  className="font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="special"
-                >
-                  Producto especial
-                </Label>
-              </div>
-
-              <div className="ml-3 text-sm flex flex-col space-y-2">
-                <Switch
-                  id="span"
-                  checked={products.span}
-                  onCheckedChange={(value) => {
-                    setProducts({
-                      ...products,
-                      span: value,
-                    });
-                  }}
-                />
-                <Label
-                  className="font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="special"
-                >
-                  Doble Espacio
-                </Label>
-              </div>
-            </div>
-          </div>
-          <div className="border rounded-2x p-5 col-span-1 md:col-span-4">
-            <Label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="description"
-            >
-              Descripción
-            </Label>
-            <div className="mt-1">
-              <Textarea
-                id="description"
-                name="description"
-                value={products.descripcion}
-                rows={3}
-                onChange={(e) =>
-                  setProducts({
-                    ...products,
-                    descripcion: e.target.value,
-                  })
-                }
-              />
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
+
         <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
           <Button
             type="submit"

@@ -43,6 +43,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { logoApp } from "@/utils/image";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -86,11 +87,6 @@ export default function AppSidebar({ ThemeContext }) {
           <Link
             href={link.href || pathname}
             className="flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
-            onClick={() => {
-              if (link.action === "Log_Out") {
-                Log_Out(router);
-              }
-            }}
           >
             <Icon />
             <span>{link.label}</span>
@@ -109,9 +105,7 @@ export default function AppSidebar({ ThemeContext }) {
                 <Image
                   width={50}
                   height={50}
-                  src={
-                    "https://res.cloudinary.com/dbgnyc842/image/upload/v1753574413/ChatGPT_Image_26_jul_2025_19_51_29_lvng2w.png"
-                  }
+                  src={logoApp}
                   alt={webshop?.store?.name || "Store Image"}
                   className="object-cover aspect-square rounded-lg"
                 />
@@ -152,7 +146,10 @@ export default function AppSidebar({ ThemeContext }) {
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage
-                      src={webshop?.user?.image || "/placeholder.svg"}
+                      src={
+                        webshop?.user?.image ||
+                        "https://res.cloudinary.com/dbgnyc842/image/upload/v1753625183/Identidades/%C3%8Dcono-de-usuario-minimalista-en-gris_z11vpk.jpg"
+                      }
                       alt={webshop?.user?.name}
                     />
                     <AvatarFallback className="rounded-lg">
@@ -188,8 +185,8 @@ export default function AppSidebar({ ThemeContext }) {
                   <AppSettingsAltRoundedIcon className="mr-2 h-4 w-4" />
                   <span>Configuración</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator onClick={Log_Out} />
-                <DropdownMenuItem className="text-red-600">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600" onClick={Log_Out}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar Sesión</span>
                 </DropdownMenuItem>

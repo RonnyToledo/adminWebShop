@@ -15,31 +15,41 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Pencil, TrashIcon, FolderIcon, Loader } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import ConfimationOut from "../globalFunction/confimationOut";
-import { Textarea } from "../ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LowPriorityIcon from "@mui/icons-material/LowPriority";
-import { RadioGroupItem, RadioGroup } from "../ui/radio-group";
 import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
-import Link from "next/link";
-import MovingIcon from "@mui/icons-material/Moving";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import {
+  Search,
+  Plus,
+  Edit,
+  Package,
+  DotIcon as DragHandleDots2Icon,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { useRouter } from "next/navigation";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [add, setAdd] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [newCat, setNewCat] = useState({});
   const [data, setData] = useState({ category: [], UUID: "" });
   const { toast } = useToast();
   const form = useRef(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [filteredCategories, setFilteredCategories] = useState([]);
 
   // Cargar datos iniciales al montar el componente
   useEffect(() => {
@@ -50,6 +60,16 @@ export default function Category({ ThemeContext }) {
       });
     }
   }, [webshop]);
+
+  useEffect(() => {
+    setFilteredCategories(
+      searchTerm == ""
+        ? data.category
+        : data.category.filter((obj) =>
+            obj.name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+    );
+  }, [searchTerm, data.category]);
 
   const handleDelete = async (categoryToDelete, image) => {
     setDeleting(true);
@@ -125,8 +145,7 @@ export default function Category({ ThemeContext }) {
     }
   };
 
-  const addCategory = async (e) => {
-    e.preventDefault();
+  const addCategory = async () => {
     setAdd(true);
     if (newCat.name) {
       try {
@@ -136,7 +155,7 @@ export default function Category({ ThemeContext }) {
             data: {
               ...newCat,
               storeId: webshop.store.UUID,
-              order: data.length,
+              order: data.category.length,
             }, // El cuerpo debe ir en `data`
             headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
           }
@@ -188,171 +207,97 @@ export default function Category({ ThemeContext }) {
     setData((prevData) => ({ ...prevData, category: reorderedCategories }));
   };
 
-  // Estado para el criterio de ordenamiento
-  const [sortCriteria, setSortCriteria] = useState("none");
-
-  const handleSortChange = (criteria) => {
-    setSortCriteria(criteria);
-
-    // Crear una copia de las categorías para evitar mutaciones
-    const categoriasCopia = [...data.category];
-    let sortedCategories;
-
-    switch (criteria) {
-      case "price-asc":
-        sortedCategories = ordenarCategorias(
-          categoriasCopia,
-          webshop.products,
-          "price",
-          "asc"
-        );
-        break;
-
-      case "price-desc":
-        sortedCategories = ordenarCategorias(
-          categoriasCopia,
-          webshop.products,
-          "price",
-          "desc"
-        );
-        break;
-
-      case "name-asc":
-        sortedCategories = categoriasCopia.sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-        break;
-
-      case "name-desc":
-        sortedCategories = categoriasCopia.sort((a, b) =>
-          b.name.localeCompare(a.name)
-        );
-        break;
-
-      case "visitas-asc":
-        sortedCategories = ordenarCategorias(
-          categoriasCopia,
-          webshop.products,
-          "visitas",
-          "desc" //MAyor frecuencia es de mayor a menor
-        );
-        break;
-
-      case "visitas-desc":
-        sortedCategories = ordenarCategorias(
-          categoriasCopia,
-          webshop.products,
-          "visitas",
-          "asc" //
-        );
-        break;
-
-      case "none":
-      default:
-        // Restaurar el orden original basado en el campo `order`
-        sortedCategories = categoriasCopia.sort((a, b) => a.order - b.order);
-        break;
-    }
-
-    // Actualizar el estado con las categorías ordenadas
-    setData((prevState) => ({
-      ...prevState,
-      category: sortedCategories.map((obj, index) => {
-        return { ...obj, order: index };
-      }),
-    }));
-  };
   return (
-    <main className="py-2 px-6">
-      <div className="flex items-center justify-between p-4">
-        <Dialog>
+    <main className="py-2 px-6 space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Gestión de Categorías
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Administra las categorías de tu tienda
+          </p>
+        </div>
+
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline"> Agregar Categoria</Button>
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              {add ? "Agregar Categoría" : "Agregando categoría..."}
+            </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <form
-              className="bg-white rounded-lg p-2 space-y-2 flex flex-col align-center"
-              onSubmit={addCategory}
-            >
-              <DialogHeader>
-                <DialogTitle>Agregar Categoria</DialogTitle>
-                <DialogDescription>Crea una Categoria</DialogDescription>
-              </DialogHeader>
-              <div className="mt-8 mb-5 space-y-4">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Agregar Nueva Categoría</DialogTitle>
+              <DialogDescription>
+                Crea una nueva categoría para organizar tus productos.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nombre de la categoría</Label>
                 <Input
-                  id="nameForCategoryNew"
-                  placeholder="Ingresa el nombre de la categoría"
-                  type="text"
+                  id="name"
                   value={newCat.name || ""}
                   onChange={(e) =>
                     setNewCat({ ...newCat, name: e.target.value })
                   }
+                  placeholder="Ej: Maquillaje de ojos"
                 />
-                <Input
-                  id="descriptionForCategoryNew"
-                  placeholder="Ingresa la descripcion de la categoría"
-                  type="text"
+              </div>
+              <div>
+                <Label htmlFor="description">Descripción (opcional)</Label>
+                <Textarea
+                  id="description"
                   value={newCat.description || ""}
                   onChange={(e) =>
                     setNewCat({ ...newCat, description: e.target.value })
                   }
+                  placeholder="Describe brevemente esta categoría..."
+                  rows={3}
                 />
               </div>
-              <DialogFooter>
-                <Button type="submit" disabled={add}>
-                  {!add ? "Save changes" : "Saving"}
-                </Button>
-              </DialogFooter>
-            </form>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="active"
+                  checked={newCat.subtienda}
+                  onCheckedChange={(checked) =>
+                    setNewCat({ ...newCat, subtienda: checked })
+                  }
+                />
+                <Label htmlFor="active">Subtienda</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={addCategory}>
+                {add ? "Crear Categoría" : "Creando Categoría..."}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost">
-              <LowPriorityIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80 p-2">
-            <RadioGroup
-              onValueChange={handleSortChange}
-              defaultValue={sortCriteria}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="none" id="r1" />
-                <Label htmlFor="r1">Nada</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="price-asc" id="r2" />
-                <Label htmlFor="r2">
-                  Rentabilidad Ascendente <MovingIcon className="h-4 w-4" />
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="price-desc" id="r3" />
-                <Label htmlFor="r3">
-                  Rentabilidad Descendente{" "}
-                  <TrendingDownIcon className="h-4 w-4" />
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="name-asc" id="r4" />
-                <Label htmlFor="r4">Nombre Ascendente</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="name-desc" id="r5" />
-                <Label htmlFor="r5">Nombre Descendente</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="visitas-asc" id="r4" />
-                <Label htmlFor="r4">Mas Frecuentes</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="visitas-desc" id="r5" />
-                <Label htmlFor="r5">Menos Frecuentes</Label>
-              </div>
-            </RadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Buscar categorías..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-4 text-sm text-gray-600">
+          <span>{data.category.length} categorías totales</span>
+          <span>
+            {data.category.filter((c) => c.subtienda).length} subtiendas
+          </span>
+        </div>
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <form onSubmit={handleSubmit} className="space-y-2">
@@ -361,9 +306,9 @@ export default function Category({ ThemeContext }) {
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="gap-4"
+                className="gap-4 space-y-3"
               >
-                {data.category
+                {filteredCategories
                   .sort((a, b) => a.order - b.order)
                   .map((category, index) => (
                     <CategoryItem
@@ -412,69 +357,121 @@ const CategoryItem = ({
   category,
   products,
   onDelete,
-  onUpdateProducts,
   deleting,
   setData,
   handleSubmit,
   downloading,
-}) => (
-  <Draggable draggableId={`draggable-${index}`} index={index}>
-    {(provided) => (
-      <div
-        ref={provided.innerRef}
-        {...provided.draggableProps}
-        {...provided.dragHandleProps}
-        className="bg-white border rounded-lg p-4 flex items-center justify-between"
-      >
-        <div className="flex items-center gap-4">
-          <FolderIcon className="h-6 w-6 text-gray-500" />
-          <div>
-            <h3 className="font-medium">{category.name}</h3>
-            <p className="text-gray-500 text-sm">
-              {products.filter((prod) => prod.caja === category.id).length}{" "}
-              Productos
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button aria-haspopup="true" size="icon" variant="ghost">
-                <MoreHorizontal className="h-4 w-4" />
-                <div className="sr-only">Toggle menu</div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <div className="flex flex-col gap-3 p-2">
-                <Button variant="outline" asChild>
-                  <Link
-                    className="flex gap-3 w-full justify-start items-center"
-                    href={`/category/${category.id}`}
-                  >
-                    <Pencil className=" text-gray-500" />
-                    Edit
-                  </Link>
-                </Button>
-                <Button
-                  className="flex gap-3 w-full items-center"
-                  variant="destructive"
-                  onClick={() => onDelete(category.id, category.image)}
-                >
-                  {!deleting ? (
-                    <Trash2 className="h-3 w-3" />
-                  ) : (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  )}
-                  Delete
-                </Button>
+}) => {
+  const router = useRouter();
+  return (
+    <Draggable draggableId={`draggable-${index}`} index={index}>
+      {(provided) => (
+        <Card
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`transition-all hover:shadow-md ${
+            !category.isActive ? "opacity-60" : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              {/* Drag Handle */}
+              <div className="cursor-grab text-gray-400 hover:text-gray-600">
+                <DragHandleDots2Icon className="w-5 h-5" />
               </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    )}
-  </Draggable>
-);
+
+              {/* Category Icon */}
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+                <Package className="w-6 h-6 " />
+              </div>
+
+              {/* Category Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold text-gray-900 truncate">
+                    {category.name}
+                  </h3>
+                  {category.subtienda && (
+                    <Badge variant="secondary" className="text-xs">
+                      Subtienda
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <Package className="w-4 h-4" />
+                    {
+                      products.filter((prod) => prod.caja === category.id)
+                        .length
+                    }{" "}
+                    productos
+                  </span>
+                  {category.description && (
+                    <span className="truncate max-w-xs">
+                      {category.description}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Toggle */}
+              <Switch
+                checked={category.subtienda}
+                onCheckedChange={(checked) =>
+                  setData((prevState) => ({
+                    ...prevState,
+                    category: prevState.category.map((obj) =>
+                      category.id === obj.id
+                        ? { ...obj, subtienda: checked }
+                        : obj
+                    ),
+                  }))
+                }
+                className="data-[state=checked]:bg-green-600"
+              />
+
+              {/* Actions Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/category/${category.id}`)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(category.id, category.image)}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {!deleting ? (
+                      <>
+                        <Trash2 className="h-3 w-3" />
+                        Eliminar
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Eliminando
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </Draggable>
+  );
+};
 
 // Utilidad y helpers
 const hasPendingChanges = (data, webshop) => {

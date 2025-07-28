@@ -34,12 +34,14 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 
 export const Log_Out = async (router) => {
+  console.log("a");
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
       method: "DELETE",
     });
+    console.log(res);
     if (res.ok) {
-      router.refresh();
+      router.push("/login");
     } else {
       toast({
         title: "Error",
