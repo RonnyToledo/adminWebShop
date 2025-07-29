@@ -17,7 +17,7 @@ export function InputStore({ name, object, value, action, type }) {
   return (
     <Input
       id={value}
-      value={object[value]}
+      value={type == "number" ? value || 0 : value || ""}
       type={type}
       onChange={(e) =>
         action({
@@ -33,7 +33,7 @@ export function SwitchStore({ name, object, title, funcion }) {
   return (
     <Switch
       id="reservation"
-      checked={object[name]}
+      checked={name || false}
       onCheckedChange={(value) =>
         funcion({
           ...object,

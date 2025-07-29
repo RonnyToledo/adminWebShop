@@ -33,20 +33,20 @@ export function PedidosTable() {
   const { toast } = useToast();
   const router = useRouter();
   const { webshop, setWebshop } = useContext(ThemeContext);
-  const [pedidosState, setPedidosState] = useState(webshop.events);
+  const [pedidosState, setPedidosState] = useState(webshop?.events || []);
   const [WhatsApp, setWhatsApp] = useState(false);
   const [PDF, setPDF] = useState(false);
   const [downloading, setDownloading] = useState(false);
   useEffect(() => {
-    setPedidosState(webshop.events.filter((obj) => !obj.visto));
-  }, [webshop.events]);
+    setPedidosState((webshop?.events || []).filter((obj) => !obj.visto));
+  }, [webshop?.events]);
 
   const handleExportToPDF = () => {
-    exportToPDF(pedidosState, webshop.store, setWebshop, setPDF);
+    exportToPDF(pedidosState, webshop?.store, setWebshop, setPDF);
   };
 
   const handleSendToWhatsApp = () => {
-    sendToWhatsApp(pedidosState, webshop.store, setWebshop, setWhatsApp);
+    sendToWhatsApp(pedidosState, webshop?.store, setWebshop, setWhatsApp);
   };
   return (
     <div className="min-h-screen  p-4 md:p-6">
@@ -228,7 +228,7 @@ export function PedidosTable() {
                                   order.phonenumber !== 0
                                 ) {
                                   const phoneNumber = order.phonenumber;
-                                  const message = `Hola, soy de ${webshop.store.name}`;
+                                  const message = `Hola, soy de ${webshop?.store?.name}`;
                                   const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
                                     message
                                   )}`;
@@ -250,7 +250,7 @@ export function PedidosTable() {
                               className="gap-2"
                               onClick={() =>
                                 EliminateDesc(
-                                  webshop.store.sitioweb,
+                                  webshop?.store?.sitioweb,
                                   order.UID_Venta,
                                   setDownloading,
                                   setWebshop
@@ -306,7 +306,7 @@ export function TransformDate(dateString) {
 }
 export async function exportToPDF(pedidos, store, setWebshop, setPDF) {
   /* await updateEvents(
-    store.sitioweb,
+    store?.sitioweb,
     pedidos.map((obj) => obj.UID_Venta),
     setWebshop,
     setPDF
@@ -398,7 +398,7 @@ export async function exportToPDF(pedidos, store, setWebshop, setPDF) {
 
 export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
   await updateEvents(
-    store.sitioweb,
+    store?.sitioweb,
     pedidos.map((obj) => obj.UID_Venta),
     setWebshop,
     setWhatsApp
@@ -427,7 +427,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
         mensaje += `   ${index + 1}. ${producto.title} x${
           producto.Cant
         }: ${Number(
-          producto.Cant * producto.price * (1 / store.moneda_default.valor)
+          producto.Cant * producto.price * (1 / store?.moneda_default.valor)
         ).toFixed(2)}\n`;
       }
       producto.agregados.forEach((agregate) => {
@@ -437,7 +437,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
           }: ${(
             (producto.price + Number(agregate.valor)) *
             agregate.cantidad *
-            (1 / store.moneda_default.valor)
+            (1 / store?.moneda_default.valor)
           ).toFixed(2)}\n`;
         }
       });
@@ -445,7 +445,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
 
     mensaje += `- Total de la orden: ${Number(
       compra.desc.total * (1 - compra.desc.code.discount / 100)
-    ).toFixed(2)} ${store.moneda_default.moneda}\n`;
+    ).toFixed(2)} ${store?.moneda_default.moneda}\n`;
     mensaje += `${
       compra.desc.code.name != ""
         ? `- Codigo de Descuento: ${compra.desc.code.name}`
@@ -459,7 +459,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
   const encodedMessage = encodeURIComponent(mensaje);
 
   // Abrir WhatsApp Web con el mensaje
-  window.open(`https://wa.me/${store.cell}?text=${encodedMessage}`, "_blank");
+  window.open(`https://wa.me/${store?.cell}?text=${encodedMessage}`, "_blank");
 }
 const updateEvents = async (sitioweb, uids, setWebshop, setState) => {
   setState(true);

@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supa";
 import { deleteNotification } from "@/lib/supabaseApi";
 import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
-import { Log_Out } from "@/components/Chadcn-components/HeaderAdmin";
 import AppSidebar from "@/components/Chadcn-components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useToast } from "@/components/ui/use-toast";
 
 export const ThemeContext = createContext();
 
@@ -30,11 +30,14 @@ const initialState = {
   },
 };
 
-const routesOffLogin = ["/conditions-of-service", "/team-of-service"];
+const routesOffLogin = [
+  "/conditions-of-service",
+  "/team-of-service",
+  "/createAccount",
+];
 const routesAlternatives = [
   "/welcome",
   "/updatePassword",
-  "/createAccount",
   "/configPage",
   "/login",
   "/resetPassword",
@@ -45,8 +48,33 @@ export default function MyProvider({ children, user, data }) {
   const [isNewUser, setIsNewUser] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
-  console.log("data", data);
+  const Log_Out = async () => {
+    console.log("a");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
+        method: "DELETE",
+      });
+      console.log(res);
+      if (res.ok) {
+        router.refresh();
+      } else {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Error Cerrando Sesion",
+        });
+      }
+    } catch (error) {
+      console.error("Error en la respuesta:", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: `error: ${error.message}`,
+      });
+    }
+  };
 
   useEffect(() => {
     if ((!user || user == undefined) && !routesOffLogin.includes(pathname)) {
@@ -57,7 +85,7 @@ export default function MyProvider({ children, user, data }) {
       router.push("/createAccount");
       setIsNewUser(true);
     } else if (data?.store?.login == false) {
-      Log_Out(router);
+      Log_Out();
     } else {
       setWebshop(data);
     }

@@ -6,12 +6,12 @@ import { Loader2 } from "lucide-react";
 import { ArrowDownToLine } from "lucide-react";
 import { useQRCode } from "next-qrcode";
 
-export default function QrCode({ value, value2, name }) {
+export default function QrCode({ value2, name }) {
   const { Image } = useQRCode();
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const svgRef = useRef(null);
-  const url = `https://randh-menu.vercel.app/${value}/${value2}`;
+  const url = `https://randh-menu.vercel.app/t/${value2}`;
 
   const downloadQRCode = () => {
     setDownloading(true);

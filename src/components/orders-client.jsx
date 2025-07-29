@@ -72,11 +72,18 @@ export default function Component({ ThemeContext, specific }) {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    setDataPedido(webshop.events.find((obj) => obj.UID_Venta === specific));
-  }, [specific, webshop.events]);
+    setDataPedido(
+      (webshop?.events || []).find((obj) => obj.UID_Venta === specific)
+    );
+  }, [specific, webshop?.events]);
 
   async function Update(value) {
-    await updateDesc(webshop.store.sitioweb, value, setWebshop, setDownloading);
+    await updateDesc(
+      webshop?.store.sitioweb,
+      value,
+      setWebshop,
+      setDownloading
+    );
   }
 
   const handleAgregadoUpdate = (pedido, name) => {
@@ -91,8 +98,8 @@ export default function Component({ ThemeContext, specific }) {
       const valueAux = {
         ...dataPedido,
         desc: {
-          ...dataPedido.desc,
-          pedido: dataPedido.desc.pedido.map((obj) =>
+          ...dataPedido?.desc,
+          pedido: dataPedido?.desc?.pedido.map((obj) =>
             pedido.productId == obj.productId
               ? { ...obj, Cant: obj.Cant - 1 }
               : obj
@@ -104,7 +111,7 @@ export default function Component({ ThemeContext, specific }) {
   };
 
   // Estado de carga
-  if (!webshop.events) {
+  if (!webshop?.events) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <p>Cargando pedido...</p>
@@ -150,7 +157,7 @@ export default function Component({ ThemeContext, specific }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dataPedido.desc.pedido.map((order) => (
+                  {dataPedido?.desc?.pedido.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell>
                         <div className="flex items-center space-x-3">
@@ -213,7 +220,7 @@ export default function Component({ ThemeContext, specific }) {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-green-600">
-                  {dataPedido.desc.pedido
+                  {dataPedido?.desc?.pedido
                     .reduce(
                       (sum, order) => sum + (order.Cant * order.price || 0),
                       0
@@ -226,7 +233,7 @@ export default function Component({ ThemeContext, specific }) {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-yellow-600">
-                  {dataPedido.desc.pedido
+                  {dataPedido?.desc?.pedido
                     .reduce(
                       (sum, order) =>
                         sum + (order.Cant * (order.priceCompra || 0) || 0),
@@ -241,7 +248,7 @@ export default function Component({ ThemeContext, specific }) {
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-blue-600">
                   $
-                  {dataPedido.desc.pedido
+                  {dataPedido?.desc?.pedido
                     .reduce(
                       (sum, order) =>
                         sum +

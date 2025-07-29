@@ -55,9 +55,10 @@ export default function Specific({ specific, ThemeContext }) {
   const [openCategory, setOpenCategory] = useState(false);
 
   useEffect(() => {
-    setProducts(webshop.products.find((obj) => obj.productId == specific));
-  }, [webshop, specific]);
-  console.log("Products:", products);
+    setProducts(
+      (webshop?.products || []).find((obj) => obj.productId == specific)
+    );
+  }, [webshop?.products, specific]);
 
   const SaveData = async (e) => {
     e.preventDefault();
@@ -81,7 +82,7 @@ export default function Specific({ specific, ThemeContext }) {
     }
     try {
       const res = await axios.put(
-        `/api/tienda/${webshop.store.sitioweb}/products/${products?.productId}/`,
+        `/api/tienda/${webshop?.store?.sitioweb}/products/${products?.productId}/`,
         formData,
         {
           headers: {
@@ -98,7 +99,7 @@ export default function Specific({ specific, ThemeContext }) {
           ),
         });
         const [a] = res.data;
-        const b = webshop.products.map((obj) =>
+        const b = (webshop?.products || []).map((obj) =>
           obj.productId == a.productId ? a : obj
         );
         setWebshop({ ...webshop, products: b });
@@ -125,7 +126,7 @@ export default function Specific({ specific, ThemeContext }) {
         formData.append("valor", newAregados.valor);
         formData.append("cantidad", newAregados.cantidad);
         const res = await axios.post(
-          `/api/tienda/${webshop.store.sitioweb}/products/${products?.productId}/agregado`,
+          `/api/tienda/${webshop?.store?.sitioweb}/products/${products?.productId}/agregado`,
           formData,
           {
             headers: {
@@ -175,7 +176,7 @@ export default function Specific({ specific, ThemeContext }) {
 
       formData.append("id", id);
       const res = await axios.post(
-        `/api/tienda/${webshop.store.sitioweb}/products/${products?.productId}/agregado`,
+        `/api/tienda/${webshop?.store?.sitioweb}/products/${products?.productId}/agregado`,
         formData,
         {
           headers: {
@@ -231,7 +232,7 @@ export default function Specific({ specific, ThemeContext }) {
                         src={
                           imageNew
                             ? URL.createObjectURL(newImage)
-                            : webshop.store.urlPoster || logoApp
+                            : webshop?.store?.urlPoster || logoApp
                         }
                         style={{
                           objectFit: "cover",
@@ -305,7 +306,7 @@ export default function Specific({ specific, ThemeContext }) {
                     <Input
                       id="title"
                       placeholder="Ej: iPhone 15 Pro Max 256GB"
-                      value={products.title}
+                      value={products?.title}
                       onChange={(e) =>
                         setProducts({
                           ...products,
@@ -326,7 +327,7 @@ export default function Specific({ specific, ThemeContext }) {
                     <Textarea
                       id="description"
                       placeholder="Describe las características principales del producto..."
-                      value={products.descripcion}
+                      value={products?.descripcion}
                       onChange={(e) =>
                         setProducts({
                           ...products,
@@ -360,7 +361,7 @@ export default function Specific({ specific, ThemeContext }) {
                         id="price"
                         type="number"
                         placeholder="0.00"
-                        value={products.price}
+                        value={products?.price}
                         onChange={(e) =>
                           setProducts({
                             ...products,
@@ -383,7 +384,7 @@ export default function Specific({ specific, ThemeContext }) {
                         id="price"
                         type="number"
                         placeholder="0.00"
-                        value={products.priceCompra}
+                        value={products?.priceCompra}
                         onChange={(e) =>
                           setProducts({
                             ...products,
@@ -405,9 +406,9 @@ export default function Specific({ specific, ThemeContext }) {
                           aria-expanded={openCategory}
                           className="w-full justify-between bg-transparent"
                         >
-                          {products.caja
-                            ? webshop.store.categoria.find(
-                                (category) => category.id === products.caja
+                          {products?.caja
+                            ? webshop?.store?.categoria.find(
+                                (category) => category.id === products?.caja
                               )?.name
                             : "Selecciona una categoría..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -421,33 +422,35 @@ export default function Specific({ specific, ThemeContext }) {
                               No se encontró ningúna categoría.
                             </CommandEmpty>
                             <CommandGroup>
-                              {webshop.store.categoria.map((category, ind) => (
-                                <CommandItem
-                                  key={ind}
-                                  value={category.name}
-                                  onSelect={() => {
-                                    setProducts({
-                                      ...products,
-                                      caja:
-                                        category.id === products.caja
-                                          ? ""
-                                          : category.id,
-                                    });
+                              {webshop?.store?.categoria.map(
+                                (category, ind) => (
+                                  <CommandItem
+                                    key={ind}
+                                    value={category.name}
+                                    onSelect={() => {
+                                      setProducts({
+                                        ...products,
+                                        caja:
+                                          category.id === products?.caja
+                                            ? ""
+                                            : category.id,
+                                      });
 
-                                    setOpenCategory(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      products.caja === category.id
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    )}
-                                  />
-                                  {category.name}
-                                </CommandItem>
-                              ))}
+                                      setOpenCategory(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        products?.caja === category.id
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {category.name}
+                                  </CommandItem>
+                                )
+                              )}
                             </CommandGroup>
                           </CommandList>
                         </Command>
@@ -473,7 +476,7 @@ export default function Specific({ specific, ThemeContext }) {
                       </p>
                     </div>
                     <Switch
-                      checked={products.favorito}
+                      checked={products?.favorito}
                       onCheckedChange={(value) => {
                         setProducts({
                           ...products,
@@ -495,7 +498,7 @@ export default function Specific({ specific, ThemeContext }) {
                       </p>
                     </div>
                     <Switch
-                      checked={products.span}
+                      checked={products?.span}
                       onCheckedChange={(value) => {
                         setProducts({
                           ...products,
@@ -561,17 +564,17 @@ export default function Specific({ specific, ThemeContext }) {
                         src={
                           newImage
                             ? URL.createObjectURL(newImage)
-                            : products.image ||
-                              webshop.store.urlPoster ||
+                            : products?.image ||
+                              webshop?.store?.urlPoster ||
                               logoApp
                         }
                         alt="Vista previa"
                         className={` object-cover rounded mb-1 ${
-                          products.span ? "w-full" : "w-auto"
+                          products?.span ? "w-full" : "w-auto"
                         }`}
                         style={{
-                          aspectRatio: products.span ? "16/9" : "4/5",
-                          filter: products.agotado
+                          aspectRatio: products?.span ? "16/9" : "4/5",
+                          filter: products?.agotado
                             ? "grayscale(100%)"
                             : "grayscale(0)",
                         }}
@@ -580,14 +583,14 @@ export default function Specific({ specific, ThemeContext }) {
                       />
                     </div>
                     <h3 className="font-medium text-sm truncate line-clamp-1">
-                      {products.title || "Título del producto"}
+                      {products?.title || "Título del producto"}
                     </h3>
                     <div className="grid grid-cols-4 items-center mt-2">
                       <h3 className="col-span-3 font-medium text-xs line-clamp-2">
-                        {products.descripcion || "Descripcion"}
+                        {products?.descripcion || "Descripcion"}
                       </h3>
                       <p className="col-span-1 text-end text-xs font-bold text-red-600">
-                        ${Number(products.price).toFixed(2) || "0.00"}
+                        ${Number(products?.price).toFixed(2) || "0.00"}
                       </p>
                     </div>
                   </div>
@@ -610,7 +613,7 @@ export default function Specific({ specific, ThemeContext }) {
       </div>
       <ConfimationOut
         action={hasPendingChanges(
-          webshop.products.find((obj) => obj.productId == specific),
+          webshop?.products?.find((obj) => obj.productId == specific),
           products
         )}
       />

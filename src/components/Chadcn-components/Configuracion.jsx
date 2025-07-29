@@ -58,7 +58,7 @@ export default function Configuracion({ ThemeContext }) {
   });
 
   useEffect(() => {
-    setStore(webshop.store);
+    setStore(webshop?.store);
   }, [webshop]);
 
   function MonedaDefault(value) {
@@ -96,23 +96,36 @@ export default function Configuracion({ ThemeContext }) {
         <Card>
           <ProfileHeader store={store} setStore={setStore} />
           <div className="mx-6">
-            <TextInput
-              label="Nombre del negocio"
-              value={store?.name || ""}
-              onChange={(e) => handleChange("name", e.target.value)}
+            <Label htmlFor="email">Nombre de la tienda</Label>
+            <InputStore
+              name={"Nombre del negocio"}
+              object={store}
+              value={store?.name}
+              action={setStore}
+              type={"text"}
             />
           </div>
           <div className="mx-6">
             <TextAreaInput
               label="Mensaje de Bienvenida"
               value={store?.parrrafo || ""}
-              onChange={(e) => handleChange("parrrafo", e.target.value)}
+              onChange={(e) =>
+                setStore({
+                  ...object,
+                  parrrafo: e.target.value,
+                })
+              }
             />
           </div>
           <div className="mx-6">
             <WeeklyAvailability
               horario={store?.horario || []}
-              onHorarioChange={(horario) => handleChange("horario", horario)}
+              onHorarioChange={(horario) =>
+                setStore({
+                  ...object,
+                  horario: horario,
+                })
+              }
             />
           </div>
         </Card>
@@ -133,7 +146,7 @@ export default function Configuracion({ ThemeContext }) {
                   <InputStore
                     name={"Numero de telefono"}
                     object={store}
-                    value={"cell"}
+                    value={store?.cell}
                     action={setStore}
                     type={"number"}
                   />
@@ -150,7 +163,7 @@ export default function Configuracion({ ThemeContext }) {
                   <InputStore
                     name={"Email"}
                     object={store}
-                    value={"email"}
+                    value={store?.email}
                     action={setStore}
                     type={"text"}
                   />
@@ -164,7 +177,7 @@ export default function Configuracion({ ThemeContext }) {
                   <InputStore
                     name={"Instagram"}
                     object={store}
-                    value={"insta"}
+                    value={store?.insta}
                     action={setStore}
                     type={"text"}
                   />
@@ -234,7 +247,7 @@ export default function Configuracion({ ThemeContext }) {
                   <InputStore
                     name={"Direccion"}
                     object={store}
-                    value={"direccion"}
+                    value={store?.direccion}
                     action={setStore}
                     type={"text"}
                   />
@@ -260,7 +273,7 @@ export default function Configuracion({ ThemeContext }) {
                     </p>
                   </div>
                   <SwitchStore
-                    name={"local"}
+                    name={store?.local}
                     object={store}
                     title={"Local de Trabajo"}
                     funcion={setStore}
@@ -275,7 +288,7 @@ export default function Configuracion({ ThemeContext }) {
                     </p>
                   </div>
                   <SwitchStore
-                    name={"act_tf"}
+                    name={store?.act_tf}
                     object={store}
                     title={"Transferencias"}
                     funcion={setStore}
@@ -291,7 +304,7 @@ export default function Configuracion({ ThemeContext }) {
                       </p>
                     </div>
                     <SwitchStore
-                      name={"domicilio"}
+                      name={store?.domicilio}
                       object={store}
                       title={"Permite Domicilio"}
                       funcion={setStore}
@@ -318,7 +331,7 @@ export default function Configuracion({ ThemeContext }) {
                     </p>
                   </div>
                   <SwitchStore
-                    name={"reservas"}
+                    name={store?.reservas}
                     object={store}
                     title={"Permite Reservaciones"}
                     funcion={setStore}
@@ -458,7 +471,7 @@ export default function Configuracion({ ThemeContext }) {
           </Card>
         </div>
       </FromData>
-      <ConfimationOut action={hasPendingChanges(store, webshop.store)} />
+      <ConfimationOut action={hasPendingChanges(store, webshop?.store)} />
     </main>
   );
 }

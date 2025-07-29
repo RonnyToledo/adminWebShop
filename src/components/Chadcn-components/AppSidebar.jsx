@@ -16,7 +16,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import navLinks from "@/components/json/link.json"; // ruta donde esté guardado el JSON
-import { Log_Out } from "./HeaderAdmin";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import DatasetLinkedRoundedIcon from "@mui/icons-material/DatasetLinked";
@@ -44,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoApp } from "@/utils/image";
+import { useToast } from "@/components/ui/use-toast";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -66,8 +66,35 @@ const iconMap = {
 
 export default function AppSidebar({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
-  const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const Log_Out = async () => {
+    console.log("a");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
+        method: "DELETE",
+      });
+      console.log(res);
+      if (res.ok) {
+        router.refresh();
+      } else {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Error Cerrando Sesion",
+        });
+      }
+    } catch (error) {
+      console.error("Error en la respuesta:", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: `error: ${error.message}`,
+      });
+    }
+  };
 
   const renderLinkNav = (link, index) => {
     if (

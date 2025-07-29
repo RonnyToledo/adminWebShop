@@ -86,12 +86,12 @@ export default function Guia() {
                 className="max-w-xs text-sm font-medium"
                 readOnly
                 type="text"
-                value={`https://randh-menu.vercel.app/t/${webshop.store.sitioweb}`}
+                value={`https://randh-menu.vercel.app/t/${webshop?.store?.sitioweb}`}
               />
               <Button
                 onClick={() =>
                   copyToClipboard(
-                    `https://randh-menu.vercel.app/t/${webshop.store.sitioweb}`
+                    `https://randh-menu.vercel.app/t/${webshop?.store?.sitioweb}`
                   )
                 }
                 size="icon"
@@ -103,9 +103,8 @@ export default function Guia() {
             </div>
             <div className="flex items-center space-x-2 justify-center">
               <QrCode
-                value={webshop.store.variable}
-                value2={webshop.store.sitioweb}
-                name={webshop.store.name}
+                value2={webshop?.store?.sitioweb}
+                name={webshop?.store?.name}
               />
             </div>
           </div>

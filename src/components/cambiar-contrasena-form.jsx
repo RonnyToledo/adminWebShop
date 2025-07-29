@@ -32,7 +32,6 @@ export default function CambiarContrasenaForm() {
     setError("");
     setExito(false);
     setEnviando(true);
-    console.log(access_token);
 
     // Validación básica
     if (nuevaContrasena !== confirmarContrasena) {

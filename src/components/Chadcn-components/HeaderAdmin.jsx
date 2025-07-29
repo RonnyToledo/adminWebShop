@@ -2,8 +2,7 @@
 import React, { useContext, useState } from "react";
 import Link from "next/link";
 import dataCards from "@/components/json/card.json";
-
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "../ui/button";
@@ -14,7 +13,6 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Dialog,
@@ -33,31 +31,6 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 
-export const Log_Out = async (router) => {
-  console.log("a");
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-      method: "DELETE",
-    });
-    console.log(res);
-    if (res.ok) {
-      router.push("/login");
-    } else {
-      toast({
-        title: "Error",
-        variant: "destructive",
-        description: "Error Cerrando Sesion",
-      });
-    }
-  } catch (error) {
-    console.error("Error en la respuesta:", error);
-    toast({
-      title: "Error",
-      variant: "destructive",
-      description: `error: ${error.message}`,
-    });
-  }
-};
 export default function HeaderAdmin({ ThemeContext }) {
   const { toast } = useToast();
   const { webshop } = useContext(ThemeContext);

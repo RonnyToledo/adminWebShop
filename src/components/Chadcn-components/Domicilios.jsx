@@ -29,17 +29,17 @@ export default function Domicilios({ ThemeContext }) {
   });
 
   useEffect(() => {
-    setStore(webshop.store);
-  }, [webshop]);
+    setStore(webshop?.store);
+  }, [webshop.store]);
 
   return (
     <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
       <FromData store={store} ThemeContext={ThemeContext}>
         <div className="mb-5 space-y-4">
-          {store.domicilio &&
+          {store?.domicilio &&
             provincias.filter(
               (bbb) =>
-                !store.envios.map((ccc) => ccc.nombre).includes(bbb.nombre)
+                !store?.envios.map((ccc) => ccc.nombre).includes(bbb.nombre)
             ).length > 0 && (
               <Card>
                 <CardHeader>
@@ -58,7 +58,7 @@ export default function Domicilios({ ThemeContext }) {
                           );
                           setStore({
                             ...store,
-                            envios: [...store.envios, a],
+                            envios: [...store?.envios, a],
                           });
                         }}
                       >
@@ -69,7 +69,7 @@ export default function Domicilios({ ThemeContext }) {
                           {provincias
                             .filter(
                               (bbb) =>
-                                !store.envios
+                                !store?.envios
                                   .map((ccc) => ccc.nombre)
                                   .includes(bbb.nombre)
                             )
@@ -87,7 +87,7 @@ export default function Domicilios({ ThemeContext }) {
             )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {store.envios.map((obj, ind) => (
+            {store?.envios.map((obj, ind) => (
               <Card key={ind} className="flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-xl font-bold">
@@ -101,7 +101,7 @@ export default function Domicilios({ ThemeContext }) {
 
                       setStore({
                         ...store,
-                        envios: store.envios.filter(
+                        envios: store?.envios.filter(
                           (fil) => fil.nombre != obj.nombre
                         ),
                       });
@@ -127,13 +127,13 @@ export default function Domicilios({ ThemeContext }) {
                             size="icon"
                             onClick={(e) => {
                               e.preventDefault();
-                              const a = store.envios[ind].municipios.filter(
+                              const a = store?.envios[ind].municipios.filter(
                                 (fil) => fil != obj1
                               );
 
                               setStore({
                                 ...store,
-                                envios: store.envios.map((env) =>
+                                envios: store?.envios.map((env) =>
                                   env.nombre === obj.nombre
                                     ? { ...env, municipios: a }
                                     : env
@@ -167,7 +167,7 @@ export default function Domicilios({ ThemeContext }) {
                           const a = [...obj.municipios, value];
                           setStore({
                             ...store,
-                            envios: store.envios.map((env) =>
+                            envios: store?.envios.map((env) =>
                               env.nombre === obj.nombre
                                 ? { ...env, municipios: a }
                                 : env

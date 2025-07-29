@@ -100,7 +100,6 @@ export async function fetchUserSessionServer() {
   const sessionCookie = Allcookies.get("sb-access-token");
 
   if (!sessionCookie) {
-    console.warn("No hay cookie de sesión disponible en el servidor.");
     return null;
   }
 

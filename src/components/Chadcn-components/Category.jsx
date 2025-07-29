@@ -53,10 +53,10 @@ export default function Category({ ThemeContext }) {
 
   // Cargar datos iniciales al montar el componente
   useEffect(() => {
-    if (webshop.store.categoria.length > 0) {
+    if (webshop?.store?.categoria.length > 0) {
       setData({
-        category: webshop.store.categoria,
-        UUID: webshop.store.UUID,
+        category: webshop?.store?.categoria,
+        UUID: webshop?.store?.UUID,
       });
     }
   }, [webshop]);
@@ -76,7 +76,7 @@ export default function Category({ ThemeContext }) {
 
     try {
       const res = await axios.delete(
-        `/api/tienda/${webshop.store.sitioweb}/categoria`,
+        `/api/tienda/${webshop?.store?.sitioweb}/categoria`,
         {
           data: { UUID: categoryToDelete, image }, // El cuerpo debe ir en `data`
           headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
@@ -94,7 +94,7 @@ export default function Category({ ThemeContext }) {
         );
         setWebshop({
           ...webshop,
-          store: { ...webshop.store, categoria: updatedCategories },
+          store: { ...webshop?.store, categoria: updatedCategories },
         });
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export default function Category({ ThemeContext }) {
     formData.append("UUID", data.UUID);
     try {
       const res = await axios.put(
-        `/api/tienda/${webshop.store.sitioweb}/categoria`,
+        `/api/tienda/${webshop?.store?.sitioweb}/categoria`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -130,7 +130,7 @@ export default function Category({ ThemeContext }) {
         });
         setWebshop({
           ...webshop,
-          store: { ...webshop.store, categoria: res?.data?.data },
+          store: { ...webshop?.store, categoria: res?.data?.data },
         });
       }
     } catch (error) {
@@ -150,11 +150,11 @@ export default function Category({ ThemeContext }) {
     if (newCat.name) {
       try {
         const res = await axios.post(
-          `/api/tienda/${webshop.store.sitioweb}/categoria`,
+          `/api/tienda/${webshop?.store?.sitioweb}/categoria`,
           {
             data: {
               ...newCat,
-              storeId: webshop.store.UUID,
+              storeId: webshop?.store?.UUID,
               order: data.category.length,
             }, // El cuerpo debe ir en `data`
             headers: { "Content-Type": "application/json" }, // Usa el tipo correcto
@@ -301,7 +301,7 @@ export default function Category({ ThemeContext }) {
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <form onSubmit={handleSubmit} className="space-y-2">
-          <Droppable droppableId={webshop.store.sitioweb || "unique"}>
+          <Droppable droppableId={webshop?.store?.sitioweb || "unique"}>
             {(provided) => (
               <div
                 ref={provided.innerRef}
@@ -315,7 +315,7 @@ export default function Category({ ThemeContext }) {
                       key={index}
                       index={index}
                       category={category}
-                      products={webshop.products}
+                      products={webshop?.products}
                       onDelete={handleDelete}
                       deleting={deleting}
                       setData={setData}
@@ -476,7 +476,7 @@ const CategoryItem = ({
 // Utilidad y helpers
 const hasPendingChanges = (data, webshop) => {
   return (
-    JSON.stringify(data.category) !== JSON.stringify(webshop.store.categoria)
+    JSON.stringify(data.category) !== JSON.stringify(webshop?.store?.categoria)
   );
 };
 

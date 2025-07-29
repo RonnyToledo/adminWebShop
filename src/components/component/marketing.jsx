@@ -82,7 +82,7 @@ export function Marketing({ ThemeContext }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    setDiscounts(webshop.code);
+    setDiscounts(webshop?.code);
   }, [webshop]);
 
   const [newDiscount, setNewDiscount] = useState({
@@ -98,10 +98,10 @@ export function Marketing({ ThemeContext }) {
         formData.append("code", newDiscount.code);
         formData.append("discount", newDiscount.discount);
         formData.append("expiresAt", newDiscount.expiresAt);
-        formData.append("uid", webshop.store.UUID);
+        formData.append("uid", webshop?.store?.UUID);
 
         const res = await axios.post(
-          `/api/tienda/${webshop.store.sitioweb}/discountCode`,
+          `/api/tienda/${webshop?.store?.sitioweb}/discountCode`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
@@ -136,7 +136,7 @@ export function Marketing({ ThemeContext }) {
   const handleRemoveDiscount = async (id) => {
     try {
       const res = await axios.delete(
-        `/api/tienda/${webshop.store.sitioweb}/discountCode?id=${id}`
+        `/api/tienda/${webshop?.store?.sitioweb}/discountCode?id=${id}`
       );
       if (res.status === 200) {
         toast({
@@ -165,13 +165,13 @@ export function Marketing({ ThemeContext }) {
       const { data, error } = await supabase
         .from("Sitios")
         .update({ marketing: value })
-        .eq("UUID", webshop.store.UUID);
+        .eq("UUID", webshop?.store?.UUID);
       if (error) {
         console.error(error);
       } else {
         setWebshop({
           ...webshop,
-          store: { ...webshop.store, marketing: value },
+          store: { ...webshop?.store, marketing: value },
         });
       }
     } catch (error) {
@@ -217,15 +217,15 @@ export function Marketing({ ThemeContext }) {
             <Label htmlFor="system-toggle">Sistema</Label>
             <Switch
               id="system-toggle"
-              checked={webshop.store.marketing}
+              checked={webshop?.store?.marketing}
               onCheckedChange={handleSwitch}
             />
             <span
               className={`text-sm ${
-                !webshop.store.marketing ? "text-green-600" : "text-red-600"
+                !webshop?.store?.marketing ? "text-green-600" : "text-red-600"
               }`}
             >
-              {!webshop.store.marketing ? "Activo" : "Inactivo"}
+              {!webshop?.store?.marketing ? "Activo" : "Inactivo"}
             </span>
           </div>
         </div>
@@ -242,11 +242,11 @@ export function Marketing({ ThemeContext }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {discounts.filter((obj) => !isExpired(obj.expiresAt, 0)).length ||
-                0}
+              {(discounts || []).filter((obj) => !isExpired(obj.expiresAt, 0))
+                .length || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              de {discounts.length || 0} total
+              de {(discounts || []).length || 0} total
             </p>
           </CardContent>
         </Card>
@@ -260,8 +260,8 @@ export function Marketing({ ThemeContext }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {discounts.filter((obj) => !isExpired(obj.expiresAt, 7)).length ||
-                0}
+              {(discounts || []).filter((obj) => !isExpired(obj.expiresAt, 7))
+                .length || 0}
             </div>
             <p className="text-xs text-muted-foreground">en 7 días</p>
           </CardContent>
@@ -293,7 +293,7 @@ export function Marketing({ ThemeContext }) {
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={!webshop.store.marketing}>
+            <Button disabled={!webshop?.store?.marketing}>
               <Plus className="mr-2 h-4 w-4" />
               Agregar Código
             </Button>
@@ -372,9 +372,9 @@ export function Marketing({ ThemeContext }) {
         <CardHeader>
           <CardTitle>Lista de Códigos</CardTitle>
           <CardDescription>
-            {filtered.length} código{filtered.length !== 1 ? "s" : ""}{" "}
-            encontrado
-            {filtered.length !== 1 ? "s" : ""}
+            {(filtered || []).length} código
+            {(filtered || []).length !== 1 ? "s" : ""} encontrado
+            {(filtered || []).length !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -389,7 +389,7 @@ export function Marketing({ ThemeContext }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((code) => (
+              {(filtered || []).map((code) => (
                 <TableRow key={code.id}>
                   <TableCell className="font-mono font-medium">
                     <div className="flex items-center space-x-2">
@@ -412,7 +412,7 @@ export function Marketing({ ThemeContext }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!webshop.store.marketing}
+                      disabled={!webshop?.store?.marketing}
                       onClick={() => handleRemoveDiscount(discount.id)}
                     >
                       Remove

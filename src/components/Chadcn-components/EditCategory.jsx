@@ -29,8 +29,8 @@ export default function EditCategory({ ThemeContext, uid }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    setcategory(webshop.store.categoria.find((obj) => obj.id == uid));
-  }, [uid, webshop.store.categoria]);
+    setcategory((webshop?.store?.categoria || []).find((obj) => obj.id == uid));
+  }, [uid, webshop?.store?.categoria]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -51,7 +51,7 @@ export default function EditCategory({ ThemeContext, uid }) {
     });
     try {
       const res = await axios.put(
-        `/api/tienda/${webshop.store?.sitioweb}/categoria/${category?.id}`,
+        `/api/tienda/${webshop?.store?.sitioweb}/categoria/${category?.id}`,
         formData,
         {
           headers: {
@@ -70,8 +70,8 @@ export default function EditCategory({ ThemeContext, uid }) {
         setWebshop({
           ...webshop,
           store: {
-            ...webshop.store,
-            categoria: webshop.store?.categoria.map((obj) =>
+            ...webshop?.store,
+            categoria: webshop?.store?.categoria.map((obj) =>
               obj.id == category?.id ? res.data : obj
             ),
           },

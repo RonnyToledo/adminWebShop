@@ -66,13 +66,13 @@ export default function Dashboard({ ThemeContext }) {
   });
 
   const [compras, setCompras] = useState(
-    webshop.events
+    (webshop?.events || [])
       .filter((obj) => obj.events === "compra")
       .map((obj) => ({ ...obj.desc, created_at: obj.created_at }))
   );
 
   useEffect(() => {
-    const comprasFiltradas = webshop.events.filter(
+    const comprasFiltradas = (webshop?.events || []).filter(
       (obj) => obj.events === "compra"
     );
     setCompras(
@@ -96,7 +96,7 @@ export default function Dashboard({ ThemeContext }) {
   }
 
   const renderPedidos = () => {
-    return event.pedido.map(
+    return (event || []).pedido.map(
       (pedido, index) =>
         pedido.Cant > 0 && (
           <TableRow key={index}>
@@ -119,25 +119,25 @@ export default function Dashboard({ ThemeContext }) {
           {[
             {
               title: "Total de Ventas",
-              value: `$${Number(sumTotalField(compras)).toFixed(2)}`,
+              value: `$${Number(sumTotalField(compras || [])).toFixed(2)}`,
               description: "Venta general",
               icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
             },
             {
               title: "Cantidad de pedidos",
-              value: compras.length,
+              value: (compras || []).length,
               description: "Cantidad de pedidos realizadas",
               icon: <Users className="h-4 w-4 text-muted-foreground" />,
             },
             {
               title: "Cantidad de Productos",
-              value: sumLengthOfPedido(compras),
+              value: sumLengthOfPedido(compras || []),
               description: "Cantidad de productos vendidos",
               icon: <CreditCard className="h-4 w-4 text-muted-foreground" />,
             },
             {
               title: "Ventas de 24 horas",
-              value: `$${sumarTotalUltimas24Horas(compras)}`,
+              value: `$${sumarTotalUltimas24Horas(compras || [])}`,
               description: "Total recaudado en las últimas 24 horas",
               icon: <Activity className="h-4 w-4 text-muted-foreground" />,
             },
@@ -172,7 +172,7 @@ export default function Dashboard({ ThemeContext }) {
               <ChartContainer config={chartConfig}>
                 <AreaChart
                   accessibilityLayer
-                  data={sumarComprasUltimos7Meses(compras)}
+                  data={sumarComprasUltimos7Meses(compras || [])}
                   margin={{
                     left: 12,
                     right: 12,

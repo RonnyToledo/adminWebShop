@@ -331,14 +331,14 @@ export default function Logins({ ThemeContext }) {
           </CardHeader>
           <CardContent>
             <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
-              {obtenerMejoresYPeoresProductos(webshop.products).mejores.map(
-                (obj, ind) => (
-                  <li key={ind} className="flex justify-between items-center">
-                    <span>{obj.title}</span>
-                    <span>{obj.visitas}</span>
-                  </li>
-                )
-              )}
+              {obtenerMejoresYPeoresProductos(
+                webshop?.products || []
+              ).mejores.map((obj, ind) => (
+                <li key={ind} className="flex justify-between items-center">
+                  <span>{obj.title}</span>
+                  <span>{obj.visitas}</span>
+                </li>
+              ))}
             </ul>
           </CardContent>
         </Card>
@@ -351,26 +351,20 @@ export default function Logins({ ThemeContext }) {
           </CardHeader>
           <CardContent>
             <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
-              {obtenerMejoresYPeoresProductos(webshop.products).peores.map(
-                (obj, ind) => (
-                  <li key={ind} className="flex justify-between items-center">
-                    <span>{obj.title}</span>
-                    <span>{obj.visitas}</span>
-                  </li>
-                )
-              )}
+              {obtenerMejoresYPeoresProductos(
+                webshop?.products || []
+              ).peores.map((obj, ind) => (
+                <li key={ind} className="flex justify-between items-center">
+                  <span>{obj.title}</span>
+                  <span>{obj.visitas}</span>
+                </li>
+              ))}
             </ul>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-}
-function convertDateToMonthDay(dateString) {
-  const parts = dateString.split("-");
-  const month = parts[1];
-  const day = parts[2];
-  return `${month}-${day}`;
 }
 
 // Función para calcular visitas por día y obtener los mejores y peores productos

@@ -65,12 +65,12 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("favorito", products.favorito);
     formData.append("descripcion", products.descripcion);
     formData.append("span", products.span);
-    formData.append("UID", webshop.store.UUID);
+    formData.append("UID", webshop?.store?.UUID);
     formData.append("creado", getLocalISOString(now));
     if (products.image) formData.append("image", products.image);
     try {
       const res = await axios.post(
-        `/api/tienda/${webshop.store.sitioweb}/products`,
+        `/api/tienda/${webshop?.store?.sitioweb}/products`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -88,7 +88,7 @@ export default function NewProduct({ ThemeContext }) {
         });
         setWebshop({
           ...webshop,
-          products: [...webshop.products, res.data],
+          products: [...webshop?.products, res.data],
         });
         form.current.reset();
         setProducts({
@@ -200,7 +200,7 @@ export default function NewProduct({ ThemeContext }) {
                         src={
                           imageNew
                             ? URL.createObjectURL(imageNew)
-                            : webshop.store.urlPoster || logoApp
+                            : webshop?.store?.urlPoster || logoApp
                         }
                         style={{
                           objectFit: "cover",
@@ -292,7 +292,7 @@ export default function NewProduct({ ThemeContext }) {
                           className="w-full justify-between bg-transparent"
                         >
                           {products.caja
-                            ? webshop.store.categoria.find(
+                            ? webshop?.store?.categoria.find(
                                 (category) => category.id === products.caja
                               )?.name
                             : "Selecciona una categoría..."}
@@ -307,33 +307,35 @@ export default function NewProduct({ ThemeContext }) {
                               No se encontró ningúna categoría.
                             </CommandEmpty>
                             <CommandGroup>
-                              {webshop.store.categoria.map((category, ind) => (
-                                <CommandItem
-                                  key={ind}
-                                  value={category.name}
-                                  onSelect={() => {
-                                    setProducts({
-                                      ...products,
-                                      caja:
-                                        category.id === products.caja
-                                          ? ""
-                                          : category.id,
-                                    });
+                              {webshop?.store?.categoria.map(
+                                (category, ind) => (
+                                  <CommandItem
+                                    key={ind}
+                                    value={category.name}
+                                    onSelect={() => {
+                                      setProducts({
+                                        ...products,
+                                        caja:
+                                          category.id === products.caja
+                                            ? ""
+                                            : category.id,
+                                      });
 
-                                    setOpenCategory(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      products.caja === category.id
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    )}
-                                  />
-                                  {category.name}
-                                </CommandItem>
-                              ))}
+                                      setOpenCategory(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        products.caja === category.id
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {category.name}
+                                  </CommandItem>
+                                )
+                              )}
                             </CommandGroup>
                           </CommandList>
                         </Command>
@@ -410,7 +412,7 @@ export default function NewProduct({ ThemeContext }) {
                       src={
                         imageNew
                           ? URL.createObjectURL(imageNew)
-                          : webshop.store.urlPoster || logoApp
+                          : webshop?.store?.urlPoster || logoApp
                       }
                       alt="Vista previa"
                       className={` object-cover rounded mb-1 ${
