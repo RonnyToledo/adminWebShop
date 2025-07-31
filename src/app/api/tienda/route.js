@@ -19,6 +19,28 @@ const LogUser = async () => {
   });
 };
 
+export async function GET() {
+  await LogUser();
+
+  const { data: tienda } = await supabase.from("Sitios").select("*");
+  const a = tienda.map((obj) => {
+    return {
+      ...obj,
+      categoria: JSON.parse(obj.categoria),
+      moneda: JSON.parse(obj.moneda),
+      moneda_default: JSON.parse(obj.moneda_default),
+      horario: JSON.parse(obj.horario),
+      comentario: JSON.parse(obj.comentario),
+      envios: JSON.parse(obj.envios),
+    };
+  });
+  const response = NextResponse.json(a);
+
+  // Establecer cabeceras para deshabilitar el caché
+  response.headers.set("Cache-Control", "no-store");
+
+  return response;
+}
 const datos = {
   sitioweb: "",
   urlPoster: "",
@@ -42,67 +64,51 @@ const datos = {
   plan: "basic",
   font: "Poppins",
   login: true,
-  active: false,
+  active: true,
 };
-
-export async function GET() {
-  await LogUser();
-
-  const { data: tienda } = await supabase.from("Sitios").select("*");
-  const a = tienda.map((obj) => {
-    return {
-      ...obj,
-      categoria: JSON.parse(obj.categoria),
-      moneda: JSON.parse(obj.moneda),
-      moneda_default: JSON.parse(obj.moneda_default),
-      horario: JSON.parse(obj.horario),
-      comentario: JSON.parse(obj.comentario),
-      envios: JSON.parse(obj.envios),
-    };
-  });
-  const response = NextResponse.json(a);
-
-  // Establecer cabeceras para deshabilitar el caché
-  response.headers.set("Cache-Control", "no-store");
-
-  return response;
-}
-
 export async function POST(request, { params }) {
   await LogUser();
-
   const data = await request.formData();
-  const { data: tienda1 } = await supabase.from("Sitios").select("*");
 
-  const NewStore = {
-    ...datos,
-    id: tienda1.length + 1,
-    name: data.get("name"),
-    sitioweb: capitalizeAndRemoveSpaces(data.get("name")),
-    Provincia: data.get("Provincia"),
-    municipio: data.get("municipio"),
-    moneda: JSON.stringify(Moneda(data.get("moneda")).moneda),
-    moneda_default: JSON.stringify(Moneda(data.get("name")).moneda),
-    Editor: data.get("user"),
-    email: data.get("email"),
-    cell: data.get("cell"),
+  const payload = {
+    _name: data.get("name") || datos.name,
+    _provincia: data.get("Provincia") || datos.Provincia,
+    _municipio: data.get("municipio") || datos.municipio,
+    _editor: data.get("user"), // debe ser UUID
+    _email: data.get("email") || datos.email,
+    _cell: data.get("cell"),
+    _urlposter: datos.urlPoster,
+    _parrrafo: datos.parrrafo,
+    _horario: datos.horario, // JSON.stringify(...)
+    _act_tf: datos.act_tf,
+    _insta: datos.insta,
+    _domicilio: datos.domicilio,
+    _reservas: datos.reservas,
+    _moneda: JSON.stringify(Moneda(data.get("moneda")).moneda) || datos.moneda, // JSON.stringify(...)
+    _moneda_default:
+      JSON.stringify(Moneda(data.get("name")).moneda) || datos.moneda_default, // JSON.stringify(...)
+    _local: datos.local,
+    _envios: datos.envios, // JSON.stringify(...)
+    _tipo: datos.tipo,
+    _plan: datos.plan,
+    _font: datos.font,
+    _login: datos.login,
+    _active: datos.active,
   };
-  const { data: tienda, error } = await supabase
-    .from("Sitios")
-    .insert([NewStore])
-    .select();
+
+  const { data: tienda, error } = await supabase.rpc("create_sitio", payload);
 
   if (error) {
     console.log(error);
     return NextResponse.json(
-      { message: error },
+      { message: error.message },
       {
         status: 401,
       }
     );
   }
 
-  return NextResponse.json({ message: "Producto creado" });
+  return NextResponse.json({ message: "Tienda creada" });
 }
 const Moneda = (inputString) => {
   return {

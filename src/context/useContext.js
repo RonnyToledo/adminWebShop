@@ -1,7 +1,6 @@
 "use client";
 import React, { createContext, useEffect, useReducer, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { supabase } from "@/lib/supa";
 import { deleteNotification } from "@/lib/supabaseApi";
 import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
@@ -34,14 +33,10 @@ const routesOffLogin = [
   "/conditions-of-service",
   "/team-of-service",
   "/createAccount",
-];
-const routesAlternatives = [
-  "/welcome",
   "/updatePassword",
-  "/configPage",
-  "/login",
-  "/resetPassword",
+  "/welcome",
 ];
+const routesAlternatives = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(initialState);
@@ -50,46 +45,19 @@ export default function MyProvider({ children, user, data }) {
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const Log_Out = async () => {
-    console.log("a");
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-        method: "DELETE",
-      });
-      console.log(res);
-      if (res.ok) {
-        router.refresh();
-      } else {
-        toast({
-          title: "Error",
-          variant: "destructive",
-          description: "Error Cerrando Sesion",
-        });
-      }
-    } catch (error) {
-      console.error("Error en la respuesta:", error);
-      toast({
-        title: "Error",
-        variant: "destructive",
-        description: `error: ${error.message}`,
-      });
-    }
-  };
-
   useEffect(() => {
     if ((!user || user == undefined) && !routesOffLogin.includes(pathname)) {
+      console.log("saltando desde Context");
       router.push("/login");
     }
 
-    if (data?.user?.login == false) {
-      router.push("/createAccount");
+    if (data?.user?.role == "manager" && data?.user?.login == false) {
+      router.push("/welcome");
       setIsNewUser(true);
-    } else if (data?.store?.login == false) {
-      Log_Out();
     } else {
       setWebshop(data);
     }
-  }, [data, user, router, pathname]);
+  }, [data, user]);
 
   // Primer useEffect: Inicializar datos y cargar tienda
   useEffect(() => {
@@ -115,7 +83,7 @@ export default function MyProvider({ children, user, data }) {
       }
     };
     initializeData();
-  }, [router, user]);
+  }, [router, user, toast]);
 
   useEffect(() => {
     if (!user) return;
@@ -151,7 +119,7 @@ export default function MyProvider({ children, user, data }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, toast]);
 
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
@@ -173,4 +141,11 @@ export default function MyProvider({ children, user, data }) {
       </SidebarProvider>
     </ThemeContext.Provider>
   );
+}
+function formatDate(date) {
+  const d = new Date(date);
+  const day = `${d.getDate()}`.padStart(2, "0"); // día con ceros delante
+  const month = `${d.getMonth() + 1}`.padStart(2, "0"); // meses de 0–11, por eso +1
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }

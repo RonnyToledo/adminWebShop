@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import IllustrationLogin from "./icons/IllustrationLogin";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/use-toast";
 
 export function ResponsiveLogin({ user }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,7 @@ export function ResponsiveLogin({ user }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user && user !== undefined) {
@@ -46,12 +48,18 @@ export function ResponsiveLogin({ user }) {
       });
 
       const data = await res.json();
-
+      console.log(res);
       if (res.ok) {
         router.refresh();
       } else {
         setError(data.error || "Error al iniciar sesión");
-        console.error("Error en la respuesta:", data);
+        if (data.message) {
+          toast({
+            title: "Error",
+            variant: "destructive",
+            description: data.message,
+          });
+        }
       }
     } catch (error) {
       setError("Error al conectar con el servidor");

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 export default async function usePage() {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
+  console.log("userLogin", user);
   return <ResponsiveLogin user={user} />;
 }
 

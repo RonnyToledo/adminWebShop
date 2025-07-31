@@ -22,6 +22,7 @@ export const metadata = {
 export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
+  console.log(user);
   const data = await initializeData(userSession?.user?.user?.id);
 
   return (
@@ -46,7 +47,9 @@ export const initializeData = async (userId) => {
       console.error("Error fetching store data:", error);
       return null;
     }
-    if (error || !store?.login || !store?.Sitios?.sitioweb) return null;
+
+    if (error || !store?.login || !store?.Sitios?.sitioweb)
+      return { user: store };
 
     const tiendaParsed = {
       ...store.Sitios,
@@ -110,7 +113,6 @@ export async function fetchUserSessionServer() {
         Cookie: `sb-access-token=${sessionCookie.value}`, // Agrega la cookie manualmente
       },
     });
-
     if (!res.ok) {
       console.error("Error en la respuesta del servidor:", res.statusText);
       return null;

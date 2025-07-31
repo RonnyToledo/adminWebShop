@@ -66,10 +66,7 @@ export default function Component({ ThemeContext }) {
               <CardTitle className="text-xl mb-2">Edite su tienda</CardTitle>
               <div className="mb-6">
                 <Image
-                  src={
-                    webshop?.store?.urlPoster ||
-                    "/placeholder.svg?height=200&width=200"
-                  }
+                  src={webshop?.store?.urlPoster || logoApp}
                   alt={webshop?.store?.name || "Store Image"}
                   width={200}
                   height={200}
@@ -160,11 +157,7 @@ function CarruselNew({ products }) {
   return (
     <Card className="p-6">
       <div className="flex flex-col items-center text-center">
-        <CardTitle className="text-xl mb-2">
-          {products.length > 0
-            ? "Crear más productos"
-            : "Agregar tu primer producto"}
-        </CardTitle>
+        <CardTitle className="text-xl mb-2">Crear más productos</CardTitle>
         <div className="mb-6">
           <Carousel
             plugins={[
@@ -174,22 +167,17 @@ function CarruselNew({ products }) {
             ]}
           >
             <CarouselContent>
-              {products
-                .filter((item) => item.image)
-                .sort(() => Math.random() - 0.5) // Mezcla aleatoriamente el array
-                .slice(0, 3) // Toma los 3 primeros
-                .map((item) => item.image)
-                .map((imagenes, index) => (
-                  <CarouselItem className="flex justify-center" key={index}>
-                    <Image
-                      src={imagenes}
-                      alt={`Product Image ${index + 1}`}
-                      width={200}
-                      height={200}
-                      className="object-contain aspect-square rounded-lg"
-                    />
-                  </CarouselItem>
-                ))}
+              {imagenes.map((imagenes, index) => (
+                <CarouselItem className="flex justify-center" key={index}>
+                  <Image
+                    src={imagenes || logoApp}
+                    alt={`Product Image ${index + 1}`}
+                    width={200}
+                    height={200}
+                    className="object-contain aspect-square rounded-lg"
+                  />
+                </CarouselItem>
+              ))}
             </CarouselContent>
           </Carousel>
         </div>
