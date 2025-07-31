@@ -95,7 +95,7 @@ export function CrearClienteComponent({ user }) {
   useEffect(() => {
     if (!user || user == undefined) {
       router.push("/login");
-    } else console.log("Welcome");
+    } else console.info("Welcome");
   }, [user, router]);
 
   const handleProvinciaChange = (provincia) => {
@@ -108,7 +108,6 @@ export function CrearClienteComponent({ user }) {
   };
   async function onSubmit(values) {
     setIsSubmitting(true);
-    console.log(values);
     const formData = new FormData();
     formData.append("user", user);
     Object.entries(values).forEach(([key, value]) => {
@@ -118,7 +117,6 @@ export function CrearClienteComponent({ user }) {
       if (isValidPhoneNumber(`+${values.cell}`) == false) {
         throw new Error(`Numero no valido`);
       }
-      console.log("a");
       const result = await axios.post(`/api/tienda/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",

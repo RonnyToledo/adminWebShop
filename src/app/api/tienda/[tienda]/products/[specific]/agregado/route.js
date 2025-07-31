@@ -11,7 +11,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -21,17 +23,18 @@ const LogUser = async () => {
 
 export async function POST(request, { params }) {
   await LogUser();
+  const { tienda, specific } = await params;
 
   const data = await request.formData();
   const nombre = data.get("nombre");
   const valor = data.get("valor");
   const cantidad = data.get("cantidad");
-  console.log(params.specific);
+
   try {
     // Actualiza la categoría de la tienda
     const { data: agg, error: tiendaError } = await supabase
       .from("agregados")
-      .insert([{ nombre, valor, cantidad, UID: params.specific }])
+      .insert([{ nombre, valor, cantidad, UID: specific }])
       .select();
 
     if (tiendaError) {
@@ -52,6 +55,7 @@ export async function POST(request, { params }) {
 }
 export async function DELETE(request, { params }) {
   await LogUser();
+  const { tienda, specific } = await params;
 
   const data = await request.formData();
   const nombre = data.get("nombre");
@@ -62,8 +66,8 @@ export async function DELETE(request, { params }) {
     // Actualiza la categoría de la tienda
     const { data: tienda, error: tiendaError } = await supabase
       .from("Products")
-      .update({ nombre, valor, cantidad, UID: params.specific })
-      .eq("productId", params.specific)
+      .update({ nombre, valor, cantidad, UID: specific })
+      .eq("productId", specific)
       .select();
 
     if (tiendaError) {

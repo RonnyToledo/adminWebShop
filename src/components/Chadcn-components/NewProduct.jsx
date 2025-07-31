@@ -77,7 +77,6 @@ export default function NewProduct({ ThemeContext }) {
           withCredentials: true, // ← incluye cookies
         }
       );
-      console.log(res);
       if (res.status === 200 || res.status === 201) {
         toast({
           title: "Tarea Ejecutada",
@@ -112,7 +111,6 @@ export default function NewProduct({ ThemeContext }) {
       setDownloading(false);
     }
   };
-  console.log(products);
 
   useEffect(() => {
     setProducts((prev) => ({ ...prev, image: imageNew }));

@@ -13,7 +13,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -24,7 +26,7 @@ const LogUser = async () => {
 export async function POST(request, { params }) {
   // Obtenemos el cuerpo enviado desde el cliente
   const data = await request.json();
-  console.log(data);
+  if (data) console.info(data);
   try {
     // Actualiza la categoría de la tienda
     await LogUser();
@@ -34,13 +36,7 @@ export async function POST(request, { params }) {
       .insert([data.data])
       .select("*")
       .single();
-    console.log(newData);
 
-    if (tiendaError) {
-      return handleError(tiendaError);
-    }
-
-    // Si hay un error en la actualización, lo lanza
     if (tiendaError) {
       console.error(
         `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
@@ -48,6 +44,7 @@ export async function POST(request, { params }) {
       throw new Error(
         `Error actualizando producto ${cat.id}: ${tiendaError.message}`
       );
+      return handleError(tiendaError);
     }
 
     return NextResponse.json({
@@ -66,7 +63,7 @@ export async function PUT(request, { params }) {
   const data = await request.formData();
   const categoria = JSON.parse(data.get("categoria"));
   const UUID = data.get("UUID");
-  console.log(categoria);
+  if (categoria) console.info("Categoria recivida");
   try {
     // Actualiza la categoría de la tienda
     await LogUser();
@@ -92,9 +89,8 @@ export async function PUT(request, { params }) {
         }
       })
     );
-    console.log("categorias ok");
+    console.info("categorias ok");
 
-    console.log(UUID);
     const { data: categoryNew, error: tiendaError } = await supabase
       .from("categorias")
       .select("*")
@@ -144,7 +140,7 @@ export async function DELETE(request, { params }) {
             }
           );
         } else {
-          console.log("Imagen eliminada:", result);
+          console.info("Imagen eliminada:", result);
         }
       });
     }

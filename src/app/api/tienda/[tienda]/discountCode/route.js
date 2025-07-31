@@ -11,7 +11,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -22,17 +24,15 @@ const LogUser = async () => {
 export async function POST(request, { params }) {
   await LogUser();
 
-  console.log("a");
   const { data: codeDiscount, error1 } = await supabase
     .from("codeDiscount")
     .select("*");
-  console.log(codeDiscount);
   if (error1) {
-    console.log(error1);
+    console.error(error1);
     return NextResponse.json({ message: error1.message }, { status: 401 });
   }
   if (!codeDiscount || !Array.isArray(codeDiscount)) {
-    console.log("No data returned from Supabase");
+    console.error("No data returned from Supabase");
     return NextResponse.json({ message: "No data found" }, { status: 404 });
   }
   const arrayOfNumbers = codeDiscount.map((obj) => obj.id);
@@ -50,7 +50,7 @@ export async function POST(request, { params }) {
     ])
     .select();
   if (error) {
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       { message: error },
@@ -68,7 +68,7 @@ export async function DELETE(request, { params }) {
   const id = url.searchParams.get("id"); // Obtener el ID desde los parámetros de consulta
   const { error } = await supabase.from("codeDiscount").delete().eq("id", id); // Asegúrate de especificar el campo correcto
   if (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json({ message: error.message }, { status: 401 });
   }
   return NextResponse.json({ message: "Código eliminado" });

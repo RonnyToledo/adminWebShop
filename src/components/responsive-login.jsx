@@ -48,7 +48,7 @@ export function ResponsiveLogin({ user }) {
       });
 
       const data = await res.json();
-      console.log(res);
+
       if (res.ok) {
         router.refresh();
       } else {

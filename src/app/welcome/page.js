@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 export default async function page() {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
-  console.log("userId ", user);
+  if (user) console.info("Usuario recivido");
+
   return <CrearClienteComponent user={user} />;
 }
 

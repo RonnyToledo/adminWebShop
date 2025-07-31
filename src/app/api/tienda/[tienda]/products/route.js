@@ -12,7 +12,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -76,7 +78,6 @@ export async function POST(request, { params }) {
 export async function PUT(request, { params }) {
   const data = await request.formData();
   const products = JSON.parse(data.get("products"));
-  console.log(products);
   try {
     await updateProductsInBatches(products, 10);
 
@@ -106,7 +107,6 @@ async function updateProductsInBatches(products, batchSize = 10) {
           .update({ agotado, order, caja, visible })
           .eq("productId", productId)
           .select("*");
-        console.log(prod);
         if (error) {
           console.error(
             `Error al actualizar el producto ${title}: ${error.message}`

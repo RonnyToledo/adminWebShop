@@ -14,7 +14,7 @@ export async function PUT(request, { params }) {
     .select()
     .eq("sitioweb", params.tienda);
   if (error) {
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       { message: error },

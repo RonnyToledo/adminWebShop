@@ -71,12 +71,11 @@ export default function AppSidebar({ ThemeContext }) {
   const router = useRouter();
 
   const Log_Out = async () => {
-    console.log("a");
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
         method: "DELETE",
       });
-      console.log(res);
+
       if (res.ok) {
         router.refresh();
       } else {

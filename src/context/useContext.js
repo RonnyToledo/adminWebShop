@@ -47,8 +47,13 @@ export default function MyProvider({ children, user, data }) {
 
   useEffect(() => {
     if ((!user || user == undefined) && !routesOffLogin.includes(pathname)) {
-      console.log("saltando desde Context");
+      console.info(
+        "No existe session, redirijiendo a pagina de Inicio de Session"
+      );
       router.push("/login");
+    }
+    if ((user || user !== undefined) && pathname == "/login") {
+      router.push("/");
     }
 
     if (data?.user?.role == "manager" && data?.user?.login == false) {
@@ -141,11 +146,4 @@ export default function MyProvider({ children, user, data }) {
       </SidebarProvider>
     </ThemeContext.Provider>
   );
-}
-function formatDate(date) {
-  const d = new Date(date);
-  const day = `${d.getDate()}`.padStart(2, "0"); // día con ceros delante
-  const month = `${d.getMonth() + 1}`.padStart(2, "0"); // meses de 0–11, por eso +1
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
 }

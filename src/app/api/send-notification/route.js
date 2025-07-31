@@ -34,7 +34,7 @@ export async function POST(req) {
         subscription,
         JSON.stringify({ title, message })
       );
-      console.log(title, message);
+      console.info("Notificaion recivida");
     });
 
     // Espera a que todas las notificaciones sean enviadas

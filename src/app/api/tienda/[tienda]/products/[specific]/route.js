@@ -6,16 +6,17 @@ import { cookies } from "next/headers"; // Importar cookies desde headers
 
 export async function GET(request, { params }) {
   await LogUser();
-
-  const { data: tienda } = await supabase
-    .from(params.tienda)
+  const { tienda, specific } = await params;
+  const { data } = await supabase
+    .from(tienda)
     .select("*")
-    .eq("productId", params.specific);
+    .eq("productId", specific);
 
-  return NextResponse.json(...new Set(tienda));
+  return NextResponse.json(...new Set(data));
 }
 export async function POST(request, { params }) {
   await LogUser();
+  const { specific } = await params;
 
   const data = await request.formData();
   const { data: tienda, error } = await supabase
@@ -26,9 +27,9 @@ export async function POST(request, { params }) {
       },
     ])
     .select("*")
-    .eq("productId", params.specific);
+    .eq("productId", specific);
   if (error) {
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       { message: error },
@@ -51,7 +52,7 @@ export async function PUT(request, { params }) {
   if (newImage) {
     //Eliminamos la vieja
     if (image) {
-      console.log("Acaso estas aqui");
+      console.info("Eliminando imagen antigua");
 
       const publicId = extractPublicId(image);
       cloudinary.uploader.destroy(publicId, (error, result) => {
@@ -65,11 +66,11 @@ export async function PUT(request, { params }) {
             }
           );
         } else {
-          console.log("Imagen eliminada:", result);
+          console.info("Imagen eliminada");
         }
       });
     }
-    console.log("salto la eliminacion");
+    console.info("salto la eliminacion");
 
     //Subimos la nueva
     const byte = await newImage.arrayBuffer();
@@ -84,7 +85,7 @@ export async function PUT(request, { params }) {
         })
         .end(buffer);
     });
-    console.log(res.secure_url);
+    if (res.secure_url) console.info("Imagen creada");
 
     //Subimos a la BD los datos
     const { data: tienda, error } = await supabase
@@ -105,7 +106,7 @@ export async function PUT(request, { params }) {
       .eq("productId", Id)
       .select("*");
     if (error) {
-      console.log("Error", error);
+      console.error("Error", error);
 
       return NextResponse.json(
         { message: error },
@@ -116,8 +117,7 @@ export async function PUT(request, { params }) {
     }
     return NextResponse.json(tienda);
   } else {
-    console.log("estamos aca");
-    console.log(Id);
+    console.info("estamos aca");
     //Si no tenemos nueva Imagen solo actualizamos los datos
     const { data: tienda, error } = await supabase
       .from("Products")
@@ -136,7 +136,7 @@ export async function PUT(request, { params }) {
       .select("*")
       .eq("productId", Id);
     if (error) {
-      console.log(error);
+      console.error(error);
 
       return NextResponse.json(
         { message: error },
@@ -145,7 +145,7 @@ export async function PUT(request, { params }) {
         }
       );
     }
-    console.log(tienda);
+    console.info("Tarea completada");
     return NextResponse.json(tienda);
   }
 }
@@ -155,7 +155,6 @@ export async function DELETE(request, { params }) {
   const data = await request.formData();
   const imageOld = data.get("image");
   const Id = data.get("Id");
-  console.log(Id);
   if (imageOld) {
     const publicId = extractPublicId(imageOld);
     cloudinary.uploader.destroy(publicId, (error, result) => {
@@ -169,7 +168,7 @@ export async function DELETE(request, { params }) {
           }
         );
       } else {
-        console.log("Imagen eliminada:", result);
+        console.info("Imagen eliminada");
       }
     });
   }
@@ -178,7 +177,7 @@ export async function DELETE(request, { params }) {
     .delete()
     .eq("productId", Id);
   if (error) {
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       { message: error },
@@ -187,7 +186,7 @@ export async function DELETE(request, { params }) {
       }
     );
   }
-  console.log(tienda);
+  console.info("Tarea completada");
   return NextResponse.json(tienda);
 }
 const LogUser = async () => {
@@ -199,7 +198,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,

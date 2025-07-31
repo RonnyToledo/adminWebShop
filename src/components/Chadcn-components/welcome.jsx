@@ -113,7 +113,7 @@ export default function MultiStepForm() {
       if (res.ok && data?.user?.id) {
         return data.user.id;
       } else {
-        console.log("Usuario no encontrado o error en la respuesta:", data);
+        console.info("Usuario no encontrado o error en la respuesta");
         router.push("/");
       }
     } catch (error) {

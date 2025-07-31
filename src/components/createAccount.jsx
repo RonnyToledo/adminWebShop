@@ -16,7 +16,7 @@ async function fetchUserSession() {
     if (res.ok && data?.user?.user?.id) {
       return data;
     } else {
-      console.log("Usuario no encontrado o error en la respuesta:", data);
+      console.info("Usuario no encontrado o error en la respuesta");
     }
   } catch (error) {
     console.error("Error al obtener la sesión del usuario:", error);
@@ -51,7 +51,7 @@ export default function CreateAccount() {
         },
       });
       if (error) throw error;
-      console.log("Redireccionando para completar el inicio de sesión...");
+      console.info("Redireccionando para completar el inicio de sesión...");
     } catch (error) {
       setError("Error al iniciar sesión con Google");
       console.error(error);

@@ -11,7 +11,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -34,7 +36,7 @@ export async function PUT(request, { params }) {
     .eq("sitioweb", params.tienda);
 
   if (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json(
       { message: error },
       {

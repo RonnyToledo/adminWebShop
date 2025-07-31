@@ -22,7 +22,8 @@ export const metadata = {
 export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
-  console.log(user);
+  if (user) console.info("Usuario recivido");
+  else console.error("usuario no encontrado");
   const data = await initializeData(userSession?.user?.user?.id);
 
   return (

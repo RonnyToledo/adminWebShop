@@ -11,7 +11,9 @@ const LogUser = async () => {
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
-  console.log(parsedCookie.access_token, parsedCookie.refresh_token);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -79,7 +81,7 @@ export async function PUT(request, { params }) {
       console.error(error.message);
       throw error;
     }
-    console.log(data);
+    console.info("Registros actualizados exitosamente");
     return new Response(
       JSON.stringify({ message: "Registros actualizados exitosamente", data }),
       {
@@ -99,7 +101,7 @@ export async function DELETE(request) {
 
   try {
     const body = await request.text(); // Intenta leer el cuerpo como texto
-    console.log("Cuerpo recibido:", body);
+    console.info("Cuerpo recibido");
 
     if (!body) {
       throw new Error("El cuerpo de la solicitud está vacío.");
@@ -108,7 +110,7 @@ export async function DELETE(request) {
     const parsedBody = JSON.parse(body); // Intenta convertirlo a JSON
     const { uid } = parsedBody;
 
-    console.log("UID recibido:", uid);
+    console.info("UID recibido:", uid);
 
     // Actualizar los registros en la tabla Events
     const { error } = await supabase
@@ -129,7 +131,7 @@ export async function DELETE(request) {
       }
     );
   } catch (error) {
-    console.log(error.message);
+    console.error(error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

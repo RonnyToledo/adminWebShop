@@ -16,6 +16,7 @@ function createSessionCookie(session) {
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 7, // 7 días
       path: "/",
+      sameSite: "lax",
     },
   };
 }
@@ -30,6 +31,7 @@ function clearSessionCookie() {
       secure: process.env.NODE_ENV === "production",
       maxAge: -1, // Expira la cookie
       path: "/",
+      sameSite: "lax",
     },
   };
 }
@@ -42,7 +44,7 @@ async function refreshAccessTokenIfNeeded(cookieValue) {
   const { data: user, error } = await supabase.auth.getUser(access_token);
 
   if (error) {
-    console.log("El access_token ha expirado, intentando renovar...");
+    console.info("El access_token ha expirado, intentando renovar...");
 
     const { data, error: refreshError } = await supabase.auth.refreshSession({
       refresh_token,
@@ -52,7 +54,7 @@ async function refreshAccessTokenIfNeeded(cookieValue) {
       return { error: refreshError?.message || "Sesión inválida" };
     }
 
-    console.log("access_token renovado exitosamente.");
+    console.info("access_token renovado exitosamente.");
     const newCookie = createSessionCookie(data.session);
     return { newAccessToken: data.session.access_token, newCookie };
   }
@@ -62,7 +64,6 @@ async function refreshAccessTokenIfNeeded(cookieValue) {
 
 // GET: Obtener la sesión almacenada
 export async function GET(req) {
-  console.log("GET /api/login called");
   const cookieStore = await cookies();
   const cookie = cookieStore.get("sb-access-token");
 
@@ -78,12 +79,11 @@ export async function GET(req) {
   );
 
   if (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json({ error }, { status: 401 });
   }
 
   const { data: user } = await supabase.auth.getUser(newAccessToken);
-  console.log("User de Supabase", user);
 
   const response = NextResponse.json({ user }, { status: 200 });
 
@@ -136,7 +136,6 @@ export async function POST(req) {
       email,
       password,
     });
-    console.log("session", session);
 
     if (error || !session) {
       return NextResponse.json(
@@ -233,7 +232,6 @@ export async function PUT(req) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  console.log("Body recibido en PUT /api/login:", body);
   const { email, password, name: full_name, image } = body;
 
   if (!email || !password || !full_name) {
@@ -258,7 +256,6 @@ export async function PUT(req) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    console.log("SignUp exitoso, user:", data.user);
     return NextResponse.json({ user: data.user }, { status: 200 });
   } catch (err) {
     console.error("Fallo de red al conectar con Supabase:", err);

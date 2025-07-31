@@ -14,7 +14,7 @@ export async function POST(request, { params }) {
     .eq("sitioweb", params.tienda);
 
   if (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json(
       { message: error },
       {

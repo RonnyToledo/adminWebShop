@@ -29,7 +29,6 @@ export default function UpdatePassword() {
       const params = new URLSearchParams(hash);
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
-      console.log("Obtener data de la url", access_token, refresh_token);
       if (access_token && refresh_token) {
         // Establecer sesión manualmente
         const {
@@ -64,9 +63,9 @@ export default function UpdatePassword() {
         error,
       } = await supabase.auth.getUser();
       if (error || !user) {
-        console.log("Obtener session de google error", error);
+        console.error("Error obtener session de google", error);
       } else {
-        console.log("Obtener session de google data", user);
+        console.info("Session obtenida de google", user);
       }
     }
     loadUser();
