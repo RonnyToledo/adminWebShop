@@ -266,14 +266,13 @@ export default function Configuracion({ ThemeContext }) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <Label className="text-base">Physical Location</Label>
+                    <Label className="text-base">Carrito</Label>
                     <p className="text-sm text-muted-foreground">
-                      Indicate if you have a physical location to receive
-                      customers
+                      Permitir el uso de carrito de compras en el catalogo
                     </p>
                   </div>
                   <SwitchStore
-                    name={store?.local}
+                    name={store?.carrito}
                     object={store}
                     title={"Local de Trabajo"}
                     funcion={setStore}
@@ -321,21 +320,6 @@ export default function Configuracion({ ThemeContext }) {
                   ) : (
                     <></>
                   )}
-                </div>
-
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Reservations</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Allow customers to make reservations
-                    </p>
-                  </div>
-                  <SwitchStore
-                    name={store?.reservas}
-                    object={store}
-                    title={"Permite Reservaciones"}
-                    funcion={setStore}
-                  />
                 </div>
               </div>
 

@@ -11,7 +11,6 @@ import {
   Select,
 } from "@/components/ui/select";
 import { Switch } from "../ui/switch";
-import { cn } from "@/lib/utils";
 
 export function InputStore({ name, object, value, action, type }) {
   return (

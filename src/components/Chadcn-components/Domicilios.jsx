@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { GitMerge } from "lucide-react";
+import { Input } from "../ui/input";
 import { useState, useEffect, useContext } from "react";
 import provinciasData from "@/components/json/Site.json";
 import { FromData } from "../globalFunction/fromData";
@@ -86,7 +86,7 @@ export default function Domicilios({ ThemeContext }) {
               </Card>
             )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {store?.envios.map((obj, ind) => (
               <Card key={ind} className="flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -113,29 +113,73 @@ export default function Domicilios({ ThemeContext }) {
                   </Button>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <h3 className="text-lg font-semibold mb-2">Municipios:</h3>
+                  <div className="grid grid-cols-5 gap-2  p-2">
+                    <h3 className="text-lg font-semibold mb-2 col-span-2">
+                      Municipios
+                    </h3>
+                    <h3 className="text-lg font-semibold mb-2 col-span-2">
+                      Envio ($)
+                    </h3>
+                  </div>
                   {obj.municipios.length > 0 ? (
-                    <ul className="space-y-2">
+                    <ul className="space-y-2 ">
                       {obj.municipios.map((obj1, index) => (
                         <li
                           key={index}
-                          className="flex items-center justify-between bg-secondary rounded-md p-2"
+                          className="grid grid-cols-5 gap-2 bg-secondary rounded-md p-2 "
                         >
-                          <span>{obj1}</span>
+                          <span className="col-span-2 line-clamp-2">
+                            {obj1.name}
+                          </span>
+                          <Input
+                            className="col-span-2"
+                            value={obj1.price}
+                            type="number"
+                            onChange={(e) => {
+                              console.log("a");
+                              const a = store?.envios[ind].municipios.find(
+                                (fil) => fil.name != obj1.name
+                              );
+
+                              console.log(a);
+                              setStore({
+                                ...store,
+                                envios: store?.envios.map((env) =>
+                                  env.nombre === obj.nombre
+                                    ? {
+                                        ...env,
+                                        municipios: env.municipios.map((muni) =>
+                                          muni.name == obj1.name
+                                            ? { ...muni, price: e.target.value }
+                                            : muni
+                                        ),
+                                      }
+                                    : env
+                                ),
+                              });
+                            }}
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
                               e.preventDefault();
                               const a = store?.envios[ind].municipios.filter(
-                                (fil) => fil != obj1
+                                (fil) => fil.name != obj1.name
                               );
 
                               setStore({
                                 ...store,
                                 envios: store?.envios.map((env) =>
                                   env.nombre === obj.nombre
-                                    ? { ...env, municipios: a }
+                                    ? {
+                                        ...env,
+                                        municipios: env.municipios.map((muni) =>
+                                          muni.name == obj1.name
+                                            ? { ...muni, name: a }
+                                            : muni
+                                        ),
+                                      }
                                     : env
                                 ),
                               });
@@ -156,7 +200,10 @@ export default function Domicilios({ ThemeContext }) {
                   {provincias
                     .filter((env) => env.nombre == obj.nombre)[0]
                     .municipios.filter(
-                      (elemento) => !obj.municipios.includes(elemento)
+                      (elemento) =>
+                        !obj.municipios
+                          .map((obj) => obj.name)
+                          .includes(elemento)
                     ).length > 0 && (
                     <div className="space-y-2">
                       <Label htmlFor="select-municipio">
