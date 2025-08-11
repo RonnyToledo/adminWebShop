@@ -1,23 +1,31 @@
 "use client";
+
+import React, { useState, useCallback, useContext, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import axios from "axios";
-import { Eye } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/use-toast";
-import { useState, useRef, useContext, useEffect } from "react";
 import ImageUpload from "../component/ImageDND";
 import ConfimationOut from "../globalFunction/confimationOut";
+import SecondaryImagesManager from "../secondaryImagesManager";
 import {
   Trash2,
   Check,
   ChevronsUpDown,
   DollarSign,
+  Eye,
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,61 +44,162 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "../ui/separator";
 import { logoApp } from "@/utils/image";
+import { extractBlobFilesFromArray } from "../globalFunction/extractBlobFilesFromArray";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ProductCard from "../component/cardGrid";
+import ProductDetailPage from "../component/cardSpecific";
+import { ScrollArea } from "../ui/scroll-area";
+
+const defaultProduct = {
+  productId: null,
+  title: "",
+  descripcion: "",
+  price: "",
+  order: "",
+  caja: "",
+  favorito: false,
+  agotado: false,
+  visible: true,
+  span: false,
+  image: "",
+  imagesecondary: [logoApp, logoApp, logoApp],
+  oldPrice: "",
+  // añade aquí otras propiedades que uses en los inputs
+};
+
+// util para comparar arrays simples de strings
+function arraysEqual(a = [], b = []) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 
 export default function Specific({ specific, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
-  const [newAregados, setNewAgregados] = useState({
-    nombre: "",
-    valor: 0,
-    cantidad: 0,
-  });
   const { toast } = useToast();
-  const form = useRef(null);
-  const [products, setProducts] = useState({
-    agregados: [],
-  });
-  const [newImage, setNewImage] = useState();
+
+  // inicializar con defaultProduct para que products NUNCA sea undefined
+  const [products, setProducts] = useState(defaultProduct);
+  const [newImage, setNewImage] = useState(null);
   const [deleteOriginal, setDeleteOriginal] = useState(false);
   const [openCategory, setOpenCategory] = useState(false);
 
+  // Seguro: buscar producto y merge con defaultProduct para tener siempre las props
   useEffect(() => {
-    setProducts(
-      (webshop?.products || []).find((obj) => obj.productId == specific)
-    );
+    setProducts(webshop.products.find((prod) => prod.productId === specific));
   }, [webshop?.products, specific]);
 
+  // Evita acceder a propiedades de `undefined` en comparaciones debug:
+  // Solo ejecutamos esta comprobación si existe el producto en webshop
+  useEffect(() => {
+    const found =
+      Array.isArray(webshop?.products) &&
+      webshop.products.find((obj) => obj.productId == specific);
+
+    if (found) {
+      const foundImages = Array.isArray(found?.imagesecondary)
+        ? found?.imagesecondary
+        : defaultProduct?.imagesecondary;
+      const currentClean = (products?.imagesecondary || []).filter(
+        (o) => o !== logoApp
+      );
+    } else {
+      // opcional: no hacer nada si no hay producto
+    }
+  }, [webshop?.products, specific, products?.imagesecondary]);
+
+  // handlers para SecondaryImagesManager
+  const handleImagesChangeClean = useCallback((cleanImages) => {
+    setProducts((prev) => {
+      const prevClean = (prev?.imagesecondary || []).filter(Boolean);
+      if (arraysEqual(prevClean, cleanImages)) return prev;
+      const fixed = [...cleanImages];
+      while (fixed.length < 3) fixed.push(logoApp);
+      return { ...prev, imagesecondary: fixed };
+    });
+  }, []);
+
+  const handleImagesChange = useCallback((newImages) => {
+    setProducts((prev) => {
+      const prevImgs = Array.isArray(prev?.imagesecondary)
+        ? prev?.imagesecondary
+        : [];
+      if (arraysEqual(prevImgs, newImages)) {
+        return prev;
+      }
+      return { ...prev, imagesecondary: newImages };
+    });
+  }, []);
+
+  // SaveData: usa products.* que siempre existen (gracias a defaultProduct)
   const SaveData = async (e) => {
     e.preventDefault();
     setDownloading(true);
     const formData = new FormData();
 
-    formData.append("title", products?.title);
-    formData.append("descripcion", products?.descripcion);
-    formData.append("price", products?.price);
-    formData.append("order", products?.order);
-    formData.append("caja", products?.caja);
-    formData.append("favorito", products?.favorito);
-    formData.append("agotado", products?.agotado);
-    formData.append("visible", products?.visible);
-    formData.append("Id", products?.productId);
-    formData.append("oldPrice", products?.oldPrice);
-    formData.append("span", products?.span);
+    const imagesecondary = products?.imagesecondary.filter(
+      (obj) => obj !== logoApp
+    );
+    const imagesecondaryWebshop = webshop.products.find(
+      (obj) => obj.productId == specific
+    )?.imagesecondary;
+    // Aseguramos que no enviamos undefined usando ?? ""
+    formData.append("title", products.title ?? "");
+    formData.append("descripcion", products.descripcion ?? "");
+    formData.append("price", products.price ?? "");
+    formData.append("order", products.order ?? "");
+    formData.append("caja", products.caja ?? "");
+    formData.append("favorito", String(!!products.favorito));
+    formData.append("agotado", String(!!products.agotado));
+    formData.append("visible", String(!!products.visible));
+    formData.append("Id", String(products.productId ?? ""));
+    formData.append("oldPrice", products.oldPrice ?? "");
+    formData.append("span", String(!!products.span));
+    formData.append("image", products.image ?? "");
+    formData.append("imagesecondary", JSON.stringify(imagesecondary));
+    formData.append(
+      "imagesecondaryCopy",
+      JSON.stringify(imagesecondaryWebshop)
+    );
+    if (
+      JSON.stringify(imagesecondaryWebshop) !== JSON.stringify(imagesecondary)
+    ) {
+      const value = await extractBlobFilesFromArray(imagesecondary, {
+        filenamePrefix: "prod",
+        revokeObjectURL: true,
+      });
+      // metadata: index + filename + previewUrl (para mapear en server)
+      const meta = value.map((v) => ({
+        index: v.index,
+        filename: v.file.name,
+        previewUrl: v.previewUrl ?? null,
+      }));
+
+      // agregamos metadata como JSON (pequeño y seguro)
+      formData.append("NewImagesSecondaryMeta", JSON.stringify(meta));
+
+      // agregamos cada File real al FormData (no serializar)
+      value.forEach((v) => {
+        // igual key para todos -> getAll en server
+        formData.append("newImageSecondaryFiles", v.file, v.file.name);
+      });
+    }
     if (newImage) {
       formData.append("newImage", newImage);
-      if (products?.image) formData.append("image", products?.image);
+      if (products.image) formData.append("image", products.image);
     }
+
     try {
       const res = await axios.put(
         `/api/tienda/${webshop?.store?.sitioweb}/products/${products?.productId}/`,
         formData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         }
       );
-      if (res.status == 200) {
+      if (res.status === 200) {
         toast({
           title: "Tarea Ejecutada",
           description: "Informacion Actualizada",
@@ -99,122 +208,32 @@ export default function Specific({ specific, ThemeContext }) {
           ),
         });
         const [a] = res.data;
-        const b = (webshop?.products || []).map((obj) =>
-          obj.productId == a.productId ? a : obj
-        );
-        setWebshop({ ...webshop, products: b });
+        console.log(a);
+        setWebshop({
+          ...webshop,
+          products: (webshop?.products || []).map((obj) =>
+            obj.productId == a.productId ? a : obj
+          ),
+        });
       }
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
       toast({
         title: "Error",
         variant: "destructive",
-
         description: "No se actualizar el producto.",
       });
     } finally {
       setDownloading(false);
     }
   };
-  const SubirAgregado = async (e) => {
-    e.preventDefault();
-    try {
-      if (newAregados.nombre && newAregados.valor) {
-        const formData = new FormData();
 
-        formData.append("nombre", newAregados.nombre);
-        formData.append("valor", newAregados.valor);
-        formData.append("cantidad", newAregados.cantidad);
-        const res = await axios.post(
-          `/api/tienda/${webshop?.store?.sitioweb}/products/${products?.productId}/agregado`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        if (res.status == 200) {
-          toast({
-            title: "Tarea Ejecutada",
-            description: "Informacion Actualizada",
-            action: (
-              <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-            ),
-          });
-          setProducts({
-            ...products,
-            agregados: [...products?.agregados, res?.data?.value],
-          });
-          setNewAgregados({
-            nombre: "",
-            valor: 0,
-            cantidad: 0,
-          });
-        } else {
-          toast({
-            title: "Error",
-            variant: "destructive",
-
-            description: "No hay datos.",
-          });
-        }
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        variant: "destructive",
-
-        description: "No se actualizar el producto.",
-      });
-    }
-  };
-  const Delete = async (e, id) => {
-    e.preventDefault();
-    try {
-      const formData = new FormData();
-
-      formData.append("id", id);
-      const res = await axios.post(
-        `/api/tienda/${webshop?.store?.sitioweb}/products/${products?.productId}/agregado`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (res.status == 200) {
-        toast({
-          title: "Tarea Ejecutada",
-          description: "Informacion Actualizada",
-          action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-          ),
-        });
-        setProducts({
-          ...products,
-          agregados: products?.agregados.filter((fil) => fil.id != id),
-        });
-      }
-    } catch (error) {
-      console.error("Error al enviar el comentario:", error);
-      toast({
-        title: "Error",
-        variant: "destructive",
-
-        description: "No se actualizar el producto.",
-      });
-    }
-  };
-
+  // Si prefieres recibir sólo las imágenes válidas (sin slots vacíos)
+  console.log(webshop.products);
   return (
     <main className="grid min-h-screen w-full ">
       <div className="flex flex-col p-3 w-full ">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Editar producto</h1>
-        </div>
-        <form onSubmit={SaveData} className="flex flex-1 flex-col gap-8 p-6">
+        <form onSubmit={SaveData} className="flex flex-1 flex-col gap-8 ">
           <div className="grid gap-6 md:grid-cols-3">
             <div className="grid col-span-1 md:col-span-2 gap-6">
               <Card>
@@ -287,6 +306,23 @@ export default function Specific({ specific, ThemeContext }) {
                       />
                     </div>
                   )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle> Imágenes Secundarias</CardTitle>
+                  <CardDescription>
+                    Arrastra las imágenes para reordenarlas. Máximo 3 imágenes
+                    secundarias.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SecondaryImagesManager
+                    initialImages={products?.imagesecondary || []}
+                    onChange={handleImagesChange}
+                    onChangeClean={handleImagesChangeClean}
+                    maxImages={3}
+                  />
                 </CardContent>
               </Card>
 
@@ -550,50 +586,30 @@ export default function Specific({ specific, ThemeContext }) {
             {/* Vista Previa */}
             <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1">
               <Card>
-                <CardHeader className="p-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Vista Previa
-                  </CardTitle>
-                </CardHeader>
-                <Separator />
-                <CardContent className="p-4">
-                  <div className=" rounded-lg  bg-white">
-                    <div className=" flex justify-center">
-                      <Image
-                        src={
-                          newImage
-                            ? URL.createObjectURL(newImage)
-                            : products?.image ||
-                              webshop?.store?.urlPoster ||
-                              logoApp
-                        }
-                        alt="Vista previa"
-                        className={` object-cover rounded mb-1 ${
-                          products?.span ? "w-full" : "w-auto"
-                        }`}
-                        style={{
-                          aspectRatio: products?.span ? "16/9" : "4/5",
-                          filter: products?.agotado
-                            ? "grayscale(100%)"
-                            : "grayscale(0)",
-                        }}
-                        width={300}
-                        height={300}
+                <CardContent className="p-2">
+                  <Tabs defaultValue="grid">
+                    <TabsList>
+                      <TabsTrigger value="grid">Grid</TabsTrigger>
+                      <TabsTrigger value="specific">Details</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="grid" className="p-0">
+                      <ProductCard
+                        product={products}
+                        store={webshop?.store}
+                        banner={logoApp}
                       />
-                    </div>
-                    <h3 className="font-medium text-sm truncate line-clamp-1">
-                      {products?.title || "Título del producto"}
-                    </h3>
-                    <div className="grid grid-cols-4 items-center mt-2">
-                      <h3 className="col-span-3 font-medium text-xs line-clamp-2">
-                        {products?.descripcion || "Descripcion"}
-                      </h3>
-                      <p className="col-span-1 text-end text-xs font-bold text-red-600">
-                        ${Number(products?.price).toFixed(2) || "0.00"}
-                      </p>
-                    </div>
-                  </div>
+                    </TabsContent>
+                    <TabsContent value="specific" className="p-0">
+                      <ScrollArea className="h-svh">
+                        <ProductDetailPage
+                          product={products}
+                          store={webshop?.store}
+                          logoApp={logoApp}
+                          id="123"
+                        />
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </div>

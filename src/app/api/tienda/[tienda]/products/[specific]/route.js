@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import cloudinary from "@/lib/cloudinary";
-import { extractPublicId } from "cloudinary-build-url";
 import { cookies } from "next/headers"; // Importar cookies desde headers
+import {
+  DestroyImage,
+  UploadNewImage,
+} from "@/components/globalFunction/imagesMove";
 
 export async function GET(request, { params }) {
   await LogUser();
@@ -43,111 +45,95 @@ export async function POST(request, { params }) {
 
 export async function PUT(request, { params }) {
   await LogUser();
-
   const data = await request.formData();
+  // obtener metadata y archivos del formData
+  const newImagesMeta = JSON.parse(data.get("NewImagesSecondaryMeta") || "[]"); // [{index, filename, previewUrl}, ...]
+  const imagesecondaryCopy = JSON.parse(data.get("imagesecondaryCopy") || "[]"); // [{index, filename, previewUrl}, ...]
+  const uploadedFiles = data.getAll("newImageSecondaryFiles"); // array de Blobs/Files (multipart entries)
+  let PrimaryImagen = data.get("image");
+  let SecondaryImage = data.get("imagesecondary");
   const Id = data.get("Id");
-  const newImage = data.get("newImage");
-  const image = data.get("image");
+
+  const newImagePrimary = data.get("newImage");
+
+  const val = await Promise.all(
+    imagesecondaryCopy
+      .filter((obj) => !data.get("imagesecondary").includes(obj))
+      .map(async (obj) => {
+        await DestroyImage(obj);
+        console.info(`${obj} ================ eliminado`);
+        return "ok";
+      })
+  );
+  // Crear mapa filename -> blob
+  const filesByName = new Map(
+    uploadedFiles.map((f) => [f.name || (f.filename ?? ""), f])
+  );
+
+  // crear estructura que espera handleNewSecondaryImages
+  const newImageSecondary = newImagesMeta
+    .map((m) => {
+      const file = filesByName.get(m.filename);
+      if (!file) {
+        console.warn("No se encontró file para", m.filename);
+        return null;
+      }
+      return { index: m.index, file, previewUrl: m.previewUrl };
+    })
+    .filter(Boolean);
+
   //Si tenemos imagen nueva
-  if (newImage) {
+  if (newImagePrimary) {
     //Eliminamos la vieja
-    if (image) {
+    console.info("No deberiamos estar aqui");
+    if (PrimaryImagen) {
       console.info("Eliminando imagen antigua");
-
-      const publicId = extractPublicId(image);
-      cloudinary.uploader.destroy(publicId, (error, result) => {
-        if (error) {
-          console.error("Error eliminando imagen:", error);
-
-          return NextResponse.json(
-            { message: error },
-            {
-              status: 401,
-            }
-          );
-        } else {
-          console.info("Imagen eliminada");
-        }
-      });
+      await DestroyImage(PrimaryImagen);
     }
     console.info("salto la eliminacion");
-
-    //Subimos la nueva
-    const byte = await newImage.arrayBuffer();
-    const buffer = Buffer.from(byte);
-    const res = await new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream({ resource_type: "image" }, (err, result) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(result);
-        })
-        .end(buffer);
-    });
-    if (res.secure_url) console.info("Imagen creada");
-
-    //Subimos a la BD los datos
-    const { data: tienda, error } = await supabase
-      .from("Products")
-      .update({
-        title: data.get("title"),
-        descripcion: data.get("descripcion"),
-        price: data.get("price"),
-        order: data.get("order"),
-        caja: data.get("caja"),
-        favorito: data.get("favorito"),
-        agotado: data.get("agotado"),
-        visible: data.get("visible"),
-        oldPrice: data.get("oldPrice"),
-        span: data.get("span"),
-        image: res.secure_url,
-      })
-      .eq("productId", Id)
-      .select("*");
-    if (error) {
-      console.error("Error", error);
-
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 402,
-        }
-      );
+    const res = await UploadNewImage(newImagePrimary);
+    if (res.secure_url) {
+      console.info("Imagen creada");
+      PrimaryImagen = res.secure_url;
     }
-    return NextResponse.json(tienda);
-  } else {
-    console.info("estamos aca");
-    //Si no tenemos nueva Imagen solo actualizamos los datos
-    const { data: tienda, error } = await supabase
-      .from("Products")
-      .update({
-        title: data.get("title"),
-        descripcion: data.get("descripcion"),
-        price: data.get("price"),
-        order: data.get("order"),
-        caja: data.get("caja"),
-        favorito: data.get("favorito"),
-        agotado: data.get("agotado"),
-        visible: data.get("visible"),
-        span: data.get("span"),
-        oldPrice: data.get("oldPrice"),
-      })
-      .select("*")
-      .eq("productId", Id);
-    if (error) {
-      console.error(error);
-
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 401,
-        }
-      );
-    }
-    console.info("Tarea completada");
-    return NextResponse.json(tienda);
   }
+  const aux = await handleNewSecondaryImages(newImageSecondary, SecondaryImage);
+
+  SecondaryImage = aux.length > 0 ? aux : SecondaryImage;
+
+  //Subimos a la BD los datos
+  const { data: tienda, error } = await supabase
+    .from("Products")
+    .update({
+      title: data.get("title"),
+      descripcion: data.get("descripcion"),
+      price: data.get("price"),
+      order: data.get("order"),
+      caja: data.get("caja"),
+      favorito: data.get("favorito"),
+      agotado: data.get("agotado"),
+      visible: data.get("visible"),
+      oldPrice: data.get("oldPrice"),
+      span: data.get("span"),
+      image: PrimaryImagen,
+      imagesecondary:
+        typeof SecondaryImage === "string"
+          ? JSON.parse(SecondaryImage)
+          : SecondaryImage,
+    })
+    .eq("productId", Id)
+    .select("*");
+  if (error) {
+    console.error("Error", error);
+
+    return NextResponse.json(
+      { message: error },
+      {
+        status: 402,
+      }
+    );
+  }
+  return NextResponse.json(tienda);
 }
 export async function DELETE(request, { params }) {
   await LogUser();
@@ -156,21 +142,7 @@ export async function DELETE(request, { params }) {
   const imageOld = data.get("image");
   const Id = data.get("Id");
   if (imageOld) {
-    const publicId = extractPublicId(imageOld);
-    cloudinary.uploader.destroy(publicId, (error, result) => {
-      if (error) {
-        console.error("Error eliminando imagen:", error);
-
-        return NextResponse.json(
-          { message: error },
-          {
-            status: 402,
-          }
-        );
-      } else {
-        console.info("Imagen eliminada");
-      }
-    });
+    DestroyImage(imageOld);
   }
   const { data: tienda, error } = await supabase
     .from("Products")
@@ -207,3 +179,92 @@ const LogUser = async () => {
     refresh_token: parsedCookie.refresh_token,
   });
 };
+
+async function handleNewSecondaryImages(newImageSecondary, SecondaryImage) {
+  // si no hay nada que procesar devolvemos el original en forma de array
+  if (!Array.isArray(newImageSecondary) || newImageSecondary.length === 0) {
+    return Array.isArray(SecondaryImage) ? SecondaryImage : [];
+  }
+
+  // --- Normalizar SecondaryImage a array ---
+  let existing = [];
+  if (typeof SecondaryImage === "string") {
+    try {
+      const parsed = JSON.parse(SecondaryImage);
+      existing = Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      // si no es JSON, intentamos usarlo como single-value
+      existing = SecondaryImage ? [SecondaryImage] : [];
+    }
+  } else if (Array.isArray(SecondaryImage)) {
+    existing = [...SecondaryImage];
+  } else {
+    existing = [];
+  }
+
+  // --- Crear 'updated' evitando holes ---
+  // Determinar la longitud mínima necesaria: la mayor entre existing.length y maxIndex+1
+  const maxIndex = newImageSecondary.reduce((m, it) => {
+    const i = Number(it?.index);
+    return Number.isFinite(i) ? Math.max(m, i) : m;
+  }, -1);
+  const neededLength = Math.max(existing.length, maxIndex + 1, 0);
+
+  // inicializamos con los valores existentes (o null si no existía)
+  const updated = Array.from({ length: neededLength }, (_, i) =>
+    i < existing.length ? existing[i] : null
+  );
+
+  // --- Procesar cada item ---
+  for (const item of newImageSecondary) {
+    try {
+      const idx = Number(item?.index);
+      const file = item?.file;
+
+      if (!Number.isFinite(idx)) {
+        console.warn("Índice inválido, se salta item:", item);
+        continue;
+      }
+
+      // detectar file-like (servidor: Blob, File, Buffer, Stream...)
+      const isFileLike =
+        file &&
+        (typeof file.arrayBuffer === "function" ||
+          typeof file.stream === "function" ||
+          typeof file.pipe === "function" ||
+          (typeof Buffer !== "undefined" && file instanceof Buffer));
+
+      if (!isFileLike) {
+        console.warn("Item sin archivo válido (no file-like), se salta:", item);
+        continue;
+      }
+
+      // borrar imagen antigua si existe
+      const toDelete = updated[idx];
+      if (toDelete) {
+        try {
+          await DestroyImage(toDelete);
+        } catch (err) {
+          console.warn("Error borrando imagen antigua:", err);
+          // no rompemos, intentamos subir de todas formas
+        }
+      }
+
+      // subir nuevo archivo (UploadNewImage debe aceptar Blob/File/Buffer)
+      const uploadedRes = await UploadNewImage(file);
+      const uploadedUrl = uploadedRes?.secure_url ?? uploadedRes;
+
+      // asignamos en la posición correcta (no creamos holes porque 'updated' ya tiene longitud necesaria)
+      updated[idx] = uploadedUrl;
+      // NO return aquí; seguimos procesando todos los items
+    } catch (err) {
+      console.error("Failed processing item", item, err);
+      // seguimos con los demás
+    }
+  }
+
+  // opcional: si quieres eliminar nulls y compactar, hazlo aquí.
+  // return updated.filter(Boolean);
+
+  return updated;
+}

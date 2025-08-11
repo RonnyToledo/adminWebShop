@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import { extractPublicId } from "cloudinary-build-url";
-import cloudinary from "@/lib/cloudinary";
+import {
+  DestroyImage,
+  UploadNewImage,
+} from "@/components/globalFunction/imagesMove";
 import { cookies } from "next/headers"; // Importar cookies desde headers
 
 const LogUser = async () => {
@@ -112,35 +114,4 @@ export async function PUT(request, { params }) {
   }
 
   return NextResponse.json({ message: "Producto creado" });
-}
-async function DestroyImage(image) {
-  const publicId = extractPublicId(image);
-  await cloudinary.uploader.destroy(publicId, (error, result) => {
-    if (error) {
-      console.error("Error eliminando imagen:", error);
-
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 401,
-        }
-      );
-    } else {
-      console.info("Imagen eliminada:", result);
-    }
-  });
-}
-async function UploadNewImage(image) {
-  const byte = await image.arrayBuffer();
-  const buffer = Buffer.from(byte);
-  return await new Promise((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream({ resource_type: "image" }, (err, result) => {
-        if (err) {
-          reject(err);
-        }
-        resolve(result);
-      })
-      .end(buffer);
-  });
 }

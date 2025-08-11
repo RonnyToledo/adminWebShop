@@ -135,7 +135,7 @@ export default function TableRowsComponentAgotados({
           // Aplicar la nueva organización
           return OrderProducts(
             newPrev,
-            webshop.store.categoria.map((obj) => obj.id),
+            webshop?.store?.categoria.map((obj) => obj.id),
             sourceIndex,
             destIndex
           );
@@ -147,9 +147,10 @@ export default function TableRowsComponentAgotados({
 
   return (
     <DragDropContext onDragEnd={DragAndDrop}>
-      {(moveElements
-        ? ExtraerCategorias(webshop.store.categoria, products)
-        : webshop.store.categoria
+      {(
+        (moveElements
+          ? ExtraerCategorias(webshop?.store?.categoria, products)
+          : webshop?.store?.categoria) || []
       ).map((categoria, ind) => (
         <TableComponet
           key={ind}

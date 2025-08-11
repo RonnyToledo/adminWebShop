@@ -50,7 +50,7 @@ export default function MyProvider({ children, user, data }) {
       console.info(
         "No existe session, redirijiendo a pagina de Inicio de Session"
       );
-      router.push("/login");
+      router.push(`/login?${pathname}`);
     }
     if ((user || user !== undefined) && pathname == "/login") {
       router.push("/");

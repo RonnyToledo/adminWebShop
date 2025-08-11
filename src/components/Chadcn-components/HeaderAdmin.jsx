@@ -29,12 +29,8 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function HeaderAdmin({ ThemeContext }) {
-  const { toast } = useToast();
-  const { webshop } = useContext(ThemeContext);
-  const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
   const pathParts = pathname.split("/").filter((part) => part);
