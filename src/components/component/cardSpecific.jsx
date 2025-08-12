@@ -300,7 +300,7 @@ export default function ProductDetailPage({
                 {ExpandableText ? (
                   <ExpandableText text={product?.descripcion || "..."} />
                 ) : (
-                  <p className="text-[4px]">{product?.descripcion || "..."}</p>
+                  <p className="text-[6px]">{product?.descripcion || "..."}</p>
                 )}
               </div>
             </TabsContent>

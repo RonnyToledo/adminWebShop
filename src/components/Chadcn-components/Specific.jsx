@@ -576,7 +576,11 @@ export default function Specific({ specific, ThemeContext }) {
                     <Switch
                       checked={products?.visible}
                       onCheckedChange={(value) =>
-                        setProducts({ ...products, visible: value })
+                        setProducts({
+                          ...products,
+                          visible: value,
+                          modified: new Date().toISOString(),
+                        })
                       }
                     />
                   </div>
@@ -600,7 +604,7 @@ export default function Specific({ specific, ThemeContext }) {
                       />
                     </TabsContent>
                     <TabsContent value="specific" className="p-0">
-                      <ScrollArea className="h-svh">
+                      <ScrollArea className="h-[70vh]">
                         <ProductDetailPage
                           product={products}
                           store={webshop?.store}

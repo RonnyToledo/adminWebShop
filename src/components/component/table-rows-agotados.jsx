@@ -320,7 +320,11 @@ function TableComponet({
                                   setProducts((prev) =>
                                     prev.map((prod) =>
                                       prod.productId === obj.productId
-                                        ? { ...prod, visible: !obj.visible }
+                                        ? {
+                                            ...prod,
+                                            visible: !obj.visible,
+                                            modified: new Date().toISOString(),
+                                          }
                                         : prod
                                     )
                                   )
