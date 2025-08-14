@@ -59,6 +59,7 @@ export async function POST(request, { params }) {
       _caja: data.get("caja"),
       _favorito: data.get("favorito") === "true",
       _descripcion: data.get("descripcion"),
+      _caracteristicas: data.get("caracteristicas"),
       _span: data.get("span") === "true",
       _image_url: imageUrl,
       _storeid: Ui, // <- CAMBIO AQUÍ

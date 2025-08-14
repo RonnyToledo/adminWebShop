@@ -4,6 +4,7 @@ export function OrderProducts(productos, categorias) {
 
   productos
     .sort((a, b) => a.order - b.order)
+
     .forEach((producto) => {
       if (productosOrdenados[producto.caja]) {
         productosOrdenados[producto.caja].push(producto);

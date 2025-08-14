@@ -27,10 +27,25 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { logoApp } from "@/utils/image";
-import { Eye, DollarSign, FileText, ImageIcon } from "lucide-react";
+import { Plus, X, DollarSign, FileText, ImageIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ProductCard from "../component/cardGrid";
+import ProductDetailPage from "../component/cardSpecific";
+import { ScrollArea } from "../ui/scroll-area";
+import Caracteristicas from "../component/Caracteristicas";
 
+const initialCase = {
+  favorito: false,
+  span: false,
+  title: "",
+  descripcion: "",
+  discount: 0,
+  caracteristicas: [],
+  priceCompra: 0,
+  price: 0,
+};
 export default function NewProduct({ ThemeContext }) {
   const [openCategory, setOpenCategory] = useState(false);
 
@@ -39,13 +54,35 @@ export default function NewProduct({ ThemeContext }) {
   const { toast } = useToast();
   const form = useRef(null);
   const [imageNew, setImageNew] = useState();
-  const [products, setProducts] = useState({
-    favorito: false,
-    span: false,
-    title: "",
-    descripcion: "",
-    discount: 0,
-  });
+  const [products, setProducts] = useState(initialCase);
+  const [newItem, setNewItem] = useState("");
+
+  const addItem = () => {
+    if (newItem.trim()) {
+      setProducts({
+        ...products,
+        caracteristicas: Array.from(
+          new Set([...(products.caracteristicas || []), newItem.trim()])
+        ),
+      });
+      setNewItem("");
+    } else {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Introduzca una caracteristica",
+      });
+    }
+  };
+
+  const removeItem = (indexToRemove) => {
+    setProducts({
+      ...products,
+      caracteristicas: products.caracteristicas.filter(
+        (c) => c !== indexToRemove
+      ),
+    });
+  };
 
   function getLocalISOString(date) {
     const offset = date.getTimezoneOffset(); // Obtiene el desfase en minutos
@@ -60,11 +97,16 @@ export default function NewProduct({ ThemeContext }) {
     const formData = new FormData();
     formData.append("title", products.title);
     formData.append("price", products.price);
+    formData.append("oldPrice", products.oldPrice);
     formData.append("priceCompra", products.priceCompra);
     formData.append("caja", products.caja);
     formData.append("favorito", products.favorito);
     formData.append("descripcion", products.descripcion);
     formData.append("span", products.span);
+    formData.append(
+      "caracteristicas",
+      JSON.stringify(products.caracteristicas)
+    );
     formData.append("UID", webshop?.store?.UUID);
     formData.append("creado", getLocalISOString(now));
     if (products.image) formData.append("image", products.image);
@@ -90,18 +132,11 @@ export default function NewProduct({ ThemeContext }) {
           products: [...webshop?.products, res.data],
         });
         form.current.reset();
-        setProducts({
-          ...products,
-          favorito: false,
-          title: "",
-          descripcion: "",
-          discount: 0,
-          price: 0,
-        });
+        setProducts({ ...products, ...initialCase });
         setImageNew(null);
       }
     } catch (error) {
-      console.error("Crear el producto:", error);
+      console.error("Crear el producto", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -115,11 +150,12 @@ export default function NewProduct({ ThemeContext }) {
   useEffect(() => {
     setProducts((prev) => ({ ...prev, image: imageNew }));
   }, [imageNew]);
+
   return (
     <main className=" mx-auto  px-4 sm:px-6 lg:px-8 ">
       <form ref={form} onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className=" col-span-1 md:col-span-2 grid grid-cols-1 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+          <div className=" col-span-1 md:col-span-5 grid grid-cols-1 gap-2">
             {/* Columna Principal */}
             <div className="col-span-1  space-y-6">
               {/* Información Básica */}
@@ -392,51 +428,43 @@ export default function NewProduct({ ThemeContext }) {
                   </div>
                 </CardContent>
               </Card>
+
+              <Caracteristicas
+                items={products.caracteristicas}
+                addItem={addItem}
+                removeItem={removeItem}
+                newItem={newItem}
+                setNewItem={setNewItem}
+              />
             </div>
           </div>
           {/* Vista Previa */}
-          <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1">
+          <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1 md:col-span-2">
             <Card>
-              <CardHeader className="p-4">
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
-                  Vista Previa
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className=" rounded-lg  bg-white">
-                  <div className="flex justify-center">
-                    <Image
-                      src={
-                        imageNew
-                          ? URL.createObjectURL(imageNew)
-                          : webshop?.store?.urlPoster || logoApp
-                      }
-                      alt="Vista previa"
-                      className={` object-cover rounded mb-1 ${
-                        products.span ? "w-full" : "w-auto"
-                      }`}
-                      style={
-                        products.span
-                          ? { aspectRatio: "16/9" }
-                          : { aspectRatio: "4/5" }
-                      }
-                      width={150}
-                      height={150}
+              <CardContent className="p-2">
+                <Tabs defaultValue="grid">
+                  <TabsList>
+                    <TabsTrigger value="grid">Grid</TabsTrigger>
+                    <TabsTrigger value="specific">Details</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="grid" className="p-0">
+                    <ProductCard
+                      product={products}
+                      store={webshop?.store}
+                      banner={logoApp}
                     />
-                  </div>
-                  <h3 className="font-medium text-sm truncate line-clamp-1">
-                    {products.title || "Título del producto"}
-                  </h3>
-                  <div className="grid grid-cols-4 items-center mt-2">
-                    <h3 className="col-span-3 font-medium text-xs line-clamp-2">
-                      {products.descripcion || "Descripcion"}
-                    </h3>
-                    <p className="col-span-1 text-end text-xs font-bold text-red-600">
-                      ${Number(products.price).toFixed(2) || "0.00"}
-                    </p>
-                  </div>
-                </div>
+                  </TabsContent>
+                  <TabsContent value="specific" className="p-0">
+                    <ScrollArea className="h-[70vh]">
+                      <ProductDetailPage
+                        product={products}
+                        store={webshop?.store}
+                        logoApp={logoApp}
+                        id="123"
+                      />
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>

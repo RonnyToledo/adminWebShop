@@ -25,7 +25,6 @@ import {
   Check,
   ChevronsUpDown,
   DollarSign,
-  Eye,
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,6 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductCard from "../component/cardGrid";
 import ProductDetailPage from "../component/cardSpecific";
 import { ScrollArea } from "../ui/scroll-area";
+import Caracteristicas from "../component/Caracteristicas";
 
 const defaultProduct = {
   productId: null,
@@ -63,7 +63,9 @@ const defaultProduct = {
   span: false,
   image: "",
   imagesecondary: [logoApp, logoApp, logoApp],
+  caracteristicas: [],
   oldPrice: "",
+  priceCompra: 0,
   // añade aquí otras propiedades que uses en los inputs
 };
 
@@ -85,6 +87,35 @@ export default function Specific({ specific, ThemeContext }) {
   const [newImage, setNewImage] = useState(null);
   const [deleteOriginal, setDeleteOriginal] = useState(false);
   const [openCategory, setOpenCategory] = useState(false);
+
+  const [newItem, setNewItem] = useState("");
+
+  const addItem = () => {
+    if (newItem.trim()) {
+      setProducts({
+        ...products,
+        caracteristicas: Array.from(
+          new Set([...(products.caracteristicas || []), newItem.trim()])
+        ),
+      });
+      setNewItem("");
+    } else {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Introduzca una caracteristica",
+      });
+    }
+  };
+
+  const removeItem = (indexToRemove) => {
+    setProducts({
+      ...products,
+      caracteristicas: products.caracteristicas.filter(
+        (c) => c !== indexToRemove
+      ),
+    });
+  };
 
   // Seguro: buscar producto y merge con defaultProduct para tener siempre las props
   useEffect(() => {
@@ -148,14 +179,15 @@ export default function Specific({ specific, ThemeContext }) {
     // Aseguramos que no enviamos undefined usando ?? ""
     formData.append("title", products.title ?? "");
     formData.append("descripcion", products.descripcion ?? "");
-    formData.append("price", products.price ?? "");
-    formData.append("order", products.order ?? "");
+    formData.append("price", products.price ?? 0);
+    formData.append("priceCompra", products.priceCompra ?? 0);
+    formData.append("order", products.order ?? 100000);
     formData.append("caja", products.caja ?? "");
     formData.append("favorito", String(!!products.favorito));
     formData.append("agotado", String(!!products.agotado));
     formData.append("visible", String(!!products.visible));
     formData.append("Id", String(products.productId ?? ""));
-    formData.append("oldPrice", products.oldPrice ?? "");
+    formData.append("oldPrice", products.oldPrice ?? 0);
     formData.append("span", String(!!products.span));
     formData.append("image", products.image ?? "");
     formData.append("imagesecondary", JSON.stringify(imagesecondary));
@@ -234,8 +266,8 @@ export default function Specific({ specific, ThemeContext }) {
     <main className="grid min-h-screen w-full ">
       <div className="flex flex-col p-3 w-full ">
         <form onSubmit={SaveData} className="flex flex-1 flex-col gap-8 ">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="grid col-span-1 md:col-span-2 gap-6">
+          <div className="grid gap-6 md:grid-cols-7">
+            <div className="grid col-span-1 md:col-span-5 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Imagen del producto</CardTitle>
@@ -586,9 +618,17 @@ export default function Specific({ specific, ThemeContext }) {
                   </div>
                 </CardContent>
               </Card>
+
+              <Caracteristicas
+                items={products?.caracteristicas || []}
+                addItem={addItem}
+                removeItem={removeItem}
+                newItem={newItem}
+                setNewItem={setNewItem}
+              />
             </div>
             {/* Vista Previa */}
-            <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1">
+            <div className="sticky top-20  max-h-[70svh]  grid grid-cols-1 md:col-span-2">
               <Card>
                 <CardContent className="p-2">
                   <Tabs defaultValue="grid">
@@ -641,45 +681,6 @@ export default function Specific({ specific, ThemeContext }) {
   );
 }
 
-function PlusIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  );
-}
-function TrashIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-    </svg>
-  );
-}
 // Utilidad y helpers
 const hasPendingChanges = (data, store) => {
   return JSON.stringify(data) !== JSON.stringify(store);

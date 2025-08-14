@@ -114,6 +114,7 @@ export async function PUT(request, { params }) {
       agotado: data.get("agotado"),
       visible: data.get("visible"),
       oldPrice: data.get("oldPrice"),
+      priceCompra: data.get("priceCompra"),
       span: data.get("span"),
       image: PrimaryImagen,
       imagesecondary:

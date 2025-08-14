@@ -90,6 +90,7 @@ export const initializeData = async (userId) => {
       products: productosParsed.map((obj) => ({
         ...obj,
         visitas: gaData.visitasProductos[obj.productId] || 0,
+        caracteristicas: JSON.parse(obj.caracteristicas),
       })),
       events: eventsParsed,
       code: tiendaParsed.codeDiscount,

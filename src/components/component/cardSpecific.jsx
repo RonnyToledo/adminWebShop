@@ -19,7 +19,6 @@ export default function ProductDetailPage({
   ExpandableText = null,
   RatingSection = null,
 }) {
-  const router = useRouter();
   const [countAddCart, setCountAddCart] = useState(1);
   const [swipeDirection, setSwipeDirection] = useState("next");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -62,7 +61,6 @@ export default function ProductDetailPage({
       // Resetear éxito después de 2 segundos
       setTimeout(() => {
         setShowSuccess(false);
-        router.push(`/t/${store?.sitioweb}`);
       }, 2000);
     }, 1000);
   };
@@ -128,7 +126,7 @@ export default function ProductDetailPage({
             <h1
               className={`line-clamp-1 text-sm font-bold text-gray-900 animate-in ${swipeComponents.corto} duration-500 delay-200`}
             >
-              {product?.title}
+              {product?.title || "..."}
             </h1>
 
             <div
@@ -138,7 +136,7 @@ export default function ProductDetailPage({
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`size-4 ${
+                    className={`size-2.5 ${
                       i < Math.floor(product?.coment?.promedio || 0)
                         ? "text-yellow-400 fill-current"
                         : "text-gray-500"
@@ -146,7 +144,7 @@ export default function ProductDetailPage({
                   />
                 ))}
               </div>
-              <span className="text-sm text-gray-600">
+              <span className="text-[8px] text-gray-600">
                 {product?.coment?.promedio || 0} ({product?.coment?.total || 0}{" "}
                 reseñas)
               </span>
@@ -158,19 +156,19 @@ export default function ProductDetailPage({
             <div
               className={`flex items-center gap-1 animate-in ${swipeComponents.corto} duration-500 delay-400 leading-relaxed text-gray-900`}
             >
-              <p className="leading-relaxed text-gray-900 text-[6px]">
-                ${smartRound(product?.price || 0)}{" "}
+              <p className="leading-relaxed text-gray-900 text-[8px]">
+                ${smartRound(product?.price || 0).toFixed(2)}{" "}
                 {store?.moneda_default?.moneda}
               </p>
               {(product?.oldPrice || 0) > (product?.price || 0) && (
-                <p className="text-gray-500 line-through text-[6px]">
+                <p className="text-gray-500 line-through text-[8px]">
                   ${product?.oldPrice}
                 </p>
               )}
               {(product?.oldPrice || 0) > (product?.price || 0) && (
                 <Badge
                   variant="destructive"
-                  className="animate-pulse text-[6px]"
+                  className="animate-pulse text-[8px]"
                 >
                   {Math.round(
                     ((product?.oldPrice || 0 - (product?.price || 0)) /
@@ -188,8 +186,8 @@ export default function ProductDetailPage({
               >
                 {!product?.agotado ? (
                   <div className="flex items-center gap-1 text-green-600">
-                    <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-                    <span className=" font-medium text-[4px]">En stock</span>
+                    <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse size-4" />
+                    <span className=" font-medium text-[6px]">En stock</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-red-600">
@@ -208,17 +206,17 @@ export default function ProductDetailPage({
                 <div
                   className={`animate-in ${swipeComponents.corto} duration-500 delay-900`}
                 >
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center gap-1">
                     <Button
                       type="button"
                       variant="outline"
                       disabled={countAddCart === 0 || product?.agotado}
                       onClick={() => setCountAddCart(countAddCart - 1)}
-                      className="hover:scale-105 transition-transform duration-200 text-[4px] h-4 w-4"
+                      className="hover:scale-105 transition-transform duration-200 size-3 p-2 text-[10px]"
                     >
-                      <Minus className="w-4 h-4" />
+                      -
                     </Button>
-                    <span className="w-12 text-center font-medium text-[6px]">
+                    <span className="text-center font-medium text-[8px]">
                       {countAddCart}
                     </span>
                     <Button
@@ -226,9 +224,9 @@ export default function ProductDetailPage({
                       variant="outline"
                       disabled={product?.agotado}
                       onClick={() => setCountAddCart(countAddCart + 1)}
-                      className="hover:scale-105 transition-transform duration-200 text-[4px] h-4 w-4"
+                      className="hover:scale-105 transition-transform duration-200 size-3 p-2 text-[10px]"
                     >
-                      <Plus className="w-4 h-4" />
+                      +
                     </Button>
                   </div>
                 </div>
@@ -236,7 +234,7 @@ export default function ProductDetailPage({
 
               {/* Botones de acción */}
               <div
-                className={`space-y-1 animate-in ${swipeComponents.corto} duration-500 delay-1000`}
+                className={`space-y-0 animate-in ${swipeComponents.corto} duration-500 delay-1000`}
               >
                 <Button
                   type="button"
@@ -261,8 +259,7 @@ export default function ProductDetailPage({
                       ¡Agregado al carrito!
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1">
-                      <ShoppingCart className="size-3" />
+                    <div className="flex items-center gap-1 text-[6px]">
                       Agregar al carrito - $
                       {((product?.price || 0) * countAddCart).toFixed(2)}
                     </div>
@@ -272,8 +269,7 @@ export default function ProductDetailPage({
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-4 text-[4px] rounded-3xl hover:scale-105 transition-transform duration-200 bg-transparent"
-                  onClick={() => router.push(`/t/${store?.sitioweb}/carrito`)}
+                  className="w-full h-4 text-[6px] rounded-3xl hover:scale-105 transition-transform duration-200 bg-transparent"
                 >
                   Comprar ahora
                 </Button>
@@ -283,13 +279,16 @@ export default function ProductDetailPage({
 
           <Separator />
 
-          <Tabs defaultValue="description" className="min-h-[20vh]">
-            <TabsList>
-              <TabsTrigger value="description" className="text-[4px]">
+          <Tabs defaultValue="description" className="min-h-[20vh] ">
+            <TabsList className="h-auto">
+              <TabsTrigger value="description" className="text-[6px]">
                 Descripcion
               </TabsTrigger>
-              <TabsTrigger value="rating" className="text-[4px]">
+              <TabsTrigger value="rating" className="text-[6px]">
                 Valoracion
+              </TabsTrigger>
+              <TabsTrigger value="details" className="text-[6px]">
+                Details
               </TabsTrigger>
             </TabsList>
 
@@ -300,7 +299,7 @@ export default function ProductDetailPage({
                 {ExpandableText ? (
                   <ExpandableText text={product?.descripcion || "..."} />
                 ) : (
-                  <p className="text-[6px]">{product?.descripcion || "..."}</p>
+                  <p className="text-[8px]">{product?.descripcion || "..."}</p>
                 )}
               </div>
             </TabsContent>
@@ -316,6 +315,19 @@ export default function ProductDetailPage({
                   Sistema de valoraciones no disponible
                 </div>
               )}
+            </TabsContent>
+            <TabsContent value="details">
+              {product.caracteristicas.map((item, index) => (
+                <li
+                  key={index}
+                  className="flex items-center justify-between text-foreground group"
+                >
+                  <div className="flex items-center text-[6px]">
+                    <span className="size-0.5 bg-primary rounded-full mr-3"></span>
+                    {item}
+                  </div>
+                </li>
+              ))}
             </TabsContent>
           </Tabs>
         </div>
