@@ -92,12 +92,14 @@ export async function PUT(request, { params }) {
         cell: data.get("cell"),
         email: data.get("email"),
         insta: data.get("insta"),
+        country: data.get("country"),
         Provincia: data.get("Provincia"),
         municipio: data.get("municipio"),
         domicilio: data.get("domicilio"),
         moneda_default: data.get("moneda_default"),
         moneda: data.get("moneda"),
         envios: data.get("envios"),
+        edit: data.get("edit"),
       },
     ])
     .eq("sitioweb", sitioweb)

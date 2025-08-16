@@ -49,5 +49,20 @@
         "icon": "AddCardIcon"
       }
     ]
+  },
+  {
+    "separator": true
+  },
+
+  {
+    "group": "Edit",
+
+    "links": [
+      {
+        "label": "Theme",
+        "href": "/theme",
+        "icon": "EditIcon"
+      }
+    ]
   }
 ]

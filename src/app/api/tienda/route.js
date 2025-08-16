@@ -1,49 +1,99 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
+import { cookies } from "next/headers";
+
+const parseJSONOr = (value, fallback) => {
+  if (value == null) return fallback;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return fallback;
+  }
+};
+
+const toIntegerOrNull = (v) => {
+  if (v == null) return null;
+  // acepta string o number
+  const n =
+    typeof v === "number" ? v : parseInt(String(v).replace(/\D/g, ""), 10);
+  return Number.isNaN(n) ? null : n;
+};
 
 const LogUser = async () => {
   const cookie = (await cookies()).get("sb-access-token");
   if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 }
-    );
+    return {
+      ok: false,
+      status: 401,
+      message: "No se encontró la cookie de sesión",
+    };
   }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
+
+  let parsedCookie;
+  try {
+    parsedCookie = JSON.parse(cookie.value);
+  } catch (e) {
+    return { ok: false, status: 400, message: "Cookie inválida" };
+  }
+
+  if (!parsedCookie.access_token || !parsedCookie.refresh_token) {
+    return {
+      ok: false,
+      status: 401,
+      message: "Token no encontrado en la cookie",
+    };
+  }
+
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
     refresh_token: parsedCookie.refresh_token,
   });
+
+  if (errorS)
+    return {
+      ok: false,
+      status: 401,
+      message: "Error al establecer la sesión",
+      detail: errorS,
+    };
+
+  return { ok: true, session };
 };
 
 export async function GET() {
-  await LogUser();
+  const log = await LogUser();
+  if (!log.ok) {
+    return NextResponse.json(
+      { message: log.message, detail: log.detail || null },
+      { status: log.status }
+    );
+  }
 
-  const { data: tienda } = await supabase.from("Sitios").select("*");
-  const a = tienda.map((obj) => {
+  const { data: tienda, error } = await supabase.from("Sitios").select("*");
+  if (error)
+    return NextResponse.json({ message: error.message }, { status: 500 });
+
+  const a = (tienda || []).map((obj) => {
     return {
       ...obj,
-      categoria: JSON.parse(obj.categoria),
-      moneda: JSON.parse(obj.moneda),
-      moneda_default: JSON.parse(obj.moneda_default),
-      horario: JSON.parse(obj.horario),
-      comentario: JSON.parse(obj.comentario),
-      envios: JSON.parse(obj.envios),
+      categoria: parseJSONOr(obj.categoria, null),
+      moneda: parseJSONOr(obj.moneda, null),
+      moneda_default: parseJSONOr(obj.moneda_default, null),
+      horario: parseJSONOr(obj.horario, null),
+      comentario: parseJSONOr(obj.comentario, null),
+      envios: parseJSONOr(obj.envios, null),
     };
   });
+
   const response = NextResponse.json(a);
-
-  // Establecer cabeceras para deshabilitar el caché
   response.headers.set("Cache-Control", "no-store");
-
   return response;
 }
+
 const datos = {
+  name: "",
   sitioweb: "",
   urlPoster: "",
   parrrafo: "",
@@ -59,66 +109,93 @@ const datos = {
   variable: "t",
   envios: "[]",
   municipio: "",
+  country: "",
   tipo: "",
-  font: "Poppins",
   login: true,
   active: true,
 };
+
 export async function POST(request, { params }) {
-  await LogUser();
-  const data = await request.formData();
-
-  const payload = {
-    _name: data.get("name") || datos.name,
-    _provincia: data.get("Provincia") || datos.Provincia,
-    _municipio: data.get("municipio") || datos.municipio,
-    _editor: data.get("user"), // debe ser UUID
-    _email: data.get("email") || datos.email,
-    _cell: data.get("cell"),
-    _urlposter: datos.urlPoster,
-    _parrrafo: datos.parrrafo,
-    _horario: datos.horario, // JSON.stringify(...)
-    _act_tf: datos.act_tf,
-    _insta: datos.insta,
-    _domicilio: datos.domicilio,
-    _reservas: datos.reservas,
-    _moneda: JSON.stringify(Moneda(data.get("moneda")).moneda) || datos.moneda, // JSON.stringify(...)
-    _moneda_default:
-      JSON.stringify(Moneda(data.get("name")).moneda) || datos.moneda_default, // JSON.stringify(...)
-    _local: datos.local,
-    _envios: datos.envios, // JSON.stringify(...)
-    _tipo: datos.tipo,
-    _plan: datos.plan,
-    _font: datos.font,
-    _login: datos.login,
-    _active: datos.active,
-  };
-
-  const { data: tienda, error } = await supabase.rpc("create_sitio", payload);
-
-  if (error) {
-    console.error(error);
+  const log = await LogUser();
+  if (!log.ok) {
     return NextResponse.json(
-      { message: error.message },
-      {
-        status: 401,
-      }
+      { message: log.message, detail: log.detail || null },
+      { status: log.status }
     );
   }
 
-  return NextResponse.json({ message: "Tienda creada" });
-}
-const Moneda = (inputString) => {
-  return {
-    moneda: [{ valor: 1, moneda: inputString }],
-    moneda_default: { valor: 1, moneda: inputString },
+  const data = await request.formData();
+
+  // construir moneda de forma segura
+  const Moneda = (inputString) => {
+    const label = String(inputString || "").trim() || "CUP";
+    return {
+      moneda: [{ valor: 1, moneda: label }],
+      moneda_default: { signo: label, valor: 1, moneda: label },
+    };
   };
-};
-const capitalizeAndRemoveSpaces = (inputString) => {
-  // Capitaliza cada palabra y elimina espacios en blanco
-  return inputString
-    .split(" ") // Divide el string en palabras
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitaliza cada palabra
-    .join("") // Une las palabras sin espacios
-    .replace(/[^a-zA-Z0-9]/g, ""); // Elimina espacios en blanco
-};
+
+  const name = data.get("name") || datos.name;
+  const country = data.get("country") || datos.country;
+  const provincia = data.get("Provincia") || datos.Provincia;
+  const municipio = data.get("municipio") || datos.municipio;
+  const editor = data.get("user") || datos.Editor; // debe ser UUID
+  const email = data.get("email") || datos.email;
+
+  // Convertir cell a integer o null (esto obliga a Postgres a elegir la firma con bigint)
+  const rawCell = data.get("cell");
+  const cell = toIntegerOrNull(rawCell);
+
+  // preparar JSON como objetos (no strings). Si vienen del form, intentar parsear; si no, usar datos por defecto.
+  const horarioInput = data.get("horario") || datos.horario;
+  const enviosInput = data.get("envios") || datos.envios;
+  const monedaInput = data.get("moneda") || null;
+  const monedaNameForDefault = data.get("moneda_default") || "CUP";
+  console.log("monedaInput", monedaInput);
+  console.log("monedaNameForDefault", monedaNameForDefault);
+  const monedaObj = Moneda(monedaInput || monedaNameForDefault);
+
+  const payload = {
+    _name: name,
+    _country: country,
+    _provincia: provincia,
+    _municipio: municipio,
+    _editor: editor,
+    _email: email,
+    _cell: cell, // number o null -> evita ambigüedad bigint/text
+    _urlposter: datos.urlPoster,
+    _parrrafo: data.get("parrrafo") || datos.parrrafo,
+    _horario: parseJSONOr(horarioInput, parseJSONOr(datos.horario, [])),
+    _act_tf: datos.act_tf,
+    _insta: data.get("insta") || datos.insta,
+    _domicilio: datos.domicilio,
+    _moneda: monedaObj.moneda, // array/object -> se enviará como jsonb
+    _moneda_default: monedaObj.moneda_default, // object -> jsonb
+    _envios: parseJSONOr(enviosInput, []), // array -> jsonb
+    _tipo: data.get("tipo") || datos.tipo,
+    _login: datos.login,
+    _active: datos.active,
+  };
+  console.log(payload);
+  try {
+    const { data: tienda, error } = await supabase.rpc("create_sitio", payload);
+    if (error) {
+      console.error("RPC create_sitio error:", error);
+      return NextResponse.json(
+        { message: error.message, detail: error },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Tienda creada", tienda },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    return NextResponse.json(
+      { message: "Error inesperado", detail: String(err) },
+      { status: 500 }
+    );
+  }
+}

@@ -1,16 +1,23 @@
 "use client";
-import React from "react";
-import { Label } from "../ui/label";
+import React, { useState } from "react";
 import { Input } from "../ui/input";
-import {
-  SelectValue,
-  SelectTrigger,
-  SelectItem,
-  SelectGroup,
-  SelectContent,
-  Select,
-} from "@/components/ui/select";
+import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function InputStore({ name, object, value, action, type }) {
   return (
@@ -47,45 +54,52 @@ export function SelectStore({
   placeholder,
   onSelectChange,
   value,
-  title,
   disabled = false,
-  icon,
+  status,
+  loading = false,
   className = "",
 }) {
+  const [openCategory, setOpenCategory] = useState(false);
   return (
-    <div className="space-y-2">
-      <Label
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        htmlFor="category"
-      >
-        {title}
-      </Label>
-      <div className="mt-1">
-        <Select
-          id="category"
-          name="category"
+    <Popover open={openCategory} onOpenChange={setOpenCategory}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={openCategory}
           disabled={disabled}
-          onValueChange={onSelectChange}
+          className="w-full justify-between bg-transparent"
         >
-          <SelectTrigger className="w-full">
-            {icon}
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
+          {status || placeholder}
+          {loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0">
+        <Command>
+          <CommandInput placeholder={placeholder} />
+          <CommandList>
+            <CommandEmpty>No se encontró ningúna categoría.</CommandEmpty>
+            <CommandGroup>
               {array?.map((obj, ind) => (
-                <SelectItem
-                  className={obj?.className || ""}
+                <CommandItem
                   key={ind}
-                  value={typeof obj === "object" ? obj[value] : obj} // Si es objeto, toma obj[value], si no, usa obj
+                  value={typeof obj === "object" ? obj[value] : obj}
+                  onSelect={() => {
+                    onSelectChange(typeof obj === "object" ? obj[value] : obj);
+                    setOpenCategory(false);
+                  }}
                 >
                   {typeof obj === "object" ? obj[value] : obj}
-                </SelectItem>
+                </CommandItem>
               ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

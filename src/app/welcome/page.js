@@ -6,8 +6,11 @@ export default async function page() {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.user?.user?.id;
   if (user) console.info("Usuario recivido");
-
-  return <CrearClienteComponent user={user} />;
+  const country = await fetch(
+    `${process.env.NEXT_PUBLIC_PATH}/api/filter/country`
+  );
+  const res = await country.json();
+  return <CrearClienteComponent user={user} countries={res} />;
 }
 
 async function fetchUserSessionServer() {

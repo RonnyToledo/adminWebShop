@@ -18,6 +18,7 @@ const initialState = {
     comentario: [],
     categoria: [],
     envios: [],
+    edit: { grid: 2, square: false, horizontal: false, minimalista: false },
   },
   products: [],
   code: [],
@@ -34,32 +35,62 @@ const routesOffLogin = [
   "/team-of-service",
   "/createAccount",
   "/updatePassword",
+  "/updatePassword/updatePassword",
   "/welcome",
 ];
 const routesAlternatives = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(initialState);
-  const [isNewUser, setIsNewUser] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const [routesAlternativesState, setRoutesAlternativesState] = useState(false);
+  const [routesOffLoginState, setRoutesOffLoginState] = useState(false);
 
   useEffect(() => {
-    if ((!user || user == undefined) && !routesOffLogin.includes(pathname)) {
+    setRoutesAlternativesState(routesAlternatives.includes(pathname));
+    setRoutesOffLoginState(routesOffLogin.includes(pathname));
+  }, [pathname]);
+
+  useEffect(() => {
+    if ((!user || user == undefined) && !routesOffLoginState) {
       console.info(
         "No existe session, redirijiendo a pagina de Inicio de Session"
       );
-      router.push(`/login?${pathname}`);
-    }
-    if ((user || user !== undefined) && pathname == "/login") {
-      router.push("/");
-    }
+      router.push(`/login`);
+    } else if (data?.user?.role == "user") {
+      console.error("Usuario denegado");
+      try {
+        const res = fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
+          method: "DELETE",
+        });
 
-    if (data?.user?.role == "manager" && data?.user?.login == false) {
+        if (res.ok) {
+          router.push("/login");
+        } else {
+          toast({
+            title: "Error",
+            variant: "destructive",
+            description: "Error Cerrando Sesion",
+          });
+        }
+      } catch (error) {
+        console.error("Error en la respuesta:", error);
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: `error: ${error.message}`,
+        });
+      }
+    } else if (data?.user?.role == "manager" && data?.user?.login == false) {
+      console.info("Nuevo Manager, redirijiendo a crear catalogo");
+
       router.push("/welcome");
-      setIsNewUser(true);
     } else {
+      /* router.push("/");*/
+
+      console.info("Bienvenido");
       setWebshop(data);
     }
   }, [data, user]);
@@ -129,17 +160,13 @@ export default function MyProvider({ children, user, data }) {
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>
-        {!isNewUser &&
-          !routesOffLogin.includes(pathname) &&
-          !routesAlternatives.includes(pathname) && (
-            <AppSidebar ThemeContext={ThemeContext} />
-          )}
+        {!routesAlternativesState && !routesOffLoginState && (
+          <AppSidebar ThemeContext={ThemeContext} />
+        )}
         <div className="w-full">
-          {!isNewUser &&
-            !routesOffLogin.includes(pathname) &&
-            !routesAlternatives.includes(pathname) && (
-              <HeaderAdmin ThemeContext={ThemeContext} />
-            )}
+          {!routesAlternativesState && !routesOffLoginState && (
+            <HeaderAdmin ThemeContext={ThemeContext} />
+          )}
 
           {children}
         </div>

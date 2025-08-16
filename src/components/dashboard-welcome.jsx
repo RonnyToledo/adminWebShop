@@ -80,7 +80,10 @@ export default function Component({ ThemeContext }) {
                 </CardDescription>
               </CardHeader>
               <CardFooter>
-                <Button variant="link" onClick={() => router.push("/header")}>
+                <Button
+                  variant="link"
+                  onClick={() => router.push("/configuracion")}
+                >
                   Editar
                 </Button>
               </CardFooter>
@@ -132,10 +135,10 @@ export default function Component({ ThemeContext }) {
             <CardContent className="p-0">
               <Link
                 className="flex items-center gap-2 mb-4"
-                href={`https://rou-katax.vercel.app/t/${webshop?.store?.sitioweb}`}
+                href={`https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`}
               >
                 <span className="text-sm text-gray-900">
-                  {`rou-katax.vercel.app/t/${webshop?.store?.sitioweb}`}
+                  {`roumenu.vercel.app/t/${webshop?.store?.sitioweb}`}
                 </span>
                 <ExternalLink className="h-4 w-4 text-gray-500" />
               </Link>

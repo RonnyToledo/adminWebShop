@@ -32,6 +32,7 @@ import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalL
 import BarChartIcon from "@mui/icons-material/BarChart";
 import ListIcon from "@mui/icons-material/List";
 import AddCardIcon from "@mui/icons-material/AddCard";
+import EditIcon from "@mui/icons-material/Edit";
 import Image from "next/image";
 import { ChevronUp, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,6 +49,7 @@ import { useToast } from "@/components/ui/use-toast";
 const iconMap = {
   HomeRoundedIcon,
   PreviewRoundedIcon,
+  EditIcon,
   DatasetLinkedRoundedIcon,
   CategoryRoundedIcon,
   BarChartIcon,

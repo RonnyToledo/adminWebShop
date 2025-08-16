@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import provinciasData from "@/components/json/Site.json";
 import { useState, useEffect, useRef, useContext } from "react";
 import ConfimationOut from "../globalFunction/confimationOut";
 import { InputStore, SelectStore, SwitchStore } from "./Input-Store";
@@ -39,15 +38,16 @@ import { useToast } from "@/components/ui/use-toast";
 import ProfileHeader from "../profile-header";
 import WeeklyAvailability from "../WeeklyAvailability";
 import { Textarea } from "../ui/textarea";
+import ConfiguracionState from "../component/configuracionState";
 
-export default function Configuracion({ ThemeContext }) {
-  const provincias = provinciasData.provincias;
+export default function Configuracion({ ThemeContext, country }) {
   const { toast } = useToast();
   const { webshop } = useContext(ThemeContext);
   const [newAregados, setNewAgregados] = useState({
     moneda: "",
     valor: 0,
   });
+
   const [store, setStore] = useState({
     comentario: [],
     categoria: [],
@@ -185,76 +185,13 @@ export default function Configuracion({ ThemeContext }) {
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Location</CardTitle>
-              <CardDescription>
-                Set your business location and delivery area
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="province">Province</Label>
-                <SelectStore
-                  title={"Provincia"}
-                  array={provincias}
-                  icon={<Building2 className="w-4 h-4 mr-2" />}
-                  onSelectChange={(value) => {
-                    setStore({
-                      ...store,
-                      Provincia: value,
-                      municipio: provincias.filter(
-                        (env) => env.nombre == value
-                      )[0]?.municipios[0],
-                    });
-                  }} // cambio aquí
-                  placeholder={store?.Provincia}
-                  value={"nombre"}
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="municipality">Municipality</Label>
-                <SelectStore
-                  title={"Municipio"}
-                  disabled={store?.Provincia ? false : true}
-                  array={
-                    provincias.filter(
-                      (env) => env.nombre == store?.Provincia
-                    )[0]?.municipios
-                  }
-                  icon={<MapPin className="w-4 h-4 mr-2" />}
-                  onSelectChange={(value) => {
-                    setStore({
-                      ...store,
-                      municipio: value,
-                      envios: value
-                        ? provincias.filter(
-                            (obj) => obj.nombre == store?.Provincia
-                          )
-                        : [{ nombre: "", municipios: [] }],
-                    });
-                  }}
-                  placeholder={store?.municipio}
-                  value={""}
-                />
-              </div>
+          <ConfiguracionState
+            store={store}
+            setStore={setStore}
+            country={country}
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <div className="flex items-center space-x-2">
-                  <MapPinned className="w-4 h-4 text-muted-foreground" />
-                  <InputStore
-                    name={"Direccion"}
-                    object={store}
-                    value={store?.direccion}
-                    action={setStore}
-                    type={"text"}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Business Settings</CardTitle>

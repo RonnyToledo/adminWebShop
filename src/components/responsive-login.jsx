@@ -9,11 +9,13 @@ import IllustrationLogin from "./icons/IllustrationLogin";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
+import Loading from "./component/loading";
 
 export function ResponsiveLogin({ user }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [loadingCharge, setLoadingCharge] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -51,6 +53,7 @@ export function ResponsiveLogin({ user }) {
 
       if (res.ok) {
         router.refresh();
+        setLoadingCharge(true);
       } else {
         setError(data.error || "Error al iniciar sesión");
         if (data.message) {
@@ -68,6 +71,10 @@ export function ResponsiveLogin({ user }) {
       setLoading(false);
     }
   };
+
+  if (loadingCharge) {
+    return <Loading />;
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">

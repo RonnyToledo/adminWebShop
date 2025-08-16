@@ -1,184 +1,354 @@
 "use client";
-import React from "react";
-import { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { logoApp } from "@/utils/image";
-
-const color = [
-  {
-    name: "1",
-    color:
-      "https://res.cloudinary.com/dbgnyc842/image/upload/v1727838730/Coffe_react/fxibcmdmel49rqakmvmj.png",
-  },
-  {
-    name: "2",
-    color:
-      "https://res.cloudinary.com/dbgnyc842/image/upload/v1727838730/Coffe_react/ue9duwrq2mll5izlsf7r.png",
-  },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Settings,
+  Grid3X3,
+  Square,
+  RectangleVerticalIcon as Rectangle,
+  Minimize2,
+} from "lucide-react";
+import { FromData } from "../globalFunction/fromData";
 
 export default function Theme({ ThemeContext }) {
-  const { webshop, setWebshop } = useContext(ThemeContext);
-  const [downloading, setDownloading] = useState(false);
-  const { toast } = useToast();
-  const [selectedTheme, setSelectedTheme] = useState("1");
-  const router = useRouter();
-  useEffect(() => {
-    setSelectedTheme(webshop.store.color);
-  }, [webshop]);
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error("Theme must be used within ThemeProvider");
 
-  const handleTheme = async (e) => {
-    e.preventDefault();
-    setDownloading(true);
-    const formData = new FormData();
-    formData.append("variable", selectedTheme == "1" ? "r" : "t");
-    try {
-      const res = await axios.put(
-        `/api/tienda/${webshop.store.sitioweb}/theme`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (res.status == 200) {
-        toast({
-          title: "Tarea Ejecutada",
-          description: "Su enlace de sitio web ha cambiado",
-          action: (
-            <ToastAction
-              altText="Ir a la programación"
-              onClick={() => router.push("/link")}
-            >
-              Ir a la web
-            </ToastAction>
-          ),
-        });
-      }
-    } catch (error) {
-      console.error("Error al enviar el comentario:", error);
-      toast({
-        title: "Error",
-        variant: "destructive",
-        description: "No se pudo editar el tema.",
-      });
-    } finally {
-      setDownloading(false);
-      setWebshop({
-        ...webshop,
-        store: { ...webshop.store, color: selectedTheme },
+  const { webshop, setWebshop } = context;
+  const [store, setStore] = useState({
+    edit: {
+      grid: 1,
+      size: false,
+      orientation: false,
+      style: false,
+    },
+  });
+  useEffect(() => {
+    setStore(webshop.store);
+  }, [webshop.store]);
+  useEffect(() => {
+    if (store.edit.grid == 2) {
+      setStore({
+        ...store,
+        edit: { ...store.edit, horizontal: false },
       });
     }
-  };
+  }, [store.edit.grid]);
+  useEffect(() => {
+    if (store.edit.horizontal) {
+      setStore({
+        ...store,
+        edit: { ...store.edit, grid: 1 },
+      });
+    }
+  }, [store.edit.horizontal]);
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-background rounded-lg shadow-lg">
-      <form onSubmit={handleTheme}>
-        <h2 className="text-2xl font-bold mb-4">Theme Settings</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {color.map((theme) => (
-            <div
-              key={theme.name}
-              className={`border rounded-lg cursor-pointer transition-all ${
-                selectedTheme === theme.name
-                  ? "border-primary ring-2 ring-primary"
-                  : "border-gray-300 hover:border-primary"
-              }`}
-              onClick={() => setSelectedTheme(theme.name)}
-            >
-              <div className="relative p-3">
-                <Image
-                  src={theme.color}
-                  alt={theme.name}
-                  width={600}
-                  height={1500}
-                />
-                {selectedTheme === theme.name && (
-                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs">
-                    Selected
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+      <FromData store={store} ThemeContext={ThemeContext}>
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-600 rounded-lg">
+              <Settings className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Theme Settings
+            </h1>
+          </div>
+          <p className="text-slate-600 text-lg">
+            Customize the appearance of your store products
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-6">
+            {/* Grid Settings */}
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-100 rounded-lg">
+                    <Grid3X3 className="w-5 h-5 text-emerald-600" />
                   </div>
-                )}
-              </div>
-              <div className="py-2 px-4 flex justify-between items-center">
-                <h3 className="text-lg font-medium">{theme.name}</h3>
-              </div>
-            </div>
-          ))}
+                  <div>
+                    <CardTitle className="text-xl text-slate-900">
+                      Grid Layout
+                    </CardTitle>
+                    <CardDescription className="text-slate-600">
+                      Choose how many products to display per row
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <RadioGroup
+                  value={store.edit.grid}
+                  onValueChange={(value) =>
+                    setStore({
+                      ...store,
+                      edit: { ...store.edit, grid: Number(value) },
+                    })
+                  }
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={1} id="grid-1" />
+                    <Label
+                      htmlFor="grid-1"
+                      className="font-medium cursor-pointer"
+                    >
+                      1 Column
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={2} id="grid-2" />
+                    <Label
+                      htmlFor="grid-2"
+                      className="font-medium cursor-pointer"
+                    >
+                      2 Columns
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            {/* Size Settings */}
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Square className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-slate-900">
+                      Product Shape
+                    </CardTitle>
+                    <CardDescription className="text-slate-600">
+                      Select the aspect ratio for product images
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <RadioGroup
+                  value={store.edit.square}
+                  onValueChange={(value) =>
+                    setStore({
+                      ...store,
+                      edit: { ...store.edit, square: value },
+                    })
+                  }
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={true} id="size-square" />
+                    <Label
+                      htmlFor="size-square"
+                      className="font-medium cursor-pointer"
+                    >
+                      Square
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={false} id="size-rectangle" />
+                    <Label
+                      htmlFor="size-rectangle"
+                      className="font-medium cursor-pointer"
+                    >
+                      Rectangle
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            {/* Orientation Settings */}
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Rectangle className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-slate-900">
+                      Orientation
+                    </CardTitle>
+                    <CardDescription className="text-slate-600">
+                      Choose the layout direction
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <RadioGroup
+                  value={store.edit.horizontal}
+                  onValueChange={(value) =>
+                    setStore({
+                      ...store,
+                      edit: { ...store.edit, horizontal: value },
+                    })
+                  }
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={true} id="orient-horizontal" />
+                    <Label
+                      htmlFor="orient-horizontal"
+                      className="font-medium cursor-pointer"
+                    >
+                      Horizontal
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={false} id="orient-vertical" />
+                    <Label
+                      htmlFor="orient-vertical"
+                      className="font-medium cursor-pointer"
+                    >
+                      Vertical
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            {/* Style Settings */}
+            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-rose-100 rounded-lg">
+                    <Minimize2 className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-slate-900">
+                      Design Style
+                    </CardTitle>
+                    <CardDescription className="text-slate-600">
+                      Choose between minimal or detailed product cards
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <RadioGroup
+                  value={store.edit.minimalista}
+                  onValueChange={(value) =>
+                    setStore({
+                      ...store,
+                      edit: { ...store.edit, minimalista: value },
+                    })
+                  }
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-rose-300 hover:bg-rose-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={true} id="style-simple" />
+                    <Label
+                      htmlFor="style-simple"
+                      className="font-medium cursor-pointer"
+                    >
+                      Minimal
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-rose-300 hover:bg-rose-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={false} id="style-detailed" />
+                    <Label
+                      htmlFor="style-detailed"
+                      className="font-medium cursor-pointer"
+                    >
+                      Detailed
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="md:col-span-1">
+            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm sticky top-8">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Settings className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-xl text-slate-900">
+                    Live Preview
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-slate-600">
+                  See how your store will look
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Store Header Preview */}
+                <div className="p-4 bg-gradient-to-r from-slate-100 to-slate-200 rounded-lg">
+                  <Skeleton className="w-full h-8 mb-3 rounded-md" />
+                  <Skeleton className="w-2/3 h-4 rounded-md" />
+                </div>
+
+                {/* Products Grid Preview */}
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <Skeleton className="w-1/2 h-6 rounded-md" />
+                  </div>
+
+                  <div
+                    className={`grid gap-3 ${
+                      store.edit.grid === 1 ? "grid-cols-1" : "grid-cols-2"
+                    }`}
+                  >
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className={`grid bg-white rounded-lg shadow-sm space-x-2 border-slate-200 p-3 space-y-3 hover:shadow-md transition-shadow ${
+                          store.edit.horizontal ? "grid-cols-2" : "grid-cols-1"
+                        }`}
+                      >
+                        <div className="flex justify-center items-center">
+                          <Skeleton
+                            className={`w-full rounded-md ${
+                              store.edit.square
+                                ? "aspect-square"
+                                : "aspect-[4/3]"
+                            }`}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Skeleton className="w-full h-4 rounded-md" />
+                          <Skeleton className="w-3/4 h-3 rounded-md" />
+                          {!store.edit.minimalista ? (
+                            <>
+                              <Skeleton className="w-1/2 h-3 rounded-md" />
+                              <div className="flex justify-between items-center pt-1">
+                                <Skeleton className="w-1/3 h-4 rounded-md" />
+                                <Skeleton className="w-1/4 h-6 rounded-md" />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex justify-between items-center pt-1">
+                              <Skeleton className="w-1/3 h-4 rounded-md" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <div
-          className={`mt-6 flex justify-end sticky bottom-0 p-2 bg-white `}
-          disabled={downloading}
-        >
-          <Button className="w-full sm:w-auto">
-            {downloading ? "Guardando..." : "Apply Theme"}
-          </Button>
-        </div>
-      </form>
+      </FromData>
     </div>
-  );
-}
-function Products({ array, color }) {
-  return (
-    <>
-      {array.map((prod, index) => (
-        <div className="p-1" key={index}>
-          <div className="relative rounded-lg overflow-hidden">
-            <Image
-              src={prod.image ? prod.image : logoApp}
-              alt={prod.title ? prod.title : "Product"}
-              width={40}
-              height={40}
-              className="w-full h-20 bg-center object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-between p-1 md:p-2">
-              <div className="flex justify-between text-white font-bold line-clamp-2 overflow-hidden  ">
-                <div
-                  className="rounded-sm px-1 max-w-max"
-                  style={{
-                    fontSize: "5px",
-                    backgroundColor: color,
-                  }}
-                >
-                  NEW
-                </div>
-                <div
-                  className="rounded-sm px-1 max-w-max"
-                  style={{
-                    fontSize: "5px",
-                    backgroundColor: color,
-                  }}
-                >
-                  1.1
-                </div>
-              </div>
-              <h6 className="px-1 text-white" style={{ fontSize: "8px" }}>
-                Product
-              </h6>
-            </div>
-          </div>
-          <h6
-            className="px-1 text-gray-800 flex w-full justify-end"
-            style={{ fontSize: "8px" }}
-          >
-            $99.99
-          </h6>
-          <div
-            className="text-xs rounded-sm text-white flex justify-center"
-            style={{
-              fontSize: "8px",
-              backgroundColor: color,
-            }}
-          >
-            Add to Cart
-          </div>
-        </div>
-      ))}
-    </>
   );
 }
