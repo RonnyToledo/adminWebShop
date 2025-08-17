@@ -100,6 +100,8 @@ export async function PUT(request, { params }) {
         moneda: data.get("moneda"),
         envios: data.get("envios"),
         edit: data.get("edit"),
+        redes: JSON.parse(data.get("redes") || "[]"),
+        contacto: JSON.parse(data.get("contacto") || "[]"),
       },
     ])
     .eq("sitioweb", sitioweb)

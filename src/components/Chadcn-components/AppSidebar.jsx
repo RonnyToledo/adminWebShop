@@ -33,6 +33,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import ListIcon from "@mui/icons-material/List";
 import AddCardIcon from "@mui/icons-material/AddCard";
 import EditIcon from "@mui/icons-material/Edit";
+import GroupIcon from "@mui/icons-material/Group";
 import Image from "next/image";
 import { ChevronUp, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,6 +57,7 @@ const iconMap = {
   AddCardIcon,
   AddCircleRoundedIcon,
   ListIcon,
+  GroupIcon,
   AppRegistrationRoundedIcon,
   ExtensionOffRoundedIcon,
   EditNoteRoundedIcon,
