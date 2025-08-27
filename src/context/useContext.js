@@ -18,7 +18,7 @@ const initialState = {
     comentario: [],
     categoria: [],
     envios: [],
-    edit: { grid: 2, square: false, horizontal: false, minimalista: false },
+    edit: { grid: true, square: false, horizontal: false, minimalista: false },
   },
   products: [],
   code: [],

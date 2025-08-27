@@ -27,7 +27,7 @@ export default function Theme({ ThemeContext }) {
   const { webshop, setWebshop } = context;
   const [store, setStore] = useState({
     edit: {
-      grid: 1,
+      grid: true,
       size: false,
       orientation: false,
       style: false,
@@ -37,7 +37,7 @@ export default function Theme({ ThemeContext }) {
     setStore(webshop.store);
   }, [webshop.store]);
   useEffect(() => {
-    if (store.edit.grid == 2) {
+    if (store.edit.grid) {
       setStore({
         ...store,
         edit: { ...store.edit, horizontal: false },
@@ -48,7 +48,7 @@ export default function Theme({ ThemeContext }) {
     if (store.edit.horizontal) {
       setStore({
         ...store,
-        edit: { ...store.edit, grid: 1 },
+        edit: { ...store.edit, grid: false },
       });
     }
   }, [store.edit.horizontal]);
@@ -95,13 +95,13 @@ export default function Theme({ ThemeContext }) {
                   onValueChange={(value) =>
                     setStore({
                       ...store,
-                      edit: { ...store.edit, grid: Number(value) },
+                      edit: { ...store.edit, grid: value },
                     })
                   }
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={1} id="grid-1" />
+                    <RadioGroupItem value={false} id="grid-1" />
                     <Label
                       htmlFor="grid-1"
                       className="font-medium cursor-pointer"
@@ -110,7 +110,7 @@ export default function Theme({ ThemeContext }) {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={2} id="grid-2" />
+                    <RadioGroupItem value={true} id="grid-2" />
                     <Label
                       htmlFor="grid-2"
                       className="font-medium cursor-pointer"
@@ -304,7 +304,7 @@ export default function Theme({ ThemeContext }) {
 
                   <div
                     className={`grid gap-3 ${
-                      store.edit.grid === 1 ? "grid-cols-1" : "grid-cols-2"
+                      store.edit.grid ? "grid-cols-2" : "grid-cols-1"
                     }`}
                   >
                     {Array.from({ length: 5 }).map((_, index) => (

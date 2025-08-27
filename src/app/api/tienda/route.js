@@ -151,8 +151,7 @@ export async function POST(request, { params }) {
   const enviosInput = data.get("envios") || datos.envios;
   const monedaInput = data.get("moneda") || null;
   const monedaNameForDefault = data.get("moneda_default") || "CUP";
-  console.log("monedaInput", monedaInput);
-  console.log("monedaNameForDefault", monedaNameForDefault);
+
   const monedaObj = Moneda(monedaInput || monedaNameForDefault);
 
   const payload = {
@@ -176,7 +175,6 @@ export async function POST(request, { params }) {
     _login: datos.login,
     _active: datos.active,
   };
-  console.log(payload);
   try {
     const { data: tienda, error } = await supabase.rpc("create_sitio", payload);
     if (error) {

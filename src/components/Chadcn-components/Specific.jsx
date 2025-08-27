@@ -240,7 +240,6 @@ export default function Specific({ specific, ThemeContext }) {
           ),
         });
         const [a] = res.data;
-        console.log(a);
         setWebshop({
           ...webshop,
           products: (webshop?.products || []).map((obj) =>
@@ -260,8 +259,6 @@ export default function Specific({ specific, ThemeContext }) {
     }
   };
 
-  // Si prefieres recibir sólo las imágenes válidas (sin slots vacíos)
-  console.log(webshop.products);
   return (
     <main className="grid min-h-screen w-full ">
       <div className="flex flex-col p-3 w-full ">

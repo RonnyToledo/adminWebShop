@@ -86,12 +86,12 @@ export default function Guia() {
                 className="max-w-xs text-sm font-medium"
                 readOnly
                 type="text"
-                value={`https://randh-menu.vercel.app/t/${webshop?.store?.sitioweb}`}
+                value={`https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`}
               />
               <Button
                 onClick={() =>
                   copyToClipboard(
-                    `https://randh-menu.vercel.app/t/${webshop?.store?.sitioweb}`
+                    `https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`
                   )
                 }
                 size="icon"

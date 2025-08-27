@@ -139,7 +139,6 @@ export default function SocialContactPage() {
         return "Email";
     }
   };
-  console.log({ ...webshop?.store, redes, contacto });
   return (
     <div className="min-h-screen bg-gradient-to-br p-6">
       <FromData

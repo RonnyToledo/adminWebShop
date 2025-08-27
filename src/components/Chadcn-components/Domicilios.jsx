@@ -136,12 +136,9 @@ export default function Domicilios({ ThemeContext }) {
                             value={obj1.price}
                             type="number"
                             onChange={(e) => {
-                              console.log("a");
                               const a = store?.envios[ind].municipios.find(
                                 (fil) => fil.name != obj1.name
                               );
-
-                              console.log(a);
                               setStore({
                                 ...store,
                                 envios: store?.envios.map((env) =>

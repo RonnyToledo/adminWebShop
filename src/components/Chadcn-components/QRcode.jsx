@@ -11,7 +11,7 @@ export default function QrCode({ value2, name }) {
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const svgRef = useRef(null);
-  const url = `https://randh-menu.vercel.app/t/${value2}`;
+  const url = `https://roumenu.vercel.app/t/${value2}`;
 
   const downloadQRCode = () => {
     setDownloading(true);

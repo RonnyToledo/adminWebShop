@@ -53,12 +53,16 @@ export const initializeData = async (userId) => {
       return { user: store };
 
     const tiendaParsed = {
-      ...store.Sitios,
-      moneda: JSON.parse(store.Sitios.moneda),
-      moneda_default: JSON.parse(store.Sitios.moneda_default),
-      horario: JSON.parse(store.Sitios.horario),
-      categoria: store.Sitios.categorias.sort((a, b) => a.order - b.order),
-      envios: JSON.parse(store.Sitios.envios),
+      ...store?.Sitios,
+      moneda: JSON.parse(store?.Sitios?.moneda),
+      moneda_default: JSON.parse(store?.Sitios?.moneda_default),
+      horario: JSON.parse(store?.Sitios?.horario),
+      categoria: store?.Sitios?.categorias.sort((a, b) => a.order - b.order),
+      envios: JSON.parse(store?.Sitios?.envios),
+      edit:
+        typeof store?.Sitios?.edit == "string"
+          ? JSON.parse(store?.Sitios?.edit)
+          : store?.Sitios?.edit,
     };
 
     const eventsParsed = tiendaParsed.Events.map((event) => ({
@@ -67,7 +71,7 @@ export const initializeData = async (userId) => {
     }));
 
     const productosParsed = OrderProducts(
-      store.Sitios.Products,
+      store?.Sitios?.Products,
       tiendaParsed.categoria
     );
 
@@ -82,7 +86,7 @@ export const initializeData = async (userId) => {
     delete tiendaParsed.Products;
     delete tiendaParsed.categorias;
     delete tiendaParsed.Events;
-    delete store.Sitios;
+    delete store?.Sitios;
 
     return {
       store: tiendaParsed,

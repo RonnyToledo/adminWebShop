@@ -56,7 +56,6 @@ export function FromData({ children, store, ThemeContext }) {
       setDownloading(false);
     }
   }
-
   return (
     <form
       ref={form}
