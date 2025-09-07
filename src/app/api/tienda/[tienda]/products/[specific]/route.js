@@ -111,6 +111,7 @@ export async function PUT(request, { params }) {
       order: data.get("order"),
       caja: data.get("caja"),
       favorito: data.get("favorito"),
+      caracteristicas: data.get("caracteristicas"),
       agotado: data.get("agotado"),
       visible: data.get("visible"),
       oldPrice: data.get("oldPrice"),

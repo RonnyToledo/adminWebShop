@@ -65,39 +65,38 @@ export const initializeData = async (userId) => {
           : store?.Sitios?.edit,
     };
 
-    const eventsParsed = tiendaParsed.Events.map((event) => ({
+    const eventsParsed = tiendaParsed?.Events.map((event) => ({
       ...event,
       desc: JSON.parse(event.desc),
     }));
 
     const productosParsed = OrderProducts(
       store?.Sitios?.Products,
-      tiendaParsed.categoria
+      tiendaParsed?.categoria
     );
-
     // Fetch Google Analytics data
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed.sitioweb}/GA`
+      `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed?.sitioweb}/GA`
     );
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const gaData = await response.json();
 
     //DElete products and categories
-    delete tiendaParsed.Products;
-    delete tiendaParsed.categorias;
-    delete tiendaParsed.Events;
+    delete tiendaParsed?.Products;
+    delete tiendaParsed?.categorias;
+    delete tiendaParsed?.Events;
     delete store?.Sitios;
 
     return {
       store: tiendaParsed,
       ga: gaData,
-      products: productosParsed.map((obj) => ({
+      products: (productosParsed || [])?.map((obj) => ({
         ...obj,
-        visitas: gaData.visitasProductos[obj.productId] || 0,
-        caracteristicas: JSON.parse(obj.caracteristicas),
+        visitas: 0,
+        caracteristicas: JSON.parse(obj?.caracteristicas || "[]"),
       })),
       events: eventsParsed,
-      code: tiendaParsed.codeDiscount,
+      code: tiendaParsed?.codeDiscount,
       user: store,
     };
   } catch (error) {

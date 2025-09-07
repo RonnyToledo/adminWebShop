@@ -54,6 +54,7 @@ import {
   Package,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export default function TableRowsComponentAgotados({
   products,
@@ -242,13 +243,13 @@ function TableComponet({
                         <TableRow
                           {...draggableProvided.draggableProps}
                           ref={draggableProvided.innerRef}
-                          className={`${
+                          className={cn(
                             !obj.visible
                               ? "bg-red-100 hover:bg-red-200"
                               : obj.agotado
                               ? "bg-gray-300 hover:bg-gray-400"
                               : "bg-white hover:bg-gray-100"
-                          } `}
+                          )}
                         >
                           {/* Columna de las tres barras como drag handle */}
                           <TableCell

@@ -183,6 +183,10 @@ export default function Specific({ specific, ThemeContext }) {
     formData.append("priceCompra", products.priceCompra ?? 0);
     formData.append("order", products.order ?? 100000);
     formData.append("caja", products.caja ?? "");
+    formData.append(
+      "caracteristicas",
+      JSON.stringify(products?.caracteristicas) ?? ""
+    );
     formData.append("favorito", String(!!products.favorito));
     formData.append("agotado", String(!!products.agotado));
     formData.append("visible", String(!!products.visible));
@@ -243,7 +247,7 @@ export default function Specific({ specific, ThemeContext }) {
         setWebshop({
           ...webshop,
           products: (webshop?.products || []).map((obj) =>
-            obj.productId == a.productId ? a : obj
+            obj.productId == products.productId ? products : obj
           ),
         });
       }
@@ -258,7 +262,7 @@ export default function Specific({ specific, ThemeContext }) {
       setDownloading(false);
     }
   };
-
+  console.log(products?.caracteristicas);
   return (
     <main className="grid min-h-screen w-full ">
       <div className="flex flex-col p-3 w-full ">
@@ -278,7 +282,7 @@ export default function Specific({ specific, ThemeContext }) {
                         height={300}
                         width={300}
                         src={
-                          imageNew
+                          newImage
                             ? URL.createObjectURL(newImage)
                             : webshop?.store?.urlPoster || logoApp
                         }

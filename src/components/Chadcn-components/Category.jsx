@@ -223,7 +223,7 @@ export default function Category({ ThemeContext }) {
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              {add ? "Agregar Categoría" : "Agregando categoría..."}
+              {add ? "Agregando categoría..." : "Agregar Categoría"}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -276,7 +276,7 @@ export default function Category({ ThemeContext }) {
                 Cancelar
               </Button>
               <Button onClick={addCategory}>
-                {add ? "Crear Categoría" : "Creando Categoría..."}
+                {add ? "Creando Categoría..." : "Crear Categoría"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -450,7 +450,6 @@ const CategoryItem = ({
                     onClick={() => onDelete(category.id, category.image)}
                     className="text-red-600 focus:text-red-600"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
                     {!deleting ? (
                       <>
                         <Trash2 className="h-3 w-3" />
