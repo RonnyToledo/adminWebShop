@@ -1,7 +1,7 @@
 import React from "react";
 import { ThemeContext } from "@/context/useContext";
 
-import Component from "@/components/dashboard-welcome";
+import Component from "@/components/Chadcn-components/Home/dashboard-welcome";
 
 export default function usePage() {
   return (

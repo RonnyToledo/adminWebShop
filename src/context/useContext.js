@@ -1,10 +1,10 @@
 "use client";
-import React, { createContext, useEffect, useReducer, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supa";
 import { deleteNotification } from "@/lib/supabaseApi";
-import HeaderAdmin from "@/components/Chadcn-components/HeaderAdmin";
-import AppSidebar from "@/components/Chadcn-components/AppSidebar";
+import HeaderAdmin from "@/components/Chadcn-components/General/HeaderAdmin";
+import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -41,7 +41,7 @@ const routesOffLogin = [
 const routesAlternatives = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
-  const [webshop, setWebshop] = useState(initialState);
+  const [webshop, setWebshop] = useState(data ?? initialState);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();

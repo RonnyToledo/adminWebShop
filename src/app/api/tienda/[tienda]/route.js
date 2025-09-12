@@ -89,6 +89,7 @@ export async function PUT(request, { params }) {
         urlPoster: NewPoster,
         banner: NewBanner,
         act_tf: data.get("act_tf"),
+        local: data.get("local"),
         cell: data.get("cell"),
         email: data.get("email"),
         insta: data.get("insta"),
@@ -96,6 +97,7 @@ export async function PUT(request, { params }) {
         Provincia: data.get("Provincia"),
         municipio: data.get("municipio"),
         domicilio: data.get("domicilio"),
+        history: data.get("history"),
         moneda_default: data.get("moneda_default"),
         moneda: data.get("moneda"),
         envios: data.get("envios"),
@@ -117,5 +119,5 @@ export async function PUT(request, { params }) {
     );
   }
 
-  return NextResponse.json({ message: "Producto creado" });
+  return NextResponse.json({ message: "Actualizacion exitosa" });
 }

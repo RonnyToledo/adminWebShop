@@ -1,10 +1,5 @@
 import React from "react";
-import { Dashboard } from "@/components/component/products";
-
+import GeneralProducts from "@/components/Chadcn-components/Products/GeneralProducts";
 export default function page() {
-  return (
-    <>
-      <Dashboard />
-    </>
-  );
+  return <GeneralProducts />;
 }

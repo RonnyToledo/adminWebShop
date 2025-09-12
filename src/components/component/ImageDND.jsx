@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 
-export default function ImageUpload({ setImageNew, imageNew }) {
+export default function ImageUploadDrag({ setImageNew, imageNew }) {
   const handleDrop = useCallback(
     (acceptedFiles) => {
       // Aquí puedes manejar los archivos aceptados

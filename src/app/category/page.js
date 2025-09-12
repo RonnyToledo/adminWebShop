@@ -1,6 +1,6 @@
 import React from "react";
 import { ThemeContext } from "@/context/useContext";
-import Category from "@/components/Chadcn-components/Category";
+import Category from "@/components/Chadcn-components/Category/Category";
 
 export default function page() {
   return <Category ThemeContext={ThemeContext} />;

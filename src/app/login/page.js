@@ -1,5 +1,5 @@
 import React from "react";
-import { ResponsiveLogin } from "@/components/responsive-login";
+import { ResponsiveLogin } from "@/components/Chadcn-components/Login/responsive-login";
 import { cookies } from "next/headers";
 
 export default async function usePage() {

@@ -1,6 +1,6 @@
 import React from "react";
 import { ThemeContext } from "@/context/useContext";
-import Configuracion from "@/components/Chadcn-components/Configuracion";
+import Configuracion from "@/components/Chadcn-components/Configuracion/Configuracion";
 
 export default async function page() {
   const country = await fetch(

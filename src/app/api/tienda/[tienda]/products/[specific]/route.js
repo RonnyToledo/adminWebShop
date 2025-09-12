@@ -101,30 +101,36 @@ export async function PUT(request, { params }) {
 
   SecondaryImage = aux.length > 0 ? aux : SecondaryImage;
 
-  //Subimos a la BD los datos
+  const payload = {
+    _productid: data.get("Id"),
+    _title: data.get("title"),
+    _price: Number(data.get("price") ?? 0),
+    _pricecompra: Number(data.get("priceCompra") ?? 0),
+    _caja: data.get("caja"),
+    _venta: data.get("venta") === "true",
+    _descripcion: data.get("descripcion"),
+    _span: data.get("span") === "true",
+    _caracteristicas: data.get("caracteristicas"),
+    _image_url: PrimaryImagen,
+    _storeid: data.get("storeId"),
+    _creado: data.get("creado"),
+    _embalaje: Number(data.get("embalaje") ?? 0),
+    _order: Number(data.get("order") ?? 0),
+    _agotado: data.get("agotado") === "true",
+    _visible: data.get("visible") === "true",
+    _oldprice: Number(data.get("oldPrice") ?? 0),
+    _imagesecondary:
+      typeof SecondaryImage == "string"
+        ? JSON.parse(SecondaryImage)
+        : SecondaryImage, // JS array -> será enviado como JSONB
+    _agregados: data.get("agregados") ? JSON.parse(data.get("agregados")) : [],
+  };
+  console.log(payload);
   const { data: tienda, error } = await supabase
-    .from("Products")
-    .update({
-      title: data.get("title"),
-      descripcion: data.get("descripcion"),
-      price: data.get("price"),
-      order: data.get("order"),
-      caja: data.get("caja"),
-      favorito: data.get("favorito"),
-      caracteristicas: data.get("caracteristicas"),
-      agotado: data.get("agotado"),
-      visible: data.get("visible"),
-      oldPrice: data.get("oldPrice"),
-      priceCompra: data.get("priceCompra"),
-      span: data.get("span"),
-      image: PrimaryImagen,
-      imagesecondary:
-        typeof SecondaryImage === "string"
-          ? JSON.parse(SecondaryImage)
-          : SecondaryImage,
-    })
-    .eq("productId", Id)
-    .select("*");
+    .rpc("update_product", payload)
+    .single();
+
+  console.log(tienda);
   if (error) {
     console.error("Error", error);
 

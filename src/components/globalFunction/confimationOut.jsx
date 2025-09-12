@@ -1,5 +1,5 @@
 "use client";
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { ThemeContext } from "@/context/useContext";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -7,9 +7,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 

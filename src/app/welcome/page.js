@@ -1,5 +1,5 @@
 import React from "react";
-import { CrearClienteComponent } from "../../components/crear-cliente";
+import { CrearClienteComponent } from "@/components/Chadcn-components/Welcome/crear-cliente";
 import { cookies } from "next/headers";
 
 export default async function page() {

@@ -33,18 +33,17 @@ export async function POST(request, { params }) {
 
     const { data: newData, error: tiendaError } = await supabase
       .from("categorias")
-      .insert([data.data])
+      .insert([data])
       .select("*")
       .single();
 
     if (tiendaError) {
       console.error(
-        `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
+        `Error al actualizar el producto ${cat.id}: ${tiendaError}`
       );
       throw new Error(
         `Error actualizando producto ${cat.id}: ${tiendaError.message}`
       );
-      return handleError(tiendaError);
     }
 
     return NextResponse.json({
@@ -52,7 +51,7 @@ export async function POST(request, { params }) {
       data: newData,
     });
   } catch (error) {
-    console.error("Error en la actualización:", error.message);
+    console.error("Error en la actualización:", error);
     return NextResponse.json(
       { message: `Error: ${error.message}` },
       { status: 500 }

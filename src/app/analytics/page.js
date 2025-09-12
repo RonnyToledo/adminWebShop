@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useContext } from "react";
-import Logins from "@/components/Chadcn-components/Logins";
+import Logins from "@/components/Chadcn-components/Analitycs/Logins";
 import { ThemeContext } from "@/context/useContext";
 
 export default function Page() {

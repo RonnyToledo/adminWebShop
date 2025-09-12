@@ -1,6 +1,6 @@
 import React from "react";
 import { ThemeContext } from "@/context/useContext";
-import Specific from "@/components/Chadcn-components/Specific";
+import Specific from "@/components/Chadcn-components/Specific/Specific";
 
 export default async function page({ params }) {
   const specific = (await params).specific;

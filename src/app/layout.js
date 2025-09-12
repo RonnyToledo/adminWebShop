@@ -31,7 +31,7 @@ export default async function AdminLayout({ children }) {
       <body>
         <MyProvider user={user} data={data || {}}>
           <main className="">{children}</main>
-          <SonnerToaster className={styles.sonner_dark} />
+          <SonnerToaster position="top-center" richColors />
           <UiToaster />
         </MyProvider>
       </body>
@@ -92,7 +92,7 @@ export const initializeData = async (userId) => {
       ga: gaData,
       products: (productosParsed || [])?.map((obj) => ({
         ...obj,
-        visitas: 0,
+        visitas: obj.visitas ?? 0,
         caracteristicas: JSON.parse(obj?.caracteristicas || "[]"),
       })),
       events: eventsParsed,

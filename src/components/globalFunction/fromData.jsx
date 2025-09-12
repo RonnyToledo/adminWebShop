@@ -1,61 +1,78 @@
 "use client";
 import React, { useRef, useState, useContext } from "react";
 import axios from "axios";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
 import { Button } from "../ui/button";
+import { toast } from "sonner";
 
 export function FromData({ children, store, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
-  const { toast } = useToast();
   const form = useRef(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setDownloading(true);
+    console.log(store);
+    // Construir FormData
     const formData = new FormData();
-    Object.keys(store).forEach((key) => {
-      const value = store[key];
+    Object.entries(store).forEach(([key, value]) => {
       if (value instanceof File || value instanceof Blob) {
-        // Si es un archivo, lo añadimos directamente sin convertirlo a string
+        // Archivos: añadir tal cual
         formData.append(key, value);
-      } else if (typeof value === "object" && value !== null) {
-        // Si es un objeto, lo convertimos a JSON
+      } else if (value && typeof value === "object") {
+        // Objetos: stringify
         formData.append(key, JSON.stringify(value));
       } else {
-        // Si es otro tipo de dato, lo convertimos a string
-        formData.append(key, String(value));
+        // Primitivos: asegurar string (evitar undefined/null)
+        formData.append(key, String(value ?? ""));
       }
     });
+
+    // Promesa de la petición PUT (no forzamos Content-Type)
+    const putPromise = axios.put(`/api/tienda/${store.sitioweb}/`, formData);
+
     try {
-      const res = await axios.put(`/api/tienda/${store.sitioweb}/`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
+      // toast.promise muestra loading / success / error automáticamente
+      const res = toast.promise(putPromise, {
+        loading: "Actualizando configuración...",
+        success: (response) => {
+          // Actualizamos el estado local con el store nuevo
+          setWebshop((prev) => ({ ...prev, store }));
+
+          // Reseteamos el formulario si existe la referencia
+          if (
+            form &&
+            form.current &&
+            typeof form.current.reset === "function"
+          ) {
+            form.current.reset();
+          }
+
+          // Mensaje de éxito (puedes usar response.data para mensajes del backend)
+          return (
+            response?.data?.message ?? "Configuración actualizada correctamente"
+          );
+        },
+        error: (err) => {
+          // Toast espera un string; devolvemos un mensaje legible
+          const msg =
+            err?.response?.data?.message ??
+            err?.message ??
+            "No se pudo actualizar la configuración";
+          return `Error: ${msg}`;
         },
       });
-      if (res.status == 200) {
-        toast({
-          title: "Tarea Ejecutada",
-          description: "Informacion Actualizada",
-          action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-          ),
-        });
-        setWebshop({ ...webshop, store });
-        form.current.reset();
-      }
-    } catch (error) {
-      console.error("Error al enviar el comentario:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar la configuracion.",
-      });
+
+      // opcional: devolver la respuesta para quien llame a handleSubmit
+      return res;
+    } catch (err) {
+      // El toast de error ya fue mostrado por toast.promise, pero dejamos el log
+      console.error("handleSubmit error:", err);
     } finally {
       setDownloading(false);
     }
   }
+
   return (
     <form
       ref={form}
@@ -71,7 +88,7 @@ export function FromData({ children, store, ThemeContext }) {
           }`}
           disabled={downloading}
         >
-          {downloading ? "Guardando..." : "Guardar"}
+          Guardar
         </Button>
       </div>
     </form>
