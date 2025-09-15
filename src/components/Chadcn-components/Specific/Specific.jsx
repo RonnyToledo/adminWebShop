@@ -71,7 +71,7 @@ export default function Specific({ specific, ThemeContext }) {
       const oldPriceNum = Number(products.oldPrice) || 0;
       const priceCompra = Number(products.priceCompra) || 0;
       const embalaje = Number(products.embalaje) || 0;
-      const order = Number(products.order ?? 100000) || 100000;
+      const order = products.order;
       const favorito = !!products.favorito;
       const agotado = !!products.agotado;
       const visible = !!products.visible;

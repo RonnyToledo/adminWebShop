@@ -82,17 +82,6 @@ export function ProductEditForm({
     updateProduct("agregados", filteredAddons);
   };
 
-  const handleSave = () => {
-    if (isCreating) {
-      const newProduct = { ...product, id: uuidv4() };
-      console.log("[v0] Creating new product:", newProduct);
-      alert("Producto creado exitosamente!");
-    } else {
-      console.log("[v0] Saving product:", product);
-      alert("Producto guardado exitosamente!");
-    }
-  };
-
   const handleImagesChange = useCallback((newImages) => {
     onProductChange((prev) => {
       const prevImgs = Array.isArray(prev?.imagesecondary)

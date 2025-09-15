@@ -151,7 +151,7 @@
   },
   {
     "isoCode": "KDZ",
-    "name": "Kunduz Province",
+    "name": "Kunduz",
     "countryCode": "AF"
   },
   {
@@ -516,7 +516,7 @@
   },
   {
     "isoCode": "AR",
-    "name": "Ararat Province",
+    "name": "Ararat",
     "countryCode": "AM"
   },
   {
@@ -531,7 +531,7 @@
   },
   {
     "isoCode": "GR",
-    "name": "Gegharkunik Province",
+    "name": "Gegharkunik",
     "countryCode": "AM"
   },
   {
@@ -551,7 +551,7 @@
   },
   {
     "isoCode": "SU",
-    "name": "Syunik Province",
+    "name": "Syunik",
     "countryCode": "AM"
   },
   {
@@ -566,37 +566,37 @@
   },
   {
     "isoCode": "BGO",
-    "name": "Bengo Province",
+    "name": "Bengo",
     "countryCode": "AO"
   },
   {
     "isoCode": "BGU",
-    "name": "Benguela Province",
+    "name": "Benguela",
     "countryCode": "AO"
   },
   {
     "isoCode": "BIE",
-    "name": "Bié Province",
+    "name": "Bié",
     "countryCode": "AO"
   },
   {
     "isoCode": "CAB",
-    "name": "Cabinda Province",
+    "name": "Cabinda",
     "countryCode": "AO"
   },
   {
     "isoCode": "CCU",
-    "name": "Cuando Cubango Province",
+    "name": "Cuando Cubango",
     "countryCode": "AO"
   },
   {
     "isoCode": "CNN",
-    "name": "Cunene Province",
+    "name": "Cunene",
     "countryCode": "AO"
   },
   {
     "isoCode": "CNO",
-    "name": "Cuanza Norte Province",
+    "name": "Cuanza Norte",
     "countryCode": "AO"
   },
   {
@@ -606,47 +606,47 @@
   },
   {
     "isoCode": "HUA",
-    "name": "Huambo Province",
+    "name": "Huambo",
     "countryCode": "AO"
   },
   {
     "isoCode": "HUI",
-    "name": "Huíla Province",
+    "name": "Huíla",
     "countryCode": "AO"
   },
   {
     "isoCode": "LNO",
-    "name": "Lunda Norte Province",
+    "name": "Lunda Norte",
     "countryCode": "AO"
   },
   {
     "isoCode": "LSU",
-    "name": "Lunda Sul Province",
+    "name": "Lunda Sul",
     "countryCode": "AO"
   },
   {
     "isoCode": "LUA",
-    "name": "Luanda Province",
+    "name": "Luanda",
     "countryCode": "AO"
   },
   {
     "isoCode": "MAL",
-    "name": "Malanje Province",
+    "name": "Malanje",
     "countryCode": "AO"
   },
   {
     "isoCode": "MOX",
-    "name": "Moxico Province",
+    "name": "Moxico",
     "countryCode": "AO"
   },
   {
     "isoCode": "UIG",
-    "name": "Uíge Province",
+    "name": "Uíge",
     "countryCode": "AO"
   },
   {
     "isoCode": "ZAI",
-    "name": "Zaire Province",
+    "name": "Zaire",
     "countryCode": "AO"
   },
   {
@@ -1831,27 +1831,27 @@
   },
   {
     "isoCode": "BAL",
-    "name": "Balé Province",
+    "name": "Balé",
     "countryCode": "BF"
   },
   {
     "isoCode": "BAM",
-    "name": "Bam Province",
+    "name": "Bam",
     "countryCode": "BF"
   },
   {
     "isoCode": "BAN",
-    "name": "Banwa Province",
+    "name": "Banwa",
     "countryCode": "BF"
   },
   {
     "isoCode": "BAZ",
-    "name": "Bazèga Province",
+    "name": "Bazèga",
     "countryCode": "BF"
   },
   {
     "isoCode": "BGR",
-    "name": "Bougouriba Province",
+    "name": "Bougouriba",
     "countryCode": "BF"
   },
   {
@@ -1861,82 +1861,82 @@
   },
   {
     "isoCode": "COM",
-    "name": "Comoé Province",
+    "name": "Comoé",
     "countryCode": "BF"
   },
   {
     "isoCode": "GAN",
-    "name": "Ganzourgou Province",
+    "name": "Ganzourgou",
     "countryCode": "BF"
   },
   {
     "isoCode": "GNA",
-    "name": "Gnagna Province",
+    "name": "Gnagna",
     "countryCode": "BF"
   },
   {
     "isoCode": "GOU",
-    "name": "Gourma Province",
+    "name": "Gourma",
     "countryCode": "BF"
   },
   {
     "isoCode": "HOU",
-    "name": "Houet Province",
+    "name": "Houet",
     "countryCode": "BF"
   },
   {
     "isoCode": "IOB",
-    "name": "Ioba Province",
+    "name": "Ioba",
     "countryCode": "BF"
   },
   {
     "isoCode": "KAD",
-    "name": "Kadiogo Province",
+    "name": "Kadiogo",
     "countryCode": "BF"
   },
   {
     "isoCode": "KEN",
-    "name": "Kénédougou Province",
+    "name": "Kénédougou",
     "countryCode": "BF"
   },
   {
     "isoCode": "KMD",
-    "name": "Komondjari Province",
+    "name": "Komondjari",
     "countryCode": "BF"
   },
   {
     "isoCode": "KMP",
-    "name": "Kompienga Province",
+    "name": "Kompienga",
     "countryCode": "BF"
   },
   {
     "isoCode": "KOP",
-    "name": "Koulpélogo Province",
+    "name": "Koulpélogo",
     "countryCode": "BF"
   },
   {
     "isoCode": "KOS",
-    "name": "Kossi Province",
+    "name": "Kossi",
     "countryCode": "BF"
   },
   {
     "isoCode": "KOT",
-    "name": "Kouritenga Province",
+    "name": "Kouritenga",
     "countryCode": "BF"
   },
   {
     "isoCode": "KOW",
-    "name": "Kourwéogo Province",
+    "name": "Kourwéogo",
     "countryCode": "BF"
   },
   {
     "isoCode": "LER",
-    "name": "Léraba Province",
+    "name": "Léraba",
     "countryCode": "BF"
   },
   {
     "isoCode": "LOR",
-    "name": "Loroum Province",
+    "name": "Loroum",
     "countryCode": "BF"
   },
   {
@@ -1946,237 +1946,237 @@
   },
   {
     "isoCode": "NAM",
-    "name": "Namentenga Province",
+    "name": "Namentenga",
     "countryCode": "BF"
   },
   {
     "isoCode": "NAO",
-    "name": "Nahouri Province",
+    "name": "Nahouri",
     "countryCode": "BF"
   },
   {
     "isoCode": "NAY",
-    "name": "Nayala Province",
+    "name": "Nayala",
     "countryCode": "BF"
   },
   {
     "isoCode": "NOU",
-    "name": "Noumbiel Province",
+    "name": "Noumbiel",
     "countryCode": "BF"
   },
   {
     "isoCode": "OUB",
-    "name": "Oubritenga Province",
+    "name": "Oubritenga",
     "countryCode": "BF"
   },
   {
     "isoCode": "OUD",
-    "name": "Oudalan Province",
+    "name": "Oudalan",
     "countryCode": "BF"
   },
   {
     "isoCode": "PAS",
-    "name": "Passoré Province",
+    "name": "Passoré",
     "countryCode": "BF"
   },
   {
     "isoCode": "PON",
-    "name": "Poni Province",
+    "name": "Poni",
     "countryCode": "BF"
   },
   {
     "isoCode": "SEN",
-    "name": "Séno Province",
+    "name": "Séno",
     "countryCode": "BF"
   },
   {
     "isoCode": "SIS",
-    "name": "Sissili Province",
+    "name": "Sissili",
     "countryCode": "BF"
   },
   {
     "isoCode": "SMT",
-    "name": "Sanmatenga Province",
+    "name": "Sanmatenga",
     "countryCode": "BF"
   },
   {
     "isoCode": "SNG",
-    "name": "Sanguié Province",
+    "name": "Sanguié",
     "countryCode": "BF"
   },
   {
     "isoCode": "SOM",
-    "name": "Soum Province",
+    "name": "Soum",
     "countryCode": "BF"
   },
   {
     "isoCode": "SOR",
-    "name": "Sourou Province",
+    "name": "Sourou",
     "countryCode": "BF"
   },
   {
     "isoCode": "TAP",
-    "name": "Tapoa Province",
+    "name": "Tapoa",
     "countryCode": "BF"
   },
   {
     "isoCode": "TUI",
-    "name": "Tuy Province",
+    "name": "Tuy",
     "countryCode": "BF"
   },
   {
     "isoCode": "YAG",
-    "name": "Yagha Province",
+    "name": "Yagha",
     "countryCode": "BF"
   },
   {
     "isoCode": "YAT",
-    "name": "Yatenga Province",
+    "name": "Yatenga",
     "countryCode": "BF"
   },
   {
     "isoCode": "ZIR",
-    "name": "Ziro Province",
+    "name": "Ziro",
     "countryCode": "BF"
   },
   {
     "isoCode": "ZON",
-    "name": "Zondoma Province",
+    "name": "Zondoma",
     "countryCode": "BF"
   },
   {
     "isoCode": "ZOU",
-    "name": "Zoundwéogo Province",
+    "name": "Zoundwéogo",
     "countryCode": "BF"
   },
   {
     "isoCode": "01",
-    "name": "Blagoevgrad Province",
+    "name": "Blagoevgrad",
     "countryCode": "BG"
   },
   {
     "isoCode": "02",
-    "name": "Burgas Province",
+    "name": "Burgas",
     "countryCode": "BG"
   },
   {
     "isoCode": "03",
-    "name": "Varna Province",
+    "name": "Varna",
     "countryCode": "BG"
   },
   {
     "isoCode": "04",
-    "name": "Veliko Tarnovo Province",
+    "name": "Veliko Tarnovo",
     "countryCode": "BG"
   },
   {
     "isoCode": "05",
-    "name": "Vidin Province",
+    "name": "Vidin",
     "countryCode": "BG"
   },
   {
     "isoCode": "06",
-    "name": "Vratsa Province",
+    "name": "Vratsa",
     "countryCode": "BG"
   },
   {
     "isoCode": "07",
-    "name": "Gabrovo Province",
+    "name": "Gabrovo",
     "countryCode": "BG"
   },
   {
     "isoCode": "08",
-    "name": "Dobrich Province",
+    "name": "Dobrich",
     "countryCode": "BG"
   },
   {
     "isoCode": "09",
-    "name": "Kardzhali Province",
+    "name": "Kardzhali",
     "countryCode": "BG"
   },
   {
     "isoCode": "10",
-    "name": "Kyustendil Province",
+    "name": "Kyustendil",
     "countryCode": "BG"
   },
   {
     "isoCode": "11",
-    "name": "Lovech Province",
+    "name": "Lovech",
     "countryCode": "BG"
   },
   {
     "isoCode": "12",
-    "name": "Montana Province",
+    "name": "Montana",
     "countryCode": "BG"
   },
   {
     "isoCode": "13",
-    "name": "Pazardzhik Province",
+    "name": "Pazardzhik",
     "countryCode": "BG"
   },
   {
     "isoCode": "14",
-    "name": "Pernik Province",
+    "name": "Pernik",
     "countryCode": "BG"
   },
   {
     "isoCode": "15",
-    "name": "Pleven Province",
+    "name": "Pleven",
     "countryCode": "BG"
   },
   {
     "isoCode": "16",
-    "name": "Plovdiv Province",
+    "name": "Plovdiv",
     "countryCode": "BG"
   },
   {
     "isoCode": "17",
-    "name": "Razgrad Province",
+    "name": "Razgrad",
     "countryCode": "BG"
   },
   {
     "isoCode": "18",
-    "name": "Ruse Province",
+    "name": "Ruse",
     "countryCode": "BG"
   },
   {
     "isoCode": "19",
-    "name": "Silistra Province",
+    "name": "Silistra",
     "countryCode": "BG"
   },
   {
     "isoCode": "20",
-    "name": "Sliven Province",
+    "name": "Sliven",
     "countryCode": "BG"
   },
   {
     "isoCode": "21",
-    "name": "Smolyan Province",
+    "name": "Smolyan",
     "countryCode": "BG"
   },
   {
     "isoCode": "22",
-    "name": "Sofia City Province",
+    "name": "Sofia City",
     "countryCode": "BG"
   },
   {
     "isoCode": "23",
-    "name": "Sofia Province",
+    "name": "Sofia",
     "countryCode": "BG"
   },
   {
     "isoCode": "24",
-    "name": "Stara Zagora Province",
+    "name": "Stara Zagora",
     "countryCode": "BG"
   },
   {
     "isoCode": "25",
-    "name": "Targovishte Province",
+    "name": "Targovishte",
     "countryCode": "BG"
   },
   {
     "isoCode": "26",
-    "name": "Haskovo Province",
+    "name": "Haskovo",
     "countryCode": "BG"
   },
   {
@@ -2186,7 +2186,7 @@
   },
   {
     "isoCode": "28",
-    "name": "Yambol Province",
+    "name": "Yambol",
     "countryCode": "BG"
   },
   {
@@ -2216,92 +2216,92 @@
   },
   {
     "isoCode": "BB",
-    "name": "Bubanza Province",
+    "name": "Bubanza",
     "countryCode": "BI"
   },
   {
     "isoCode": "BL",
-    "name": "Bujumbura Rural Province",
+    "name": "Bujumbura Rural",
     "countryCode": "BI"
   },
   {
     "isoCode": "BM",
-    "name": "Bujumbura Mairie Province",
+    "name": "Bujumbura Mairie",
     "countryCode": "BI"
   },
   {
     "isoCode": "BR",
-    "name": "Bururi Province",
+    "name": "Bururi",
     "countryCode": "BI"
   },
   {
     "isoCode": "CA",
-    "name": "Cankuzo Province",
+    "name": "Cankuzo",
     "countryCode": "BI"
   },
   {
     "isoCode": "CI",
-    "name": "Cibitoke Province",
+    "name": "Cibitoke",
     "countryCode": "BI"
   },
   {
     "isoCode": "GI",
-    "name": "Gitega Province",
+    "name": "Gitega",
     "countryCode": "BI"
   },
   {
     "isoCode": "KI",
-    "name": "Kirundo Province",
+    "name": "Kirundo",
     "countryCode": "BI"
   },
   {
     "isoCode": "KR",
-    "name": "Karuzi Province",
+    "name": "Karuzi",
     "countryCode": "BI"
   },
   {
     "isoCode": "KY",
-    "name": "Kayanza Province",
+    "name": "Kayanza",
     "countryCode": "BI"
   },
   {
     "isoCode": "MA",
-    "name": "Makamba Province",
+    "name": "Makamba",
     "countryCode": "BI"
   },
   {
     "isoCode": "MU",
-    "name": "Muramvya Province",
+    "name": "Muramvya",
     "countryCode": "BI"
   },
   {
     "isoCode": "MW",
-    "name": "Mwaro Province",
+    "name": "Mwaro",
     "countryCode": "BI"
   },
   {
     "isoCode": "MY",
-    "name": "Muyinga Province",
+    "name": "Muyinga",
     "countryCode": "BI"
   },
   {
     "isoCode": "NG",
-    "name": "Ngozi Province",
+    "name": "Ngozi",
     "countryCode": "BI"
   },
   {
     "isoCode": "RM",
-    "name": "Rumonge Province",
+    "name": "Rumonge",
     "countryCode": "BI"
   },
   {
     "isoCode": "RT",
-    "name": "Rutana Province",
+    "name": "Rutana",
     "countryCode": "BI"
   },
   {
     "isoCode": "RY",
-    "name": "Ruyigi Province",
+    "name": "Ruyigi",
     "countryCode": "BI"
   },
   {
@@ -4121,7 +4121,7 @@
   },
   {
     "isoCode": "A",
-    "name": "Alajuela Province",
+    "name": "Alajuela",
     "countryCode": "CR"
   },
   {
@@ -4131,102 +4131,102 @@
   },
   {
     "isoCode": "G",
-    "name": "Guanacaste Province",
+    "name": "Guanacaste",
     "countryCode": "CR"
   },
   {
     "isoCode": "H",
-    "name": "Heredia Province",
+    "name": "Heredia",
     "countryCode": "CR"
   },
   {
     "isoCode": "L",
-    "name": "Limón Province",
+    "name": "Limón",
     "countryCode": "CR"
   },
   {
     "isoCode": "P",
-    "name": "Puntarenas Province",
+    "name": "Puntarenas",
     "countryCode": "CR"
   },
   {
     "isoCode": "SJ",
-    "name": "San José Province",
+    "name": "San José",
     "countryCode": "CR"
   },
   {
     "isoCode": "01",
-    "name": "Pinar del Río Province",
+    "name": "Pinar del Río",
     "countryCode": "CU"
   },
   {
     "isoCode": "03",
-    "name": "Havana Province",
+    "name": "Havana",
     "countryCode": "CU"
   },
   {
     "isoCode": "04",
-    "name": "Matanzas Province",
+    "name": "Matanzas",
     "countryCode": "CU"
   },
   {
     "isoCode": "05",
-    "name": "Villa Clara Province",
+    "name": "Villa Clara",
     "countryCode": "CU"
   },
   {
     "isoCode": "06",
-    "name": "Cienfuegos Province",
+    "name": "Cienfuegos",
     "countryCode": "CU"
   },
   {
     "isoCode": "07",
-    "name": "Sancti Spíritus Province",
+    "name": "Sancti Spíritus",
     "countryCode": "CU"
   },
   {
     "isoCode": "08",
-    "name": "Ciego de Ávila Province",
+    "name": "Ciego de Ávila",
     "countryCode": "CU"
   },
   {
     "isoCode": "09",
-    "name": "Camagüey Province",
+    "name": "Camagüey",
     "countryCode": "CU"
   },
   {
     "isoCode": "10",
-    "name": "Las Tunas Province",
+    "name": "Las Tunas",
     "countryCode": "CU"
   },
   {
     "isoCode": "11",
-    "name": "Holguín Province",
+    "name": "Holguín",
     "countryCode": "CU"
   },
   {
     "isoCode": "12",
-    "name": "Granma Province",
+    "name": "Granma",
     "countryCode": "CU"
   },
   {
     "isoCode": "13",
-    "name": "Santiago de Cuba Province",
+    "name": "Santiago de Cuba",
     "countryCode": "CU"
   },
   {
     "isoCode": "14",
-    "name": "Guantánamo Province",
+    "name": "Guantánamo",
     "countryCode": "CU"
   },
   {
     "isoCode": "15",
-    "name": "Artemisa Province",
+    "name": "Artemisa",
     "countryCode": "CU"
   },
   {
     "isoCode": "16",
-    "name": "Mayabeque Province",
+    "name": "Mayabeque",
     "countryCode": "CU"
   },
   {
@@ -5021,37 +5021,37 @@
   },
   {
     "isoCode": "02",
-    "name": "Azua Province",
+    "name": "Azua",
     "countryCode": "DO"
   },
   {
     "isoCode": "03",
-    "name": "Baoruco Province",
+    "name": "Baoruco",
     "countryCode": "DO"
   },
   {
     "isoCode": "04",
-    "name": "Barahona Province",
+    "name": "Barahona",
     "countryCode": "DO"
   },
   {
     "isoCode": "05",
-    "name": "Dajabón Province",
+    "name": "Dajabón",
     "countryCode": "DO"
   },
   {
     "isoCode": "06",
-    "name": "Duarte Province",
+    "name": "Duarte",
     "countryCode": "DO"
   },
   {
     "isoCode": "08",
-    "name": "El Seibo Province",
+    "name": "El Seibo",
     "countryCode": "DO"
   },
   {
     "isoCode": "09",
-    "name": "Espaillat Province",
+    "name": "Espaillat",
     "countryCode": "DO"
   },
   {
@@ -5061,62 +5061,62 @@
   },
   {
     "isoCode": "11",
-    "name": "La Altagracia Province",
+    "name": "La Altagracia",
     "countryCode": "DO"
   },
   {
     "isoCode": "12",
-    "name": "La Romana Province",
+    "name": "La Romana",
     "countryCode": "DO"
   },
   {
     "isoCode": "13",
-    "name": "La Vega Province",
+    "name": "La Vega",
     "countryCode": "DO"
   },
   {
     "isoCode": "14",
-    "name": "María Trinidad Sánchez Province",
+    "name": "María Trinidad Sánchez",
     "countryCode": "DO"
   },
   {
     "isoCode": "15",
-    "name": "Monte Cristi Province",
+    "name": "Monte Cristi",
     "countryCode": "DO"
   },
   {
     "isoCode": "16",
-    "name": "Pedernales Province",
+    "name": "Pedernales",
     "countryCode": "DO"
   },
   {
     "isoCode": "17",
-    "name": "Peravia Province",
+    "name": "Peravia",
     "countryCode": "DO"
   },
   {
     "isoCode": "18",
-    "name": "Puerto Plata Province",
+    "name": "Puerto Plata",
     "countryCode": "DO"
   },
   {
     "isoCode": "19",
-    "name": "Hermanas Mirabal Province",
+    "name": "Hermanas Mirabal",
     "countryCode": "DO"
   },
   {
     "isoCode": "20",
-    "name": "Samaná Province",
+    "name": "Samaná",
     "countryCode": "DO"
   },
   {
     "isoCode": "21",
-    "name": "San Cristóbal Province",
+    "name": "San Cristóbal",
     "countryCode": "DO"
   },
   {
     "isoCode": "22",
-    "name": "San Juan Province",
+    "name": "San Juan",
     "countryCode": "DO"
   },
   {
@@ -5126,47 +5126,47 @@
   },
   {
     "isoCode": "24",
-    "name": "Sánchez Ramírez Province",
+    "name": "Sánchez Ramírez",
     "countryCode": "DO"
   },
   {
     "isoCode": "25",
-    "name": "Santiago Province",
+    "name": "Santiago",
     "countryCode": "DO"
   },
   {
     "isoCode": "26",
-    "name": "Santiago Rodríguez Province",
+    "name": "Santiago Rodríguez",
     "countryCode": "DO"
   },
   {
     "isoCode": "27",
-    "name": "Valverde Province",
+    "name": "Valverde",
     "countryCode": "DO"
   },
   {
     "isoCode": "28",
-    "name": "Monseñor Nouel Province",
+    "name": "Monseñor Nouel",
     "countryCode": "DO"
   },
   {
     "isoCode": "29",
-    "name": "Monte Plata Province",
+    "name": "Monte Plata",
     "countryCode": "DO"
   },
   {
     "isoCode": "30",
-    "name": "Hato Mayor Province",
+    "name": "Hato Mayor",
     "countryCode": "DO"
   },
   {
     "isoCode": "31",
-    "name": "San José de Ocoa Province",
+    "name": "San José de Ocoa",
     "countryCode": "DO"
   },
   {
     "isoCode": "32",
-    "name": "Santo Domingo Province",
+    "name": "Santo Domingo",
     "countryCode": "DO"
   },
   {
@@ -5841,7 +5841,7 @@
   },
   {
     "isoCode": "BU",
-    "name": "Burgos Province",
+    "name": "Burgos",
     "countryCode": "ES"
   },
   {
@@ -5911,7 +5911,7 @@
   },
   {
     "isoCode": "P",
-    "name": "Palencia Province",
+    "name": "Palencia",
     "countryCode": "ES"
   },
   {
@@ -5931,22 +5931,22 @@
   },
   {
     "isoCode": "SA",
-    "name": "Salamanca Province",
+    "name": "Salamanca",
     "countryCode": "ES"
   },
   {
     "isoCode": "SG",
-    "name": "Segovia Province",
+    "name": "Segovia",
     "countryCode": "ES"
   },
   {
     "isoCode": "SO",
-    "name": "Soria Province",
+    "name": "Soria",
     "countryCode": "ES"
   },
   {
     "isoCode": "VA",
-    "name": "Valladolid Province",
+    "name": "Valladolid",
     "countryCode": "ES"
   },
   {
@@ -5956,7 +5956,7 @@
   },
   {
     "isoCode": "ZA",
-    "name": "Zamora Province",
+    "name": "Zamora",
     "countryCode": "ES"
   },
   {
@@ -6106,7 +6106,7 @@
   },
   {
     "isoCode": "IS",
-    "name": "Eastern Finland Province",
+    "name": "Eastern Finland",
     "countryCode": "FI"
   },
   {
@@ -6116,7 +6116,7 @@
   },
   {
     "isoCode": "OL",
-    "name": "Oulu Province",
+    "name": "Oulu",
     "countryCode": "FI"
   },
   {
@@ -6851,47 +6851,47 @@
   },
   {
     "isoCode": "1",
-    "name": "Estuaire Province",
+    "name": "Estuaire",
     "countryCode": "GA"
   },
   {
     "isoCode": "2",
-    "name": "Haut-Ogooué Province",
+    "name": "Haut-Ogooué",
     "countryCode": "GA"
   },
   {
     "isoCode": "3",
-    "name": "Moyen-Ogooué Province",
+    "name": "Moyen-Ogooué",
     "countryCode": "GA"
   },
   {
     "isoCode": "4",
-    "name": "Ngounié Province",
+    "name": "Ngounié",
     "countryCode": "GA"
   },
   {
     "isoCode": "5",
-    "name": "Nyanga Province",
+    "name": "Nyanga",
     "countryCode": "GA"
   },
   {
     "isoCode": "6",
-    "name": "Ogooué-Ivindo Province",
+    "name": "Ogooué-Ivindo",
     "countryCode": "GA"
   },
   {
     "isoCode": "7",
-    "name": "Ogooué-Lolo Province",
+    "name": "Ogooué-Lolo",
     "countryCode": "GA"
   },
   {
     "isoCode": "8",
-    "name": "Ogooué-Maritime Province",
+    "name": "Ogooué-Maritime",
     "countryCode": "GA"
   },
   {
     "isoCode": "9",
-    "name": "Woleu-Ntem Province",
+    "name": "Woleu-Ntem",
     "countryCode": "GA"
   },
   {
@@ -8546,17 +8546,17 @@
   },
   {
     "isoCode": "AN",
-    "name": "Annobón Province",
+    "name": "Annobón",
     "countryCode": "GQ"
   },
   {
     "isoCode": "BN",
-    "name": "Bioko Norte Province",
+    "name": "Bioko Norte",
     "countryCode": "GQ"
   },
   {
     "isoCode": "BS",
-    "name": "Bioko Sur Province",
+    "name": "Bioko Sur",
     "countryCode": "GQ"
   },
   {
@@ -8566,7 +8566,7 @@
   },
   {
     "isoCode": "CS",
-    "name": "Centro Sur Province",
+    "name": "Centro Sur",
     "countryCode": "GQ"
   },
   {
@@ -8576,17 +8576,17 @@
   },
   {
     "isoCode": "KN",
-    "name": "Kié-Ntem Province",
+    "name": "Kié-Ntem",
     "countryCode": "GQ"
   },
   {
     "isoCode": "LI",
-    "name": "Litoral Province",
+    "name": "Litoral",
     "countryCode": "GQ"
   },
   {
     "isoCode": "WN",
-    "name": "Wele-Nzas Province",
+    "name": "Wele-Nzas",
     "countryCode": "GQ"
   },
   {
@@ -8911,12 +8911,12 @@
   },
   {
     "isoCode": "L",
-    "name": "Leste Province",
+    "name": "Leste",
     "countryCode": "GW"
   },
   {
     "isoCode": "N",
-    "name": "Norte Province",
+    "name": "Norte",
     "countryCode": "GW"
   },
   {
@@ -8931,7 +8931,7 @@
   },
   {
     "isoCode": "S",
-    "name": "Sul Province",
+    "name": "Sul",
     "countryCode": "GW"
   },
   {
@@ -10441,32 +10441,32 @@
   },
   {
     "isoCode": "AL",
-    "name": "Province of Alessandria",
+    "name": "Alessandria",
     "countryCode": "IT"
   },
   {
     "isoCode": "AN",
-    "name": "Province of Ancona",
+    "name": "Ancona",
     "countryCode": "IT"
   },
   {
     "isoCode": "AP",
-    "name": "Province of Ascoli Piceno",
+    "name": "Ascoli Piceno",
     "countryCode": "IT"
   },
   {
     "isoCode": "AQ",
-    "name": "Province of L'Aquila",
+    "name": "L'Aquila",
     "countryCode": "IT"
   },
   {
     "isoCode": "AT",
-    "name": "Province of Asti",
+    "name": "Asti",
     "countryCode": "IT"
   },
   {
     "isoCode": "AV",
-    "name": "Province of Avellino",
+    "name": "Avellino",
     "countryCode": "IT"
   },
   {
@@ -10476,22 +10476,22 @@
   },
   {
     "isoCode": "BG",
-    "name": "Province of Bergamo",
+    "name": "Bergamo",
     "countryCode": "IT"
   },
   {
     "isoCode": "BI",
-    "name": "Province of Biella",
+    "name": "Biella",
     "countryCode": "IT"
   },
   {
     "isoCode": "BL",
-    "name": "Province of Belluno",
+    "name": "Belluno",
     "countryCode": "IT"
   },
   {
     "isoCode": "BN",
-    "name": "Benevento Province",
+    "name": "Benevento",
     "countryCode": "IT"
   },
   {
@@ -10501,17 +10501,17 @@
   },
   {
     "isoCode": "BR",
-    "name": "Province of Brindisi",
+    "name": "Brindisi",
     "countryCode": "IT"
   },
   {
     "isoCode": "BS",
-    "name": "Province of Brescia",
+    "name": "Brescia",
     "countryCode": "IT"
   },
   {
     "isoCode": "BT",
-    "name": "Province of Barletta-Andria-Trani",
+    "name": "Barletta-Andria-Trani",
     "countryCode": "IT"
   },
   {
@@ -10526,22 +10526,22 @@
   },
   {
     "isoCode": "CB",
-    "name": "Province of Campobasso",
+    "name": "Campobasso",
     "countryCode": "IT"
   },
   {
     "isoCode": "CE",
-    "name": "Province of Caserta",
+    "name": "Caserta",
     "countryCode": "IT"
   },
   {
     "isoCode": "CH",
-    "name": "Province of Chieti",
+    "name": "Chieti",
     "countryCode": "IT"
   },
   {
     "isoCode": "CI",
-    "name": "Province of Carbonia-Iglesias",
+    "name": "Carbonia-Iglesias",
     "countryCode": "IT"
   },
   {
@@ -10551,22 +10551,22 @@
   },
   {
     "isoCode": "CN",
-    "name": "Province of Cuneo",
+    "name": "Cuneo",
     "countryCode": "IT"
   },
   {
     "isoCode": "CO",
-    "name": "Province of Como",
+    "name": "Como",
     "countryCode": "IT"
   },
   {
     "isoCode": "CR",
-    "name": "Province of Cremona",
+    "name": "Cremona",
     "countryCode": "IT"
   },
   {
     "isoCode": "CS",
-    "name": "Province of Cosenza",
+    "name": "Cosenza",
     "countryCode": "IT"
   },
   {
@@ -10576,7 +10576,7 @@
   },
   {
     "isoCode": "CZ",
-    "name": "Province of Catanzaro",
+    "name": "Catanzaro",
     "countryCode": "IT"
   },
   {
@@ -10586,17 +10586,17 @@
   },
   {
     "isoCode": "FC",
-    "name": "Province of Forlì-Cesena",
+    "name": "Forlì-Cesena",
     "countryCode": "IT"
   },
   {
     "isoCode": "FE",
-    "name": "Province of Ferrara",
+    "name": "Ferrara",
     "countryCode": "IT"
   },
   {
     "isoCode": "FG",
-    "name": "Province of Foggia",
+    "name": "Foggia",
     "countryCode": "IT"
   },
   {
@@ -10606,12 +10606,12 @@
   },
   {
     "isoCode": "FM",
-    "name": "Province of Fermo",
+    "name": "Fermo",
     "countryCode": "IT"
   },
   {
     "isoCode": "FR",
-    "name": "Province of Frosinone",
+    "name": "Frosinone",
     "countryCode": "IT"
   },
   {
@@ -10621,67 +10621,67 @@
   },
   {
     "isoCode": "GO",
-    "name": "Province of Gorizia",
+    "name": "Gorizia",
     "countryCode": "IT"
   },
   {
     "isoCode": "GR",
-    "name": "Province of Grosseto",
+    "name": "Grosseto",
     "countryCode": "IT"
   },
   {
     "isoCode": "IM",
-    "name": "Province of Imperia",
+    "name": "Imperia",
     "countryCode": "IT"
   },
   {
     "isoCode": "IS",
-    "name": "Province of Isernia",
+    "name": "Isernia",
     "countryCode": "IT"
   },
   {
     "isoCode": "KR",
-    "name": "Province of Crotone",
+    "name": "Crotone",
     "countryCode": "IT"
   },
   {
     "isoCode": "LC",
-    "name": "Province of Lecco",
+    "name": "Lecco",
     "countryCode": "IT"
   },
   {
     "isoCode": "LE",
-    "name": "Province of Lecce",
+    "name": "Lecce",
     "countryCode": "IT"
   },
   {
     "isoCode": "LI",
-    "name": "Province of Livorno",
+    "name": "Livorno",
     "countryCode": "IT"
   },
   {
     "isoCode": "LO",
-    "name": "Province of Lodi",
+    "name": "Lodi",
     "countryCode": "IT"
   },
   {
     "isoCode": "LT",
-    "name": "Province of Latina",
+    "name": "Latina",
     "countryCode": "IT"
   },
   {
     "isoCode": "LU",
-    "name": "Province of Lucca",
+    "name": "Lucca",
     "countryCode": "IT"
   },
   {
     "isoCode": "MB",
-    "name": "Province of Monza and Brianza",
+    "name": "Monza and Brianza",
     "countryCode": "IT"
   },
   {
     "isoCode": "MC",
-    "name": "Province of Macerata",
+    "name": "Macerata",
     "countryCode": "IT"
   },
   {
@@ -10696,22 +10696,22 @@
   },
   {
     "isoCode": "MN",
-    "name": "Province of Mantua",
+    "name": "Mantua",
     "countryCode": "IT"
   },
   {
     "isoCode": "MO",
-    "name": "Province of Modena",
+    "name": "Modena",
     "countryCode": "IT"
   },
   {
     "isoCode": "MS",
-    "name": "Province of Massa and Carrara",
+    "name": "Massa and Carrara",
     "countryCode": "IT"
   },
   {
     "isoCode": "MT",
-    "name": "Province of Matera",
+    "name": "Matera",
     "countryCode": "IT"
   },
   {
@@ -10721,27 +10721,27 @@
   },
   {
     "isoCode": "NO",
-    "name": "Province of Novara",
+    "name": "Novara",
     "countryCode": "IT"
   },
   {
     "isoCode": "NU",
-    "name": "Province of Nuoro",
+    "name": "Nuoro",
     "countryCode": "IT"
   },
   {
     "isoCode": "OG",
-    "name": "Province of Ogliastra",
+    "name": "Ogliastra",
     "countryCode": "IT"
   },
   {
     "isoCode": "OR",
-    "name": "Province of Oristano",
+    "name": "Oristano",
     "countryCode": "IT"
   },
   {
     "isoCode": "OT",
-    "name": "Province of Olbia-Tempio",
+    "name": "Olbia-Tempio",
     "countryCode": "IT"
   },
   {
@@ -10751,67 +10751,67 @@
   },
   {
     "isoCode": "PC",
-    "name": "Province of Piacenza",
+    "name": "Piacenza",
     "countryCode": "IT"
   },
   {
     "isoCode": "PD",
-    "name": "Province of Padua",
+    "name": "Padua",
     "countryCode": "IT"
   },
   {
     "isoCode": "PE",
-    "name": "Province of Pescara",
+    "name": "Pescara",
     "countryCode": "IT"
   },
   {
     "isoCode": "PG",
-    "name": "Province of Perugia",
+    "name": "Perugia",
     "countryCode": "IT"
   },
   {
     "isoCode": "PI",
-    "name": "Province of Pisa",
+    "name": "Pisa",
     "countryCode": "IT"
   },
   {
     "isoCode": "PN",
-    "name": "Province of Pordenone",
+    "name": "Pordenone",
     "countryCode": "IT"
   },
   {
     "isoCode": "PO",
-    "name": "Province of Prato",
+    "name": "Prato",
     "countryCode": "IT"
   },
   {
     "isoCode": "PR",
-    "name": "Province of Parma",
+    "name": "Parma",
     "countryCode": "IT"
   },
   {
     "isoCode": "PT",
-    "name": "Province of Pistoia",
+    "name": "Pistoia",
     "countryCode": "IT"
   },
   {
     "isoCode": "PU",
-    "name": "Pesaro and Urbino Province",
+    "name": "Pesaro and Urbino",
     "countryCode": "IT"
   },
   {
     "isoCode": "PV",
-    "name": "Province of Pavia",
+    "name": "Pavia",
     "countryCode": "IT"
   },
   {
     "isoCode": "PZ",
-    "name": "Province of Potenza",
+    "name": "Potenza",
     "countryCode": "IT"
   },
   {
     "isoCode": "RA",
-    "name": "Province of Ravenna",
+    "name": "Ravenna",
     "countryCode": "IT"
   },
   {
@@ -10821,7 +10821,7 @@
   },
   {
     "isoCode": "RE",
-    "name": "Province of Reggio Emilia",
+    "name": "Reggio Emilia",
     "countryCode": "IT"
   },
   {
@@ -10831,7 +10831,7 @@
   },
   {
     "isoCode": "RI",
-    "name": "Province of Rieti",
+    "name": "Rieti",
     "countryCode": "IT"
   },
   {
@@ -10841,32 +10841,32 @@
   },
   {
     "isoCode": "RN",
-    "name": "Province of Rimini",
+    "name": "Rimini",
     "countryCode": "IT"
   },
   {
     "isoCode": "RO",
-    "name": "Province of Rovigo",
+    "name": "Rovigo",
     "countryCode": "IT"
   },
   {
     "isoCode": "SA",
-    "name": "Province of Salerno",
+    "name": "Salerno",
     "countryCode": "IT"
   },
   {
     "isoCode": "SI",
-    "name": "Province of Siena",
+    "name": "Siena",
     "countryCode": "IT"
   },
   {
     "isoCode": "SO",
-    "name": "Province of Sondrio",
+    "name": "Sondrio",
     "countryCode": "IT"
   },
   {
     "isoCode": "SP",
-    "name": "Province of La Spezia",
+    "name": "La Spezia",
     "countryCode": "IT"
   },
   {
@@ -10876,22 +10876,22 @@
   },
   {
     "isoCode": "SS",
-    "name": "Province of Sassari",
+    "name": "Sassari",
     "countryCode": "IT"
   },
   {
     "isoCode": "SV",
-    "name": "Province of Savona",
+    "name": "Savona",
     "countryCode": "IT"
   },
   {
     "isoCode": "TA",
-    "name": "Province of Taranto",
+    "name": "Taranto",
     "countryCode": "IT"
   },
   {
     "isoCode": "TE",
-    "name": "Province of Teramo",
+    "name": "Teramo",
     "countryCode": "IT"
   },
   {
@@ -10911,37 +10911,37 @@
   },
   {
     "isoCode": "TR",
-    "name": "Province of Terni",
+    "name": "Terni",
     "countryCode": "IT"
   },
   {
     "isoCode": "TS",
-    "name": "Province of Trieste",
+    "name": "Trieste",
     "countryCode": "IT"
   },
   {
     "isoCode": "TV",
-    "name": "Province of Treviso",
+    "name": "Treviso",
     "countryCode": "IT"
   },
   {
     "isoCode": "UD",
-    "name": "Province of Udine",
+    "name": "Udine",
     "countryCode": "IT"
   },
   {
     "isoCode": "VA",
-    "name": "Province of Varese",
+    "name": "Varese",
     "countryCode": "IT"
   },
   {
     "isoCode": "VB",
-    "name": "Province of Verbano-Cusio-Ossola",
+    "name": "Verbano-Cusio-Ossola",
     "countryCode": "IT"
   },
   {
     "isoCode": "VC",
-    "name": "Province of Vercelli",
+    "name": "Vercelli",
     "countryCode": "IT"
   },
   {
@@ -10951,27 +10951,27 @@
   },
   {
     "isoCode": "VI",
-    "name": "Province of Vicenza",
+    "name": "Vicenza",
     "countryCode": "IT"
   },
   {
     "isoCode": "VR",
-    "name": "Province of Verona",
+    "name": "Verona",
     "countryCode": "IT"
   },
   {
     "isoCode": "VS",
-    "name": "Province of Medio Campidano",
+    "name": "Medio Campidano",
     "countryCode": "IT"
   },
   {
     "isoCode": "VT",
-    "name": "Province of Viterbo",
+    "name": "Viterbo",
     "countryCode": "IT"
   },
   {
     "isoCode": "VV",
-    "name": "Province of Vibo Valentia",
+    "name": "Vibo Valentia",
     "countryCode": "IT"
   },
   {
@@ -11856,47 +11856,47 @@
   },
   {
     "isoCode": "02",
-    "name": "South Pyongan Province",
+    "name": "South Pyongan",
     "countryCode": "KP"
   },
   {
     "isoCode": "03",
-    "name": "North Pyongan Province",
+    "name": "North Pyongan",
     "countryCode": "KP"
   },
   {
     "isoCode": "04",
-    "name": "Chagang Province",
+    "name": "Chagang",
     "countryCode": "KP"
   },
   {
     "isoCode": "05",
-    "name": "South Hwanghae Province",
+    "name": "South Hwanghae",
     "countryCode": "KP"
   },
   {
     "isoCode": "06",
-    "name": "North Hwanghae Province",
+    "name": "North Hwanghae",
     "countryCode": "KP"
   },
   {
     "isoCode": "07",
-    "name": "Kangwon Province",
+    "name": "Kangwon",
     "countryCode": "KP"
   },
   {
     "isoCode": "08",
-    "name": "South Hamgyong Province",
+    "name": "South Hamgyong",
     "countryCode": "KP"
   },
   {
     "isoCode": "09",
-    "name": "North Hamgyong Province",
+    "name": "North Hamgyong",
     "countryCode": "KP"
   },
   {
     "isoCode": "10",
-    "name": "Ryanggang Province",
+    "name": "Ryanggang",
     "countryCode": "KP"
   },
   {
@@ -11941,42 +11941,42 @@
   },
   {
     "isoCode": "41",
-    "name": "Gyeonggi Province",
+    "name": "Gyeonggi",
     "countryCode": "KR"
   },
   {
     "isoCode": "42",
-    "name": "Gangwon Province",
+    "name": "Gangwon",
     "countryCode": "KR"
   },
   {
     "isoCode": "43",
-    "name": "North Chungcheong Province",
+    "name": "North Chungcheong",
     "countryCode": "KR"
   },
   {
     "isoCode": "44",
-    "name": "South Chungcheong Province",
+    "name": "South Chungcheong",
     "countryCode": "KR"
   },
   {
     "isoCode": "45",
-    "name": "North Jeolla Province",
+    "name": "North Jeolla",
     "countryCode": "KR"
   },
   {
     "isoCode": "46",
-    "name": "South Jeolla Province",
+    "name": "South Jeolla",
     "countryCode": "KR"
   },
   {
     "isoCode": "47",
-    "name": "North Gyeongsang Province",
+    "name": "North Gyeongsang",
     "countryCode": "KR"
   },
   {
     "isoCode": "48",
-    "name": "South Gyeongsang Province",
+    "name": "South Gyeongsang",
     "countryCode": "KR"
   },
   {
@@ -12096,7 +12096,7 @@
   },
   {
     "isoCode": "ZAP",
-    "name": "West Kazakhstan Province",
+    "name": "West Kazakhstan",
     "countryCode": "KZ"
   },
   {
@@ -12106,67 +12106,67 @@
   },
   {
     "isoCode": "AT",
-    "name": "Attapeu Province",
+    "name": "Attapeu",
     "countryCode": "LA"
   },
   {
     "isoCode": "BK",
-    "name": "Bokeo Province",
+    "name": "Bokeo",
     "countryCode": "LA"
   },
   {
     "isoCode": "BL",
-    "name": "Bolikhamsai Province",
+    "name": "Bolikhamsai",
     "countryCode": "LA"
   },
   {
     "isoCode": "CH",
-    "name": "Champasak Province",
+    "name": "Champasak",
     "countryCode": "LA"
   },
   {
     "isoCode": "HO",
-    "name": "Houaphanh Province",
+    "name": "Houaphanh",
     "countryCode": "LA"
   },
   {
     "isoCode": "KH",
-    "name": "Khammouane Province",
+    "name": "Khammouane",
     "countryCode": "LA"
   },
   {
     "isoCode": "LM",
-    "name": "Luang Namtha Province",
+    "name": "Luang Namtha",
     "countryCode": "LA"
   },
   {
     "isoCode": "LP",
-    "name": "Luang Prabang Province",
+    "name": "Luang Prabang",
     "countryCode": "LA"
   },
   {
     "isoCode": "OU",
-    "name": "Oudomxay Province",
+    "name": "Oudomxay",
     "countryCode": "LA"
   },
   {
     "isoCode": "PH",
-    "name": "Phongsaly Province",
+    "name": "Phongsaly",
     "countryCode": "LA"
   },
   {
     "isoCode": "SL",
-    "name": "Salavan Province",
+    "name": "Salavan",
     "countryCode": "LA"
   },
   {
     "isoCode": "SV",
-    "name": "Savannakhet Province",
+    "name": "Savannakhet",
     "countryCode": "LA"
   },
   {
     "isoCode": "VI",
-    "name": "Vientiane Province",
+    "name": "Vientiane",
     "countryCode": "LA"
   },
   {
@@ -12176,17 +12176,17 @@
   },
   {
     "isoCode": "XA",
-    "name": "Sainyabuli Province",
+    "name": "Sainyabuli",
     "countryCode": "LA"
   },
   {
     "isoCode": "XE",
-    "name": "Sekong Province",
+    "name": "Sekong",
     "countryCode": "LA"
   },
   {
     "isoCode": "XI",
-    "name": "Xiangkhouang Province",
+    "name": "Xiangkhouang",
     "countryCode": "LA"
   },
   {
@@ -12196,7 +12196,7 @@
   },
   {
     "isoCode": "XS",
-    "name": "Xaisomboun Province",
+    "name": "Xaisomboun",
     "countryCode": "LA"
   },
   {
@@ -12356,7 +12356,7 @@
   },
   {
     "isoCode": "1",
-    "name": "Western Province",
+    "name": "Western",
     "countryCode": "LK"
   },
   {
@@ -12376,7 +12376,7 @@
   },
   {
     "isoCode": "2",
-    "name": "Central Province",
+    "name": "Central",
     "countryCode": "LK"
   },
   {
@@ -12396,7 +12396,7 @@
   },
   {
     "isoCode": "3",
-    "name": "Southern Province",
+    "name": "Southern",
     "countryCode": "LK"
   },
   {
@@ -12416,7 +12416,7 @@
   },
   {
     "isoCode": "4",
-    "name": "Northern Province",
+    "name": "Northern",
     "countryCode": "LK"
   },
   {
@@ -12446,7 +12446,7 @@
   },
   {
     "isoCode": "5",
-    "name": "Eastern Province",
+    "name": "Eastern",
     "countryCode": "LK"
   },
   {
@@ -12466,7 +12466,7 @@
   },
   {
     "isoCode": "6",
-    "name": "North Western Province",
+    "name": "North Western",
     "countryCode": "LK"
   },
   {
@@ -12476,7 +12476,7 @@
   },
   {
     "isoCode": "7",
-    "name": "North Central Province",
+    "name": "North Central",
     "countryCode": "LK"
   },
   {
@@ -12491,7 +12491,7 @@
   },
   {
     "isoCode": "8",
-    "name": "Uva Province",
+    "name": "Uva",
     "countryCode": "LK"
   },
   {
@@ -12506,7 +12506,7 @@
   },
   {
     "isoCode": "9",
-    "name": "Sabaragamuwa Province",
+    "name": "Sabaragamuwa",
     "countryCode": "LK"
   },
   {
@@ -14501,32 +14501,32 @@
   },
   {
     "isoCode": "A",
-    "name": "Toamasina Province",
+    "name": "Toamasina",
     "countryCode": "MG"
   },
   {
     "isoCode": "D",
-    "name": "Antsiranana Province",
+    "name": "Antsiranana",
     "countryCode": "MG"
   },
   {
     "isoCode": "F",
-    "name": "Fianarantsoa Province",
+    "name": "Fianarantsoa",
     "countryCode": "MG"
   },
   {
     "isoCode": "M",
-    "name": "Mahajanga Province",
+    "name": "Mahajanga",
     "countryCode": "MG"
   },
   {
     "isoCode": "T",
-    "name": "Antananarivo Province",
+    "name": "Antananarivo",
     "countryCode": "MG"
   },
   {
     "isoCode": "U",
-    "name": "Toliara Province",
+    "name": "Toliara",
     "countryCode": "MG"
   },
   {
@@ -15091,107 +15091,107 @@
   },
   {
     "isoCode": "035",
-    "name": "Orkhon Province",
+    "name": "Orkhon",
     "countryCode": "MN"
   },
   {
     "isoCode": "037",
-    "name": "Darkhan-Uul Province",
+    "name": "Darkhan-Uul",
     "countryCode": "MN"
   },
   {
     "isoCode": "039",
-    "name": "Khentii Province",
+    "name": "Khentii",
     "countryCode": "MN"
   },
   {
     "isoCode": "041",
-    "name": "Khövsgöl Province",
+    "name": "Khövsgöl",
     "countryCode": "MN"
   },
   {
     "isoCode": "043",
-    "name": "Khovd Province",
+    "name": "Khovd",
     "countryCode": "MN"
   },
   {
     "isoCode": "046",
-    "name": "Uvs Province",
+    "name": "Uvs",
     "countryCode": "MN"
   },
   {
     "isoCode": "047",
-    "name": "Töv Province",
+    "name": "Töv",
     "countryCode": "MN"
   },
   {
     "isoCode": "049",
-    "name": "Selenge Province",
+    "name": "Selenge",
     "countryCode": "MN"
   },
   {
     "isoCode": "051",
-    "name": "Sükhbaatar Province",
+    "name": "Sükhbaatar",
     "countryCode": "MN"
   },
   {
     "isoCode": "053",
-    "name": "Ömnögovi Province",
+    "name": "Ömnögovi",
     "countryCode": "MN"
   },
   {
     "isoCode": "055",
-    "name": "Övörkhangai Province",
+    "name": "Övörkhangai",
     "countryCode": "MN"
   },
   {
     "isoCode": "057",
-    "name": "Zavkhan Province",
+    "name": "Zavkhan",
     "countryCode": "MN"
   },
   {
     "isoCode": "059",
-    "name": "Dundgovi Province",
+    "name": "Dundgovi",
     "countryCode": "MN"
   },
   {
     "isoCode": "061",
-    "name": "Dornod Province",
+    "name": "Dornod",
     "countryCode": "MN"
   },
   {
     "isoCode": "063",
-    "name": "Dornogovi Province",
+    "name": "Dornogovi",
     "countryCode": "MN"
   },
   {
     "isoCode": "064",
-    "name": "Govisümber Province",
+    "name": "Govisümber",
     "countryCode": "MN"
   },
   {
     "isoCode": "065",
-    "name": "Govi-Altai Province",
+    "name": "Govi-Altai",
     "countryCode": "MN"
   },
   {
     "isoCode": "067",
-    "name": "Bulgan Province",
+    "name": "Bulgan",
     "countryCode": "MN"
   },
   {
     "isoCode": "069",
-    "name": "Bayankhongor Province",
+    "name": "Bayankhongor",
     "countryCode": "MN"
   },
   {
     "isoCode": "071",
-    "name": "Bayan-Ölgii Province",
+    "name": "Bayan-Ölgii",
     "countryCode": "MN"
   },
   {
     "isoCode": "073",
-    "name": "Arkhangai Province",
+    "name": "Arkhangai",
     "countryCode": "MN"
   },
   {
@@ -15786,7 +15786,7 @@
   },
   {
     "isoCode": "CE",
-    "name": "Central Province",
+    "name": "Central",
     "countryCode": "MV"
   },
   {
@@ -15796,27 +15796,27 @@
   },
   {
     "isoCode": "NC",
-    "name": "North Central Province",
+    "name": "North Central",
     "countryCode": "MV"
   },
   {
     "isoCode": "NO",
-    "name": "North Province",
+    "name": "North",
     "countryCode": "MV"
   },
   {
     "isoCode": "SC",
-    "name": "South Central Province",
+    "name": "South Central",
     "countryCode": "MV"
   },
   {
     "isoCode": "SU",
-    "name": "South Province",
+    "name": "South",
     "countryCode": "MV"
   },
   {
     "isoCode": "US",
-    "name": "Upper South Province",
+    "name": "Upper South",
     "countryCode": "MV"
   },
   {
@@ -16211,27 +16211,27 @@
   },
   {
     "isoCode": "A",
-    "name": "Niassa Province",
+    "name": "Niassa",
     "countryCode": "MZ"
   },
   {
     "isoCode": "B",
-    "name": "Manica Province",
+    "name": "Manica",
     "countryCode": "MZ"
   },
   {
     "isoCode": "G",
-    "name": "Gaza Province",
+    "name": "Gaza",
     "countryCode": "MZ"
   },
   {
     "isoCode": "I",
-    "name": "Inhambane Province",
+    "name": "Inhambane",
     "countryCode": "MZ"
   },
   {
     "isoCode": "L",
-    "name": "Maputo Province",
+    "name": "Maputo",
     "countryCode": "MZ"
   },
   {
@@ -16241,27 +16241,27 @@
   },
   {
     "isoCode": "N",
-    "name": "Nampula Province",
+    "name": "Nampula",
     "countryCode": "MZ"
   },
   {
     "isoCode": "P",
-    "name": "Cabo Delgado Province",
+    "name": "Cabo Delgado",
     "countryCode": "MZ"
   },
   {
     "isoCode": "Q",
-    "name": "Zambezia Province",
+    "name": "Zambezia",
     "countryCode": "MZ"
   },
   {
     "isoCode": "S",
-    "name": "Sofala Province",
+    "name": "Sofala",
     "countryCode": "MZ"
   },
   {
     "isoCode": "T",
-    "name": "Tete Province",
+    "name": "Tete",
     "countryCode": "MZ"
   },
   {
@@ -17136,52 +17136,52 @@
   },
   {
     "isoCode": "1",
-    "name": "Bocas del Toro Province",
+    "name": "Bocas del Toro",
     "countryCode": "PA"
   },
   {
     "isoCode": "10",
-    "name": "Panamá Oeste Province",
+    "name": "Panamá Oeste",
     "countryCode": "PA"
   },
   {
     "isoCode": "2",
-    "name": "Coclé Province",
+    "name": "Coclé",
     "countryCode": "PA"
   },
   {
     "isoCode": "3",
-    "name": "Colón Province",
+    "name": "Colón",
     "countryCode": "PA"
   },
   {
     "isoCode": "4",
-    "name": "Chiriquí Province",
+    "name": "Chiriquí",
     "countryCode": "PA"
   },
   {
     "isoCode": "5",
-    "name": "Darién Province",
+    "name": "Darién",
     "countryCode": "PA"
   },
   {
     "isoCode": "6",
-    "name": "Herrera Province",
+    "name": "Herrera",
     "countryCode": "PA"
   },
   {
     "isoCode": "7",
-    "name": "Los Santos Province",
+    "name": "Los Santos",
     "countryCode": "PA"
   },
   {
     "isoCode": "8",
-    "name": "Panamá Province",
+    "name": "Panamá",
     "countryCode": "PA"
   },
   {
     "isoCode": "9",
-    "name": "Veraguas Province",
+    "name": "Veraguas",
     "countryCode": "PA"
   },
   {
@@ -17326,12 +17326,12 @@
   },
   {
     "isoCode": "CPK",
-    "name": "Chimbu Province",
+    "name": "Chimbu",
     "countryCode": "PG"
   },
   {
     "isoCode": "CPM",
-    "name": "Central Province",
+    "name": "Central",
     "countryCode": "PG"
   },
   {
@@ -17341,12 +17341,12 @@
   },
   {
     "isoCode": "EHG",
-    "name": "Eastern Highlands Province",
+    "name": "Eastern Highlands",
     "countryCode": "PG"
   },
   {
     "isoCode": "EPW",
-    "name": "Enga Province",
+    "name": "Enga",
     "countryCode": "PG"
   },
   {
@@ -17361,27 +17361,27 @@
   },
   {
     "isoCode": "JWK",
-    "name": "Jiwaka Province",
+    "name": "Jiwaka",
     "countryCode": "PG"
   },
   {
     "isoCode": "MBA",
-    "name": "Milne Bay Province",
+    "name": "Milne Bay",
     "countryCode": "PG"
   },
   {
     "isoCode": "MPL",
-    "name": "Morobe Province",
+    "name": "Morobe",
     "countryCode": "PG"
   },
   {
     "isoCode": "MPM",
-    "name": "Madang Province",
+    "name": "Madang",
     "countryCode": "PG"
   },
   {
     "isoCode": "MRL",
-    "name": "Manus Province",
+    "name": "Manus",
     "countryCode": "PG"
   },
   {
@@ -17391,12 +17391,12 @@
   },
   {
     "isoCode": "NIK",
-    "name": "New Ireland Province",
+    "name": "New Ireland",
     "countryCode": "PG"
   },
   {
     "isoCode": "NPP",
-    "name": "Oro Province",
+    "name": "Oro",
     "countryCode": "PG"
   },
   {
@@ -17406,27 +17406,27 @@
   },
   {
     "isoCode": "SAN",
-    "name": "Sandaun Province",
+    "name": "Sandaun",
     "countryCode": "PG"
   },
   {
     "isoCode": "SHM",
-    "name": "Southern Highlands Province",
+    "name": "Southern Highlands",
     "countryCode": "PG"
   },
   {
     "isoCode": "WBK",
-    "name": "West New Britain Province",
+    "name": "West New Britain",
     "countryCode": "PG"
   },
   {
     "isoCode": "WHM",
-    "name": "Western Highlands Province",
+    "name": "Western Highlands",
     "countryCode": "PG"
   },
   {
     "isoCode": "WPD",
-    "name": "Western Province",
+    "name": "Western",
     "countryCode": "PG"
   },
   {
@@ -17756,7 +17756,7 @@
   },
   {
     "isoCode": "MOU",
-    "name": "Mountain Province",
+    "name": "Mountain",
     "countryCode": "PH"
   },
   {
@@ -19106,22 +19106,22 @@
   },
   {
     "isoCode": "02",
-    "name": "Eastern Province",
+    "name": "Eastern",
     "countryCode": "RW"
   },
   {
     "isoCode": "03",
-    "name": "Northern Province",
+    "name": "Northern",
     "countryCode": "RW"
   },
   {
     "isoCode": "04",
-    "name": "Western Province",
+    "name": "Western",
     "countryCode": "RW"
   },
   {
     "isoCode": "05",
-    "name": "Southern Province",
+    "name": "Southern",
     "countryCode": "RW"
   },
   {
@@ -19141,7 +19141,7 @@
   },
   {
     "isoCode": "04",
-    "name": "Eastern Province",
+    "name": "Eastern",
     "countryCode": "SA"
   },
   {
@@ -19191,12 +19191,12 @@
   },
   {
     "isoCode": "CE",
-    "name": "Central Province",
+    "name": "Central",
     "countryCode": "SB"
   },
   {
     "isoCode": "CH",
-    "name": "Choiseul Province",
+    "name": "Choiseul",
     "countryCode": "SB"
   },
   {
@@ -19206,37 +19206,37 @@
   },
   {
     "isoCode": "GU",
-    "name": "Guadalcanal Province",
+    "name": "Guadalcanal",
     "countryCode": "SB"
   },
   {
     "isoCode": "IS",
-    "name": "Isabel Province",
+    "name": "Isabel",
     "countryCode": "SB"
   },
   {
     "isoCode": "MK",
-    "name": "Makira-Ulawa Province",
+    "name": "Makira-Ulawa",
     "countryCode": "SB"
   },
   {
     "isoCode": "ML",
-    "name": "Malaita Province",
+    "name": "Malaita",
     "countryCode": "SB"
   },
   {
     "isoCode": "RB",
-    "name": "Rennell and Bellona Province",
+    "name": "Rennell and Bellona",
     "countryCode": "SB"
   },
   {
     "isoCode": "TE",
-    "name": "Temotu Province",
+    "name": "Temotu",
     "countryCode": "SB"
   },
   {
     "isoCode": "WE",
-    "name": "Western Province",
+    "name": "Western",
     "countryCode": "SB"
   },
   {
@@ -20671,17 +20671,17 @@
   },
   {
     "isoCode": "E",
-    "name": "Eastern Province",
+    "name": "Eastern",
     "countryCode": "SL"
   },
   {
     "isoCode": "N",
-    "name": "Northern Province",
+    "name": "Northern",
     "countryCode": "SL"
   },
   {
     "isoCode": "S",
-    "name": "Southern Province",
+    "name": "Southern",
     "countryCode": "SL"
   },
   {
@@ -20986,12 +20986,12 @@
   },
   {
     "isoCode": "P",
-    "name": "Príncipe Province",
+    "name": "Príncipe",
     "countryCode": "ST"
   },
   {
     "isoCode": "S",
-    "name": "São Tomé Province",
+    "name": "São Tomé",
     "countryCode": "ST"
   },
   {
@@ -21686,12 +21686,12 @@
   },
   {
     "isoCode": "GB",
-    "name": "Gorno-Badakhshan Autonomous Province",
+    "name": "Gorno-Badakhshan Autonomous",
     "countryCode": "TJ"
   },
   {
     "isoCode": "KT",
-    "name": "Khatlon Province",
+    "name": "Khatlon",
     "countryCode": "TJ"
   },
   {
@@ -21701,7 +21701,7 @@
   },
   {
     "isoCode": "SU",
-    "name": "Sughd Province",
+    "name": "Sughd",
     "countryCode": "TJ"
   },
   {
@@ -24716,62 +24716,62 @@
   },
   {
     "isoCode": "01",
-    "name": "Western Province",
+    "name": "Western",
     "countryCode": "ZM"
   },
   {
     "isoCode": "02",
-    "name": "Central Province",
+    "name": "Central",
     "countryCode": "ZM"
   },
   {
     "isoCode": "03",
-    "name": "Eastern Province",
+    "name": "Eastern",
     "countryCode": "ZM"
   },
   {
     "isoCode": "04",
-    "name": "Luapula Province",
+    "name": "Luapula",
     "countryCode": "ZM"
   },
   {
     "isoCode": "05",
-    "name": "Northern Province",
+    "name": "Northern",
     "countryCode": "ZM"
   },
   {
     "isoCode": "06",
-    "name": "Northwestern Province",
+    "name": "Northwestern",
     "countryCode": "ZM"
   },
   {
     "isoCode": "07",
-    "name": "Southern Province",
+    "name": "Southern",
     "countryCode": "ZM"
   },
   {
     "isoCode": "08",
-    "name": "Copperbelt Province",
+    "name": "Copperbelt",
     "countryCode": "ZM"
   },
   {
     "isoCode": "09",
-    "name": "Lusaka Province",
+    "name": "Lusaka",
     "countryCode": "ZM"
   },
   {
     "isoCode": "10",
-    "name": "Muchinga Province",
+    "name": "Muchinga",
     "countryCode": "ZM"
   },
   {
     "isoCode": "BU",
-    "name": "Bulawayo Province",
+    "name": "Bulawayo",
     "countryCode": "ZW"
   },
   {
     "isoCode": "HA",
-    "name": "Harare Province",
+    "name": "Harare",
     "countryCode": "ZW"
   },
   {
@@ -24781,37 +24781,37 @@
   },
   {
     "isoCode": "MC",
-    "name": "Mashonaland Central Province",
+    "name": "Mashonaland Central",
     "countryCode": "ZW"
   },
   {
     "isoCode": "ME",
-    "name": "Mashonaland East Province",
+    "name": "Mashonaland East",
     "countryCode": "ZW"
   },
   {
     "isoCode": "MI",
-    "name": "Midlands Province",
+    "name": "Midlands",
     "countryCode": "ZW"
   },
   {
     "isoCode": "MN",
-    "name": "Matabeleland North Province",
+    "name": "Matabeleland North",
     "countryCode": "ZW"
   },
   {
     "isoCode": "MS",
-    "name": "Matabeleland South Province",
+    "name": "Matabeleland South",
     "countryCode": "ZW"
   },
   {
     "isoCode": "MV",
-    "name": "Masvingo Province",
+    "name": "Masvingo",
     "countryCode": "ZW"
   },
   {
     "isoCode": "MW",
-    "name": "Mashonaland West Province",
+    "name": "Mashonaland West",
     "countryCode": "ZW"
   }
 ]
