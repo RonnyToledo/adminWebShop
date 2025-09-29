@@ -21,8 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import "@github/relative-time-element";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supa";
@@ -36,9 +34,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Calendar, Percent } from "lucide-react";
+import { toast } from "sonner";
 
 export function Marketing({ ThemeContext }) {
-  const { toast } = useToast();
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [discounts, setDiscounts] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -56,32 +54,48 @@ export function Marketing({ ThemeContext }) {
     expiresAt: "",
   });
   const handleAddDiscount = async () => {
-    try {
-      setloading(true);
-      if (newDiscount.code && newDiscount.discount && newDiscount.expiresAt) {
-        const formData = new FormData();
-        formData.append("code", newDiscount.code);
-        formData.append("discount", newDiscount.discount);
-        formData.append("expiresAt", newDiscount.expiresAt);
-        formData.append("uid", webshop?.store?.UUID);
+    // Validación rápida
+    if (!newDiscount.code || !newDiscount.expiresAt) {
+      toast.error("Faltan campos: código o fecha de expiración");
+      return;
+    }
 
-        const res = await axios.post(
-          `/api/tienda/${webshop?.store?.sitioweb}/discountCode`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        if (res.status === 200) {
-          toast({
-            title: "Tarea Ejecutada",
-            description: "Información actualizada",
-            action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
-          });
-          setDiscounts([...discounts, ...res.data]);
-        }
-      } else {
-        new Error("Faltan campos");
-      }
+    setloading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("code", newDiscount.code);
+      formData.append("discount", newDiscount.discount || 0);
+      formData.append("expiresAt", newDiscount.expiresAt);
+      formData.append("uid", webshop?.store?.UUID);
+
+      // Crea la promesa axios (no await aquí)
+      const postPromise = axios.post(
+        `/api/tienda/${webshop?.store?.sitioweb}/discountCode`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      // toast.promise espera la promesa y muestra estados
+      const res = toast.promise(postPromise, {
+        loading: "Guardando descuento...",
+        success: (response) => {
+          // Actualiza el estado con la respuesta (usar updater para seguridad)
+          setDiscounts((prev) => [...prev, ...response.data]);
+          // Puedes devolver el texto que quieres que muestre el toast en success
+          return "Tarea Ejecutada — Información actualizada";
+        },
+        error: (err) => {
+          // Puedes devolver un mensaje de error que se mostrará en el toast
+          // Logging más detallado se hace en el catch
+          return "Error al guardar el descuento";
+        },
+      });
+
+      // Opcional: usar res si necesitas más procesamiento
+      // console.log("Respuesta completa:", res);
     } catch (error) {
+      // Manejo detallado de errores (igual que antes)
       if (error.response) {
         console.error(
           "Error en la respuesta del servidor:",
@@ -93,24 +107,34 @@ export function Marketing({ ThemeContext }) {
       } else {
         console.error("Error al configurar la solicitud:", error.message);
       }
+      // (Opcional) mostrar un toast extra con más detalle
+      // toast.error("No se pudo guardar el descuento. Revisa la consola.");
     } finally {
+      // limpiar formulario y estado de loading siempre
       setNewDiscount({ code: "", discount: 0, expiresAt: "" });
       setloading(false);
     }
   };
+  // Maneja eliminar descuento (usa toast.promise)
   const handleRemoveDiscount = async (id) => {
     try {
-      const res = await axios.delete(
+      const deletePromise = axios.delete(
         `/api/tienda/${webshop?.store?.sitioweb}/discountCode?id=${id}`
       );
-      if (res.status === 200) {
-        toast({
-          title: "Tarea Ejecutada",
-          description: "Información actualizada",
-          action: <ToastAction altText="Cerrar">Cerrar</ToastAction>,
-        });
-        setDiscounts(discounts.filter((d) => d.id !== id));
-      }
+
+      toast.promise(deletePromise, {
+        loading: "Eliminando descuento...",
+        success: (res) => {
+          // Actualiza estado de forma segura
+          setDiscounts((prev) => prev.filter((d) => d.id !== id));
+
+          return "Codigo Eliminado";
+        },
+        error: (err) => {
+          console.error("Error en request removeDiscount:", err);
+          return "Error al eliminar el descuento";
+        },
+      });
     } catch (error) {
       if (error.response) {
         console.error(
@@ -125,22 +149,45 @@ export function Marketing({ ThemeContext }) {
       }
     }
   };
+
   const handleSwitch = async (value) => {
-    try {
-      const { data, error } = await supabase
-        .from("Sitios")
-        .update({ marketing: value })
-        .eq("UUID", webshop?.store?.UUID);
-      if (error) {
-        console.error(error);
-      } else {
-        setWebshop({
-          ...webshop,
-          store: { ...webshop?.store, marketing: value },
-        });
+    // Creamos una promesa que rechaza si supabase devuelve error
+    const supaPromise = new Promise(async (resolve, reject) => {
+      try {
+        const { data, error } = await supabase
+          .from("Sitios")
+          .update({ marketing: value })
+          .eq("UUID", webshop?.store?.UUID);
+        if (error) {
+          reject(error);
+        } else {
+          resolve(data);
+        }
+      } catch (err) {
+        reject(err);
       }
+    });
+
+    try {
+      toast.promise(supaPromise, {
+        loading: value ? "Activando marketing..." : "Desactivando marketing...",
+        success: (data) => {
+          // data es lo devuelto por supabase (array con el registro actualizado)
+          setWebshop((prev) => ({
+            ...prev,
+            store: { ...prev.store, marketing: value },
+          }));
+
+          return "Actualizacion exitosa";
+        },
+        error: (err) => {
+          console.error("Error en request handleSwitch:", err);
+          return "Error al actualizar la configuración";
+        },
+      });
     } catch (error) {
-      console.error(error);
+      // Aquí ya se imprimió en error: pero puedes agregar logs adicionales
+      console.error("Error catch handleSwitch:", error);
     }
   };
   useEffect(() => {
@@ -187,10 +234,10 @@ export function Marketing({ ThemeContext }) {
             />
             <span
               className={`text-sm ${
-                !webshop?.store?.marketing ? "text-green-600" : "text-red-600"
+                webshop?.store?.marketing ? "text-green-600" : "text-red-600"
               }`}
             >
-              {!webshop?.store?.marketing ? "Activo" : "Inactivo"}
+              {webshop?.store?.marketing ? "Activo" : "Inactivo"}
             </span>
           </div>
         </div>
@@ -225,7 +272,7 @@ export function Marketing({ ThemeContext }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(discounts || []).filter((obj) => !isExpired(obj.expiresAt, 7))
+              {(discounts || []).filter((obj) => isExpired(obj.expiresAt, 7))
                 .length || 0}
             </div>
             <p className="text-xs text-muted-foreground">en 7 días</p>
@@ -288,33 +335,36 @@ export function Marketing({ ThemeContext }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="discount">Descuento</Label>
+                  <div className="relative flex items-center">
+                    <Input
+                      id="discount"
+                      type="number"
+                      placeholder="20"
+                      value={newDiscount.discount}
+                      onChange={(e) =>
+                        setNewDiscount({
+                          ...newDiscount,
+                          discount: e.target.value,
+                        })
+                      }
+                    />
+                    <div className="absolute right-2">%</div>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="expires">Fecha de Expiración</Label>
                   <Input
-                    id="discount"
-                    type="number"
-                    placeholder="20"
-                    value={newDiscount.discount}
+                    id="expires"
+                    type="date"
+                    value={newDiscount.expiresAt}
                     onChange={(e) =>
                       setNewDiscount({
                         ...newDiscount,
-                        discount: e.target.value,
+                        expiresAt: e.target.value,
                       })
                     }
                   />
                 </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="expires">Fecha de Expiración</Label>
-                <Input
-                  id="expires"
-                  type="date"
-                  value={newDiscount.expiresAt}
-                  onChange={(e) =>
-                    setNewDiscount({
-                      ...newDiscount,
-                      expiresAt: e.target.value,
-                    })
-                  }
-                />
               </div>
             </div>
             <DialogFooter>
@@ -325,7 +375,7 @@ export function Marketing({ ThemeContext }) {
                 Cancelar
               </Button>
               <Button disabled={loading} onClick={handleAddDiscount}>
-                {loading ? "Agregando..." : "Agregar codigo"}
+                Agregar codigo
               </Button>
             </DialogFooter>
           </DialogContent>
