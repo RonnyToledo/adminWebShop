@@ -116,7 +116,7 @@ export async function PUT(request, { params }) {
     _creado: data.get("creado"),
     _embalaje: Number(data.get("embalaje") ?? 0),
     _order: Number(data.get("order") ?? 0),
-    _agotado: data.get("agotado") === "true",
+    _stock: Number(data.get("stock") ?? 0),
     _visible: data.get("visible") === "true",
     _oldprice: Number(data.get("oldPrice") ?? 0),
     _imagesecondary:
@@ -125,12 +125,11 @@ export async function PUT(request, { params }) {
         : SecondaryImage, // JS array -> será enviado como JSONB
     _agregados: data.get("agregados") ? JSON.parse(data.get("agregados")) : [],
   };
-  console.log(payload);
+
   const { data: tienda, error } = await supabase
     .rpc("update_product", payload)
     .single();
 
-  console.log(tienda);
   if (error) {
     console.error("Error", error);
 

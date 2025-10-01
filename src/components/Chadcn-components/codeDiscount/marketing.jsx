@@ -93,7 +93,6 @@ export function Marketing({ ThemeContext }) {
       });
 
       // Opcional: usar res si necesitas más procesamiento
-      // console.log("Respuesta completa:", res);
     } catch (error) {
       // Manejo detallado de errores (igual que antes)
       if (error.response) {

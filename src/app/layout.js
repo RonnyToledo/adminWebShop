@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }) {
   if (user) console.info("Usuario recivido");
   else console.error("usuario no encontrado");
   const data = await initializeData(userSession?.user?.user?.id);
-  console.log(data);
+
   return (
     <html lang="en">
       <body>
@@ -75,16 +75,13 @@ export const initializeData = async (userId) => {
       store?.Sitios?.Products,
       tiendaParsed?.categoria
     );
-    console.log(
-      `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed?.sitioweb}/GA`
-    );
+
     // Fetch Google Analytics data
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed?.sitioweb}/GA`
     );
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const gaData = await response.json();
-    console.log(gaData);
 
     //DElete products and categories
     delete tiendaParsed?.Products;

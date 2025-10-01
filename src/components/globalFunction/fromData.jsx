@@ -12,7 +12,6 @@ export function FromData({ children, store, ThemeContext }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setDownloading(true);
-    console.log(store);
     // Construir FormData
     const formData = new FormData();
     Object.entries(store).forEach(([key, value]) => {

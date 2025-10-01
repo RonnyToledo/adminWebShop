@@ -215,7 +215,7 @@ export default function Configuracion({ ThemeContext, country }) {
                   <SwitchStore
                     name={store?.carrito}
                     object={store}
-                    title={"Local de Trabajo"}
+                    title={"carrito"}
                     funcion={setStore}
                   />
                 </div>
@@ -230,7 +230,21 @@ export default function Configuracion({ ThemeContext, country }) {
                   <SwitchStore
                     name={store?.act_tf}
                     object={store}
-                    title={"Transferencias"}
+                    title={"act_tf"}
+                    funcion={setStore}
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Stock</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Manejar disponibilidad de productos desde la plataforma
+                    </p>
+                  </div>
+                  <SwitchStore
+                    name={store?.stocks}
+                    object={store}
+                    title={"stocks"}
                     funcion={setStore}
                   />
                 </div>
@@ -248,7 +262,7 @@ export default function Configuracion({ ThemeContext, country }) {
                   <SwitchStore
                     name={store?.local}
                     object={store}
-                    title={"Local de Ventas"}
+                    title={"local"}
                     funcion={setStore}
                   />
                 </div>
@@ -264,7 +278,7 @@ export default function Configuracion({ ThemeContext, country }) {
                     <SwitchStore
                       name={store?.domicilio}
                       object={store}
-                      title={"Permite Domicilio"}
+                      title={"domicilio"}
                       funcion={setStore}
                     />
                   </div>

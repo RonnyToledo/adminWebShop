@@ -183,7 +183,7 @@ export default function ProductDetailPage({
               <div
                 className={`animate-in ${swipeComponents.corto} duration-500 delay-1100`}
               >
-                {!product?.agotado ? (
+                {product?.stock ? (
                   <div className="flex items-center gap-1 text-green-600">
                     <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse size-4" />
                     <span className=" font-medium text-[6px]">En stock</span>
@@ -209,7 +209,7 @@ export default function ProductDetailPage({
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={countAddCart === 0 || product?.agotado}
+                      disabled={countAddCart === 0 || product?.stock}
                       onClick={() => setCountAddCart(countAddCart - 1)}
                       className="hover:scale-105 transition-transform duration-200 size-3 p-2 text-[10px]"
                     >
@@ -221,7 +221,7 @@ export default function ProductDetailPage({
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={product?.agotado}
+                      disabled={product?.stock}
                       onClick={() => setCountAddCart(countAddCart + 1)}
                       className="hover:scale-105 transition-transform duration-200 size-3 p-2 text-[10px]"
                     >
@@ -237,7 +237,7 @@ export default function ProductDetailPage({
               >
                 <Button
                   type="button"
-                  disabled={product?.agotado}
+                  disabled={product?.stock}
                   onClick={handleAddToCart}
                   className={`w-full h-4 text-[4px] font-medium rounded-3xl transition-all duration-300 ${
                     showSuccess

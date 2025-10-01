@@ -209,7 +209,6 @@ export default function Domicilios({ ThemeContext }) {
 
   const handleAddZone = () => {
     if (!formData.lugar) {
-      console.log("a");
       return;
     }
 

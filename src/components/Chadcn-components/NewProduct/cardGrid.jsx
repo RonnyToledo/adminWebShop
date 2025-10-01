@@ -46,7 +46,7 @@ export default function ProductCard({
           className="w-full h-48 object-cover"
           src={product?.image || banner}
           style={{
-            filter: product?.agotado ? "grayscale(1)" : "initial",
+            filter: product?.stock ? "initial" : "grayscale(1)",
           }}
         />
         {isNewProduct(product?.creado) && (

@@ -89,6 +89,7 @@ export async function PUT(request, { params }) {
         urlPoster: NewPoster,
         banner: NewBanner,
         act_tf: data.get("act_tf"),
+        stocks: data.get("stocks"),
         local: data.get("local"),
         cell: data.get("cell"),
         email: data.get("email"),

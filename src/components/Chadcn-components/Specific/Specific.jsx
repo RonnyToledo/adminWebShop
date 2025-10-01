@@ -17,7 +17,7 @@ const defaultProduct = {
   order: "",
   caja: "",
   favorito: false,
-  agotado: false,
+  stock: 1,
   visible: true,
   span: false,
   image: "",
@@ -71,9 +71,9 @@ export default function Specific({ specific, ThemeContext }) {
       const oldPriceNum = Number(products.oldPrice) || 0;
       const priceCompra = Number(products.priceCompra) || 0;
       const embalaje = Number(products.embalaje) || 0;
+      const stock = Number(products.stock) || 0;
       const order = products.order;
       const favorito = !!products.favorito;
-      const agotado = !!products.agotado;
       const visible = !!products.visible;
       const span = !!products.span;
 
@@ -109,7 +109,7 @@ export default function Specific({ specific, ThemeContext }) {
         JSON.stringify(products?.caracteristicas ?? [])
       );
       formData.append("favorito", String(favorito));
-      formData.append("agotado", String(agotado));
+      formData.append("stock", String(stock));
       formData.append("creado", String(products.creado ?? ""));
       formData.append(
         "storeId",

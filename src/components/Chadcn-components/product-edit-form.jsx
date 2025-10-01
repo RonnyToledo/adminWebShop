@@ -295,26 +295,42 @@ export function ProductEditForm({
                 }
               />
             </div>
-          </div>
+            {webshop?.store?.stocks ? (
+              <div>
+                <Label htmlFor="stock">Unidades en stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  step="1"
+                  value={product.stock}
+                  onChange={(e) =>
+                    updateProduct(
+                      "stock",
+                      Number.parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
+              </div>
+            ) : (
+              <div className="gap-2">
+                <Label>Producto en Stock</Label>
+                <Switch
+                  checked={product.stock}
+                  onCheckedChange={() =>
+                    updateProduct("stock", product.stock ? 0 : 1)
+                  }
+                />
+              </div>
+            )}
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={!product.agotado}
-                onCheckedChange={() =>
-                  updateProduct("agotado", !product.agotado)
-                }
-              />
-              <Label>Producto en Stock</Label>
-            </div>
-            <div className="flex items-center gap-2">
+            <div className="gap-2">
+              <Label>Visible en Tienda</Label>
               <Switch
                 checked={product.visible}
                 onCheckedChange={() =>
                   updateProduct("visible", !product.visible)
                 }
               />
-              <Label>Visible en Tienda</Label>
             </div>
           </div>
         </CardContent>
@@ -395,19 +411,20 @@ export function ProductEditForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2">
+              <Label>Doble espacio</Label>
               <Switch
                 checked={product.span}
                 onCheckedChange={() => updateProduct("visible", !product.span)}
               />
-              <Label>Doble espacio</Label>
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex flex-col  gap-2">
+              <Label>Producto de venta</Label>
               <Switch
                 checked={product.venta}
                 onCheckedChange={() => updateProduct("venta", !product.venta)}
               />
-              <Label>Producto de venta</Label>
             </div>
           </div>
 

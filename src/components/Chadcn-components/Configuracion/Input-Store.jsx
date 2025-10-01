@@ -39,12 +39,12 @@ export function SwitchStore({ name, object, title, funcion }) {
     <Switch
       id="reservation"
       checked={name || false}
-      onCheckedChange={(value) =>
+      onCheckedChange={() => {
         funcion({
           ...object,
-          [name]: value,
-        })
-      }
+          [title]: !name,
+        });
+      }}
     />
   );
 }

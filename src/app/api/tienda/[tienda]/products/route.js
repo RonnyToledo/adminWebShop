@@ -105,7 +105,7 @@ export async function POST(request, { params }) {
       : null,
     _embalaje: Number(data.get("embalaje") ?? 0),
     _order: data.get("order") ? Number(data.get("order")) : null,
-    _agotado: data.get("agotado") === "true",
+    _stock: Number(data.get("stock")),
     _visible: data.get("visible") === "true" ? true : null,
     _oldprice: Number(data.get("oldPrice") ?? 0),
     _imagesecondary:
@@ -114,12 +114,10 @@ export async function POST(request, { params }) {
         : SecondaryImage, // JS array -> será enviado como JSONB
   };
 
-  console.log("RPC payload", payload);
   // 3) Llamada RPC
   const { data: newProduct, error } = await supabase
     .rpc("create_product", payload)
     .single();
-  console.log(newProduct, error);
   if (error) {
     console.error("RPC create_product error:", error);
     return NextResponse.json(
@@ -253,10 +251,10 @@ async function updateProductsInBatches(products, batchSize = 10) {
 
     await Promise.all(
       batch.map(async (product) => {
-        const { productId, agotado, order, title, caja, visible } = product;
+        const { productId, stock, order, title, caja, visible } = product;
         const { data: prod, error } = await supabase
           .from("Products")
-          .update({ agotado, order, caja, visible })
+          .update({ stock, order, caja, visible })
           .eq("productId", productId)
           .select("*");
         if (error) {

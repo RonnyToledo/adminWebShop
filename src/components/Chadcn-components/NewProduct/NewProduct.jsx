@@ -17,7 +17,7 @@ const initialCase = {
   caracteristicas: [],
   priceCompra: 0,
   imagesecondary: [logoApp, logoApp, logoApp],
-  agotado: false,
+  stock: 0,
   visible: true,
   price: 0,
   embalaje: 0,
@@ -62,6 +62,7 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("visible", String(products.visible ?? ""));
     formData.append("UID", String(webshop?.store?.UUID));
     formData.append("order", String(10000));
+    formData.append("stock", String(products.stock));
     formData.append("oldPrice", String(products.oldPrice ?? ""));
     formData.append("priceCompra", String(products.priceCompra ?? ""));
     formData.append("embalaje", String(products.embalaje ?? ""));
@@ -137,7 +138,7 @@ export default function NewProduct({ ThemeContext }) {
             // Extraer el producto devuelto por el backend:
             // preferimos response.data.data (si tu API sigue ese patrón),
             // si no existe, fallback a response.data
-            console.log(response?.data);
+
             const createdProduct =
               response?.data?.data ?? response?.data ?? null;
             // Actualizamos el estado de forma inmutable

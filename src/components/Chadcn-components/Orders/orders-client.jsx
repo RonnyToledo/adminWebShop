@@ -38,7 +38,7 @@ const initialState = {
           total: 0,
         },
         creado: "2025-03-01T14:12:15",
-        agotado: false,
+        stock: 1,
         storeId: "ad65c9e9-292f-48d2-a64b-941782270896",
         visible: true,
         visitas: 0,

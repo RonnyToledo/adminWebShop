@@ -481,7 +481,7 @@ export function ProductManagementSystem() {
                                               alt={product.title}
                                               className="w-16 h-16 filter object-cover rounded-md border border-border  aspect-square"
                                               style={{
-                                                filter: product.agotado
+                                                filter: product.stock
                                                   ? "grayscale(1)"
                                                   : "initial",
                                               }}
@@ -522,22 +522,35 @@ export function ProductManagementSystem() {
                                       </div>
 
                                       <div className="flex gap-3">
-                                        <div className="flex flex-col items-center gap-2">
-                                          <Switch
-                                            checked={product.agotado}
-                                            onCheckedChange={() =>
-                                              toggleProductStatus(
-                                                product.productId,
-                                                "agotado"
-                                              )
-                                            }
-                                          />
-                                          <span className="text-sm text-muted-foreground">
-                                            {product.agotado
-                                              ? "Agotado"
-                                              : "En stock"}
-                                          </span>
-                                        </div>
+                                        {!webshop?.store?.stocks && (
+                                          <div className="flex flex-col items-center gap-2">
+                                            <Switch
+                                              checked={product.stock}
+                                              onCheckedChange={() =>
+                                                setProducts((prev) =>
+                                                  prev.map((prod) =>
+                                                    product.productId ===
+                                                    prod.productId
+                                                      ? {
+                                                          ...product,
+                                                          stock: product.stock
+                                                            ? 0
+                                                            : 1,
+                                                        }
+                                                      : prod
+                                                  )
+                                                )
+                                              }
+                                            />
+                                            <span className="text-sm text-muted-foreground">
+                                              {product.stock
+                                                ? webshop?.store?.stocks
+                                                  ? `${product.stock} unidades`
+                                                  : "En Stock"
+                                                : "Agotado"}
+                                            </span>
+                                          </div>
+                                        )}
                                         <div className="flex  flex-col items-center gap-2">
                                           <Switch
                                             className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
@@ -558,7 +571,11 @@ export function ProductManagementSystem() {
                                       </div>
 
                                       <div className="flex flex-col gap-1">
-                                        {product.agotado && (
+                                        {product.stock ? (
+                                          <Badge className="text-xs">
+                                            En stock
+                                          </Badge>
+                                        ) : (
                                           <Badge
                                             variant="destructive"
                                             className="text-xs"
@@ -748,7 +765,7 @@ const obtenerProductosModificados = (productosOriginales, productosNuevos) => {
     const productoOriginal = productosMap[productoNuevo.productId];
     return (
       productoOriginal &&
-      (productoOriginal.agotado !== productoNuevo.agotado ||
+      (productoOriginal.stock !== productoNuevo.stock ||
         productoOriginal.order !== productoNuevo.order ||
         productoOriginal.visible !== productoNuevo.visible ||
         productoOriginal.caja !== productoNuevo.caja)
