@@ -39,16 +39,14 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Actualizar los registros en la tabla Events
-    const { data, error } = await supabase
-      .from("Events")
-      .update({ visto: true }) // Cambiar 'visto' a true
-      .in("UID_Venta", uids)
-      .select(); // Filtrar por los uids dados
+    const { data, error } = await supabase.rpc("mark_events_visto_true", {
+      p_uids: uids,
+    });
 
     if (error) {
-      console.error(error.message);
-      throw error;
+      console.error("RPC error", error);
+    } else {
+      console.log("Resultado:", data);
     }
 
     return new Response(
@@ -100,39 +98,47 @@ export async function DELETE(request) {
   await LogUser();
 
   try {
-    const body = await request.text(); // Intenta leer el cuerpo como texto
-    console.info("Cuerpo recibido");
+    const body = await request.text();
+    console.info("Cuerpo recibido (DELETE):", body);
 
     if (!body) {
       throw new Error("El cuerpo de la solicitud está vacío.");
     }
 
-    const parsedBody = JSON.parse(body); // Intenta convertirlo a JSON
-    const { uid } = parsedBody;
+    const parsedBody = JSON.parse(body);
+    const { uid } = parsedBody; // uid = UID_Venta
 
-    console.info("UID recibido:", uid);
+    if (!uid) {
+      throw new Error("No se proporcionó uid (UID_Venta).");
+    }
 
-    // Actualizar los registros en la tabla Events
-    const { error } = await supabase
-      .from("Events")
-      .delete()
-      .eq("UID_Venta", uid);
+    const supabase = createClient();
+
+    const { data, error } = await supabase.rpc("rollback_order_and_restock", {
+      p_uid_venta: uid,
+    });
 
     if (error) {
-      console.error(error.message);
+      console.error("Error RPC rollback_order_and_restock:", error);
       throw error;
     }
 
-    return new Response(
-      JSON.stringify({ message: "Registros actualizados exitosamente" }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    // data es JSON: aseguramos obtener los campos
+    const result = data;
+    const restockPerformed = result?.restock_performed === true;
+    const message = restockPerformed
+      ? "Pedido eliminado y stock restaurado."
+      : `Pedido eliminado. No se realizó restock: ${
+          result?.message || "motivo desconocido"
+        }`;
+
+    return new Response(JSON.stringify({ message, result }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error(error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("DELETE handler error:", error);
+    return new Response(JSON.stringify({ error: error.message || error }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

@@ -82,7 +82,8 @@ export default function Logins({ ThemeContext }) {
                   tickMargin={0}
                   minTickGap={32}
                   tickFormatter={(value) => {
-                    const date = new Date(value);
+                    const date = parseDateOnlyAsLocal(String(value));
+                    console.log(value, date);
                     return date.toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -95,7 +96,8 @@ export default function Logins({ ThemeContext }) {
                       className="w-auto"
                       nameKey="views"
                       labelFormatter={(value) => {
-                        return new Date(value).toLocaleDateString("en-US", {
+                        const date = parseDateOnlyAsLocal(String(value));
+                        return date.toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
@@ -390,3 +392,7 @@ const obtenerMejoresYPeoresProductos = (productos) => {
 
   return { mejores, peores };
 };
+function parseDateOnlyAsLocal(dateString) {
+  const [y, m, d] = dateString.split("-").map(Number);
+  return new Date(y, m - 1, d); // midnight LOCAL
+}

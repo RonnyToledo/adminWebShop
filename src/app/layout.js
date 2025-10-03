@@ -66,11 +66,14 @@ export const initializeData = async (userId) => {
           : store?.Sitios?.edit,
     };
 
-    const eventsParsed = tiendaParsed?.Events.map((event) => ({
-      ...event,
-      desc: JSON.parse(event.desc),
-    }));
+    const eventsParsed = tiendaParsed?.Events.map((event) => {
+      return {
+        ...event,
+        desc: JSON.parse(event.desc),
+      };
+    });
 
+    console.log("Events Parsed:", eventsParsed);
     const productosParsed = OrderProducts(
       store?.Sitios?.Products,
       tiendaParsed?.categoria

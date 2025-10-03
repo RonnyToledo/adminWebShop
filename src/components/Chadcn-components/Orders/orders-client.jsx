@@ -4,7 +4,13 @@ import React, { useContext, useEffect, useState } from "react";
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -14,6 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import axios from "axios";
+import { logoApp } from "@/utils/image";
+import { toast } from "sonner";
 
 const initialState = {
   id: 1742,
@@ -27,12 +35,11 @@ const initialState = {
         Cant: 1,
         caja: "d050e6dd-a417-4000-9059-43aad254f0bc",
         span: false,
-        image:
-          "https://res.cloudinary.com/dbgnyc842/image/upload/v1740856336/sfgvvmwm5xxm6uo29oo2.webp",
+        image: logoApp,
         order: 6,
         price: 1200,
         priceCompra: 0,
-        title: "Luxury podwer",
+        title: "",
         coment: {
           promedio: 0,
           total: 0,
@@ -46,8 +53,7 @@ const initialState = {
         oldPrice: 0,
         agregados: [],
         productId: "412109d3-6b1a-4277-a748-dac7720e33ac",
-        descripcion:
-          "👉🏻85gramos (son potes grandecitos)\r\n👉🏻El verdadero secreto para lucir una piel aterciopelada\r\n👉🏻El polvo banana es un polvo facial ultra fino y su función es sellar la base para que tenga mayor durabilidad.\r\n👉🏻Corrige rojeces y matices rosados\r\n👉🏻Elimina el brillo y la grasa de la piel\r\n👉🏻Se adapta al tono de la piel\r\nModo de uso💁🏻‍♀️:\r\n👉🏻Después de aplicar tu base y corrector, puedes sellar ambos con este polvo.\r\n👉🏻Uno de las mejores formas de sellarlo es con una esponjita y con la punta más pequeña, tomar un poco de polvo, así comenzar a difuminar con ella.\r\n👉🏻También se puede utilizar brocha o pincel y hacer ésta misma técnica o tomar menos producto para tener un acabado más natural.",
+        descripcion: "",
       },
     ],
     total: 1420,
@@ -77,11 +83,13 @@ export default function Component({ ThemeContext, specific }) {
   }, [specific, webshop?.events]);
 
   async function Update(value) {
-    await updateDesc(
-      webshop?.store.sitioweb,
-      value,
-      setWebshop,
-      setDownloading
+    toast.promise(
+      updateDesc(webshop?.store.sitioweb, value, setWebshop, setDownloading),
+      {
+        loading: "Actualizando pedido...",
+        success: () => "Pedido actualizado correctamente",
+        error: (err) => err?.message ?? "Error al actualizar el pedido",
+      }
     );
   }
 
@@ -91,8 +99,19 @@ export default function Component({ ThemeContext, specific }) {
       const updatedAgregados = pedido.agregados.map((obj) =>
         obj.nombre === name ? { ...obj, cantidad: obj.cantidad - 1 } : obj
       );
-
-      //Ingresar codigo para atualizar setWebshop
+      //Ingresar codigo para atualizar setWebshop\
+      const valueAux = {
+        ...dataPedido,
+        desc: {
+          ...dataPedido?.desc,
+          pedido: dataPedido?.desc?.pedido.map((obj) =>
+            pedido.productId == obj.productId
+              ? { ...obj, agregados: updatedAgregados }
+              : obj
+          ),
+        },
+      };
+      Update(valueAux);
     } else {
       const valueAux = {
         ...dataPedido,
@@ -137,10 +156,24 @@ export default function Component({ ThemeContext, specific }) {
             <CardHeader>
               <CardTitle>
                 {`Lista de productos encargados "${dataPedido?.nombre || ""}"`}
-                <p className="text-base">{`${
-                  dataPedido?.desc?.municipio || 0
-                }-${dataPedido?.desc?.provincia || 0}`}</p>
               </CardTitle>
+              <CardDescription>
+                <div className="text-base">
+                  Entrega: {dataPedido?.desc?.lugar}
+                </div>
+                <div className="text-base">
+                  {dataPedido?.desc?.direccion &&
+                    `Direccion: ${dataPedido?.desc?.direccion}`}
+                </div>
+                <div className="text-base">
+                  {dataPedido?.desc?.descripcion &&
+                    `Extras: ${dataPedido?.desc?.descripcion}`}
+                </div>
+                <div className="text-base">
+                  {dataPedido?.desc?.code?.name &&
+                    `Codigo de descuento: ${dataPedido?.desc?.code?.name}-${dataPedido?.desc?.code?.discount}%`}
+                </div>
+              </CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -156,50 +189,51 @@ export default function Component({ ThemeContext, specific }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dataPedido?.desc?.pedido.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                            <Image
-                              src={order?.image || "/placeholder.svg"}
-                              alt={order?.title || ""}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {order?.title || ""}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
+                  {(dataPedido?.desc?.pedido || []).map((order) => (
+                    <React.Fragment key={order.id}>
+                      {/* fila principal: pasamos order */}
+                      {order.Cant ? (
+                        <PlantillaRows
+                          order={order}
+                          handleAgregadoUpdate={() =>
+                            handleAgregadoUpdate(order, false)
+                          }
+                        />
+                      ) : (
+                        <> </>
+                      )}
+                      {/* filas de agregados: normaliza propiedades y pásalas */}
+                      {order.agregados &&
+                        order.agregados.length > 0 &&
+                        order.agregados.map((agregado, idx) => {
+                          if (agregado.cant > 0) {
+                            const agregadoRow = {
+                              ...agregado,
+                              title: `${order.title} ${agregado.name} (Agregado)`,
+                              price: agregado.price || 0,
+                              priceCompra: agregado.priceCompra || 0,
+                              Cant:
+                                agregado.cant ??
+                                agregado.Cant ??
+                                agregado.cantidad ??
+                                0,
+                              image: agregado.image || order.image || logoApp,
+                              id: `${order.id}-agregado-${idx}-${agregado.nombre}`,
+                            };
 
-                      <TableCell>{order?.Cant || 0}</TableCell>
-                      <TableCell>
-                        ${(order?.price || 0).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        ${(order?.priceCompra || 0).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        ${(order.Cant * order.price || 0).toLocaleString()}
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleAgregadoUpdate(order, false)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                            return (
+                              <PlantillaRows
+                                key={agregadoRow.id}
+                                order={agregadoRow}
+                                handleAgregadoUpdate={() =>
+                                  handleAgregadoUpdate(order, agregado.name)
+                                }
+                              />
+                            );
+                          }
+                          return null; // si no cumple, no renderiza nada
+                        })}
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
@@ -211,7 +245,16 @@ export default function Component({ ThemeContext, specific }) {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-gray-900">
-                  {dataPedido?.desc?.pedido.length || 0}
+                  {dataPedido?.desc?.pedido.reduce(
+                    (sum, order) =>
+                      sum +
+                      (order.Cant || 0) +
+                      order.agregados.reduce(
+                        (sumAg, ag) => sumAg + (ag.cant || 0),
+                        0
+                      ),
+                    0
+                  )}
                 </div>
                 <div className="text-sm text-gray-600">Total de pedidos</div>
               </CardContent>
@@ -219,14 +262,23 @@ export default function Component({ ThemeContext, specific }) {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-green-600">
-                  {dataPedido?.desc?.pedido
-                    .reduce(
-                      (sum, order) => sum + (order.Cant * order.price || 0),
+                  {(
+                    (dataPedido?.desc?.pedido.reduce(
+                      (sum, order) =>
+                        sum +
+                        (order.Cant * order.price || 0) +
+                        order.agregados.reduce(
+                          (sumAg, ag) =>
+                            sumAg + ((ag.cant || 0) * (ag.price || 0) || 0),
+                          0
+                        ),
                       0
-                    )
-                    .toLocaleString()}
+                    ) *
+                      (100 - (dataPedido?.desc?.code?.discount || 0))) /
+                    100
+                  ).toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-600">Completados</div>
+                <div className="text-sm text-gray-600">Total</div>
               </CardContent>
             </Card>
             <Card>
@@ -235,7 +287,14 @@ export default function Component({ ThemeContext, specific }) {
                   {dataPedido?.desc?.pedido
                     .reduce(
                       (sum, order) =>
-                        sum + (order.Cant * (order.priceCompra || 0) || 0),
+                        sum +
+                        (order.Cant * (order.priceCompra || 0) || 0) +
+                        order.agregados.reduce(
+                          (sumAg, ag) =>
+                            sumAg +
+                            ((ag.cant || 0) * (order.priceCompra || 0) || 0),
+                          0
+                        ),
                       0
                     )
                     .toLocaleString()}
@@ -247,15 +306,24 @@ export default function Component({ ThemeContext, specific }) {
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-blue-600">
                   $
-                  {dataPedido?.desc?.pedido
-                    .reduce(
+                  {(
+                    (dataPedido?.desc?.pedido.reduce(
                       (sum, order) =>
                         sum +
                         order.Cant *
-                          (order.price - (order.priceCompra || 0) || 0),
+                          (order.price - (order.priceCompra || 0) || 0) +
+                        order.agregados.reduce(
+                          (sumAg, ag) =>
+                            sumAg +
+                            ((ag.cant || 0) *
+                              (ag.price - (order.priceCompra || 0) || 0) || 0),
+                          0
+                        ),
                       0
-                    )
-                    .toLocaleString()}
+                    ) *
+                      (100 - (dataPedido?.desc?.code?.discount || 0))) /
+                    100
+                  ).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Ganancia</div>
               </CardContent>
@@ -264,6 +332,49 @@ export default function Component({ ThemeContext, specific }) {
         </div>
       </div>
     </div>
+  );
+}
+function PlantillaRows({ order, handleAgregadoUpdate }) {
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center space-x-3">
+          <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+            <Image
+              src={order?.image || logoApp}
+              alt={order?.title || ""}
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <div className="font-medium text-gray-900">
+              {order?.title || ""}
+            </div>
+          </div>
+        </div>
+      </TableCell>
+
+      <TableCell>{order?.Cant || 0}</TableCell>
+      <TableCell>${(order?.price || 0).toLocaleString()}</TableCell>
+      <TableCell>${(order?.priceCompra || 0).toLocaleString()}</TableCell>
+      <TableCell className="font-medium">
+        ${((order.Cant || 0) * (order.price || 0)).toLocaleString()}
+      </TableCell>
+
+      <TableCell>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700"
+            onClick={handleAgregadoUpdate}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 const updateDesc = async (sitioweb, Event, setWebshop, setState) => {

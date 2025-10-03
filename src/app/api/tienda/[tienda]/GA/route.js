@@ -62,7 +62,7 @@ export async function GET(request, { params }) {
       },
     });
 
-    // Formatea los datos de Analytics
+    // Formatea los datos de Analytics (solo entradas EXACTAS a /t/{tienda} para este dataset)
     const formattedData = formatAnalyticsDataByDate(response, tienda);
     const convertedData = convertirDatos(formattedData);
 
@@ -100,16 +100,33 @@ export async function GET(request, { params }) {
   }
 }
 
-// Función para formatear los datos de Analytics
-function formatAnalyticsDataByDate(data, tienda) {
-  return data.rows.reduce((acc, row) => {
-    const [pagePath, hour, date] = row.dimensionValues.map((val) => val.value);
-    const sessions = parseInt(row.metricValues[0].value, 10);
+// -----------------------------
+// Helpers y funciones corregidas
+// -----------------------------
 
+// Formatea rows de Analytics en un objeto { fechaYYYYMMDD: [{pagePath, hour, sessions}, ...], ... }
+// Nota: asumimos que response.rows existe y tiene dimensionValues/metricValues
+function formatAnalyticsDataByDate(data, tienda) {
+  if (!data?.rows) return {};
+
+  return data.rows.reduce((acc, row) => {
+    const dimensionValues = row.dimensionValues || [];
+    const metricValues = row.metricValues || [];
+
+    const pagePath = (dimensionValues[0] && dimensionValues[0].value) || "";
+    const hour = (dimensionValues[1] && dimensionValues[1].value) || "00";
+    const date = (dimensionValues[2] && dimensionValues[2].value) || ""; // formato YYYYMMDD
+    const sessions = parseInt(
+      (metricValues[0] && metricValues[0].value) || "0",
+      10
+    );
+
+    if (!date) return acc;
+
+    // Aquí agrupamos por fecha solo las entradas EXACTAS a /t/{tienda}
+    // Si quieres incluir subpaths, cambia la condición.
     if (pagePath === `/t/${tienda}`) {
-      if (!acc[date]) {
-        acc[date] = [];
-      }
+      if (!acc[date]) acc[date] = [];
       acc[date].push({ pagePath, hour, sessions });
     }
 
@@ -117,25 +134,32 @@ function formatAnalyticsDataByDate(data, tienda) {
   }, {});
 }
 
-// Convierte los datos a un formato específico
+// convertirDatos: crea un array con un objeto por sesión (simula eventos)
+// Corrige ids duplicadas usando un contador global y parsing correcto de fecha ISO.
 function convertirDatos(datos) {
   const resultado = [];
+  let globalId = 0;
 
   Object.entries(datos).forEach(([fecha, items]) => {
+    // fecha viene en formato YYYYMMDD -> lo convertimos a YYYY-MM-DD
+    const fechaISOBase = `${fecha.slice(0, 4)}-${fecha.slice(
+      4,
+      6
+    )}-${fecha.slice(6, 8)}`;
+
     items.forEach(({ pagePath, hour, sessions }) => {
-      const fechaHora = `${fecha.slice(0, 4)}-${fecha.slice(
-        4,
-        6
-      )}-${fecha.slice(6, 8)}T${hour.padStart(2, "0")}:00:00`;
+      const horaPadded = hour.toString().padStart(2, "0");
+      // creamos un ISO datetime (sin zona explícita): YYYY-MM-DDTHH:00:00
+      const fechaHora = `${fechaISOBase}T${horaPadded}:00:00`;
 
       for (let i = 0; i < sessions; i++) {
         resultado.push({
-          id: i,
-          uid: "a", // Este valor puede ser dinámico si es necesario
+          id: String(globalId++), // id único
+          uid: "a",
           desc: [],
           created_at: fechaHora,
           events: "inicio",
-          tienda: pagePath.split("/t/")[1],
+          tienda: pagePath.split("/t/")[1] || null,
         });
       }
     });
@@ -144,189 +168,213 @@ function convertirDatos(datos) {
   return resultado;
 }
 
+// Util: transforma "YYYY-MM-DD" a mismo formato (mantengo para compatibilidad)
 function convertDateToMonthDay(dateString) {
-  const parts = dateString.split("-");
-  const year = parts[0];
-  const month = parts[1];
-  const day = parts[2];
+  // si dateString ya está en formato YYYY-MM-DD devolvemos igual
+  return dateString;
+}
+
+// Helper: formatea un objeto Date a "YYYY-MM-DD" usando la hora LOCAL
+function formatDateLocal(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
+// Helper: parsea una cadena "YYYY-MM-DD" y devuelve un Date en hora LOCAL (medianoche local)
+function parseDateOnly(dateString) {
+  const [y, m, day] = dateString.split("-").map(Number);
+  return new Date(y, m - 1, day); // Date(year, monthIndex, day) en local
+}
+
+// Cuenta entradas por cada uno de los últimos 90 días (incluye hoy)
+// entries: array con created_at en formato "YYYY-MM-DDTHH:MM:SS" o "YYYY-MM-DD..."
 function countEntriesInLast90Days(entries) {
   const counts = {};
-  const currentDate = new Date();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(currentDate.getDate() - 92);
-  thirtyDaysAgo.setDate(currentDate.getDate() - 1);
+  const today = new Date();
+  // Empezamos 89 días atrás para tener 90 días incluyendo hoy
+  const start = new Date(today);
+  start.setDate(start.getDate() - 89);
 
-  // Inicializar el contador para cada uno de los últimos 30 días
-  for (let i = 0; i <= 90; i++) {
-    const date = new Date(thirtyDaysAgo);
-    date.setDate(thirtyDaysAgo.getDate() + i);
-    const dateString = date.toISOString().split("T")[0];
-    counts[dateString] = 0;
+  // Inicializar contador para cada fecha usando formato local
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = formatDateLocal(d);
+    counts[key] = 0;
   }
-  // Contar las entradas por fecha
+
+  // Contar las entradas, parseando solo la parte YYYY-MM-DD
   entries.forEach((entry) => {
-    const date = entry.created_at.split("T")[0];
-    if (counts[date] != undefined) {
-      counts[date] += 1;
-    }
+    if (!entry || !entry.created_at) return;
+    const datePart = entry.created_at.split("T")[0]; // toma la parte de fecha
+    if (!datePart) return;
+    // Normalizar la fecha con parseDateOnly -> formatDateLocal (evita problemas de parsing)
+    const entryDate = parseDateOnly(datePart);
+    const key = formatDateLocal(entryDate);
+    if (counts[key] !== undefined) counts[key] += 1;
   });
 
-  // Convertir el objeto counts en un arreglo de objetos
-  const result = Object.keys(counts).map((date) => ({
-    date: convertDateToMonthDay(date),
-    count: counts[date],
-  }));
-
-  return result;
+  // Devolver ordenado cronológicamente
+  return Object.keys(counts)
+    .sort()
+    .map((date) => ({ date, count: counts[date] }));
 }
+
+// Cuenta entradas por cada uno de los últimos 7 días (incluye hoy)
 function countEntriesInLast7Days(entries) {
   const counts = {};
-  const currentDate = new Date();
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(currentDate.getDate() - 7);
+  const today = new Date();
+  // Empezamos 6 días atrás para tener 7 días incluyendo hoy
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6);
 
-  // Inicializar el contador para cada uno de los últimos 7 días
   for (let i = 0; i < 7; i++) {
-    const date = new Date(sevenDaysAgo);
-    date.setDate(sevenDaysAgo.getDate() + i);
-    const dateString = date.toISOString().split("T")[0];
-    counts[dateString] = 0;
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = formatDateLocal(d);
+    counts[key] = 0;
   }
 
-  // Contar las entradas por fecha
   entries.forEach((entry) => {
-    const date = entry.created_at.split("T")[0]; // Asegúrate de que entries tenga este formato
-    if (counts[date] !== undefined) {
-      counts[date] += 1;
+    if (!entry || !entry.created_at) return;
+    const datePart = entry.created_at.split("T")[0];
+    if (!datePart) return;
+    const entryDate = parseDateOnly(datePart);
+    const key = formatDateLocal(entryDate);
+    if (counts[key] !== undefined) counts[key] += 1;
+  });
+
+  return Object.keys(counts)
+    .sort()
+    .map((date) => ({ date, count: counts[date] }));
+}
+
+// Filtra entradas en los últimos 30 días (incluye hoy). Asegúrate que entry.created_at use 'T' separator.
+const filterDatesInLast30Days = (entries) => {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 29); // 30 días incluyendo hoy
+
+  return entries.filter((entry) => {
+    const created = entry.created_at || "";
+    const datePart = created.split("T")[0]; // usar 'T' (ISO)
+    if (!datePart) return false;
+    const entryDate = new Date(datePart + "T00:00:00"); // comienzo del día
+    return (
+      entryDate >= new Date(start.toISOString().split("T")[0] + "T00:00:00") &&
+      entryDate <= new Date(today.toISOString().split("T")[0] + "T23:59:59")
+    );
+  });
+};
+
+// Filtra entradas en los últimos 7 días (incluye hoy)
+const filterDatesInLast7Days = (entries) => {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6); // 7 días incluyendo hoy
+
+  return entries.filter((entry) => {
+    const created = entry.created_at || "";
+    const datePart = created.split("T")[0];
+    if (!datePart) return false;
+    const entryDate = new Date(datePart + "T00:00:00");
+    return (
+      entryDate >= new Date(start.toISOString().split("T")[0] + "T00:00:00") &&
+      entryDate <= new Date(today.toISOString().split("T")[0] + "T23:59:59")
+    );
+  });
+};
+
+// Contar visitas por hora (0-23)
+function contarVisitasPorHora(fechaArray) {
+  const contadorHoras = Array(24).fill(0);
+
+  fechaArray.forEach((fecha) => {
+    // created_at es ISO -> new Date lo parsea
+    const d = new Date(fecha.created_at);
+    if (!isNaN(d.getTime())) {
+      const hora = d.getHours();
+      contadorHoras[hora] += 1;
     }
   });
 
-  // Convertir el objeto counts en un arreglo de objetos
-  const result = Object.keys(counts).map((date) => ({
-    date: convertDateToMonthDay(date),
-    count: counts[date],
+  return contadorHoras.map((cantidad, index) => ({
+    hora: `${index < 10 ? "0" : ""}${index}:00`,
+    cantidad,
   }));
-
-  return result;
 }
 
-const filterDatesInLast30Days = (entries) => {
-  const currentDate = new Date();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(currentDate.getDate() - 32);
-  currentDate.setDate(currentDate.getDate() - 2);
-  return entries.filter((entry) => {
-    const entryDate = new Date(entry.created_at.split(" ")[0]);
-    return entryDate >= thirtyDaysAgo && entryDate <= currentDate;
-  });
-};
-
-const filterDatesInLast7Days = (entries) => {
-  const currentDate = new Date();
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(currentDate.getDate() - 7);
-
-  return entries.filter((entry) => {
-    const entryDate = new Date(entry.created_at.split(" ")[0]);
-    return entryDate >= sevenDaysAgo && entryDate <= currentDate;
-  });
-};
-
-function contarVisitasPorHora(fechaArray) {
-  // Inicializar un array para contar las visitas por hora
-  const contadorHoras = Array(24).fill(0); // Array para 24 horas, inicializado en 0
-
-  // Recorrer el arreglo de fechas
-  fechaArray.forEach((fecha) => {
-    const date = new Date(fecha.created_at);
-    const hora = date.getHours(); // Extraer la hora (0-23)
-
-    // Incrementar el contador para la hora correspondiente
-    contadorHoras[hora] += 1;
-  });
-
-  // Crear un array para devolver resultados en el formato requerido
-  const resultado = contadorHoras.map((cantidad, index) => ({
-    hora: `${index < 10 ? "0" : ""}${index}:00`, // Formato HH:00
-    cantidad: cantidad,
-  }));
-
-  return resultado;
-}
+// Promedio visitas por mes
 function promedioVisitasPorMes(fechaArray) {
   const contadorMeses = {};
 
-  // Recorrer el arreglo de fechas
   fechaArray.forEach((fecha) => {
-    const date = new Date(fecha.created_at);
-    const mes = date.toLocaleString("default", { month: "long" }); // Obtener el nombre del mes
-    const anio = date.getFullYear(); // Obtener el año
-
-    // Crear una clave única para el mes y el año
+    const d = new Date(fecha.created_at);
+    if (isNaN(d.getTime())) return;
+    // Formato "mes año" en idioma por defecto del runtime (puede salir en inglés si el server está en EN)
+    const mes = d.toLocaleString("default", { month: "long" });
+    const anio = d.getFullYear();
     const claveMes = `${mes} ${anio}`;
-
-    // Contar las ocurrencias de cada mes
     contadorMeses[claveMes] = (contadorMeses[claveMes] || 0) + 1;
   });
 
-  // Calcular el promedio
-  const totalMeses = Object.keys(contadorMeses).length; // Total de meses únicos
+  const totalMeses = Object.keys(contadorMeses).length || 0;
   const totalOcurrencias = Object.values(contadorMeses).reduce(
     (acc, curr) => acc + curr,
     0
-  ); // Total de ocurrencias
+  );
+  const promedio = totalMeses === 0 ? 0 : totalOcurrencias / totalMeses;
 
-  const promedio = totalOcurrencias / totalMeses;
-  // Devolver el objeto con las ocurrencias por mes y el promedio
   return {
     contadorMeses,
-    promedio: Number.isNaN(promedio) ? 0 : promedio, // Evitar NaN si no hay fechas
+    promedio: Number.isNaN(promedio) ? 0 : promedio,
   };
 }
 
-// Función para calcular visitas promedio por día
+// Calcula promedio visitas por día (agrupado)
 function calcularPromedioVisitasPorDia(datos) {
-  // Agrupar las visitas por fecha
   const visitasPorDia = datos.reduce((acc, visita) => {
-    const fecha = visita.created_at.split("T")[0]; // Obtener solo la fecha
-    if (!acc[fecha]) {
-      acc[fecha] = 0;
-    }
-    acc[fecha] += 1; // Incrementar la cantidad de visitas para esa fecha
+    const fecha = (visita.created_at || "").split("T")[0];
+    if (!fecha) return acc;
+    if (!acc[fecha]) acc[fecha] = 0;
+    acc[fecha] += 1;
     return acc;
   }, {});
 
-  // Calcular el total de visitas y el número de días
   const totalVisitas = Object.values(visitasPorDia).reduce(
-    (acc, visitas) => acc + visitas,
+    (acc, v) => acc + v,
     0
   );
-  const numeroDeDias = Object.keys(visitasPorDia).length;
-
-  // Calcular el promedio
-  const promedio = totalVisitas / numeroDeDias;
+  const numeroDeDias = Object.keys(visitasPorDia).length || 0;
+  const promedio = numeroDeDias === 0 ? 0 : totalVisitas / numeroDeDias;
 
   return { visitasPorDia, promedio };
 }
+
+// Obtiene visitas por producto a partir del response de GA (response.rows)
 function getProductVisits(response) {
   const productVisits = {};
+  if (!response?.rows) return productVisits;
 
   response.rows.forEach((row) => {
-    // Extraer el `pagePath` y la cantidad de sesiones
-    const pagePath = row.dimensionValues[0].value;
-    const sessions = parseInt(row.metricValues[0].value, 10);
+    const pagePath =
+      (row.dimensionValues &&
+        row.dimensionValues[0] &&
+        row.dimensionValues[0].value) ||
+      "";
+    const sessions = parseInt(
+      (row.metricValues && row.metricValues[0] && row.metricValues[0].value) ||
+        "0",
+      10
+    );
 
-    // Extraer el `productId` de la ruta
-    const productId = pagePath.split("/products/")[1];
-
-    // Sumar las sesiones al total del `productId`
-    if (productVisits[productId]) {
-      productVisits[productId] += sessions;
-    } else {
-      productVisits[productId] = sessions;
+    // Extraer productId (todo lo que venga después de /products/)
+    const parts = pagePath.split("/products/");
+    if (parts.length > 1) {
+      const productId = parts[1].split(/[/?#]/)[0]; // toma solo el primer segmento
+      productVisits[productId] = (productVisits[productId] || 0) + sessions;
     }
   });
 

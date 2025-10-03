@@ -116,7 +116,7 @@ export default function AppSidebar({ ThemeContext }) {
         <SidebarMenuButton asChild tooltip={link.label}>
           <Link
             href={link.href || pathname}
-            className="flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-50"
+            className=" flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 "
           >
             <Icon />
             <span>{link.label}</span>
@@ -130,7 +130,7 @@ export default function AppSidebar({ ThemeContext }) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" onClick={() => router.push("/")}>
+            <SidebarMenuButton size="sm" onClick={() => router.push("/")}>
               <div>
                 <Image
                   width={50}
@@ -155,7 +155,7 @@ export default function AppSidebar({ ThemeContext }) {
             return link.separator ? (
               <Separator key={index} />
             ) : (
-              <SidebarGroup key={index}>
+              <SidebarGroup key={index} className="p-1">
                 <SidebarGroupLabel>{link.group}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>{link.links.map(renderLinkNav)}</SidebarMenu>

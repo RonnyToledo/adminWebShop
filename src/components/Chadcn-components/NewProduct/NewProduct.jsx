@@ -17,7 +17,7 @@ const initialCase = {
   caracteristicas: [],
   priceCompra: 0,
   imagesecondary: [logoApp, logoApp, logoApp],
-  stock: 0,
+  stock: 1,
   visible: true,
   price: 0,
   embalaje: 0,

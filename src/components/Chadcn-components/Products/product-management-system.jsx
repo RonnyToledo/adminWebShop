@@ -469,7 +469,10 @@ export function ProductManagementSystem() {
                                         onClick={(e) => e.stopPropagation()}
                                       />
                                       <h4 className="text-gray-700">
-                                        {product.order}
+                                        {product.order < 9999
+                                          ? product.order + 1
+                                          : ""}
+                                        .
                                       </h4>
                                       <Dialog>
                                         <DialogTrigger asChild>
@@ -482,8 +485,8 @@ export function ProductManagementSystem() {
                                               className="w-16 h-16 filter object-cover rounded-md border border-border  aspect-square"
                                               style={{
                                                 filter: product.stock
-                                                  ? "grayscale(1)"
-                                                  : "initial",
+                                                  ? "initial"
+                                                  : "grayscale(1)",
                                               }}
                                             />
                                           </div>
@@ -551,7 +554,7 @@ export function ProductManagementSystem() {
                                             </span>
                                           </div>
                                         )}
-                                        <div className="flex  flex-col items-center gap-2">
+                                        <div className="flex  flex-col-reverse items-center gap-2">
                                           <Switch
                                             className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
                                             checked={product.visible}
@@ -570,11 +573,23 @@ export function ProductManagementSystem() {
                                         </div>
                                       </div>
 
-                                      <div className="flex flex-col gap-1">
+                                      <div className="flex flex-col-reverse gap-1">
                                         {product.stock ? (
-                                          <Badge className="text-xs">
-                                            En stock
-                                          </Badge>
+                                          webshop?.store?.stocks ? (
+                                            <Badge
+                                              className="text-xs"
+                                              variant="outline"
+                                            >
+                                              {product.stock} unidades
+                                            </Badge>
+                                          ) : (
+                                            <Badge
+                                              className="text-xs"
+                                              variant="outline"
+                                            >
+                                              En stock
+                                            </Badge>
+                                          )
                                         ) : (
                                           <Badge
                                             variant="destructive"
