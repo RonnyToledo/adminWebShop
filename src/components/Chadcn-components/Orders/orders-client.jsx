@@ -22,6 +22,7 @@ import {
 import axios from "axios";
 import { logoApp } from "@/utils/image";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const initialState = {
   id: 1742,
@@ -75,12 +76,33 @@ export default function Component({ ThemeContext, specific }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [dataPedido, setDataPedido] = useState(initialState);
   const [downloading, setDownloading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setDataPedido(
       (webshop?.events || []).find((obj) => obj.UID_Venta === specific)
     );
   }, [specific, webshop?.events]);
+
+  useEffect(() => {
+    const total = (dataPedido?.desc?.pedido ?? []).reduce(
+      (sum, order) =>
+        sum +
+        (order?.Cant || 0) +
+        (order?.agregados ?? []).reduce((s, ag) => s + (ag?.cant || 0), 0),
+      0
+    );
+
+    if (total === 0) {
+      setWebshop((prev) => {
+        return {
+          ...prev,
+          events: prev.events.filter((obj) => obj.UID_Venta !== specific),
+        };
+      });
+      router.push("/orders");
+    }
+  }, [dataPedido?.desc?.pedido, router]);
 
   async function Update(value) {
     toast.promise(
@@ -97,7 +119,7 @@ export default function Component({ ThemeContext, specific }) {
     if (name) {
       //Codigo si es con agregado
       const updatedAgregados = pedido.agregados.map((obj) =>
-        obj.nombre === name ? { ...obj, cantidad: obj.cantidad - 1 } : obj
+        obj.name === name ? { ...obj, cant: obj.cant - 1 } : obj
       );
       //Ingresar codigo para atualizar setWebshop\
       const valueAux = {
@@ -183,6 +205,7 @@ export default function Component({ ThemeContext, specific }) {
                     <TableHead>Producto</TableHead>
                     <TableHead>Cantidad</TableHead>
                     <TableHead>Precio Unit.</TableHead>
+                    <TableHead>Embalaje</TableHead>
                     <TableHead>Precio Inv.</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Acciones</TableHead>
@@ -266,10 +289,13 @@ export default function Component({ ThemeContext, specific }) {
                     (dataPedido?.desc?.pedido.reduce(
                       (sum, order) =>
                         sum +
-                        (order.Cant * order.price || 0) +
+                        order.Cant *
+                          ((order.embalaje || 0) + order.price || 0) +
                         order.agregados.reduce(
                           (sumAg, ag) =>
-                            sumAg + ((ag.cant || 0) * (ag.price || 0) || 0),
+                            sumAg +
+                            ((ag.cant || 0) *
+                              (ag.price || 0 + (order.embalaje || 0)) || 0),
                           0
                         ),
                       0
@@ -311,12 +337,16 @@ export default function Component({ ThemeContext, specific }) {
                       (sum, order) =>
                         sum +
                         order.Cant *
-                          (order.price - (order.priceCompra || 0) || 0) +
+                          (order.price -
+                            ((order.embalaje || 0) + order.priceCompra || 0) ||
+                            0) +
                         order.agregados.reduce(
                           (sumAg, ag) =>
                             sumAg +
                             ((ag.cant || 0) *
-                              (ag.price - (order.priceCompra || 0) || 0) || 0),
+                              (ag.price -
+                                ((order.priceCompra || 0) +
+                                  (order.embalaje || 0)) || 0) || 0),
                           0
                         ),
                       0
@@ -356,10 +386,14 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
       </TableCell>
 
       <TableCell>{order?.Cant || 0}</TableCell>
-      <TableCell>${(order?.price || 0).toLocaleString()}</TableCell>
-      <TableCell>${(order?.priceCompra || 0).toLocaleString()}</TableCell>
+      <TableCell>{order.embalaje || 0}</TableCell>
+      <TableCell>{(order?.price || 0).toLocaleString()} </TableCell>
+      <TableCell>{(order?.priceCompra || 0).toLocaleString()}</TableCell>
       <TableCell className="font-medium">
-        ${((order.Cant || 0) * (order.price || 0)).toLocaleString()}
+        $
+        {(
+          (order.Cant || 0) * (order.price || 0 + order.embalaje || 0)
+        ).toLocaleString()}
       </TableCell>
 
       <TableCell>
@@ -388,12 +422,16 @@ const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
 
     if (response.status === 200) {
       setWebshop((prev) => {
+        console.log({
+          ...prev,
+          events: prev.events.map((obj) =>
+            obj.UID_Venta === Event.UID_Venta ? Event : obj
+          ),
+        });
         return {
           ...prev,
           events: prev.events.map((obj) =>
-            obj.UID_Venta == response.data.data.UID_Venta
-              ? response.data.data
-              : obj
+            obj.UID_Venta === Event.UID_Venta ? Event : obj
           ),
         };
       });

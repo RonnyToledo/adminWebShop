@@ -67,28 +67,48 @@ export async function PUT(request, { params }) {
   await LogUser();
 
   try {
-    const body = await request.json(); // Obtener el cuerpo de la solicitud
+    const body = await request.json(); // la misma estructura que pasas ahora
 
-    // Actualizar los registros en la tabla Events
-    const { data, error } = await supabase
-      .from("Events")
-      .upsert({ ...body, desc: JSON.stringify(body.desc) }) // Cambiar 'visto' a true
-      .select(); // Filtrar por los uids dados
+    // Asegurarnos desc como objeto json (no string)
+    let safeDesc = body.desc;
+    if (typeof safeDesc === "string") {
+      try {
+        safeDesc = JSON.parse(safeDesc);
+      } catch (err) {
+        throw new Error("El campo desc no es un JSON válido.");
+      }
+    }
+    const paramsRpc = {
+      p_uid: body.uid,
+      p_events: body.events,
+      p_desc: safeDesc,
+      p_uid_venta: body.UID_Venta,
+      p_nombre: body.nombre,
+      p_phonenumber: Number(body.phonenumber) || 0,
+      p_descripcion: body.descripcion || "",
+      p_created_at: body.created_at || new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase.rpc(
+      "update_event_adjust_stock",
+      paramsRpc
+    );
 
     if (error) {
-      console.error(error.message);
-      throw error;
+      console.error("RPC error:", error);
+      throw new Error(error.message || JSON.stringify(error));
     }
-    console.info("Registros actualizados exitosamente");
+
     return new Response(
-      JSON.stringify({ message: "Registros actualizados exitosamente", data }),
+      JSON.stringify({ message: "Evento actualizado y stock ajustado", data }),
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }
     );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("PUT handler error:", error);
+    return new Response(JSON.stringify({ error: error.message || error }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
