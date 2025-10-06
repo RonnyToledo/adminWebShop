@@ -141,6 +141,7 @@ export async function POST(request, { params }) {
   const municipio = data.get("municipio") || datos.municipio;
   const editor = data.get("user") || datos.Editor; // debe ser UUID
   const email = data.get("email") || datos.email;
+  const stocks = data.get("stock") || datos.stock;
 
   // Convertir cell a integer o null (esto obliga a Postgres a elegir la firma con bigint)
   const rawCell = data.get("cell");
@@ -161,6 +162,7 @@ export async function POST(request, { params }) {
     _municipio: municipio,
     _editor: editor,
     _email: email,
+    _stocks: stocks,
     _cell: cell, // number o null -> evita ambigüedad bigint/text
     _urlposter: datos.urlPoster,
     _parrrafo: data.get("parrrafo") || datos.parrrafo,
@@ -175,6 +177,7 @@ export async function POST(request, { params }) {
     _login: datos.login,
     _active: datos.active,
   };
+  console.log("Payload for create_sitio:", payload);
   try {
     const { data: tienda, error } = await supabase.rpc("create_sitio", payload);
     if (error) {

@@ -49,6 +49,7 @@ import { format } from "@formkit/tempo";
 import Image from "next/image";
 import axios from "axios";
 import { toast } from "sonner";
+import Link from "next/link";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
 
 export function ProductManagementSystem() {
@@ -624,25 +625,22 @@ export function ProductManagementSystem() {
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              router.push(
-                                                `/products/${product.productId}`
-                                              )
-                                            }
-                                          >
-                                            <Edit className="w-4 h-4 mr-2" />
-                                            Editar producto
+                                          <DropdownMenuItem asChild>
+                                            <Link
+                                              href={`/products/${product.productId}`}
+                                            >
+                                              <Edit className="w-4 h-4 mr-2" />
+                                              Editar producto
+                                            </Link>
                                           </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              router.push(
-                                                `https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}/producto/${product.productId}`
-                                              )
-                                            }
-                                          >
-                                            <Eye className="w-4 h-4 mr-2" />
-                                            Ver en tienda
+
+                                          <DropdownMenuItem asChild>
+                                            <Link
+                                              href={`/products/${product.productId}`}
+                                            >
+                                              <Eye className="w-4 h-4 mr-2" />
+                                              Ver en tienda
+                                            </Link>
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             className="text-destructive"

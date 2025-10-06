@@ -72,7 +72,7 @@ export default function ConfimationOut({ action }) {
         </DialogDescription>
         <DialogFooter>
           <Button variant="outline" onClick={handleDialogClose}>
-            Cancelar
+            Regresar
           </Button>
           <Button variant="destructive" onClick={handleConfirmLeave}>
             Salir sin guardar

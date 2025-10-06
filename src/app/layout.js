@@ -73,12 +73,10 @@ export const initializeData = async (userId) => {
       };
     });
 
-    console.log("Events Parsed:", eventsParsed);
     const productosParsed = OrderProducts(
       store?.Sitios?.Products,
       tiendaParsed?.categoria
     );
-
     // Fetch Google Analytics data
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed?.sitioweb}/GA`

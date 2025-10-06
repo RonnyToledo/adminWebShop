@@ -34,7 +34,7 @@ export async function GET(request, { params }) {
       property: `properties/${propertyId}`,
       dimensions: [{ name: "pagePath" }, { name: "hour" }, { name: "date" }],
       metrics: [{ name: "sessions" }],
-      dateRanges: [{ startDate: "365daysAgo", endDate: "today" }],
+      dateRanges: [{ startDate: "90daysAgo", endDate: "today" }],
       dimensionFilter: {
         filter: {
           fieldName: "pagePath",
@@ -50,7 +50,7 @@ export async function GET(request, { params }) {
       property: `properties/${propertyId}`,
       dimensions: [{ name: "pagePath" }, { name: "hour" }, { name: "date" }],
       metrics: [{ name: "sessions" }],
-      dateRanges: [{ startDate: "365daysAgo", endDate: "today" }],
+      dateRanges: [{ startDate: "90daysAgo", endDate: "today" }],
       dimensionFilter: {
         filter: {
           fieldName: "pagePath",
@@ -166,12 +166,6 @@ function convertirDatos(datos) {
   });
 
   return resultado;
-}
-
-// Util: transforma "YYYY-MM-DD" a mismo formato (mantengo para compatibilidad)
-function convertDateToMonthDay(dateString) {
-  // si dateString ya está en formato YYYY-MM-DD devolvemos igual
-  return dateString;
 }
 
 // Helper: formatea un objeto Date a "YYYY-MM-DD" usando la hora LOCAL

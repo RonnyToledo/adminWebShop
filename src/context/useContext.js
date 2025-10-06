@@ -45,8 +45,12 @@ export default function MyProvider({ children, user, data }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const [routesAlternativesState, setRoutesAlternativesState] = useState(false);
-  const [routesOffLoginState, setRoutesOffLoginState] = useState(false);
+  const [routesAlternativesState, setRoutesAlternativesState] = useState(
+    routesAlternatives.includes(pathname)
+  );
+  const [routesOffLoginState, setRoutesOffLoginState] = useState(
+    routesOffLogin.includes(pathname)
+  );
 
   useEffect(() => {
     setRoutesAlternativesState(routesAlternatives.includes(pathname));

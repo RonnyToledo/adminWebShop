@@ -45,6 +45,8 @@ import {
 import "react-phone-input-2/lib/style.css";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import Loading from "../../component/loading";
+import { Switch } from "@/components/ui/switch";
+import style from "./style.module.css";
 
 /* ------------------ validation schema ------------------ */
 /* guardamos country por nombre (tal como pediste) */
@@ -53,6 +55,7 @@ const formSchema = z.object({
   country: z.string().min(1, "El país es requerido"), // name
   Provincia: z.string().min(1, "La provincia es requerida"), // name
   municipio: z.string().min(1, "El municipio es requerido"), // name
+  stock: z.boolean(),
   moneda_default: z.enum(["USD", "EURO", "MLC", "CUP"]),
   email: z.string().email("Email inválido"),
   cell: z
@@ -76,6 +79,7 @@ const stepSchemas = [
         /^[A-Z]{1,4}$/,
         "Solo letras mayúsculas (A-Z), sin espacios, máximo 4"
       ),
+    stock: z.boolean(),
   }),
   z.object({
     email: z.string().email("Email inválido"),
@@ -100,16 +104,18 @@ export function CrearClienteComponent({
   const [slideDirection, setSlideDirection] = useState("right");
   const [currentStep, setCurrentStep] = useState(0);
 
-  const defaultCountryIso =
+  const [defaultCountryIso, setDefaultCountryIso] = useState(
     process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
-    countries[0]?.isoCode ||
-    "CU";
+      countries[0]?.isoCode ||
+      "CU"
+  );
+  const [selectedCountryIso, setSelectedCountryIso] =
+    useState(defaultCountryIso);
   const defaultCountryName =
     (countries.find((c) => c.isoCode === defaultCountryIso) || countries[0])
       ?.name ||
     countries[0]?.name ||
     "";
-
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -118,8 +124,9 @@ export function CrearClienteComponent({
       Provincia: "",
       municipio: "",
       moneda_default: "CUP",
-      email: "",
+      email: user?.user?.user.email || user?.user.email || "",
       cell: "",
+      stock: false,
     },
   });
 
@@ -238,8 +245,6 @@ export function CrearClienteComponent({
   };
 
   /* ------------------ selectedCountryIso: estado local que usamos para llamar APIs ------------------ */
-  const [selectedCountryIso, setSelectedCountryIso] =
-    useState(defaultCountryIso);
 
   /* cada vez que cambie selectedCountryIso -> fetch states */
   useEffect(() => {
@@ -263,10 +268,11 @@ export function CrearClienteComponent({
   }, [selectedCountryIso, watchedProvincia]);
 
   /* ------------------ submit y navegación ------------------ */
+
   async function onSubmit(values) {
     setIsSubmitting(true);
     const formData = new FormData();
-    formData.append("user", user);
+    formData.append("user", user?.user?.user.id || user?.user.id || "");
     Object.entries(values).forEach(([key, value]) => {
       formData.append(key, value);
     });
@@ -282,7 +288,7 @@ export function CrearClienteComponent({
           title: "Éxito al crear su tienda, ya puede empezar a trabajar",
           description: result?.data?.success || "",
         });
-        router.refresh();
+        router.push("/");
         form.reset();
         setLoadingGeneral(true);
         setCurrentStep(0);
@@ -568,6 +574,22 @@ export function CrearClienteComponent({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="stock"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between">
+                  <FormLabel className="text-gray-700 font-medium text-lg">
+                    Usar control de inventario para la disponibilidad de
+                    productos (stock){" "}
+                  </FormLabel>
+                  <FormControl>
+                    <Switch {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         );
       case 3:
@@ -588,6 +610,9 @@ export function CrearClienteComponent({
                         placeholder="ejemplo@correo.com"
                         className="pl-12 h-14 border-2 border-gray-200 text-lg"
                         {...field}
+                        readOnly={
+                          !!user?.user?.user.email || !!user?.user.email
+                        }
                       />
                       <Mail
                         className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -611,7 +636,7 @@ export function CrearClienteComponent({
                   <FormControl>
                     <div className="phone-input-container">
                       <PhoneInput
-                        country={"cu"}
+                        country={selectedCountryIso.toLocaleLowerCase()}
                         value={field.value}
                         onChange={field.onChange}
                         inputProps={{
@@ -619,13 +644,9 @@ export function CrearClienteComponent({
                           required: true,
                           autoFocus: false,
                         }}
-                        containerStyle={{ height: "56px" }}
-                        inputStyle={{
-                          height: "56px",
-                          border: "2px solid #e5e7eb",
-                          borderRadius: "6px",
-                          fontSize: "18px",
-                        }}
+                        dropdownClass={style.dropdownClass}
+                        inputClass={style.inputClass}
+                        buttonClass={style.ButtonClass}
                       />
                     </div>
                   </FormControl>
