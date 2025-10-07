@@ -30,12 +30,13 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { FromData } from "@/components/globalFunction/fromData";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+
 export default function SocialContactPage() {
   const { webshop } = useContext(ThemeContext);
   const [redes, setRedes] = useState([]);
   const [contacto, setContacto] = useState([]);
-  const { toast } = useToast();
+
   useEffect(() => {
     setRedes(webshop?.store?.redes || []);
     setContacto(webshop?.store?.contacto || []);
@@ -47,40 +48,24 @@ export default function SocialContactPage() {
   const addRed = () => {
     if (newRed.tipo && newRed.url && newRed.user) {
       if ([...contacto, newContact].length >= 4) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Maxima cantidad permitida alcanzada",
-        });
+        toast.error("Maxima cantidad permitida alcanzada");
       }
       setRedes([...redes, newRed].slice(0, 3));
       setNewRed({});
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Faltan datos",
-      });
+      toast.error("Faltan datos");
     }
   };
 
   const addContact = () => {
     if (newContact.tipo && newContact.url) {
       if ([...contacto, newContact].length >= 4) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Maxima cantidad permitida alcanzada",
-        });
+        toast.error("Maxima cantidad permitida alcanzada");
       }
       setContacto([...contacto, newContact].slice(0, 3));
       setNewContact({});
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Faltan datos",
-      });
+      toast.error("Faltan datos");
     }
   };
 

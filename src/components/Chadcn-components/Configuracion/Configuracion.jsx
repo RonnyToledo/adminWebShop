@@ -26,14 +26,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/components/ui/use-toast";
 import ProfileHeader from "./profile-header";
 import WeeklyAvailability from "@/components/Chadcn-components/Configuracion/WeeklyAvailability";
 import { Textarea } from "@/components/ui/textarea";
 import ConfiguracionState from "./configuracionState";
+import { toast } from "sonner";
 
 export default function Configuracion({ ThemeContext, country }) {
-  const { toast } = useToast();
   const { webshop } = useContext(ThemeContext);
   const [newAregados, setNewAgregados] = useState({
     moneda: "",
@@ -74,11 +73,7 @@ export default function Configuracion({ ThemeContext, country }) {
       });
       setNewAgregados({ moneda: "", valor: 0 });
     } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Faltan datos",
-      });
+      toast.error("Faltan datos");
     }
   }
 

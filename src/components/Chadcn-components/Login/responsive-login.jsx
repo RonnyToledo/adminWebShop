@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import IllustrationLogin from "../../icons/IllustrationLogin";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import Loading from "../../component/loading";
 
 export function ResponsiveLogin({ user }) {
@@ -19,7 +19,6 @@ export function ResponsiveLogin({ user }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (user && user !== undefined) {

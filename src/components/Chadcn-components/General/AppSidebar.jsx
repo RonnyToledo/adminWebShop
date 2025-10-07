@@ -45,7 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoApp } from "@/utils/image";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -71,7 +71,6 @@ const iconMap = {
 export default function AppSidebar({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
   const pathname = usePathname();
-  const { toast } = useToast();
   const router = useRouter();
 
   const Log_Out = async () => {
@@ -83,19 +82,11 @@ export default function AppSidebar({ ThemeContext }) {
       if (res.ok) {
         router.refresh();
       } else {
-        toast({
-          title: "Error",
-          variant: "destructive",
-          description: "Error Cerrando Sesion",
-        });
+        toast.error("Error Cerrando Sesion");
       }
     } catch (error) {
       console.error("Error en la respuesta:", error);
-      toast({
-        title: "Error",
-        variant: "destructive",
-        description: `error: ${error.message}`,
-      });
+      toast.error(`error: ${error.message}`);
     }
   };
 

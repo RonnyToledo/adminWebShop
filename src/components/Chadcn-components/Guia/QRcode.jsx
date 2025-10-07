@@ -1,4 +1,3 @@
-import { useToast } from "@/components/ui/use-toast";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -7,7 +6,6 @@ import { useQRCode } from "next-qrcode";
 
 export default function QrCode({ value2, name }) {
   const { Image } = useQRCode();
-  const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const svgRef = useRef(null);
   const url = `https://roumenu.vercel.app/t/${value2}`;

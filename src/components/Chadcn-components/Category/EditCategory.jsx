@@ -7,8 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import axios from "axios";
 import { logoApp } from "@/utils/image";
 
@@ -26,7 +25,6 @@ export default function EditCategory({ ThemeContext, uid }) {
   const form = useRef(null);
   const [newImage, setNewImage] = useState();
   const [downloading, setDownloading] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     setcategory((webshop?.store?.categoria || []).find((obj) => obj.id == uid));
@@ -60,13 +58,7 @@ export default function EditCategory({ ThemeContext, uid }) {
         }
       );
       if (res.status == 200) {
-        toast({
-          title: "Tarea Ejecutada",
-          description: "Informacion Actualizada",
-          action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-          ),
-        });
+        toast("Categoria Actulizada correctamente");
         setWebshop({
           ...webshop,
           store: {
@@ -80,11 +72,7 @@ export default function EditCategory({ ThemeContext, uid }) {
       }
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar la configuracion.",
-      });
+      toast.error("No se pudo actualizar la configuracion.");
     } finally {
       setDownloading(false);
     }

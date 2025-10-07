@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Building2,
   Mail,
@@ -284,21 +284,15 @@ export function CrearClienteComponent({
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (result.status === 200 || result.status === 201) {
-        toast({
-          title: "Éxito al crear su tienda, ya puede empezar a trabajar",
-          description: result?.data?.success || "",
-        });
+        toast(`Éxito al crear su tienda, ya puede empezar a trabajar
+          ${result?.data?.success || ""}`);
         router.push("/");
         form.reset();
         setLoadingGeneral(true);
         setCurrentStep(0);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error?.message || "Ocurrió un error al crear el cliente",
-        variant: "destructive",
-      });
+      toast.error(error?.message || "Ocurrió un error al crear el cliente");
     } finally {
       setIsSubmitting(false);
     }

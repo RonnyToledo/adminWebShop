@@ -10,8 +10,7 @@ import {
 } from "@/components/ui/card";
 import React, { useContext } from "react";
 import { Input } from "@/components/ui/input";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import QrCode from "@/components/Chadcn-components/Guia/QRcode";
 import { ThemeContext } from "@/context/useContext";
 import { CopyIcon } from "lucide-react";
@@ -48,29 +47,15 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
 };
 
 export default function Guia() {
-  const { toast } = useToast();
   const { webshop, setWebshop } = useContext(ThemeContext);
 
   const copyToClipboard = (text) => {
     if (navigator?.clipboard) {
       try {
         navigator.clipboard.writeText(text);
-        toast({
-          title: "Alerta",
-          description: "Texto copiado al portpapeles",
-          action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-          ),
-        });
+        toast.info("Texto copiado al portpapeles");
       } catch (err) {
-        toast({
-          variant: "destructive",
-          title: "Alerta",
-          description: "Error al copiar texto: " + err,
-          action: (
-            <ToastAction altText="Goto schedule to undo">Cerrar</ToastAction>
-          ),
-        });
+        toast(`Error al copiar texto: ${err.message}`);
       }
     }
   };
