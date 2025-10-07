@@ -276,7 +276,8 @@ export async function PUT(req) {
       );
     }
 
-    return NextResponse.json({ user: data.user }, { status: 200 });
+    await supabase.auth.signOut();
+    return NextResponse.json({ message: "Cuenta creada" }, { status: 200 });
   } catch (err) {
     console.error("Fallo de red al conectar con Supabase:", err);
     return NextResponse.json(
