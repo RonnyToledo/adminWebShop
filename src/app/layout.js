@@ -24,7 +24,9 @@ export default async function AdminLayout({ children }) {
   const user = userSession?.user?.user?.id;
 
   if (user) console.info("Usuario recivido");
-  else console.error("usuario no encontrado");
+  else {
+    console.warn("No hay usuario, redirigiendo a login");
+  }
   const data = await initializeData(userSession?.user?.user?.id);
 
   return (

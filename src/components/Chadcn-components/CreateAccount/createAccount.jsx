@@ -172,35 +172,6 @@ export default function CreateAccount() {
     }
   };
 
-  // Intentos con backoff para signUp
-  const signUpWithRetries = async (payload, attempts = 3) => {
-    let lastErr = null;
-    for (let i = 0; i < attempts; i++) {
-      try {
-        const { data, error } = await supabase.auth.signUp(payload);
-        if (error) throw error;
-        return { data, error: null };
-      } catch (err) {
-        lastErr = err;
-        // si es error no-retry, romper (p.e. validation)
-        const msg = String(err?.message || err);
-        // reintentar solo para errores de red/timeout
-        if (
-          /timeout|504|network|ECONNABORTED|AuthRetryableFetchError/i.test(
-            msg
-          ) &&
-          i < attempts - 1
-        ) {
-          await new Promise((r) => setTimeout(r, 500 * (i + 1)));
-          continue;
-        } else {
-          throw err;
-        }
-      }
-    }
-    throw lastErr;
-  };
-
   const performSignup = async () => {
     // validaciones cliente
     if (!email) throw new Error("Ingresa un email válido.");
@@ -239,40 +210,22 @@ export default function CreateAccount() {
 
     // NO loggear contraseñas!!
     console.info("Creando cuenta para:", email);
-
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("name", name);
+    if (imagePayload) formData.append("image", imagePayload);
     // Preparar payload según supabase-js v2
-    const payload = {
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          ...(imagePayload
-            ? { avatar_url: imagePayload, picture: imagePayload }
-            : {}),
-        },
-      },
-    };
-
-    // Intentar signUp con reintentos ante timeouts transitorios
-    const { data, error } = await signUpWithRetries(payload, 3);
-    if (error) throw error;
-
-    const userId = data?.user?.id ?? null;
-    if (!userId) {
-      return {
-        userId: null,
-        message: imagePayload
-          ? "Revisa tu correo para confirmar la cuenta. (La imagen se añadió a los metadatos.)"
-          : "Revisa tu correo para confirmar la cuenta.",
-      };
+    const res = await axios.put("api/login", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    if (!res?.data) {
+      throw new Error("No se recibió respuesta del servidor.");
     }
-    return {
-      userId,
-      message: imagePayload
-        ? "Cuenta creada correctamente. Imagen incluida en metadata."
-        : "Cuenta creada correctamente.",
-    };
+    if (res.status == 200 || res.status == 201) {
+      router.push("/login");
+    }
+    console.log("Respuesta signup:", res.data);
   };
 
   const handleSignup = async (e) => {

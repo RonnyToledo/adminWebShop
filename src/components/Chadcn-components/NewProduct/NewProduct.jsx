@@ -44,12 +44,27 @@ export default function NewProduct({ ThemeContext }) {
       toast.error(
         "Configuración de tienda incompleta. Revisa los datos de la tienda."
       );
-      return;
+      throw new Error(
+        "Configuración de tienda incompleta. Revisa los datos de la tienda."
+      );
     }
-
     if (!products?.title || products.title.trim() === "") {
       toast.error("El producto necesita un título.");
-      return;
+      throw new Error("El producto necesita un título.");
+    }
+    if (!products?.price || isNaN(products.price) || products.price < 0) {
+      toast.error("El producto necesita un precio válido.");
+      throw new Error("El producto necesita un precio válido.");
+    }
+    if (!products?.caja || products.title.trim() === "") {
+      toast.error("Se necesita selecconar una categoría.");
+      throw new Error("Se necesita selecconar una categoría.");
+    }
+    if (products.priceCompra > products.price) {
+      toast.error("El precio de compra no puede ser mayor al precio de venta.");
+      throw new Error(
+        "El precio de compra no puede ser mayor al precio de venta."
+      );
     }
     const imagesecondary = products?.imagesecondary.filter(
       (obj) => obj !== logoApp
@@ -172,6 +187,11 @@ export default function NewProduct({ ThemeContext }) {
       return res;
     } catch (err) {
       // El toast ya ha mostrado el error; log para debug
+      toast.error(
+        err?.response?.data?.message ??
+          err?.message ??
+          "No se pudo crear el producto"
+      );
       console.error("Error al crear producto:", err);
     }
   };

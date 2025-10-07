@@ -224,15 +224,27 @@ export async function POST(req) {
 }
 
 export async function PUT(req) {
-  let body;
+  let data;
   try {
-    body = await req.json();
-  } catch {
-    console.error("No se pudo parsear el JSON del body");
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+    data = await req.formData();
+  } catch (e) {
+    console.error("Error parsing form data:", e);
+    return NextResponse.json(
+      { error: e.message || "JSON inválido" },
+      { status: 400 }
+    );
   }
+  const email = data.get("email");
+  const full_name = data.get("name");
+  const password = data.get("password");
+  const image = data.get("image");
 
-  const { email, password, name: full_name, image } = body;
+  if (!email || !password) {
+    return NextResponse.json(
+      { error: "Email y contraseña son requeridos" },
+      { status: 400 }
+    );
+  }
 
   if (!email || !password || !full_name) {
     console.error("Faltan campos:", { email, password, full_name });
@@ -242,18 +254,26 @@ export async function PUT(req) {
     );
   }
 
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name, image: image || "" },
+  const payload = {
+    email,
+    password,
+    options: {
+      data: {
+        full_name,
+        ...(image ? { avatar_url: image, picture: image } : {}),
       },
-    });
+    },
+  };
+
+  try {
+    const { data, error } = await supabase.auth.signUp(payload);
 
     if (error) {
       console.error("Error detallado de Supabase.signUp:", error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json(
+        { error: `Error detallado de Supabase.signUp:${error.message}` },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ user: data.user }, { status: 200 });
