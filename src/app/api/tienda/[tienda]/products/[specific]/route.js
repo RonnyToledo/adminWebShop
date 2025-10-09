@@ -105,6 +105,7 @@ export async function PUT(request, { params }) {
     _productid: data.get("Id"),
     _title: data.get("title"),
     _price: Number(data.get("price") ?? 0),
+    _default_moneda: Number(data.get("default_moneda") ?? 0),
     _pricecompra: Number(data.get("priceCompra") ?? 0),
     _caja: data.get("caja"),
     _venta: data.get("venta") === "true",

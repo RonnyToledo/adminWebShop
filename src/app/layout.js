@@ -57,8 +57,6 @@ export const initializeData = async (userId) => {
 
     const tiendaParsed = {
       ...store?.Sitios,
-      moneda: JSON.parse(store?.Sitios?.moneda),
-      moneda_default: JSON.parse(store?.Sitios?.moneda_default),
       horario: JSON.parse(store?.Sitios?.horario),
       categoria: store?.Sitios?.categorias.sort((a, b) => a.order - b.order),
       envios: JSON.parse(store?.Sitios?.envios),

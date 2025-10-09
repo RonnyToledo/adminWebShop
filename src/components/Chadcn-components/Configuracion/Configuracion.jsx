@@ -4,10 +4,11 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
 import { InputStore, SelectStore, SwitchStore } from "./Input-Store";
 import { Instagram, Phone, Mail, Wallet } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
   CardContent,
@@ -34,7 +35,7 @@ import { toast } from "sonner";
 
 export default function Configuracion({ ThemeContext, country }) {
   const { webshop } = useContext(ThemeContext);
-  const [newAregados, setNewAgregados] = useState({
+  const [newAgregados, setNewAgregados] = useState({
     moneda: "",
     valor: 0,
   });
@@ -42,8 +43,7 @@ export default function Configuracion({ ThemeContext, country }) {
   const [store, setStore] = useState({
     comentario: [],
     categoria: [],
-    moneda: [],
-    moneda_default: {},
+    monedas: [],
     horario: [],
     envios: [],
   });
@@ -52,28 +52,83 @@ export default function Configuracion({ ThemeContext, country }) {
     setStore(webshop?.store);
   }, [webshop.store]);
 
-  function MonedaDefault(value) {
-    const [h] = store?.moneda.filter((obj) => obj.moneda == value);
-    setStore({
-      ...store,
-      moneda_default: h,
-      moneda: store?.moneda.map((obj) => {
-        return {
-          ...obj,
-          valor: redondearAMultiploDe5(obj.valor / h.valor),
-        };
-      }),
-    });
+  // value for RadioGroup must be string; keep derived selectedId string
+  const selectedIdStr = useMemo(
+    () =>
+      String(
+        webshop?.store?.monedas.find((m) => m.defecto)?.id ??
+          monedas[0]?.id ??
+          ""
+      ),
+    [webshop?.store?.monedas]
+  );
+
+  const [localNew, setLocalNew] = useState({
+    nombre: newAgregados?.moneda ?? "",
+    valor: String(newAgregados?.valor ?? ""),
+  });
+
+  function setDefaultById(id) {
+    const updated = (webshop?.store?.monedas || []).map((m) => ({
+      ...m,
+      defecto: m.id === id,
+    }));
+    setStore({ ...(store ?? {}), monedas: updated });
   }
-  function AddRate() {
-    if (newAregados.moneda && newAregados.valor) {
-      setStore({
-        ...store,
-        moneda: Array.from(new Set([...store?.moneda, newAregados])),
-      });
-      setNewAgregados({ moneda: "", valor: 0 });
-    } else {
-      toast.error("Faltan datos");
+
+  function updateValor(id, raw) {
+    const valor = Number(raw) || 0;
+    const updated = (webshop?.store?.monedas || []).map((m) =>
+      m.id === id ? { ...m, valor } : m
+    );
+    setStore({ ...(store ?? {}), monedas: updated });
+  }
+
+  function deleteMoneda(id) {
+    const filtered = (webshop?.store?.monedas || []).filter((m) => m.id !== id);
+    // if we removed the defecto one, ensure first becomes defecto
+    const hadDefectoRemoved = monedas.some((m) => m.id === id && m.defecto);
+    let normalized = filtered;
+    if (
+      hadDefectoRemoved &&
+      normalized.length > 0 &&
+      !normalized.some((m) => m.defecto)
+    ) {
+      normalized = normalized.map((m, i) => ({ ...m, defecto: i === 0 }));
+    }
+    setStore({ ...(store ?? {}), monedas: normalized });
+  }
+
+  function handleAddLocal() {
+    const nombre = (localNew.nombre || "").trim();
+    const valor = Number(localNew.valor || 0);
+    if (!nombre || !isFinite(valor) || valor <= 0) return;
+
+    // generate a temporary unique id (if your DB returns real id, replace after save)
+    const newId = Date.now(); // safe enough for client-side unique id
+
+    const newMon = {
+      id: newId,
+      nombre,
+      valor,
+      ui_store: store?.UUID ?? undefined,
+      defecto: monedas.length === 0, // if first currency, set as default
+    };
+
+    const updated = [...(monedas || []), newMon];
+    // ensure only one defecto
+    const normalized = updated.map((m, i) => ({
+      ...m,
+      defecto: m.defecto ? true : i === 0 && !updated.some((x) => x.defecto),
+    }));
+    setStore({ ...(store ?? {}), monedas: normalized });
+
+    // reset local form
+    setLocalNew({ nombre: "", valor: "" });
+
+    // optionally call external AddRate to persist server-side
+    if (AddRate) {
+      AddRate({ nombre, valor });
     }
   }
 
@@ -299,129 +354,112 @@ export default function Configuracion({ ThemeContext, country }) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="defaultCurrency">Default Currency</Label>
-                  <SelectStore
-                    title={"Seleccione la moneda por defecto"}
-                    array={store?.moneda}
-                    icon={<Wallet className="w-4 h-4 mr-2" />}
-                    onSelectChange={MonedaDefault} // cambio aquí
-                    placeholder={store?.moneda_default.moneda}
-                    value={"moneda"}
-                  />
-                  <p className="text-sm text-muted-foreground">
+                <div>
+                  <Label className="mb-2">Default Currency</Label>
+
+                  <RadioGroup
+                    value={selectedIdStr}
+                    onValueChange={(val) => {
+                      const id = Number(val);
+                      if (!isNaN(id)) setDefaultById(id);
+                    }}
+                    className="space-y-2"
+                  >
+                    {webshop?.store?.monedas.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        No currencies defined
+                      </div>
+                    ) : (
+                      webshop?.store?.monedas.map((m) => (
+                        <div
+                          key={m.id}
+                          className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
+                        >
+                          <div className="flex items-center gap-3">
+                            <RadioGroupItem
+                              value={String(m.id)}
+                              id={`mon-${m.id}`}
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {m.nombre}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {m.defecto ? "Default" : ""}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={m.valor}
+                              onChange={(e) =>
+                                updateValor(m.id, e.target.value)
+                              }
+                              className="w-28"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                deleteMoneda(m.id);
+                              }}
+                              aria-label={`Eliminar moneda ${m.nombre}`}
+                            >
+                              🗑
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </RadioGroup>
+
+                  <p className="text-sm text-muted-foreground mt-2">
                     Select the default currency for your products
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {store?.moneda
-                    .filter(
-                      (obj) => obj.moneda !== store?.moneda_default.moneda
-                    )
-                    .map((obj, ind) => (
-                      <div className="space-y-2" key={ind}>
-                        <Label htmlFor="exchangeRateUSD">{`${obj.moneda} Rate`}</Label>
-                        <div className="flex">
-                          <Input
-                            id="title"
-                            name="title"
-                            required
-                            type="number"
-                            value={obj.valor}
-                            onChange={(e) => {
-                              const h = store?.moneda.map((mon) =>
-                                mon.moneda == obj.moneda
-                                  ? {
-                                      valor: Number(e.target.value),
-                                      moneda: obj.moneda,
-                                    }
-                                  : mon
-                              );
-                              setStore({ ...store, moneda: h });
-                            }}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-foreground"
-                            onClick={(e) => {
-                              e.preventDefault();
+                {/* inline add currency */}
+                <div className="pt-4 border-t">
+                  <Label className="mb-2">Agregar Moneda</Label>
+                  <div className="grid grid-cols-3 gap-3 items-end">
+                    <div className="flex-1">
+                      <Label className="text-sm">Moneda</Label>
+                      <Input
+                        value={localNew.nombre}
+                        onChange={(e) =>
+                          setLocalNew((s) => ({ ...s, nombre: e.target.value }))
+                        }
+                        placeholder="Ej. USD"
+                      />
+                    </div>
 
-                              setStore({
-                                ...store,
-                                moneda: store?.moneda.filter(
-                                  (fil) => fil.moneda != obj.moneda
-                                ),
-                              });
-                            }}
-                          >
-                            <TrashIcon className="h-5 w-5 text-red-700" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="m-1 p-1 col-span-2">
-                        Agregar Moneda
-                        <PlusIcon className="h-5 w-5" />
+                    <div>
+                      <Label className="text-sm">Tasa</Label>
+                      <Input
+                        type="number"
+                        value={localNew.valor}
+                        onChange={(e) =>
+                          setLocalNew((s) => ({ ...s, valor: e.target.value }))
+                        }
+                        placeholder="Ej. 370"
+                      />
+                    </div>
+
+                    <div>
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleAddLocal();
+                        }}
+                      >
+                        Agregar
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Agregar moneda</DialogTitle>
-                        <DialogDescription></DialogDescription>
-                      </DialogHeader>
-                      <div className="space-x-6 flex flex-cols items-center justify-between mt-3">
-                        <div>
-                          <Label
-                            htmlFor="new-subcategory"
-                            className="text-base font-medium"
-                          >
-                            Moneda
-                          </Label>
-                          <Input
-                            id="title"
-                            name="title"
-                            value={newAregados?.moneda}
-                            type="text"
-                            onChange={(e) =>
-                              setNewAgregados({
-                                ...newAregados,
-                                moneda: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="new-subcategory"
-                            className="text-base font-medium"
-                          >
-                            Tasa
-                          </Label>
-                          <Input
-                            id="value"
-                            name="value"
-                            value={newAregados?.valor}
-                            type="number"
-                            onChange={(e) =>
-                              setNewAgregados({
-                                ...newAregados,
-                                valor: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button type="button" onClick={AddRate}>
-                          Save changes
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

@@ -160,7 +160,7 @@ export default function MyProvider({ children, user, data }) {
       supabase.removeChannel(channel);
     };
   }, [user, toast]);
-
+  console.log(webshop);
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>

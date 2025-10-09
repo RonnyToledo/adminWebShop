@@ -521,7 +521,16 @@ export function ProductManagementSystem() {
                                           )}
                                         </p>
                                         <p className="text-sm text-primary text-gray-800">
-                                          ${product.price.toFixed(2)}
+                                          ${product.price.toFixed(2)} -{" "}
+                                          {webshop?.store?.monedas.find(
+                                            (currency) =>
+                                              currency.id ==
+                                              product?.default_moneda
+                                          )?.nombre ??
+                                            webshop?.store?.monedas.find(
+                                              (currency) => currency.defecto
+                                            )?.nombre ??
+                                            ""}
                                         </p>
                                       </div>
 

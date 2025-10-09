@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useState, useCallback } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,15 +35,33 @@ export function ProductEditForm({
   const { webshop } = useContext(ThemeContext);
   const [newTag, setNewTag] = useState("");
   const [deleteOriginal, setDeleteOriginal] = useState(false);
+  const [selectedMoneda, setSelectedMoneda] = useState("");
 
   const updateProduct = (field, value) => {
     onProductChange({ ...product, [field]: value });
   };
 
+  useEffect(() => {
+    // cuando product carga, sincronizamos
+    if (
+      product?.default_moneda !== undefined &&
+      product?.default_moneda !== null
+    ) {
+      setSelectedMoneda(
+        webshop?.store?.monedas.find(
+          (currency) => currency.id == product?.default_moneda
+        )?.id
+          ? product?.default_moneda
+          : webshop?.store?.monedas.find((currency) => currency.defecto)
+              ?.nombre ?? ""
+      );
+    }
+  }, [product?.default_moneda]);
+
   const addTag = () => {
-    if (newTag.trim() && !product.caracteristicas.includes(newTag.trim())) {
+    if (newTag.trim() && !product?.caracteristicas.includes(newTag.trim())) {
       updateProduct("caracteristicas", [
-        ...product.caracteristicas,
+        ...product?.caracteristicas,
         newTag.trim(),
       ]);
       setNewTag("");
@@ -55,7 +73,7 @@ export function ProductEditForm({
   const removeTag = (tagToRemove) => {
     updateProduct(
       "caracteristicas",
-      product.caracteristicas.filter((tag) => tag !== tagToRemove)
+      product?.caracteristicas.filter((tag) => tag !== tagToRemove)
     );
   };
 
@@ -65,18 +83,18 @@ export function ProductEditForm({
       name: "",
       price: 0,
     };
-    updateProduct("agregados", [...product.agregados, newAddon]);
+    updateProduct("agregados", [...product?.agregados, newAddon]);
   };
 
   const updateAddon = (addonId, field, value) => {
-    const updatedAddons = product.agregados.map((addon) =>
+    const updatedAddons = product?.agregados.map((addon) =>
       addon.id === addonId ? { ...addon, [field]: value } : addon
     );
     updateProduct("agregados", updatedAddons);
   };
 
   const removeAddon = (addonId) => {
-    const filteredAddons = product.agregados.filter(
+    const filteredAddons = product?.agregados.filter(
       (addon) => addon.id !== addonId
     );
     updateProduct("agregados", filteredAddons);
@@ -103,6 +121,11 @@ export function ProductEditForm({
     });
   }, []);
 
+  console.log(
+    webshop?.store?.monedas.find(
+      (currency) => currency.id == product?.default_moneda
+    )?.nombre
+  );
   return (
     <div className="grid grid-cols-2 gap-1">
       {/* Basic Information */}
@@ -115,7 +138,7 @@ export function ProductEditForm({
             <Label htmlFor="title">Título del Producto</Label>
             <Input
               id="title"
-              value={product.title}
+              value={product?.title}
               onChange={(e) => updateProduct("title", e.target.value)}
               placeholder="Nombre del producto"
             />
@@ -125,7 +148,7 @@ export function ProductEditForm({
             <Label htmlFor="descripcion">Descripción</Label>
             <Textarea
               id="descripcion"
-              value={product.descripcion}
+              value={product?.descripcion}
               onChange={(e) => updateProduct("descripcion", e.target.value)}
               placeholder="Describe tu producto..."
               rows={4}
@@ -135,7 +158,7 @@ export function ProductEditForm({
           <div>
             <Label htmlFor="category">Categoría</Label>
             <Select
-              value={product.caja}
+              value={product?.caja}
               onValueChange={(value) => updateProduct("caja", value)}
             >
               <SelectTrigger>
@@ -259,7 +282,7 @@ export function ProductEditForm({
                 id="price"
                 type="number"
                 step="0.01"
-                value={product.price}
+                value={product?.price}
                 onChange={(e) =>
                   updateProduct("price", Number.parseFloat(e.target.value) || 0)
                 }
@@ -271,7 +294,7 @@ export function ProductEditForm({
                 id="purchasePrice"
                 type="number"
                 step="0.01"
-                value={product.priceCompra}
+                value={product?.priceCompra}
                 onChange={(e) =>
                   updateProduct(
                     "priceCompra",
@@ -286,7 +309,7 @@ export function ProductEditForm({
                 id="embalaje"
                 type="number"
                 step="0.01"
-                value={product.embalaje}
+                value={product?.embalaje}
                 onChange={(e) =>
                   updateProduct(
                     "embalaje",
@@ -302,7 +325,7 @@ export function ProductEditForm({
                   id="stock"
                   type="number"
                   step="1"
-                  value={product.stock}
+                  value={product?.stock}
                   onChange={(e) =>
                     updateProduct(
                       "stock",
@@ -315,20 +338,41 @@ export function ProductEditForm({
               <div className="gap-2">
                 <Label>Producto en Stock</Label>
                 <Switch
-                  checked={product.stock}
+                  checked={product?.stock}
                   onCheckedChange={() =>
-                    updateProduct("stock", product.stock ? 0 : 1)
+                    updateProduct("stock", product?.stock ? 0 : 1)
                   }
                 />
               </div>
             )}
 
             <div className="gap-2">
+              <Label>Moneda de Venta</Label>
+              <Select
+                value={selectedMoneda}
+                onValueChange={(v) => {
+                  setSelectedMoneda(v);
+                  updateProduct("default_moneda", v); // si quieres persistir inmediatamente
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una moneda" />
+                </SelectTrigger>
+                <SelectContent>
+                  {webshop?.store?.monedas.map((currency) => (
+                    <SelectItem key={currency.id} value={currency.id}>
+                      {currency.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="gap-2 flex flex-col items-start">
               <Label>Visible en Tienda</Label>
               <Switch
-                checked={product.visible}
+                checked={product?.visible}
                 onCheckedChange={() =>
-                  updateProduct("visible", !product.visible)
+                  updateProduct("visible", !product?.visible)
                 }
               />
             </div>
@@ -414,16 +458,16 @@ export function ProductEditForm({
             <div className="flex flex-col gap-2">
               <Label>Doble espacio</Label>
               <Switch
-                checked={product.span}
-                onCheckedChange={() => updateProduct("visible", !product.span)}
+                checked={product?.span}
+                onCheckedChange={() => updateProduct("visible", !product?.span)}
               />
             </div>
 
             <div className="flex flex-col  gap-2">
               <Label>Producto de venta</Label>
               <Switch
-                checked={product.venta}
-                onCheckedChange={() => updateProduct("venta", !product.venta)}
+                checked={product?.venta}
+                onCheckedChange={() => updateProduct("venta", !product?.venta)}
               />
             </div>
           </div>
@@ -431,7 +475,7 @@ export function ProductEditForm({
           <div>
             <Label>Etiquetas</Label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {product.caracteristicas.map((tag) => (
+              {product?.caracteristicas.map((tag) => (
                 <Badge
                   key={tag}
                   variant="secondary"

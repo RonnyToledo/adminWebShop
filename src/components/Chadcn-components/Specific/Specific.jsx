@@ -25,6 +25,8 @@ const defaultProduct = {
   caracteristicas: [],
   oldPrice: "",
   priceCompra: 0,
+  default_moneda: "",
+
   // añade aquí otras propiedades que uses en los inputs
 };
 
@@ -111,6 +113,7 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("favorito", String(favorito));
       formData.append("stock", String(stock));
       formData.append("creado", String(products.creado ?? ""));
+      formData.append("default_moneda", String(products.default_moneda ?? ""));
       formData.append(
         "storeId",
         String(products.storeId ?? webshop?.store?.UUID ?? "")

@@ -22,6 +22,7 @@ const initialCase = {
   price: 0,
   embalaje: 0,
   agregados: [],
+  default_moneda: "",
 };
 export default function NewProduct({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -76,6 +77,7 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("price", String(products.price ?? ""));
     formData.append("visible", String(products.visible ?? ""));
     formData.append("UID", String(webshop?.store?.UUID));
+    formData.append("default_moneda", String(webshop?.store?.default_moneda));
     formData.append("order", String(10000));
     formData.append("stock", String(products.stock));
     formData.append("oldPrice", String(products.oldPrice ?? ""));
@@ -203,7 +205,12 @@ export default function NewProduct({ ThemeContext }) {
   return (
     <main className=" mx-auto  px-4 sm:px-6 lg:px-8 ">
       <ProductEditForm
-        product={products}
+        product={{
+          ...products,
+          default_moneda:
+            webshop?.store?.monedas.find((currency) => currency.defecto)?.id ??
+            "",
+        }}
         isCreating={true}
         onProductChange={setProducts}
         newImage={newImage}

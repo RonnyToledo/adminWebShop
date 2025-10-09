@@ -91,6 +91,7 @@ export async function POST(request, { params }) {
   const payload = {
     _title: data.get("title") || "",
     _price: Number(data.get("price") ?? 0),
+    _default_moneda: Number(data.get("default_moneda") ?? 0),
     _pricecompra: Number(data.get("priceCompra") ?? 0),
     _caja: data.get("caja"), // uuid o null
     _venta: data.get("venta") === "true", // checkbox-like value
