@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useContext, useMemo } from "react";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
-import { InputStore, SelectStore, SwitchStore } from "./Input-Store";
-import { Instagram, Phone, Mail, Wallet } from "lucide-react";
+import { InputStore, SwitchStore } from "./Input-Store";
+import { Instagram, Phone, Mail } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
@@ -17,16 +17,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FromData } from "@/components/globalFunction/fromData";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import ProfileHeader from "./profile-header";
 import WeeklyAvailability from "@/components/Chadcn-components/Configuracion/WeeklyAvailability";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +29,7 @@ export default function Configuracion({ ThemeContext, country }) {
     moneda: "",
     valor: 0,
   });
-
+  console.log(webshop);
   const [store, setStore] = useState({
     comentario: [],
     categoria: [],
@@ -51,16 +41,13 @@ export default function Configuracion({ ThemeContext, country }) {
   useEffect(() => {
     setStore(webshop?.store);
   }, [webshop.store]);
-
   // value for RadioGroup must be string; keep derived selectedId string
   const selectedIdStr = useMemo(
     () =>
       String(
-        webshop?.store?.monedas.find((m) => m.defecto)?.id ??
-          monedas[0]?.id ??
-          ""
+        store?.monedas.find((m) => m.defecto)?.id ?? store?.monedas[0]?.id ?? ""
       ),
-    [webshop?.store?.monedas]
+    [store?.monedas]
   );
 
   const [localNew, setLocalNew] = useState({
@@ -78,17 +65,35 @@ export default function Configuracion({ ThemeContext, country }) {
 
   function updateValor(id, raw) {
     const valor = Number(raw) || 0;
-    const updated = (webshop?.store?.monedas || []).map((m) =>
+    const updated = (store?.monedas || []).map((m) =>
       m.id === id ? { ...m, valor } : m
     );
     setStore({ ...(store ?? {}), monedas: updated });
   }
 
   function deleteMoneda(id) {
-    const filtered = (webshop?.store?.monedas || []).filter((m) => m.id !== id);
+    const filtered = (store?.monedas || []).filter((m) => m.id !== id);
+
+    if ((store?.monedas || []).find((m) => m.id == id)?.defecto) {
+      toast.error("No puedes eliminar la moneda por defecto");
+      return;
+    }
+    if (filtered.length === 0) {
+      toast.error("No te puedes quedar sin monedas");
+      return;
+    }
+    if (
+      webshop?.products.filter((prod) => prod.default_moneda == id).length > 0
+    ) {
+      toast.error("Estas vendiendo productos en esta moneda");
+      return;
+    }
     // if we removed the defecto one, ensure first becomes defecto
-    const hadDefectoRemoved = monedas.some((m) => m.id === id && m.defecto);
+    const hadDefectoRemoved = store?.monedas.some(
+      (m) => m.id === id && m.defecto
+    );
     let normalized = filtered;
+
     if (
       hadDefectoRemoved &&
       normalized.length > 0 &&
@@ -102,34 +107,35 @@ export default function Configuracion({ ThemeContext, country }) {
   function handleAddLocal() {
     const nombre = (localNew.nombre || "").trim();
     const valor = Number(localNew.valor || 0);
-    if (!nombre || !isFinite(valor) || valor <= 0) return;
+    if (!nombre || !isFinite(valor) || valor <= 0) {
+      toast.error("Faltan datos");
+      return;
+    }
 
-    // generate a temporary unique id (if your DB returns real id, replace after save)
-    const newId = Date.now(); // safe enough for client-side unique id
+    if (store?.monedas.some((obj) => obj.nombre == nombre)) {
+      toast.error("Ya existe dicha moneda");
+      return;
+    }
 
+    // uso en tu código:
+    const newId = getFirstAvailableId(store?.monedas ?? []);
     const newMon = {
       id: newId,
       nombre,
       valor,
       ui_store: store?.UUID ?? undefined,
-      defecto: monedas.length === 0, // if first currency, set as default
+      defecto: store?.monedas.length === 0, // if first currency, set as default
     };
 
-    const updated = [...(monedas || []), newMon];
+    const updated = [...(store?.monedas || []), newMon];
     // ensure only one defecto
     const normalized = updated.map((m, i) => ({
       ...m,
       defecto: m.defecto ? true : i === 0 && !updated.some((x) => x.defecto),
     }));
     setStore({ ...(store ?? {}), monedas: normalized });
-
     // reset local form
     setLocalNew({ nombre: "", valor: "" });
-
-    // optionally call external AddRate to persist server-side
-    if (AddRate) {
-      AddRate({ nombre, valor });
-    }
   }
 
   return (
@@ -365,12 +371,12 @@ export default function Configuracion({ ThemeContext, country }) {
                     }}
                     className="space-y-2"
                   >
-                    {webshop?.store?.monedas.length === 0 ? (
+                    {store?.monedas.length === 0 ? (
                       <div className="text-sm text-muted-foreground">
                         No currencies defined
                       </div>
                     ) : (
-                      webshop?.store?.monedas.map((m) => (
+                      store?.monedas.map((m) => (
                         <div
                           key={m.id}
                           className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
@@ -429,8 +435,15 @@ export default function Configuracion({ ThemeContext, country }) {
                       <Label className="text-sm">Moneda</Label>
                       <Input
                         value={localNew.nombre}
+                        maxLength={4}
+                        minLength={2}
+                        pattern="[A-Za-z]{4}"
+                        title="Debe contener exactamente 4 letras"
                         onChange={(e) =>
-                          setLocalNew((s) => ({ ...s, nombre: e.target.value }))
+                          setLocalNew((s) => ({
+                            ...s,
+                            nombre: e.target.value.toLocaleUpperCase(),
+                          }))
                         }
                         placeholder="Ej. USD"
                       />
@@ -537,3 +550,9 @@ const TextAreaInput = ({ label, value, onChange }) => (
     <Textarea value={value} rows={5} onChange={onChange} />
   </div>
 );
+function getFirstAvailableId(monedas) {
+  const used = new Set((monedas || []).map((m) => Number(m.id)));
+  let candidate = 1;
+  while (used.has(candidate)) candidate++;
+  return candidate;
+}

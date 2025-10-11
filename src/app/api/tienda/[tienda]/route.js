@@ -5,6 +5,7 @@ import {
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
 import { cookies } from "next/headers"; // Importar cookies desde headers
+import { diffArrays } from "@/components/globalFunction/diferenciasDeArray";
 
 const LogUser = async () => {
   const cookie = (await cookies()).get("sb-access-token");
@@ -78,37 +79,40 @@ export async function PUT(request, { params }) {
     NewBanner = data.get("banner");
   }
 
+  await syncMonedasForStore(data.get("UUID"), JSON.parse(data.get("monedas")));
+
+  const payload = {
+    name: data.get("name"),
+    parrrafo: data.get("parrrafo"),
+    horario: data.get("horario"),
+    urlPoster: NewPoster,
+    banner: NewBanner,
+    act_tf: data.get("act_tf") == "true",
+    stocks: data.get("stocks") == "true",
+    local: data.get("local"),
+    cell: data.get("cell"),
+    email: data.get("email"),
+    insta: data.get("insta"),
+    country: data.get("country"),
+    Provincia: data.get("Provincia"),
+    municipio: data.get("municipio"),
+    domicilio: data.get("domicilio") == "true",
+    history: data.get("history"),
+    envios: data.get("envios"),
+    edit: data.get("edit"),
+    redes: JSON.parse(data.get("redes") || "[]"),
+    contacto: JSON.parse(data.get("contacto") || "[]"),
+  };
   //Preparando nueva Imagen
   const { data: tienda, error } = await supabase
     .from("Sitios")
-    .update([
-      {
-        name: data.get("name"),
-        parrrafo: data.get("parrrafo"),
-        horario: data.get("horario"),
-        urlPoster: NewPoster,
-        banner: NewBanner,
-        act_tf: data.get("act_tf"),
-        stocks: data.get("stocks"),
-        local: data.get("local"),
-        cell: data.get("cell"),
-        email: data.get("email"),
-        insta: data.get("insta"),
-        country: data.get("country"),
-        Provincia: data.get("Provincia"),
-        municipio: data.get("municipio"),
-        domicilio: data.get("domicilio"),
-        history: data.get("history"),
-        moneda_default: data.get("moneda_default"),
-        moneda: data.get("moneda"),
-        envios: data.get("envios"),
-        edit: data.get("edit"),
-        redes: JSON.parse(data.get("redes") || "[]"),
-        contacto: JSON.parse(data.get("contacto") || "[]"),
-      },
-    ])
+    .update([payload])
     .eq("sitioweb", sitioweb)
-    .select();
+    .select("* ,monedas(*)")
+    .single();
+
+  console.log(tienda);
+
   if (error) {
     console.error(error);
 
@@ -120,5 +124,79 @@ export async function PUT(request, { params }) {
     );
   }
 
-  return NextResponse.json({ message: "Actualizacion exitosa" });
+  return NextResponse.json({ message: "Actualizacion exitosa", data: tienda });
+}
+// supabase: instancia ya creada
+// ui_store: UUID del sitio (string)
+// monedasActuales: array que tienes en el cliente,
+//   p.ej. [{ id: 1, nombre: 'USD', valor: 100, defecto: true }, { nombre: 'EUR', valor: 90 }]
+
+export async function syncMonedasForStore(ui_store, monedasActuales) {
+  if (!ui_store) throw new Error("ui_store es requerido");
+
+  // Normalizar entradas (evitar undefined)
+  monedasActuales = Array.isArray(monedasActuales) ? monedasActuales : [];
+
+  // 1) Traer ids existentes para ESTE ui_store
+  const { data: existing, error: errExisting } = await supabase
+    .from("monedas")
+    .select("*")
+    .eq("ui_store", ui_store);
+
+  if (errExisting) throw errExisting;
+  const result = diffArrays(existing, monedasActuales, "id");
+  console.log("result", result);
+  let insertedRows = [];
+
+  if (result.added.length > 0) {
+    const { data: inserted, error: errInsert } = await supabase
+      .from("monedas")
+      .insert(
+        result.added.map((obj) => ({
+          nombre: obj.nombre,
+          valor: obj.valor,
+          defecto: obj.defecto,
+          ui_store: obj.ui_store,
+        }))
+      )
+      .select(); // pedir representation para obtener ids nuevos
+
+    if (errInsert) throw errInsert;
+    insertedRows = inserted || [];
+  }
+
+  // 4) Upsert/actualizar los existentes (si hay)
+  const toUpsert = (result.updated || []).map((u) => ({
+    ...u.after,
+    ui_store,
+  }));
+  let upsertedRows = [];
+  console.log(toUpsert);
+  if (toUpsert.length > 0) {
+    // Utilizamos upsert con onConflict sobre 'id' para actualizar en bloque.
+    // Si tu PK es compuesto o tienes otro constraint, ajusta onConflict accordingly.
+    const { data: upserted, error: errUpsert } = await supabase
+      .from("monedas")
+      .upsert(toUpsert)
+      .select();
+
+    if (errUpsert) throw errUpsert;
+    upsertedRows = upserted || [];
+  }
+
+  if (result.removed.length > 0) {
+    const idsToDelete = result.removed
+      .map((obj) => Number(obj.id))
+      .filter((id) => Number.isFinite(id)); // quitar null/undefined/NaN
+
+    if (idsToDelete.length > 0) {
+      const { error: errDel } = await supabase
+        .from("monedas")
+        .delete()
+        .eq("ui_store", ui_store)
+        .in("id", idsToDelete); // PASAR UN ARRAY, no una cadena
+
+      if (errDel) throw errDel;
+    }
+  }
 }
