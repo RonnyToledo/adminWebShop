@@ -121,11 +121,6 @@ export function ProductEditForm({
     });
   }, []);
 
-  console.log(
-    webshop?.store?.monedas.find(
-      (currency) => currency.id == product?.default_moneda
-    )?.nombre
-  );
   return (
     <div className="grid grid-cols-2 gap-1">
       {/* Basic Information */}

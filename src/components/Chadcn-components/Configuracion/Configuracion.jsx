@@ -29,7 +29,6 @@ export default function Configuracion({ ThemeContext, country }) {
     moneda: "",
     valor: 0,
   });
-  console.log(webshop);
   const [store, setStore] = useState({
     comentario: [],
     categoria: [],

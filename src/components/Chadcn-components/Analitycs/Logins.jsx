@@ -83,7 +83,6 @@ export default function Logins({ ThemeContext }) {
                   minTickGap={32}
                   tickFormatter={(value) => {
                     const date = parseDateOnlyAsLocal(String(value));
-                    console.log(value, date);
                     return date.toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",

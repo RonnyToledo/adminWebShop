@@ -422,12 +422,6 @@ const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
 
     if (response.status === 200) {
       setWebshop((prev) => {
-        console.log({
-          ...prev,
-          events: prev.events.map((obj) =>
-            obj.UID_Venta === Event.UID_Venta ? Event : obj
-          ),
-        });
         return {
           ...prev,
           events: prev.events.map((obj) =>

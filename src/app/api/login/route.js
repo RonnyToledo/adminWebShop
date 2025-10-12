@@ -3,10 +3,19 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
 import { parseISO, differenceInDays, addDays } from "date-fns";
 
-// Crear una cookie de sesión
+// ============================================
+// CONSTANTES
+// ============================================
+const SESSION_COOKIE_NAME = "sb-access-token";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 días
+const GRACE_PERIOD_DAYS = 30;
+
+// ============================================
+// UTILIDADES DE COOKIES
+// ============================================
 function createSessionCookie(session) {
   return {
-    name: "sb-access-token",
+    name: SESSION_COOKIE_NAME,
     value: JSON.stringify({
       access_token: session.access_token,
       refresh_token: session.refresh_token,
@@ -14,58 +23,181 @@ function createSessionCookie(session) {
     options: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 7 días
+      maxAge: COOKIE_MAX_AGE,
       path: "/",
       sameSite: "lax",
     },
   };
 }
 
-// Eliminar una cookie de sesión
 function clearSessionCookie() {
   return {
-    name: "sb-access-token",
+    name: SESSION_COOKIE_NAME,
     value: "",
     options: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: -1, // Expira la cookie
+      maxAge: -1,
       path: "/",
       sameSite: "lax",
     },
   };
 }
 
-// Renovar el access_token si ha expirado
-async function refreshAccessTokenIfNeeded(cookieValue) {
-  const parsedCookie = JSON.parse(cookieValue);
-  const { access_token, refresh_token } = parsedCookie;
-
-  const { data: user, error } = await supabase.auth.getUser(access_token);
-
-  if (error) {
-    console.info("El access_token ha expirado, intentando renovar...");
-
-    const { data, error: refreshError } = await supabase.auth.refreshSession({
-      refresh_token,
-    });
-
-    if (refreshError || !data.session) {
-      return { error: refreshError?.message || "Sesión inválida" };
-    }
-
-    console.info("access_token renovado exitosamente.");
-    const newCookie = createSessionCookie(data.session);
-    return { newAccessToken: data.session.access_token, newCookie };
-  }
-
-  return { newAccessToken: access_token };
+// ============================================
+// UTILIDADES DE VALIDACIÓN DE FECHAS
+// ============================================
+function isOlderThan30Days(dateString) {
+  const start = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - start;
+  const THIRTY_DAYS_MS = GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+  return diffMs > THIRTY_DAYS_MS;
 }
 
-// GET: Obtener la sesión almacenada
+function isDateInPast(dateString) {
+  const inputDate = new Date(dateString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return inputDate < today;
+}
+
+function diasRestantesPara30(date) {
+  const fechaInicial = typeof date === "string" ? parseISO(date) : date;
+  const fechaObjetivo = addDays(fechaInicial, GRACE_PERIOD_DAYS);
+  const hoy = new Date();
+  const dias = differenceInDays(fechaObjetivo, hoy);
+  return dias > 0 ? dias : 0;
+}
+
+// ============================================
+// GESTIÓN DE TOKENS
+// ============================================
+async function refreshAccessTokenIfNeeded(cookieValue) {
+  try {
+    const parsedCookie = JSON.parse(cookieValue);
+    const { access_token, refresh_token } = parsedCookie;
+
+    // Verificar si el token es válido
+    const { data: user, error } = await supabase.auth.getUser(access_token);
+
+    if (error) {
+      console.info("Access token expirado, renovando...");
+
+      // Intentar renovar con refresh token
+      const { data, error: refreshError } = await supabase.auth.refreshSession({
+        refresh_token,
+      });
+
+      if (refreshError || !data.session) {
+        return {
+          error: refreshError?.message || "Sesión inválida",
+          needsReauth: true,
+        };
+      }
+
+      console.info("Access token renovado exitosamente");
+      return {
+        newAccessToken: data.session.access_token,
+        newCookie: createSessionCookie(data.session),
+        user: data.user,
+      };
+    }
+
+    return { newAccessToken: access_token, user: user.user };
+  } catch (err) {
+    console.error("Error al renovar token:", err);
+    return { error: "Error al procesar sesión", needsReauth: true };
+  }
+}
+
+// ============================================
+// VALIDACIONES DE USUARIO
+// ============================================
+async function validateUserAccess(userId) {
+  try {
+    // Consultas en paralelo para mejor rendimiento
+    const [sitiosResult, userResult] = await Promise.all([
+      supabase.from("Sitios").select("vence").eq("Editor", userId).single(),
+      supabase.from("user").select("role").eq("id", userId).single(),
+    ]);
+
+    // Validar role
+    if (userResult.error) {
+      return {
+        isValid: false,
+        error: "Error al verificar permisos de usuario",
+      };
+    }
+
+    if (userResult.data?.role === "user") {
+      return {
+        isValid: false,
+        error:
+          "No tiene acceso a este servicio. Contacte a los desarrolladores",
+        statusCode: 403,
+      };
+    }
+
+    // Validar fecha de vencimiento
+    if (sitiosResult.error) {
+      return {
+        isValid: false,
+        error: "Error al verificar estado del sitio",
+      };
+    }
+
+    if (sitiosResult.data?.vence && isDateInPast(sitiosResult.data.vence)) {
+      const diasRestantes = diasRestantesPara30(sitiosResult.data.vence);
+
+      if (isOlderThan30Days(sitiosResult.data.vence)) {
+        return {
+          isValid: false,
+          error: "Su catálogo y administrador están inactivos",
+          statusCode: 403,
+        };
+      } else {
+        return {
+          isValid: false,
+          error: `Administrador inactivo. Su catálogo funcionará por ${diasRestantes} días más`,
+          statusCode: 403,
+        };
+      }
+    }
+
+    return { isValid: true };
+  } catch (err) {
+    console.error("Error en validación de acceso:", err);
+    return {
+      isValid: false,
+      error: "Error al validar permisos",
+    };
+  }
+}
+
+// ============================================
+// MANEJADORES DE RESPUESTA
+// ============================================
+async function handleCookieUpdate(cookieStore, newCookie) {
+  if (newCookie) {
+    cookieStore.set(newCookie.name, newCookie.value, newCookie.options);
+  }
+}
+
+async function clearSessionAndSignOut(cookieStore) {
+  await supabase.auth.signOut();
+  const clearCookie = clearSessionCookie();
+  cookieStore.delete(clearCookie.name);
+}
+
+// ============================================
+// ENDPOINTS
+// ============================================
+
+// GET: Obtener la sesión activa
 export async function GET(req) {
   const cookieStore = await cookies();
-  const cookie = cookieStore.get("sb-access-token");
+  const cookie = cookieStore.get(SESSION_COOKIE_NAME);
 
   if (!cookie) {
     return NextResponse.json(
@@ -74,21 +206,20 @@ export async function GET(req) {
     );
   }
 
-  const { newAccessToken, newCookie, error } = await refreshAccessTokenIfNeeded(
-    cookie.value
-  );
+  const { newAccessToken, newCookie, error, needsReauth, user } =
+    await refreshAccessTokenIfNeeded(cookie.value);
 
   if (error) {
-    console.error(error);
+    if (needsReauth) {
+      await clearSessionAndSignOut(cookieStore);
+    }
     return NextResponse.json({ error }, { status: 401 });
   }
-
-  const { data: user } = await supabase.auth.getUser(newAccessToken);
 
   const response = NextResponse.json({ user }, { status: 200 });
 
   if (newCookie) {
-    cookieStore.set(newCookie.name, newCookie.value, newCookie.options);
+    await handleCookieUpdate(cookieStore, newCookie);
   }
 
   return response;
@@ -97,7 +228,7 @@ export async function GET(req) {
 // DELETE: Cerrar sesión
 export async function DELETE(req) {
   const cookieStore = await cookies();
-  const cookie = cookieStore.get("sb-access-token");
+  const cookie = cookieStore.get(SESSION_COOKIE_NAME);
 
   if (!cookie) {
     return NextResponse.json(
@@ -106,32 +237,41 @@ export async function DELETE(req) {
     );
   }
 
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 401 });
+  try {
+    await clearSessionAndSignOut(cookieStore);
+    return NextResponse.json({ message: "Sesión cerrada exitosamente" });
+  } catch (err) {
+    console.error("Error al cerrar sesión:", err);
+    return NextResponse.json(
+      { error: "Error al cerrar sesión" },
+      { status: 500 }
+    );
   }
-
-  const clearCookie = clearSessionCookie();
-  cookieStore.delete(clearCookie.name);
-
-  return NextResponse.json({ message: "Logout exitoso" });
 }
 
 // POST: Iniciar sesión
 export async function POST(req) {
-  const body = await req.json(); // Obtener datos del body (email, password, etc.)
+  let body;
   try {
-    const { email, password } = body;
+    body = await req.json();
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Datos de entrada inválidos" },
+      { status: 400 }
+    );
+  }
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email y contraseña son requeridos" },
-        { status: 400 }
-      );
-    }
+  const { email, password } = body;
 
-    // Intentar autenticar al usuario
+  if (!email || !password) {
+    return NextResponse.json(
+      { error: "Email y contraseña son requeridos" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    // Autenticar usuario
     const { data: session, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -143,66 +283,20 @@ export async function POST(req) {
         { status: 401 }
       );
     }
-    const { data, errorSitios } = await supabase
-      .from("Sitios")
-      .select("vence")
-      .eq("Editor", session.user.id)
-      .single();
-    const { data: user, errorUser } = await supabase
-      .from("user")
-      .select("role")
-      .eq("id", session.user.id)
-      .single();
 
-    if (errorSitios) {
-      return NextResponse.json(
-        { error: errorSitios?.message || "Autenticación fallida" },
-        { status: 401 }
-      );
-    }
-    if (errorUser) {
-      return NextResponse.json(
-        { error: errorUser?.message || "Autenticación fallida" },
-        { status: 401 }
-      );
-    }
-    if (user?.role === "user") {
-      let message =
-        "Error, usted no tiene acceso a este servicio, contacte con los desarrolladores";
+    // Validar acceso del usuario
+    const validation = await validateUserAccess(session.user.id);
 
-      const { error } = await supabase.auth.signOut();
-      if (error)
-        return NextResponse.json({ message: "Error" }, { status: 403 });
+    if (!validation.isValid) {
+      await supabase.auth.signOut();
       return NextResponse.json(
-        {
-          message,
-        },
-        { status: 403 }
-      );
-    }
-    if (data?.vence && isDateInFuture(data?.vence)) {
-      let message;
-      if (isOlderThan30Days(data.vence)) {
-        message = "Error, su catalogo y administrador estan inactivos";
-      } else {
-        message = `Error, administrador esta inactivo, su catalogo va a seguir funcionando los proximos ${diasRestantesPara30(
-          data.vence
-        )} dias`;
-      }
-      const { error } = await supabase.auth.signOut();
-      if (error)
-        return NextResponse.json({ message: "Error" }, { status: 403 });
-      return NextResponse.json(
-        {
-          message,
-        },
-        { status: 403 }
+        { error: validation.error },
+        { status: validation.statusCode || 403 }
       );
     }
 
-    // Crear la cookie de sesión
+    // Crear y guardar cookie de sesión
     const sessionCookie = createSessionCookie(session.session);
-
     const cookieStore = await cookies();
     cookieStore.set(
       sessionCookie.name,
@@ -211,45 +305,44 @@ export async function POST(req) {
     );
 
     return NextResponse.json(
-      { message: "Autenticación exitosa", user: session.user },
+      {
+        message: "Autenticación exitosa",
+        user: session.user,
+      },
       { status: 200 }
     );
   } catch (err) {
-    // Captura errores de consulta
+    console.error("Error en autenticación:", err);
     return NextResponse.json(
-      { error: err.message || "Error en validación de permisos" },
-      { status: 401 }
+      { error: "Error en el proceso de autenticación" },
+      { status: 500 }
     );
   }
 }
 
+// PUT: Registrar nuevo usuario
 export async function PUT(req) {
   let data;
   try {
     data = await req.formData();
   } catch (e) {
-    console.error("Error parsing form data:", e);
+    console.error("Error al parsear FormData:", e);
     return NextResponse.json(
-      { error: e.message || "JSON inválido" },
+      { error: "Datos de formulario inválidos" },
       { status: 400 }
     );
   }
+
   const email = data.get("email");
   const full_name = data.get("name");
   const password = data.get("password");
   const image = data.get("image");
 
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: "Email y contraseña son requeridos" },
-      { status: 400 }
-    );
-  }
-
+  // Validación de campos requeridos
   if (!email || !password || !full_name) {
-    console.error("Faltan campos:", { email, password, full_name });
+    console.error("Campos faltantes:", { email, password, full_name });
     return NextResponse.json(
-      { error: "Todos los campos son requeridos" },
+      { error: "Email, contraseña y nombre son requeridos" },
       { status: 400 }
     );
   }
@@ -266,47 +359,28 @@ export async function PUT(req) {
   };
 
   try {
-    const { data, error } = await supabase.auth.signUp(payload);
+    const { data: signUpData, error } = await supabase.auth.signUp(payload);
 
     if (error) {
-      console.error("Error detallado de Supabase.signUp:", error);
+      console.error("Error en registro:", error);
       return NextResponse.json(
-        { error: `Error detallado de Supabase.signUp:${error.message}` },
+        { error: `Error al crear cuenta: ${error.message}` },
         { status: 400 }
       );
     }
 
+    // Limpiar sesión automática creada por signUp
     await supabase.auth.signOut();
-    return NextResponse.json({ message: "Cuenta creada" }, { status: 200 });
-  } catch (err) {
-    console.error("Fallo de red al conectar con Supabase:", err);
+
     return NextResponse.json(
-      { error: "No se pudo conectar con Supabase. Intenta más tarde." },
+      { message: "Cuenta creada exitosamente" },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("Error de red con Supabase:", err);
+    return NextResponse.json(
+      { error: "No se pudo conectar con el servidor. Intente más tarde." },
       { status: 502 }
     );
   }
-}
-
-function isOlderThan30Days(dateString) {
-  const start = new Date(dateString);
-  const now = new Date();
-  // Calculamos la diferencia en milisegundos
-  const diffMs = now - start;
-  // 30 días ≈ 30 * 24h * 60m * 60s * 1000ms
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-  return diffMs > THIRTY_DAYS_MS;
-}
-function isDateInFuture(dateString) {
-  const inputDate = new Date(dateString);
-  const today = new Date();
-  // Ponemos hoy a las 00:00:00 para comparar sólo fechas
-  today.setHours(0, 0, 0, 0);
-  return inputDate < today;
-}
-function diasRestantesPara30(date) {
-  const fechaInicial = typeof date === "string" ? parseISO(date) : date;
-  const fechaObjetivo = addDays(fechaInicial, 30);
-  const hoy = new Date();
-  const dias = differenceInDays(fechaObjetivo, hoy);
-  return dias > 0 ? dias : 0;
 }

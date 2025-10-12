@@ -35,10 +35,7 @@ export function PedidosTable() {
   useEffect(() => {
     setPedidosState(webshop?.events || []);
   }, [webshop?.events]);
-  console.log(
-    pedidosState.filter((obj) => obj.visto).length,
-    pedidosState.filter((obj) => !obj.visto).length
-  );
+
   const handleExportToPDF = async () => {
     try {
       // 1) Confirmar pedidos (solo los no vistos)
@@ -284,7 +281,7 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
       throw error;
     }
   };
-  console.log(pedidosState);
+
   return (
     <Card className="shadow-lg">
       <CardHeader className="bg-white border-b border-slate-200">
@@ -638,7 +635,7 @@ function formatFecha(fechaString) {
 }
 async function ConfirmarPedidos(uids, setDownloading, sitioweb) {
   setDownloading(true);
-  console.log("Confirmando pedidos:", uids);
+
   try {
     const response = await axios.post(
       `/api/tienda/${sitioweb}/checkOrders`,
@@ -649,7 +646,6 @@ async function ConfirmarPedidos(uids, setDownloading, sitioweb) {
         },
       }
     );
-    console.log(response);
   } catch (error) {
     console.error("Error al ejecutar la función RPC:", error);
   } finally {

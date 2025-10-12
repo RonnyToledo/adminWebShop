@@ -14,7 +14,7 @@ export function FromData({ children, store, ThemeContext }) {
     setDownloading(true);
     // Construir FormData
     const formData = new FormData();
-    console.log(store);
+
     Object.entries(store).forEach(([key, value]) => {
       if (value instanceof File || value instanceof Blob) {
         // Archivos: añadir tal cual
@@ -37,7 +37,6 @@ export function FromData({ children, store, ThemeContext }) {
         loading: "Actualizando configuración...",
         success: (response) => {
           // Actualizamos el estado local con el store nuevo
-          console.log(response.data);
           setWebshop((prev) => ({
             ...prev,
             store: { ...prev.store, monedas: response.data.data.monedas },

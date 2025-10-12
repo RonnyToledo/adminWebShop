@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
     if (error) {
       console.error("RPC error", error);
     } else {
-      console.log("Resultado:", data);
+      console.info("Resultado");
     }
 
     return new Response(

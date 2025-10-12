@@ -7,6 +7,7 @@ import { logoApp } from "@/utils/image";
 import { toast } from "sonner";
 import { ProductEditForm } from "../product-edit-form";
 import { extractBlobFilesFromArray } from "@/components/globalFunction/extractBlobFilesFromArray";
+import { useRouter } from "next/navigation";
 
 const initialCase = {
   venta: true,
@@ -27,6 +28,7 @@ const initialCase = {
 export default function NewProduct({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const form = useRef(null);
+  const router = useRouter();
   const [newImage, setNewImage] = useState(null);
   const [products, setProducts] = useState(initialCase);
 
@@ -45,27 +47,24 @@ export default function NewProduct({ ThemeContext }) {
       toast.error(
         "Configuración de tienda incompleta. Revisa los datos de la tienda."
       );
-      throw new Error(
-        "Configuración de tienda incompleta. Revisa los datos de la tienda."
-      );
+      router.refresh();
+      return;
     }
     if (!products?.title || products.title.trim() === "") {
       toast.error("El producto necesita un título.");
-      throw new Error("El producto necesita un título.");
+      return;
     }
     if (!products?.price || isNaN(products.price) || products.price < 0) {
       toast.error("El producto necesita un precio válido.");
-      throw new Error("El producto necesita un precio válido.");
+      return;
     }
     if (!products?.caja || products.title.trim() === "") {
       toast.error("Se necesita selecconar una categoría.");
-      throw new Error("Se necesita selecconar una categoría.");
+      return;
     }
     if (products.priceCompra > products.price) {
       toast.error("El precio de compra no puede ser mayor al precio de venta.");
-      throw new Error(
-        "El precio de compra no puede ser mayor al precio de venta."
-      );
+      return;
     }
     const imagesecondary = products?.imagesecondary.filter(
       (obj) => obj !== logoApp

@@ -10,14 +10,14 @@ import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import Loading from "../../component/loading";
+import { logIn } from "@/components/globalFunction/loginFunction";
 
 export function ResponsiveLogin({ user }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [loadingCharge, setLoadingCharge] = useState("");
+  const [loadingCharge, setLoadingCharge] = useState(false);
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -27,48 +27,17 @@ export function ResponsiveLogin({ user }) {
   }, [user, router]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    await handleApiCall(false, null);
-  };
-
-  const handleApiCall = async (isGoogleLogin, token) => {
     setLoading(true);
-    setError(null);
+    e.preventDefault();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: isGoogleLogin ? null : email,
-          password: isGoogleLogin ? null : password,
-          provider: isGoogleLogin ? "google" : "email",
-          token: isGoogleLogin ? token : null,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        router.refresh();
-        setLoadingCharge(true);
-      } else {
-        setError(data.error || "Error al iniciar sesión");
-        if (data.message) {
-          toast({
-            title: "Error",
-            variant: "destructive",
-            description: data.message,
-          });
-        }
-      }
+      await logIn(email, password);
+      setLoadingCharge(true);
+      router.push("/");
     } catch (error) {
-      setError("Error al conectar con el servidor");
-      console.error(error);
-    } finally {
-      setLoading(false);
+      console.error(error.message);
+      toast.error(error.message);
     }
+    setLoading(false);
   };
 
   if (loadingCharge) {

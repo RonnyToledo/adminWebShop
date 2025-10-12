@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logoApp } from "@/utils/image";
 import { toast } from "sonner";
+import { logOut } from "@/components/globalFunction/loginFunction";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -72,23 +73,6 @@ export default function AppSidebar({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
   const pathname = usePathname();
   const router = useRouter();
-
-  const Log_Out = async () => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        router.refresh();
-      } else {
-        toast.error("Error Cerrando Sesion");
-      }
-    } catch (error) {
-      console.error("Error en la respuesta:", error);
-      toast.error(`error: ${error.message}`);
-    }
-  };
 
   const renderLinkNav = (link, index) => {
     if (
@@ -207,7 +191,10 @@ export default function AppSidebar({ ThemeContext }) {
                   <span>Configuración</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600" onClick={Log_Out}>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => logOut(router)}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar Sesión</span>
                 </DropdownMenuItem>

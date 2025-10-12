@@ -79,8 +79,6 @@ export async function GET() {
     return {
       ...obj,
       categoria: parseJSONOr(obj.categoria, null),
-      moneda: parseJSONOr(obj.moneda, null),
-      moneda_default: parseJSONOr(obj.moneda_default, null),
       horario: parseJSONOr(obj.horario, null),
       comentario: parseJSONOr(obj.comentario, null),
       envios: parseJSONOr(obj.envios, null),
@@ -104,8 +102,6 @@ const datos = {
   insta: "https://www.instagram.com/",
   Provincia: "",
   domicilio: true,
-  moneda: '[{"valor":1,"moneda":"CUP"}]',
-  moneda_default: '{"signo":"CUP","valor":1,"moneda":"CUP"}',
   variable: "t",
   envios: "[]",
   municipio: "",
@@ -126,15 +122,6 @@ export async function POST(request, { params }) {
 
   const data = await request.formData();
 
-  // construir moneda de forma segura
-  const Moneda = (inputString) => {
-    const label = String(inputString || "").trim() || "CUP";
-    return {
-      moneda: [{ valor: 1, moneda: label }],
-      moneda_default: { signo: label, valor: 1, moneda: label },
-    };
-  };
-
   const name = data.get("name") || datos.name;
   const country = data.get("country") || datos.country;
   const provincia = data.get("Provincia") || datos.Provincia;
@@ -150,10 +137,6 @@ export async function POST(request, { params }) {
   // preparar JSON como objetos (no strings). Si vienen del form, intentar parsear; si no, usar datos por defecto.
   const horarioInput = data.get("horario") || datos.horario;
   const enviosInput = data.get("envios") || datos.envios;
-  const monedaInput = data.get("moneda") || null;
-  const monedaNameForDefault = data.get("moneda_default") || "CUP";
-
-  const monedaObj = Moneda(monedaInput || monedaNameForDefault);
 
   const payload = {
     _name: name,
@@ -170,16 +153,16 @@ export async function POST(request, { params }) {
     _act_tf: datos.act_tf,
     _insta: data.get("insta") || datos.insta,
     _domicilio: datos.domicilio,
-    _moneda: monedaObj.moneda, // array/object -> se enviará como jsonb
-    _moneda_default: monedaObj.moneda_default, // object -> jsonb
     _envios: parseJSONOr(enviosInput, []), // array -> jsonb
     _tipo: data.get("tipo") || datos.tipo,
     _login: datos.login,
     _active: datos.active,
   };
-  console.log("Payload for create_sitio:", payload);
+
   try {
-    const { data: tienda, error } = await supabase.rpc("create_sitio", payload);
+    const { data: tienda, error } = await supabase
+      .rpc("create_sitio", payload)
+      .single();
     if (error) {
       console.error("RPC create_sitio error:", error);
       return NextResponse.json(
@@ -187,7 +170,21 @@ export async function POST(request, { params }) {
         { status: 400 }
       );
     }
-
+    const { data: monedas, error: errorMoneda } = await supabase
+      .from("monedas")
+      .insert({
+        nombre: data.get("moneda_default"),
+        valor: 1,
+        defecto: false,
+        ui_store: tienda.UUID,
+      });
+    if (errorMoneda) {
+      console.error("Error al crear la moneda:", errorMoneda);
+      return NextResponse.json(
+        { message: errorMoneda.message, detail: errorMoneda },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { message: "Tienda creada", tienda },
       { status: 201 }

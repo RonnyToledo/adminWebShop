@@ -225,7 +225,7 @@ export default function CreateAccount() {
     if (res.status == 200 || res.status == 201) {
       router.push("/login");
     }
-    console.log("Respuesta signup:", res.data);
+    console.info("Respuesta signup:");
   };
 
   const handleSignup = async (e) => {

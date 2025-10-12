@@ -7,6 +7,7 @@ import { fetchStoreData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
 import { cookies } from "next/headers";
 import "./globals.css";
+import { fetchUserSessionServer } from "@/components/globalFunction/loginFunction";
 
 export const metadata = {
   title: "ADMIN",
@@ -21,13 +22,13 @@ export const metadata = {
 };
 export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
-  const user = userSession?.user?.user?.id;
+  const user = userSession?.id;
 
   if (user) console.info("Usuario recivido");
   else {
     console.warn("No hay usuario, redirigiendo a login");
   }
-  const data = await initializeData(userSession?.user?.user?.id);
+  const data = await initializeData(userSession?.id);
 
   return (
     <html lang="en">
@@ -106,30 +107,3 @@ export const initializeData = async (userId) => {
     console.error("Error inicializando datos:", error);
   }
 };
-export async function fetchUserSessionServer() {
-  const Allcookies = await cookies();
-  const sessionCookie = Allcookies.get("sb-access-token");
-
-  if (!sessionCookie) {
-    return null;
-  }
-
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-      method: "GET",
-      headers: {
-        Cookie: `sb-access-token=${sessionCookie.value}`, // Agrega la cookie manualmente
-      },
-    });
-    if (!res.ok) {
-      console.error("Error en la respuesta del servidor:", res.statusText);
-      return null;
-    }
-
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.error("Error al obtener la sesión en el servidor:", error);
-    return null;
-  }
-}

@@ -111,8 +111,6 @@ export async function PUT(request, { params }) {
     .select("* ,monedas(*)")
     .single();
 
-  console.log(tienda);
-
   if (error) {
     console.error(error);
 
@@ -145,7 +143,7 @@ export async function syncMonedasForStore(ui_store, monedasActuales) {
 
   if (errExisting) throw errExisting;
   const result = diffArrays(existing, monedasActuales, "id");
-  console.log("result", result);
+
   let insertedRows = [];
 
   if (result.added.length > 0) {
@@ -171,7 +169,6 @@ export async function syncMonedasForStore(ui_store, monedasActuales) {
     ui_store,
   }));
   let upsertedRows = [];
-  console.log(toUpsert);
   if (toUpsert.length > 0) {
     // Utilizamos upsert con onConflict sobre 'id' para actualizar en bloque.
     // Si tu PK es compuesto o tienes otro constraint, ajusta onConflict accordingly.
