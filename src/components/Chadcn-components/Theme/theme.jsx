@@ -23,7 +23,6 @@ export default function Theme({ ThemeContext }) {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("Theme must be used within ThemeProvider");
   const { webshop, setWebshop } = context;
-  console.log(webshop);
   const [store, setStore] = useState({
     edit: {
       grid: true,

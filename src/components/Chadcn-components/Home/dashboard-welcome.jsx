@@ -222,11 +222,11 @@ function PorductoNuevo({ product }) {
                 />
               </div>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end justify-end p-2 md:p-4 rounded-2xl">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end justify-between p-2 md:p-4 rounded-2xl">
                 <p className=" text-xs md:text-sm text-white font-semibold  line-clamp-2 text-start ">
                   {product.title}
                 </p>
-                <p className="text-sm text-red-600 font-semibold  line-clamp-2 ">
+                <p className="text-sm text-gray-100 font-semibold  line-clamp-2 ">
                   ${product.price}
                 </p>
               </div>

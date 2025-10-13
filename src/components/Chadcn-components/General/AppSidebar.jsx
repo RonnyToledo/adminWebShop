@@ -45,7 +45,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoApp } from "@/utils/image";
-import { toast } from "sonner";
 import { logOut } from "@/components/globalFunction/loginFunction";
 
 const iconMap = {
@@ -105,19 +104,24 @@ export default function AppSidebar({ ThemeContext }) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" onClick={() => router.push("/")}>
+            <SidebarMenuButton size="sm">
               <div>
-                <Image
-                  width={50}
-                  height={50}
-                  src={logoApp}
-                  alt={webshop?.store?.name || "Store Image"}
-                  className="object-cover aspect-square rounded-lg"
-                />
+                <Link href="/">
+                  <Image
+                    width={50}
+                    height={50}
+                    src={logoApp}
+                    alt={webshop?.store?.name || "Store Image"}
+                    className="object-cover aspect-square rounded-lg"
+                  />
+                </Link>
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">rouAdmin</span>
-                <span className="truncate text-xs">rouDev</span>
+                <span className="truncate text-xs">
+                  {" "}
+                  by <Link href="https://roudev.vercel.app">rouDev</Link>
+                </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
