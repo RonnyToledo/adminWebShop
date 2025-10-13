@@ -48,8 +48,6 @@ export function ProductEditForm({
   const [newCategory, setnewCategory] = useState("");
   const [loadingCategory, setloadingCategory] = useState(false);
 
-  console.log(webshop);
-  console.log(product);
   const updateProduct = (field, value) => {
     onProductChange({ ...product, [field]: value });
   };
@@ -176,7 +174,6 @@ export function ProductEditForm({
             // Si el backend no devuelve la nueva categoría, aún podemos construirla localmente,
             // pero preferimos usar lo que venga del servidor para mantener IDs/metadata correctos.
             if (createdCategory) {
-              console.log(createdCategory);
               updateProduct("caja", createdCategory?.id);
               setWebshop((prevData) => ({
                 ...prevData,

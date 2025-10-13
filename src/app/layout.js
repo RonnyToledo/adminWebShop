@@ -23,13 +23,13 @@ export const metadata = {
 export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
   const user = userSession?.id;
-
+  console.log("user", user);
   if (user) console.info("Usuario recivido");
   else {
     console.warn("No hay usuario, redirigiendo a login");
   }
   const data = await initializeData(userSession?.id);
-
+  console.log("data", data);
   return (
     <html lang="en">
       <body>
@@ -46,14 +46,12 @@ export default async function AdminLayout({ children }) {
 export const initializeData = async (userId) => {
   try {
     if (!userId) return null;
-    console.log(userId);
     const { data: store, error } = await fetchStoreData(userId);
     if (error) {
       console.error("Error fetching store data:", error);
       return null;
     }
-    console.log(store);
-
+    console.log("store", store);
     if (error || !store?.login || !store?.Sitios?.sitioweb)
       return { user: store };
 
@@ -83,9 +81,9 @@ export const initializeData = async (userId) => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/tienda/${tiendaParsed?.sitioweb}/GA`
     );
-    console.log(response);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const gaData = await response.json();
+    console.log("response", response);
 
     //DElete products and categories
     delete tiendaParsed?.Products;

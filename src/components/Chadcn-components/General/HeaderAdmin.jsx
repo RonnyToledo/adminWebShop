@@ -146,7 +146,6 @@ const identifyRoute = (pathname) => {
     "/configuracion/domicilios": "Configuración Domicilios",
     "/guia": "Guía",
     "/configuracion": "Configuracion",
-    "/header": "Header",
     "/newProduct": "New Product",
     "/orders": "Orders",
     "/products/[specific]": "Product Specific",

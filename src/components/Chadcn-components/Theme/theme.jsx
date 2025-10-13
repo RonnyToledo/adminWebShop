@@ -22,14 +22,14 @@ import { FromData } from "@/components/globalFunction/fromData";
 export default function Theme({ ThemeContext }) {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("Theme must be used within ThemeProvider");
-
   const { webshop, setWebshop } = context;
+  console.log(webshop);
   const [store, setStore] = useState({
     edit: {
       grid: true,
-      size: false,
-      orientation: false,
-      style: false,
+      size: true,
+      orientation: true,
+      style: true,
     },
   });
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  value={store.edit.grid}
+                  defaultValue={store.edit.grid}
                   onValueChange={(value) =>
                     setStore({
                       ...store,
@@ -140,7 +140,7 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  value={store.edit.square}
+                  defaultValue={store.edit.square}
                   onValueChange={(value) =>
                     setStore({
                       ...store,
@@ -190,7 +190,7 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  value={store.edit.horizontal}
+                  defaultValue={store.edit.horizontal}
                   onValueChange={(value) =>
                     setStore({
                       ...store,
@@ -241,7 +241,7 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  value={store.edit.minimalista}
+                  defaultValue={store.edit.minimalista}
                   onValueChange={(value) =>
                     setStore({
                       ...store,
