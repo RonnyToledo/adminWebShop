@@ -18,19 +18,21 @@ export const logOut = async (router) => {
     if (!res.ok) {
       console.error("Error al cerrar sesión:", data.error);
       // Incluso si hay error, redirigir al login por seguridad
+      router.refresh();
       router.push("/login");
       return { success: false, error: data.error };
     }
 
     // Sesión cerrada exitosamente
     console.info("Sesión cerrada correctamente");
-    router.push("/login");
     return { success: true };
   } catch (error) {
     console.error("Error de red al cerrar sesión:", error);
     // Redirigir al login de todas formas
-    router.push("/login");
     return { success: false, error: "Error de conexión" };
+  } finally {
+    router.refresh();
+    router.push("/login");
   }
 };
 

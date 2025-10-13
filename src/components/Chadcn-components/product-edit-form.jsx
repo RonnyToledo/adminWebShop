@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useContext, useEffect, useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Plus, AlertCircle, Eye, Loader } from "lucide-react";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
 import ImageUploadDrag from "../component/ImageDND";
@@ -23,20 +30,26 @@ import { v4 as uuidv4 } from "uuid";
 import SecondaryImagesManager from "./Specific/secondaryImagesManager";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Trash2 } from "lucide-react";
+import { Trash2, Info, X } from "lucide-react";
+import axios from "axios";
 
 export function ProductEditForm({
   product,
   onProductChange,
-  isCreating = false,
+  changes = false,
   newImage,
   setNewImage,
 }) {
-  const { webshop } = useContext(ThemeContext);
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [newTag, setNewTag] = useState("");
   const [deleteOriginal, setDeleteOriginal] = useState(false);
+  const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [selectedMoneda, setSelectedMoneda] = useState("");
+  const [newCategory, setnewCategory] = useState("");
+  const [loadingCategory, setloadingCategory] = useState(false);
 
+  console.log(webshop);
+  console.log(product);
   const updateProduct = (field, value) => {
     onProductChange({ ...product, [field]: value });
   };
@@ -121,382 +134,717 @@ export function ProductEditForm({
     });
   }, []);
 
+  const addCategory = async () => {
+    setloadingCategory(true);
+    // Validaciones básicas antes de llamar a la API
+    if (!newCategory || newCategory.trim() === "") {
+      toast.error("Debes indicar el nombre de la categoría.");
+      return;
+    }
+    if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
+      toast.error(
+        "Información de la tienda incompleta. Revisa la configuración."
+      );
+      return;
+    }
+    // Preparamos el payload (JSON). No meter headers en el cuerpo.
+    const payload = {
+      name: newCategory,
+      storeId: webshop.store.UUID,
+      order: webshop.store?.category?.length ?? 0,
+    };
+    // Construimos la promesa de la petición POST
+    const postPromise = axios.post(
+      `/api/tienda/${webshop.store.sitioweb}/categoria`,
+      payload,
+      {
+        // Para JSON axios suele poner Content-Type por defecto, pero lo dejamos explícito si lo prefieres:
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    try {
+      // toast.promise gestionará loading / success / error visualmente
+      const res = toast.promise(postPromise, {
+        loading: "Creando categoría...",
+        success: (response) => {
+          // Aceptamos 200 o 201 como éxito
+          if (response?.status === 200 || response?.status === 201) {
+            // Intentamos extraer la categoría devuelta por el servidor:
+            // primero response.data.data (tu patrón actual), si no existe, fallback a response.data
+            const createdCategory =
+              response?.data?.data ?? response?.data ?? null;
+            // Si el backend no devuelve la nueva categoría, aún podemos construirla localmente,
+            // pero preferimos usar lo que venga del servidor para mantener IDs/metadata correctos.
+            if (createdCategory) {
+              console.log(createdCategory);
+              updateProduct("caja", createdCategory?.id);
+              setWebshop((prevData) => ({
+                ...prevData,
+                store: {
+                  ...prevData.store,
+                  categoria: [
+                    ...(prevData.store.categoria ?? []),
+                    createdCategory,
+                  ],
+                },
+              }));
+            } else {
+              // Fallback: añadimos lo mínimo que tenemos (puede carecer de UUID real del servidor)
+              const fallbackCat = { ...payload, id: `temp-${Date.now()}` };
+              setWebshop((prevData) => ({
+                ...prevData,
+                store: {
+                  ...prevData.store,
+                  categoria: [...(prevData.store.categoria ?? []), fallbackCat],
+                },
+              }));
+            }
+            // Limpiar estado del formulario
+            setnewCategory("");
+            return response?.data?.message ?? "Categoría creada correctamente";
+          }
+          // Si el status no es 200/201 lo tratamos como mensaje inesperado
+          return `Respuesta inesperada del servidor: ${response?.status}`;
+        },
+        error: (err) => {
+          // Mensaje legible para mostrar en el toast
+          const msg =
+            err?.response?.data?.message ??
+            err?.message ??
+            "No se pudo crear la categoría";
+          return `Error: ${msg}`;
+        },
+      });
+      // Opcional: devolver la respuesta si quien llama la función la necesita
+      return res;
+    } catch (err) {
+      // El toast de error ya se mostró mediante toast.promise; igual registramos para debugging
+      console.error("addCategory error:", err);
+    } finally {
+      // Aseguramos limpiar estados en cualquier caso
+      // Aseguramos que newCat se resetea (ya lo hacemos en success), aquí como seguro final
+      setShowCategoryInput(false);
+      setloadingCategory(false);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-1">
-      {/* Basic Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Información Básica</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        {changes && (
           <div>
-            <Label htmlFor="title">Título del Producto</Label>
-            <Input
-              id="title"
-              value={product?.title}
-              onChange={(e) => updateProduct("title", e.target.value)}
-              placeholder="Nombre del producto"
-            />
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <span>Cambios sin guardar</span>
           </div>
-
-          <div>
-            <Label htmlFor="descripcion">Descripción</Label>
-            <Textarea
-              id="descripcion"
-              value={product?.descripcion}
-              onChange={(e) => updateProduct("descripcion", e.target.value)}
-              placeholder="Describe tu producto..."
-              rows={4}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="category">Categoría</Label>
-            <Select
-              value={product?.caja}
-              onValueChange={(value) => updateProduct("caja", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {webshop?.store?.categoria.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Images */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Imágenes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="px-8">
-            <Label>Imagen Principal</Label>
-            {newImage ? (
-              <div className="relative">
-                <Image
-                  alt="Logo"
-                  className="rounded-xl  mx-auto my-1 aspect-square"
-                  height={300}
-                  width={300}
-                  src={
-                    newImage
-                      ? URL.createObjectURL(newImage)
-                      : webshop?.store?.urlPoster || logoApp
-                  }
-                  style={{
-                    objectFit: "cover",
-                  }}
-                />
-
-                <div className="absolute top-1 right-1 z-[1]">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="rounded-full p-2 h-8 w-8"
-                    size="icon"
-                    onClick={() => setNewImage(null)} // Borra la nueva imagen
+        )}
+        <Button
+          disabled
+          size="default"
+          variant="outline"
+          className="gap-2 bg-transparent"
+        >
+          <Eye className="h-4 w-4" />
+          Vista Previa
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+        {/* Basic Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Información Básica</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="title" className="flex items-center gap-2">
+                    Título del Producto
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <span
+                    className={cn(
+                      "text-xs",
+                      product?.title?.length > 60
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    )}
                   >
-                    <Trash2 />
-                  </Button>
+                    {product?.title?.length}/60
+                  </span>
                 </div>
-              </div>
-            ) : !deleteOriginal && product?.image ? (
-              <div className="relative">
-                <Image
-                  src={product?.image || logoApp}
-                  alt={product?.title || "Product"}
-                  width={300}
-                  height={300}
-                  style={{ objectFit: "cover" }}
-                  className="object-contain h-full w-full aspect-square"
-                />
-                <div className="absolute top-1 right-1 z-[1]">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="rounded-full p-2 h-8 w-8"
-                    size="icon"
-                    onClick={() => setDeleteOriginal(true)} // Marca la original para borrar
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full">
-                <Label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="images"
-                >
-                  Imágenes
-                </Label>
-                <ImageUploadDrag
-                  setImageNew={setNewImage} // Permite subir nueva imagen
-                  imageNew={newImage}
-                />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="flex flex-col justify-between mb-2 gap-2">
-              <Label>
-                Imágenes Adicionales ({product?.imagesecondary?.length}/3)
-              </Label>
-              <div className="">
-                <SecondaryImagesManager
-                  initialImages={product?.imagesecondary || []}
-                  onChange={handleImagesChange}
-                  onChangeClean={handleImagesChangeClean}
-                  maxImages={3}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pricing & Inventory */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Precios e Inventario</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price">Precio de Venta ($)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={product?.price}
-                onChange={(e) =>
-                  updateProduct("price", Number.parseFloat(e.target.value) || 0)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="purchasePrice">Precio de Compra ($)</Label>
-              <Input
-                id="purchasePrice"
-                type="number"
-                step="0.01"
-                value={product?.priceCompra}
-                onChange={(e) =>
-                  updateProduct(
-                    "priceCompra",
-                    Number.parseFloat(e.target.value) || 0
-                  )
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="embalaje">Precio de Embalaje ($)</Label>
-              <Input
-                id="embalaje"
-                type="number"
-                step="0.01"
-                value={product?.embalaje}
-                onChange={(e) =>
-                  updateProduct(
-                    "embalaje",
-                    Number.parseFloat(e.target.value) || 0
-                  )
-                }
-              />
-            </div>
-            {webshop?.store?.stocks ? (
-              <div>
-                <Label htmlFor="stock">Unidades en stock</Label>
                 <Input
-                  id="stock"
+                  id="title"
+                  placeholder="Ej: Laptop Dell Inspiron 15"
+                  className="text-base"
+                  value={product?.title}
+                  onChange={(e) => updateProduct("title", e.target.value)}
+                  maxLength={60}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Un título claro y descriptivo ayuda a los clientes a encontrar
+                  tu producto
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description">Descripción</Label>
+                  <span
+                    className={cn(
+                      "text-xs",
+                      product?.descripcion?.length > 500
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {product?.descripcion?.length}/500
+                  </span>
+                </div>
+                <Textarea
+                  id="description"
+                  placeholder="Describe las características principales, beneficios y detalles importantes del producto..."
+                  rows={6}
+                  className="resize-none text-xs"
+                  value={product?.descripcion}
+                  onChange={(e) => updateProduct("descripcion", e.target.value)}
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Incluye detalles como materiales, dimensiones, colores
+                  disponibles, etc.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category" className="flex items-center gap-2">
+                  Categoría
+                  <span className="text-destructive">*</span>
+                </Label>
+                {!showCategoryInput ? (
+                  <div className="flex gap-2">
+                    <Select
+                      value={product?.caja}
+                      onValueChange={(value) => updateProduct("caja", value)}
+                    >
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {webshop?.store?.categoria.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowCategoryInput(true)}
+                      title="Crear nueva categoría"
+                      disabled={loadingCategory}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nueva categoría"
+                      value={newCategory}
+                      onChange={(e) => setnewCategory(e.target.value)}
+                    />
+                    <Button
+                      className="rounded-full size-10"
+                      disabled={loadingCategory}
+                      type="button"
+                      variant="outline"
+                      onClick={addCategory}
+                    >
+                      {loadingCategory ? (
+                        <Loader className="animate-spin" />
+                      ) : (
+                        <Plus />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={loadingCategory}
+                      className="rounded-full   size-10"
+                      variant="destructive"
+                      onClick={() => setShowCategoryInput(false)}
+                    >
+                      {loadingCategory ? (
+                        <Loader className="animate-spin" />
+                      ) : (
+                        <X />
+                      )}
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Ayuda a organizar tus productos y facilita la búsqueda
+                </p>
+              </div>
+            </CardContent>
+          </CardContent>
+        </Card>
+
+        {/* Images */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Imágenes</CardTitle>
+            <CardDescription>
+              Agrega fotos de alta calidad de tu producto
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="px-8">
+              <Label>Imagen Principal</Label>
+              {newImage ? (
+                <div className="relative">
+                  <Image
+                    alt="Logo"
+                    className="rounded-xl  mx-auto my-1 aspect-square"
+                    height={300}
+                    width={300}
+                    src={
+                      newImage
+                        ? URL.createObjectURL(newImage)
+                        : webshop?.store?.urlPoster || logoApp
+                    }
+                    style={{
+                      objectFit: "cover",
+                    }}
+                  />
+
+                  <div className="absolute top-1 right-1 z-[1]">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="rounded-full p-2 h-8 w-8"
+                      size="icon"
+                      onClick={() => setNewImage(null)} // Borra la nueva imagen
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                </div>
+              ) : !deleteOriginal && product?.image ? (
+                <div className="relative">
+                  <Image
+                    src={product?.image || logoApp}
+                    alt={product?.title || "Product"}
+                    width={300}
+                    height={300}
+                    style={{ objectFit: "cover" }}
+                    className="object-contain h-full w-full aspect-square"
+                  />
+                  <div className="absolute top-1 right-1 z-[1]">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="rounded-full p-2 h-8 w-8"
+                      size="icon"
+                      onClick={() => setDeleteOriginal(true)} // Marca la original para borrar
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full">
+                  <ImageUploadDrag
+                    setImageNew={setNewImage} // Permite subir nueva imagen
+                    imageNew={newImage}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Esta será la primera imagen que verán los clientes
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex flex-col justify-between mb-2 gap-2">
+                <Label>
+                  Imágenes Adicionales ({product?.imagesecondary?.length}/3)
+                </Label>
+                <div className="">
+                  <SecondaryImagesManager
+                    initialImages={product?.imagesecondary || []}
+                    onChange={handleImagesChange}
+                    onChangeClean={handleImagesChangeClean}
+                    maxImages={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Muestra diferentes ángulos y detalles del producto
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pricing & Inventory */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Precios e Inventario</CardTitle>
+            <CardDescription>
+              Gestiona precios, costos y disponibilidad de stock
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="sale-price">
+                  Venta ($)
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="sale-price"
                   type="number"
-                  step="1"
-                  value={product?.stock}
+                  placeholder="0.00"
+                  value={product?.price}
                   onChange={(e) =>
                     updateProduct(
-                      "stock",
+                      "price",
                       Number.parseFloat(e.target.value) || 0
                     )
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  Precio que pagarán tus clientes
+                </p>
               </div>
-            ) : (
-              <div className="gap-2">
-                <Label>Producto en Stock</Label>
-                <Switch
-                  checked={product?.stock}
-                  onCheckedChange={() =>
-                    updateProduct("stock", product?.stock ? 0 : 1)
+
+              <div className="space-y-2">
+                <Label htmlFor="purchase-price">Inversion ($)</Label>
+                <Input
+                  id="purchase-price"
+                  type="number"
+                  placeholder="0.00"
+                  value={product?.priceCompra}
+                  onChange={(e) =>
+                    updateProduct(
+                      "priceCompra",
+                      Number.parseFloat(e.target.value) || 0
+                    )
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  Tu costo de adquisición
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="package-price">Embalaje ($)</Label>
+                <Input
+                  id="package-price"
+                  type="number"
+                  placeholder="0.00"
+                  value={product?.embalaje}
+                  onChange={(e) =>
+                    updateProduct(
+                      "embalaje",
+                      Number.parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Costo de empaque y envío
+                </p>
+              </div>
+              {webshop?.store?.stocks ? (
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Unidades en Stock</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    placeholder="1"
+                    defaultValue="1"
+                    value={product?.stock}
+                    onChange={(e) =>
+                      updateProduct(
+                        "stock",
+                        Number.parseFloat(e.target.value) || 0
+                      )
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Cantidad disponible
+                  </p>
+                </div>
+              ) : (
+                <div className="gap-2">
+                  <Label>Producto en Stock</Label>
+                  <Switch
+                    checked={product?.stock}
+                    onCheckedChange={() =>
+                      updateProduct("stock", product?.stock ? 0 : 1)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+
+            {product?.price > 0 && product?.priceCompra > 0 && (
+              <div className="rounded-lg bg-muted/50 p-4 border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Ganancia</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary">
+                      {Number(
+                        ((product?.price - product?.priceCompra) /
+                          product?.price) *
+                          100
+                      ).toFixed(2)}
+                      %
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      $
+                      {Number(product?.price - product?.priceCompra).toFixed(2)}{" "}
+                      de ganancia
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div className="gap-2">
-              <Label>Moneda de Venta</Label>
-              <Select
-                value={selectedMoneda}
-                onValueChange={(v) => {
-                  setSelectedMoneda(v);
-                  updateProduct("default_moneda", v); // si quieres persistir inmediatamente
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una moneda" />
-                </SelectTrigger>
-                <SelectContent>
-                  {webshop?.store?.monedas.map((currency) => (
-                    <SelectItem key={currency.id} value={currency.id}>
-                      {currency.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="currency">Moneda de Venta</Label>
+                <Select
+                  value={selectedMoneda}
+                  onValueChange={(v) => {
+                    setSelectedMoneda(v);
+                    updateProduct("default_moneda", v); // si quieres persistir inmediatamente
+                  }}
+                >
+                  <SelectTrigger id="currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {webshop?.store?.monedas.map((currency) => (
+                      <SelectItem key={currency.id} value={currency.id}>
+                        {currency.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="gap-2 flex flex-col items-start">
-              <Label>Visible en Tienda</Label>
+          </CardContent>
+        </Card>
+        {/* Additional Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Detalles Adicionales</CardTitle>
+            <CardDescription>
+              Configuraciones opcionales para personalizar tu producto
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex items-center justify-between rounded-lg border border-input bg-background px-4 py-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="double-space" className="cursor-pointer">
+                    Doble Espacio
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Más espacio en el listado
+                  </p>
+                </div>
+                <Switch
+                  id="double-space"
+                  checked={product?.span}
+                  onCheckedChange={() =>
+                    updateProduct("visible", !product?.span)
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-input bg-background px-4 py-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="sale-product" className="cursor-pointer">
+                    Producto de Venta
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Disponible para compra
+                  </p>
+                </div>
+                <Switch
+                  id="sale-product"
+                  checked={product?.venta}
+                  onCheckedChange={() =>
+                    updateProduct("venta", !product?.venta)
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between w-full rounded-lg border border-input bg-background px-4 py-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="visible" className="cursor-pointer">
+                  Visible en Tienda
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Los clientes pueden verlo
+                </p>
+              </div>
               <Switch
+                id="visible"
                 checked={product?.visible}
                 onCheckedChange={() =>
                   updateProduct("visible", !product?.visible)
                 }
               />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-2">
+              <Label htmlFor="tags">Etiquetas</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tags"
+                  placeholder="Ej: nuevo, oferta, destacado..."
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                />
+                <Button type="button" onClick={addTag}>
+                  Agregar
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Presiona Enter para agregar. Las etiquetas ayudan a filtrar y
+                buscar productos
+              </p>
 
-      {/* Product Addons */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Agregados del Producto
-            <Button variant="outline" size="sm" onClick={addAddon}>
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar Extra
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {(product?.agregados || []).length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">
-              No hay agregados configurados. Los agregados permiten a los
-              clientes personalizar el producto con extras adicionales.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {(product?.agregados || []).map((addon, index) => (
-                <div key={addon.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Agregado #{index + 1}</h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeAddon(addon.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {product?.caracteristicas.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                    onClick={() => {
+                      removeTag(tag);
+                    }}
+                  >
+                    {tag} ×
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Product Addons */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Agregados del Producto</CardTitle>
+            <CardDescription>
+              Opciones extras que los clientes pueden agregar
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center space-y-3">
+              {(product?.agregados || []).length === 0 ? (
+                <div>
+                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Plus className="h-6 w-6 text-primary" />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Nombre</Label>
-                      <Input
-                        value={addon.name}
-                        onChange={(e) =>
-                          updateAddon(addon.id, "name", e.target.value)
-                        }
-                        placeholder="Ej: Extra queso, Tamaño grande..."
-                      />
-                    </div>
-                    <div>
-                      <Label>Precio Completo ($)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={addon.price}
-                        onChange={(e) =>
-                          updateAddon(
-                            addon.id,
-                            "price",
-                            Number.parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0.00"
-                      />
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">
+                      Sin agregados configurados
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Permite a los clientes personalizar con extras como
+                      garantía extendida, instalación, accesorios, etc.
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              ) : (
+                <div className="space-y-4">
+                  {(product?.agregados || []).map((addon, index) => (
+                    <div
+                      key={addon.id}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Agregado #{index + 1}</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAddon(addon.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
 
-      {/* Additional Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalles Adicionales</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label>Doble espacio</Label>
-              <Switch
-                checked={product?.span}
-                onCheckedChange={() => updateProduct("visible", !product?.span)}
-              />
-            </div>
-
-            <div className="flex flex-col  gap-2">
-              <Label>Producto de venta</Label>
-              <Switch
-                checked={product?.venta}
-                onCheckedChange={() => updateProduct("venta", !product?.venta)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Etiquetas</Label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {product?.caracteristicas.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="flex items-center gap-1"
-                >
-                  {tag}
-                  <X
-                    className="w-3 h-3 cursor-pointer hover:text-destructive"
-                    onClick={() => removeTag(tag)}
-                  />
-                </Badge>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Agregar etiqueta"
-              />
-              <Button variant="outline" onClick={addTag}>
-                Agregar
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Nombre</Label>
+                          <Input
+                            value={addon.name}
+                            onChange={(e) =>
+                              updateAddon(addon.id, "name", e.target.value)
+                            }
+                            placeholder="Ej: Extra queso, Tamaño grande..."
+                          />
+                        </div>
+                        <div>
+                          <Label>Precio ($)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={addon.price}
+                            onChange={(e) =>
+                              updateAddon(
+                                addon.id,
+                                "price",
+                                Number.parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 bg-transparent"
+                onClick={addAddon}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Extra
               </Button>
+              <p className="text-xs text-muted-foreground">
+                Escriba el nombre completo y el precio completo del agregado
+              </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        {/* Consjeos rapidos */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              Consejos Rápidos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>• Usa imágenes de alta calidad con fondo blanco</p>
+            <p>• Escribe descripciones claras y detalladas</p>
+            <p>• Revisa los precios antes de publicar</p>
+            <p>• Usa etiquetas relevantes para mejor búsqueda</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

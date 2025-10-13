@@ -39,10 +39,10 @@ export async function POST(request, { params }) {
 
     if (tiendaError) {
       console.error(
-        `Error al actualizar el producto ${cat.id}: ${tiendaError}`
+        `Error al actualizar el producto ${cat.name}: ${tiendaError}`
       );
       throw new Error(
-        `Error actualizando producto ${cat.id}: ${tiendaError.message}`
+        `Error actualizando producto ${cat.name}: ${tiendaError.message}`
       );
     }
 

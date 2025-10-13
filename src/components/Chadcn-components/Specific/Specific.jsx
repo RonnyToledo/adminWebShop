@@ -244,6 +244,10 @@ export default function Specific({ specific, ThemeContext }) {
           product={products}
           onProductChange={setProducts}
           newImage={newImage}
+          changes={hasPendingChanges(
+            webshop?.products?.find((obj) => obj.productId == specific),
+            products
+          )}
           setNewImage={setNewImage}
         />
         <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">

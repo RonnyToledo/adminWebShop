@@ -62,6 +62,7 @@ export default function MyProvider({ children, user, data }) {
       console.info(
         "No existe session, redirijiendo a pagina de Inicio de Session"
       );
+      setWebshop({ ...webshop, pathRedirect: pathname });
       router.push(`/login`);
     } else if (data?.user?.role == "user") {
       console.error("Usuario denegado");
@@ -95,6 +96,7 @@ export default function MyProvider({ children, user, data }) {
       /* router.push("/");*/
 
       console.info("Bienvenido");
+      if (webshop.pathRedirect) router.push(webshop.pathRedirect);
       setWebshop(data);
     }
   }, [data, user]);

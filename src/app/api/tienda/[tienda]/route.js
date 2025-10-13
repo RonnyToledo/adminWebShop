@@ -20,7 +20,7 @@ const LogUser = async () => {
     console.info("Token recividos");
   else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
+  await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
     refresh_token: parsedCookie.refresh_token,
   });

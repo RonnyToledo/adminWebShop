@@ -40,7 +40,7 @@ export default function ImageUploadDrag({ setImageNew, imageNew }) {
           >
             <div className="space-y-1 text-center">
               <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex flex-col text-sm text-gray-600 dark:text-gray-400">
                 <label
                   className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                   htmlFor="images"

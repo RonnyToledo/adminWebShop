@@ -36,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
@@ -264,16 +264,22 @@ export default function Category({ ThemeContext }) {
             // Si el backend no devuelve la nueva categoría, aún podemos construirla localmente,
             // pero preferimos usar lo que venga del servidor para mantener IDs/metadata correctos.
             if (createdCategory) {
-              setData((prevData) => ({
+              setWebshop((prevData) => ({
                 ...prevData,
-                category: [...(prevData.category ?? []), createdCategory],
+                store: {
+                  ...prevData.store,
+                  category: [...(prevData.category ?? []), createdCategory],
+                },
               }));
             } else {
               // Fallback: añadimos lo mínimo que tenemos (puede carecer de UUID real del servidor)
               const fallbackCat = { ...payload, id: `temp-${Date.now()}` };
-              setData((prevData) => ({
+              setWebshop((prevData) => ({
                 ...prevData,
-                category: [...(prevData.category ?? []), fallbackCat],
+                store: {
+                  ...prevData.store,
+                  category: [...(prevData.category ?? []), fallbackCat],
+                },
               }));
             }
 
@@ -553,11 +559,11 @@ const CategoryItem = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => router.push(`/category/${category.id}`)}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
+                  <DropdownMenuItem asChild>
+                    <Link href={`/category/${category.id}`}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Editar
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

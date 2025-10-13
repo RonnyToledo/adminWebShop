@@ -46,12 +46,13 @@ export default async function AdminLayout({ children }) {
 export const initializeData = async (userId) => {
   try {
     if (!userId) return null;
-
+    console.log(userId);
     const { data: store, error } = await fetchStoreData(userId);
     if (error) {
       console.error("Error fetching store data:", error);
       return null;
     }
+    console.log(store);
 
     if (error || !store?.login || !store?.Sitios?.sitioweb)
       return { user: store };
@@ -80,8 +81,9 @@ export const initializeData = async (userId) => {
     );
     // Fetch Google Analytics data
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_PATH}/api/tienda/${tiendaParsed?.sitioweb}/GA`
+      `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/tienda/${tiendaParsed?.sitioweb}/GA`
     );
+    console.log(response);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const gaData = await response.json();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
@@ -11,8 +11,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import Loading from "../../component/loading";
 import { logIn } from "@/components/globalFunction/loginFunction";
+import { ThemeContext } from "@/context/useContext";
 
 export function ResponsiveLogin({ user }) {
+  const { webshop } = useContext(ThemeContext);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -32,7 +34,9 @@ export function ResponsiveLogin({ user }) {
     try {
       await logIn(email, password);
       setLoadingCharge(true);
-      router.push("/");
+      router.refresh();
+
+      // Pequeño delay para asegurar que se actualizó la cookie
     } catch (error) {
       console.error(error.message);
       toast.error(error.message);

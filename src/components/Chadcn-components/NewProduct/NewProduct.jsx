@@ -210,7 +210,7 @@ export default function NewProduct({ ThemeContext }) {
             webshop?.store?.monedas.find((currency) => currency.defecto)?.id ??
             "",
         }}
-        isCreating={true}
+        changess={true}
         onProductChange={setProducts}
         newImage={newImage}
         setNewImage={setNewImage}
