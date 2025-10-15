@@ -312,7 +312,7 @@ export function ProductManagementSystem() {
   const totalSelected = selectedProducts.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-6">
       {totalSelected > 0 && (
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-4">
@@ -324,15 +324,17 @@ export function ProductManagementSystem() {
               <div className="flex gap-2">
                 <div className="flex items-center gap-4">
                   <Button variant="outline" size="sm" onClick={clearSelection}>
-                    <X className="w-4 h-4 mr-2" />
-                    Limpiar selección
+                    <X className="w-4 h-4 md:mr-2" />
+                    <div className="hidden md:flex">Limpiar selección</div>
                   </Button>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Eliminar seleccionados
+                      <Trash2 className="w-4 h-4 md:mr-2" />
+                      <div className="hidden md:flex">
+                        Eliminar seleccionados
+                      </div>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -362,7 +364,7 @@ export function ProductManagementSystem() {
       )}
 
       <DragDropContext onDragEnd={DragAndDrop}>
-        <div className="grid gap-6">
+        <div className="grid gap-3 md:gap-6">
           {webshop?.store?.categoria.map((category) => {
             const categoryProductIds = products
               .filter((p) => p.caja == category.id)
@@ -379,7 +381,7 @@ export function ProductManagementSystem() {
               selectedInCategory < categoryProductIds.length;
             return (
               <Card key={category.id} className="bg-card">
-                <CardHeader className="pb-4">
+                <CardHeader className="p-3 md:pb-4">
                   <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {products.filter((obj) => obj.caja == category.id)
@@ -416,7 +418,7 @@ export function ProductManagementSystem() {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
                   <Droppable droppableId={category.id}>
                     {(provided, snapshot) => (
                       <div
@@ -429,7 +431,7 @@ export function ProductManagementSystem() {
                             : "border-border bg-muted/20"
                         )}
                       >
-                        <div className="grid gap-4 p-4">
+                        <div className="grid  gap-2 md:gap-4 p-2 md:p-4">
                           {products
                             .filter((obj) => obj.caja == category.id)
                             .sort((a, b) => a.order - b.order)
@@ -449,14 +451,14 @@ export function ProductManagementSystem() {
                                         product.visible
                                           ? "to-background"
                                           : "to-red-500/10"
-                                      } border border-border rounded-lg p-4 transition-all`,
+                                      } border border-border rounded-lg p-2 md:p-4 transition-all`,
                                       snapshot.isDragging &&
                                         "shadow-lg rotate-2 scale-105",
                                       isProductSelected(product.productId) &&
                                         "border border-gray-300 bg-primary/5"
                                     )}
                                   >
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 md:gap-4">
                                       <Checkbox
                                         checked={isProductSelected(
                                           product.productId
@@ -476,7 +478,10 @@ export function ProductManagementSystem() {
                                         .
                                       </h4>
                                       <Dialog>
-                                        <DialogTrigger asChild>
+                                        <DialogTrigger
+                                          asChild
+                                          className="hidden md:flex"
+                                        >
                                           <div className="cursor-pointer hover:opacity-80 transition-opacity">
                                             <Image
                                               width={300}
@@ -583,7 +588,7 @@ export function ProductManagementSystem() {
                                         </div>
                                       </div>
 
-                                      <div className="flex flex-col-reverse gap-1">
+                                      <div className="hidden md:flex flex-col-reverse gap-1 ">
                                         {product.stock ? (
                                           webshop?.store?.stocks ? (
                                             <Badge

@@ -22,34 +22,36 @@ import { FromData } from "@/components/globalFunction/fromData";
 export default function Theme({ ThemeContext }) {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("Theme must be used within ThemeProvider");
-  const { webshop, setWebshop } = context;
+  const { webshop } = context;
+
   const [store, setStore] = useState({
     edit: {
-      grid: true,
-      size: true,
-      orientation: true,
-      style: true,
+      grid: false,
+      square: false,
+      horizontal: false,
+      minimalista: false,
     },
   });
+  console.log(store?.edit);
   useEffect(() => {
     setStore(webshop.store);
   }, [webshop.store]);
   useEffect(() => {
-    if (store.edit.grid) {
+    if (store?.edit?.grid) {
       setStore({
         ...store,
-        edit: { ...store.edit, horizontal: false },
+        edit: { ...store?.edit, horizontal: false },
       });
     }
-  }, [store.edit.grid]);
+  }, [store?.edit?.grid]);
   useEffect(() => {
-    if (store.edit.horizontal) {
+    if (store?.edit?.horizontal) {
       setStore({
         ...store,
-        edit: { ...store.edit, grid: false },
+        edit: { ...store?.edit, grid: false },
       });
     }
-  }, [store.edit.horizontal]);
+  }, [store?.edit?.horizontal]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -89,17 +91,19 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={store.edit.grid}
-                  onValueChange={(value) =>
+                  defaultValue={Number(store?.edit?.grid)}
+                  onValueChange={(value) => {
+                    // Convierte el string del evento ("true" o "false") a booleano
+                    const isGrid = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store.edit, grid: value },
-                    })
-                  }
+                      edit: { ...store?.edit, grid: isGrid },
+                    });
+                  }}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={false} id="grid-1" />
+                    <RadioGroupItem value={0} id="grid-1" />
                     <Label
                       htmlFor="grid-1"
                       className="font-medium cursor-pointer"
@@ -108,7 +112,7 @@ export default function Theme({ ThemeContext }) {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={true} id="grid-2" />
+                    <RadioGroupItem value={1} id="grid-2" />
                     <Label
                       htmlFor="grid-2"
                       className="font-medium cursor-pointer"
@@ -139,17 +143,19 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={store.edit.square}
-                  onValueChange={(value) =>
+                  defaultValue={Number(store?.edit?.square)}
+                  onValueChange={(value) => {
+                    // Convierte el string del evento ("true" o "false") a booleano
+                    const isSquare = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store.edit, square: value },
-                    })
-                  }
+                      edit: { ...store?.edit, square: isSquare },
+                    });
+                  }}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={true} id="size-square" />
+                    <RadioGroupItem value={0} id="size-square" />
                     <Label
                       htmlFor="size-square"
                       className="font-medium cursor-pointer"
@@ -158,7 +164,7 @@ export default function Theme({ ThemeContext }) {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={false} id="size-rectangle" />
+                    <RadioGroupItem value={1} id="size-rectangle" />
                     <Label
                       htmlFor="size-rectangle"
                       className="font-medium cursor-pointer"
@@ -189,32 +195,33 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={store.edit.horizontal}
-                  onValueChange={(value) =>
+                  defaultValue={Number(store?.edit?.horizontal)}
+                  onValueChange={(value) => {
+                    // Convierte el string del evento ("true" o "false") a booleano
+                    const isHorizontal = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store.edit, horizontal: value },
-                    })
-                  }
+                      edit: { ...store?.edit, horizontal: isHorizontal },
+                    });
+                  }}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={true} id="orient-horizontal" />
-                    <Label
-                      htmlFor="orient-horizontal"
-                      className="font-medium cursor-pointer"
-                    >
-                      Horizontal
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={false} id="orient-vertical" />
+                    <RadioGroupItem value={0} id="orient-vertical" />
                     <Label
                       htmlFor="orient-vertical"
                       className="font-medium cursor-pointer"
                     >
                       Vertical
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={1} id="orient-horizontal" />
+                    <Label
+                      htmlFor="orient-horizontal"
+                      className="font-medium cursor-pointer"
+                    >
+                      Horizontal
                     </Label>
                   </div>
                 </RadioGroup>
@@ -240,31 +247,33 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={store.edit.minimalista}
-                  onValueChange={(value) =>
+                  defaultValue={Number(store?.edit?.minimalista)}
+                  onValueChange={(value) => {
+                    // Convierte el string del evento ("true" o "false") a booleano
+                    const isMinimalista = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store.edit, minimalista: value },
-                    })
-                  }
+                      edit: { ...store?.edit, minimalista: isMinimalista },
+                    });
+                  }}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-rose-300 hover:bg-rose-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={true} id="style-simple" />
-                    <Label
-                      htmlFor="style-simple"
-                      className="font-medium cursor-pointer"
-                    >
-                      Minimal
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-rose-300 hover:bg-rose-50/50 transition-all cursor-pointer">
-                    <RadioGroupItem value={false} id="style-detailed" />
+                    <RadioGroupItem value={0} id="style-detailed" />
                     <Label
                       htmlFor="style-detailed"
                       className="font-medium cursor-pointer"
                     >
                       Detailed
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-slate-200 hover:border-rose-300 hover:bg-rose-50/50 transition-all cursor-pointer">
+                    <RadioGroupItem value={1} id="style-simple" />
+                    <Label
+                      htmlFor="style-simple"
+                      className="font-medium cursor-pointer"
+                    >
+                      Minimal
                     </Label>
                   </div>
                 </RadioGroup>
@@ -302,20 +311,22 @@ export default function Theme({ ThemeContext }) {
 
                   <div
                     className={`grid gap-3 ${
-                      store.edit.grid ? "grid-cols-2" : "grid-cols-1"
+                      store?.edit?.grid ? "grid-cols-2" : "grid-cols-1"
                     }`}
                   >
                     {Array.from({ length: 5 }).map((_, index) => (
                       <div
                         key={index}
                         className={`grid bg-white rounded-lg shadow-sm space-x-2 border-slate-200 p-3 space-y-3 hover:shadow-md transition-shadow ${
-                          store.edit.horizontal ? "grid-cols-2" : "grid-cols-1"
+                          store?.edit?.horizontal
+                            ? "grid-cols-2"
+                            : "grid-cols-1"
                         }`}
                       >
                         <div className="flex justify-center items-center">
                           <Skeleton
                             className={`w-full rounded-md ${
-                              store.edit.square
+                              store?.edit?.square
                                 ? "aspect-square"
                                 : "aspect-[4/3]"
                             }`}
@@ -324,7 +335,7 @@ export default function Theme({ ThemeContext }) {
                         <div className="space-y-2">
                           <Skeleton className="w-full h-4 rounded-md" />
                           <Skeleton className="w-3/4 h-3 rounded-md" />
-                          {!store.edit.minimalista ? (
+                          {!store?.edit?.minimalista ? (
                             <>
                               <Skeleton className="w-1/2 h-3 rounded-md" />
                               <div className="flex justify-between items-center pt-1">

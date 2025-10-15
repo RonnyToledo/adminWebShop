@@ -3,8 +3,8 @@ import { ProductManagementSystem } from "./product-management-system";
 export default function GeneralProducts() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8">
-        <div className="mb-8">
+      <div className="container mx-auto p-2 md:p-8 py-4 md:py-8">
+        <div className="mb-2 md:mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Gestión de Productos
           </h1>

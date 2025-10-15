@@ -158,7 +158,7 @@ export function PedidosTable() {
                 {!loadVerified ? (
                   <>
                     <Verified className="w-4 h-4" />
-                    Confirmar todos
+                    <span className="sr-only">Confirmar todos</span>
                   </>
                 ) : (
                   <>
@@ -179,7 +179,7 @@ export function PedidosTable() {
                 {!WhatsApp ? (
                   <>
                     <MessageCircle className="w-4 h-4" />
-                    WhatsApp
+                    <span className="sr-only">WhatsApp</span>
                   </>
                 ) : (
                   <>
@@ -200,7 +200,7 @@ export function PedidosTable() {
                 {!PDF ? (
                   <>
                     <Printer className="w-4 h-4" />
-                    Imprimir
+                    <span className="sr-only">Imprimir</span>
                   </>
                 ) : (
                   <>

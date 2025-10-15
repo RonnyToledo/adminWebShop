@@ -216,7 +216,7 @@ export function Marketing({ ThemeContext }) {
   return (
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold">Códigos de Descuento</h1>
           <p className="text-muted-foreground">
@@ -224,20 +224,22 @@ export function Marketing({ ThemeContext }) {
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col md:flex-row md:items-center space-x-2 gap-1">
             <Label htmlFor="system-toggle">Sistema</Label>
-            <Switch
-              id="system-toggle"
-              checked={webshop?.store?.marketing}
-              onCheckedChange={handleSwitch}
-            />
-            <span
-              className={`text-sm ${
-                webshop?.store?.marketing ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {webshop?.store?.marketing ? "Activo" : "Inactivo"}
-            </span>
+            <div>
+              <Switch
+                id="system-toggle"
+                checked={webshop?.store?.marketing}
+                onCheckedChange={handleSwitch}
+              />
+              <span
+                className={`text-sm ${
+                  webshop?.store?.marketing ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {webshop?.store?.marketing ? "Activo" : "Inactivo"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -291,7 +293,7 @@ export function Marketing({ ThemeContext }) {
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col-reverse md:flex-row md:items-center justify-between gap-1">
         <div className="relative w-72">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input

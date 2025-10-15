@@ -426,7 +426,7 @@ export default function Category({ ThemeContext }) {
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="gap-4 space-y-3"
+                className="gap-1 md:gap-4 space-y-3"
               >
                 {filteredCategories
                   .sort((a, b) => a.order - b.order)
@@ -494,11 +494,11 @@ const CategoryItem = ({
             !category.isActive ? "opacity-60" : ""
           }`}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+          <CardContent className="p-2 md:p-4 ">
+            <div className="flex items-center gap-2 md:gap-4">
               {/* Drag Handle */}
               <div className="cursor-grab text-gray-400 hover:text-gray-600">
-                <DragHandleDots2Icon className="w-5 h-5" />
+                <DragHandleDots2Icon className="size-4" />
               </div>
 
               {/* Category Icon */}
@@ -518,7 +518,7 @@ const CategoryItem = ({
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-4 text-sm text-gray-600 truncate">
                   <span className="flex items-center gap-1">
                     <Package className="w-4 h-4" />
                     {
