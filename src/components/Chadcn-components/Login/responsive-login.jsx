@@ -33,6 +33,10 @@ export function ResponsiveLogin({ user }) {
     e.preventDefault();
     try {
       await logIn(email, password);
+      // Esperar un poco para que se guarde la cookie
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Recargar la página completamente para que el servidor valide la sesión
       setLoadingCharge(true);
       router.refresh();
 

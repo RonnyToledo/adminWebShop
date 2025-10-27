@@ -212,7 +212,7 @@ export function Marketing({ ThemeContext }) {
       </Badge>
     );
   };
-
+  console.log(filtered);
   return (
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}
@@ -429,7 +429,7 @@ export function Marketing({ ThemeContext }) {
                       variant="outline"
                       size="sm"
                       disabled={!webshop?.store?.marketing}
-                      onClick={() => handleRemoveDiscount(discount.id)}
+                      onClick={() => handleRemoveDiscount(code.id)}
                     >
                       Remove
                     </Button>

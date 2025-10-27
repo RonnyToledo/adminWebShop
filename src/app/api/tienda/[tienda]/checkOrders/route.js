@@ -88,6 +88,7 @@ export async function PUT(request, { params }) {
       p_descripcion: body.descripcion || "",
       p_created_at: body.created_at || new Date().toISOString(),
     };
+    console.log(paramsRpc);
 
     const { data, error } = await supabase.rpc(
       "update_event_adjust_stock",

@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -224,6 +225,19 @@ export function ProductEditForm({
       setloadingCategory(false);
     }
   };
+
+  // Calcula el porcentaje de ganancia (margen) mostrado en la UI.
+  // Se usa la misma fórmula que la UI ya mostraba: ((price - cost) / price) * 100
+  // Devolvemos un número entre 0 y 99.99 (evitamos 100 para no dividir por 0 al calcular precio).
+  const marginPercentage = (() => {
+    const cost = Number(product?.priceCompra) || 0;
+    const price = Number(product?.price) || 0;
+    if (cost <= 0 || price <= 0) return 0;
+    const raw = ((price - cost) / price) * 100;
+    if (!isFinite(raw) || Number.isNaN(raw)) return 0;
+    // clamp entre 0 y 99.99
+    return Math.max(0, Math.min(99.99, Number(raw.toFixed(2))));
+  })();
 
   return (
     <div className="space-y-2">
@@ -586,8 +600,8 @@ export function ProductEditForm({
               )}
             </div>
 
-            {product?.price > 0 && product?.priceCompra > 0 && (
-              <div className="rounded-lg bg-muted/50 p-4 border border-border">
+            {product?.priceCompra > 0 && (
+              <div className="rounded-lg bg-muted/50 p-4 border border-border space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Info className="h-4 w-4 text-muted-foreground" />
@@ -609,6 +623,28 @@ export function ProductEditForm({
                     </div>
                   </div>
                 </div>
+                <Slider
+                  value={[marginPercentage]}
+                  max={99.99}
+                  min={0}
+                  step={0.1}
+                  // onValueChange es la API habitual; mantenemos onChange por compatibilidad
+                  onValueChange={(value) => {
+                    const val = Array.isArray(value) ? value[0] : value;
+                    let p = Number(val) || 0;
+                    // evitar 100% (division por 0). Capear a 99.99
+                    if (p >= 99.99) p = 99.99;
+                    const cost = Number(product?.priceCompra) || 0;
+                    let newPrice = 0;
+                    if (cost > 0) {
+                      const denom = 1 - p / 100;
+                      // denom > 0 siempre aquí porque p < 100
+                      newPrice = denom > 0 ? cost / denom : cost;
+                    }
+                    // redondear a 2 decimales
+                    updateProduct("price", Number(newPrice.toFixed(2)) || 0);
+                  }}
+                />
               </div>
             )}
 

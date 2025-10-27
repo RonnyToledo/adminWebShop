@@ -61,8 +61,11 @@ export function ProductManagementSystem() {
   const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
-    setProducts(webshop.products);
-  }, [webshop]);
+    // Solo actualizar si realmente hay cambios
+    if (JSON.stringify(products) !== JSON.stringify(webshop.products)) {
+      setProducts(webshop.products);
+    }
+  }, [webshop.products]);
 
   const DragAndDrop = (result) => {
     const { source, destination, draggableId } = result;
