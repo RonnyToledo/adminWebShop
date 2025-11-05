@@ -47,10 +47,10 @@ export default function HeaderAdmin({ ThemeContext }) {
             <SidebarTrigger />
             {pathname === "/" ? (
               <div className=" mx-auto  items-end gap-0 md:gap-2 grid grid-cols-1 md:grid-cols-2">
-                <h1 className="text-base md:text-2xl font-semibold text-gray-900">
+                <h1 className="text-base md:text-2xl font-semibold text-slate-900">
                   Bienvenido
                 </h1>
-                <div className="text-xs md:text-sm text-gray-600">
+                <div className="text-xs md:text-sm text-slate-600">
                   Tienes preguntas?
                   <Link
                     href={"https://wa.me/5352489105"}
@@ -123,7 +123,7 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <h3 className="text-lg font-semibold">Pasos a seguir</h3>
-                <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+                <ul className="list-disc space-y-2 pl-6 text-slate-500 dark:text-slate-400">
                   {steps.map((step, index) => (
                     <li key={index}>{step}</li>
                   ))}

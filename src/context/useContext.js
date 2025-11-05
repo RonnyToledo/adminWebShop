@@ -46,22 +46,36 @@ const PROTECTED_ROUTES = [
 const PUBLIC_ROUTES = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
-  const [webshop, setWebshop] = useState(data ?? initialState);
+  const [webshop, setWebshop] = useState(data || initialState);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
   // Refs para controlar la inicialización
   const isInitialized = useRef(false);
+  const isLogin = useRef(false);
   const previousPathname = useRef(pathname);
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
+  console.log(!!user, !!data);
+
+  // Ejecutar validación solo en mount y cuando cambia el usuario
+  useEffect(() => {
+    if (user) {
+      isLogin.current = true;
+    }
+    handleUserValidation();
+  }, [user]); // SOLO depende de 'user', no de 'data' ni 'pathname'
 
   // Manejo de redirecciones y validaciones
   const handleUserValidation = useCallback(async () => {
+    console.log("validacion");
     // Si es ruta pública, permitir
-    if (isPublicRoute) return;
+    if (isPublicRoute && !isLogin.current) {
+      console.log("Ruta protegida");
+      return;
+    }
 
     // Si no hay usuario y no es ruta protegida
     if (!user && !isProtectedRoute) {
@@ -109,11 +123,6 @@ export default function MyProvider({ children, user, data }) {
       }
     }
   }, [user, data, pathname, isPublicRoute, isProtectedRoute, router, toast]);
-
-  // Ejecutar validación solo en mount y cuando cambia el usuario
-  useEffect(() => {
-    handleUserValidation();
-  }, [user]); // SOLO depende de 'user', no de 'data' ni 'pathname'
 
   // Detectar cambios de ruta para logs (opcional)
   useEffect(() => {

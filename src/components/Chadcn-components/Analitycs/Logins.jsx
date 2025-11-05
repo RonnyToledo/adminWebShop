@@ -327,7 +327,7 @@ export default function Logins({ ThemeContext }) {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+            <ul className="list-disc space-y-2 pl-6 text-slate-500 dark:text-slate-400">
               {obtenerMejoresYPeoresProductos(
                 webshop?.products || []
               ).mejores.map((obj, ind) => (
@@ -347,7 +347,7 @@ export default function Logins({ ThemeContext }) {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+            <ul className="list-disc space-y-2 pl-6 text-slate-500 dark:text-slate-400">
               {obtenerMejoresYPeoresProductos(
                 webshop?.products || []
               ).peores.map((obj, ind) => (

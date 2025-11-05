@@ -331,10 +331,10 @@ export default function Category({ ThemeContext }) {
     <main className="py-2 px-6 space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-900">
             Gestión de Categorías
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-slate-600 mt-1">
             Administra las categorías de tu tienda
           </p>
         </div>
@@ -404,7 +404,7 @@ export default function Category({ ThemeContext }) {
       </div>
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <Input
             placeholder="Buscar categorías..."
             value={searchTerm}
@@ -412,7 +412,7 @@ export default function Category({ ThemeContext }) {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-slate-600">
           <span>{data.category.length} categorías totales</span>
           <span>
             {data.category.filter((c) => c.subtienda).length} subtiendas
@@ -497,7 +497,7 @@ const CategoryItem = ({
           <CardContent className="p-2 md:p-4 ">
             <div className="flex items-center gap-2 md:gap-4">
               {/* Drag Handle */}
-              <div className="cursor-grab text-gray-400 hover:text-gray-600">
+              <div className="cursor-grab text-slate-400 hover:text-slate-600">
                 <DragHandleDots2Icon className="size-4" />
               </div>
 
@@ -509,7 +509,7 @@ const CategoryItem = ({
               {/* Category Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                  <h3 className="font-semibold text-slate-900 truncate">
                     {category.name}
                   </h3>
                   {category.subtienda && (
@@ -518,7 +518,7 @@ const CategoryItem = ({
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-600 truncate">
+                <div className="flex items-center gap-4 text-sm text-slate-600 truncate">
                   <span className="flex items-center gap-1">
                     <Package className="w-4 h-4" />
                     {

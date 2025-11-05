@@ -372,7 +372,7 @@ export default function CreateAccount() {
 
             <Button
               variant="outline"
-              className="flex w-full py-3 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+              className="flex w-full py-3 rounded-xl hover:bg-slate-300 transition-colors font-medium"
               onClick={handleGoogleLogin}
               type="button"
             >

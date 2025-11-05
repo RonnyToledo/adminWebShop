@@ -28,7 +28,7 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <h3 className="text-lg font-semibold">Pasos a seguir</h3>
-              <ul className="list-disc space-y-2 pl-6 text-gray-500 dark:text-gray-400">
+              <ul className="list-disc space-y-2 pl-6 text-slate-500 dark:text-slate-400">
                 {steps.map((step, index) => (
                   <li key={index}>{step}</li>
                 ))}
@@ -98,7 +98,7 @@ export default function Guia() {
           <div className="grid gap-6">
             <div className="grid gap-2">
               <h1 className="text-2xl font-bold">Funcionalidades clave</h1>
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-slate-500 dark:text-slate-400">
                 Descubre cómo funcionan las principales funcionalidades de tu
                 panel de administración.
               </p>

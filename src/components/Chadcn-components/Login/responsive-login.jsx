@@ -118,7 +118,7 @@ export function ResponsiveLogin({ user }) {
             </Button>
           </form>
           <div className="inline-flex items-center justify-center w-full">
-            <Link href="/createAccount" className="text-gray-600 text-xs mt-5">
+            <Link href="/createAccount" className="text-slate-600 text-xs mt-5">
               Eres nuevo??
             </Link>
           </div>

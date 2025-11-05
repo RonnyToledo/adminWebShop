@@ -31,18 +31,18 @@ export default function Component({ ThemeContext }) {
   const { webshop, setwebshop } = useContext(ThemeContext);
   const router = useRouter();
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Add Store Name */}
         <div className="mb-8">
           <Link
-            className="flex items-center gap-2 text-lg font-medium text-gray-900 mb-6"
+            className="flex items-center gap-2 text-lg font-medium text-slate-900 mb-6"
             href="/header"
           >
             {webshop?.store?.name || "Nombre de la tienda"}
-            <Edit2 className="h-4 w-4 text-gray-500" />
+            <Edit2 className="h-4 w-4 text-slate-500" />
           </Link>
         </div>
 
@@ -137,10 +137,10 @@ export default function Component({ ThemeContext }) {
                 className="flex items-center gap-2 mb-4"
                 href={`https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`}
               >
-                <span className="text-sm text-gray-900">
+                <span className="text-sm text-slate-900">
                   {`roumenu.vercel.app/t/${webshop?.store?.sitioweb}`}
                 </span>
-                <ExternalLink className="h-4 w-4 text-gray-500" />
+                <ExternalLink className="h-4 w-4 text-slate-500" />
               </Link>
               <Button
                 variant="link"
@@ -226,7 +226,7 @@ function PorductoNuevo({ product }) {
                 <p className=" text-xs md:text-sm text-white font-semibold  line-clamp-2 text-start ">
                   {product.title}
                 </p>
-                <p className="text-sm text-gray-100 font-semibold  line-clamp-2 ">
+                <p className="text-sm text-slate-100 font-semibold  line-clamp-2 ">
                   ${product.price}
                 </p>
               </div>

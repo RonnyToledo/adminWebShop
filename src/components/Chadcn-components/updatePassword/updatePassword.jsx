@@ -123,7 +123,7 @@ export default function UpdatePassword() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Cargando...</p>
+        <p className="text-slate-500">Cargando...</p>
       </div>
     );
   }

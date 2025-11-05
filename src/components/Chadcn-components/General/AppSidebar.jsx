@@ -90,7 +90,7 @@ export default function AppSidebar({ ThemeContext }) {
         <SidebarMenuButton asChild tooltip={link.label}>
           <Link
             href={link.href || pathname}
-            className=" flex items-center rounded-lg text-gray-500 px-1 gap-2 py-2 transition-all hover:text-gray-700 "
+            className=" flex items-center rounded-lg text-slate-500 px-1 gap-2 py-2 transition-all hover:text-slate-700 "
           >
             <Icon />
             <span>{link.label}</span>

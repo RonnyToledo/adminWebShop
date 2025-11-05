@@ -21,7 +21,7 @@ export default function ImageUploadDrag({ setImageNew, imageNew }) {
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
+            className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-md"
             style={{
               border: "2px dashed #ccc",
               padding: "20px",
@@ -39,8 +39,8 @@ export default function ImageUploadDrag({ setImageNew, imageNew }) {
             onDragOver={(event) => event.preventDefault()}
           >
             <div className="space-y-1 text-center">
-              <CloudUploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="flex flex-col text-sm text-gray-600 dark:text-gray-400">
+              <CloudUploadIcon className="mx-auto h-12 w-12 text-slate-400" />
+              <div className="flex flex-col text-sm text-slate-600 dark:text-slate-400">
                 <label
                   className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                   htmlFor="images"
@@ -58,7 +58,7 @@ export default function ImageUploadDrag({ setImageNew, imageNew }) {
                 </label>
                 <p className="pl-1">o arrastrar y soltar</p>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 PNG, JPG, GIF hasta 10MB
               </p>
               <p className="text-xs text-muted-foreground mt-1">*Opcional</p>

@@ -123,7 +123,7 @@ export default function ProductDetailPage({
           {/* Título y precio */}
           <div className="flex flex-col items-start justify-between space-y-1">
             <h1
-              className={`line-clamp-1 text-sm font-bold text-gray-900 animate-in ${swipeComponents.corto} duration-500 delay-200`}
+              className={`line-clamp-1 text-sm font-bold text-slate-900 animate-in ${swipeComponents.corto} duration-500 delay-200`}
             >
               {product?.title || "..."}
             </h1>
@@ -138,12 +138,12 @@ export default function ProductDetailPage({
                     className={`size-2.5 ${
                       i < Math.floor(product?.coment?.promedio || 0)
                         ? "text-yellow-400 fill-current"
-                        : "text-gray-500"
+                        : "text-slate-500"
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-[8px] text-gray-600">
+              <span className="text-[8px] text-slate-600">
                 {product?.coment?.promedio || 0} ({product?.coment?.total || 0}{" "}
                 reseñas)
               </span>
@@ -153,14 +153,14 @@ export default function ProductDetailPage({
           {/* Precio */}
           <div className="flex items-center justify-between">
             <div
-              className={`flex items-center gap-1 animate-in ${swipeComponents.corto} duration-500 delay-400 leading-relaxed text-gray-900`}
+              className={`flex items-center gap-1 animate-in ${swipeComponents.corto} duration-500 delay-400 leading-relaxed text-slate-900`}
             >
-              <p className="leading-relaxed text-gray-900 text-[8px]">
+              <p className="leading-relaxed text-slate-900 text-[8px]">
                 ${smartRound(product?.price || 0).toFixed(2)}{" "}
                 {store?.moneda_default?.moneda}
               </p>
               {(product?.oldPrice || 0) > (product?.price || 0) && (
-                <p className="text-gray-500 line-through text-[8px]">
+                <p className="text-slate-500 line-through text-[8px]">
                   ${product?.oldPrice}
                 </p>
               )}

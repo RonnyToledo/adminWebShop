@@ -246,7 +246,7 @@ export default function Domicilios({ ThemeContext }) {
               <MapPin className="h-6 w-6 text-primary" />
               <div>
                 <h2 className="text-2xl font-semibold">Zonas de Delivery</h2>
-                <h2 className="text-base text-gray-500">
+                <h2 className="text-base text-slate-500">
                   *El local como zona de entrega, se activa desde configuracion
                 </h2>
               </div>

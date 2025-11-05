@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
+import { getSupabase } from "@/lib/supa";
 import { cookies } from "next/headers";
 
 const parseJSONOr = (value, fallback) => {
@@ -45,6 +45,8 @@ const LogUser = async () => {
     };
   }
 
+  const supabase = await getSupabase();
+
   // Establecer la sesión con los tokens de la cookie
   const { data: session, error: errorS } = await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
@@ -70,7 +72,7 @@ export async function GET() {
       { status: log.status }
     );
   }
-
+  const supabase = await getSupabase();
   const { data: tienda, error } = await supabase.from("Sitios").select("*");
   if (error)
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -158,6 +160,8 @@ export async function POST(request, { params }) {
     _login: datos.login,
     _active: datos.active,
   };
+
+  const supabase = await getSupabase();
 
   try {
     const { data: tienda, error } = await supabase

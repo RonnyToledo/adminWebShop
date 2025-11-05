@@ -134,10 +134,10 @@ export default function SocialContactPage() {
           {/* Header */}
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-slate-900">
                 Redes Sociales y Contacto
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-slate-600 mt-1">
                 Gestiona tu información de contacto y redes sociales
               </p>
             </div>
@@ -157,8 +157,8 @@ export default function SocialContactPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {/* Add New Social Network */}
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-900">
+                <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
+                  <h3 className="font-semibold text-slate-900">
                     Agregar Red Social
                   </h3>
                   <div className="grid gap-4">
@@ -216,27 +216,27 @@ export default function SocialContactPage() {
 
                 {/* Social Networks List */}
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-slate-900">
                     Redes Configuradas ({redes?.length})
                   </h3>
 
                   {redes?.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">
+                    <p className="text-slate-500 text-center py-8">
                       No hay redes sociales configuradas
                     </p>
                   ) : (
                     redes?.map((red, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center gap-3">
                           {getRedIcon(red.tipo)}
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-slate-900">
                               {getRedLabel(red.tipo)}
                             </p>
-                            <p className="text-sm text-gray-600">{red.user}</p>
+                            <p className="text-sm text-slate-600">{red.user}</p>
                           </div>
                         </div>
                         <Button
@@ -268,8 +268,8 @@ export default function SocialContactPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {/* Add New Contact */}
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-900">
+                <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
+                  <h3 className="font-semibold text-slate-900">
                     Agregar Contacto
                   </h3>
                   <div className="grid gap-4">
@@ -315,11 +315,11 @@ export default function SocialContactPage() {
 
                 {/* Contact List */}
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-slate-900">
                     Contactos Configurados ({contacto?.length})
                   </h3>
                   {(webshop?.store?.email || webshop?.store?.cell) && (
-                    <h6 className="font-semibold text-gray-600">
+                    <h6 className="font-semibold text-slate-600">
                       Ya existe por defecto
                       {webshop.store.email && (
                         <>
@@ -337,22 +337,22 @@ export default function SocialContactPage() {
                   )}
 
                   {contacto?.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">
+                    <p className="text-slate-500 text-center py-8">
                       No hay contactos configurados
                     </p>
                   ) : (
                     contacto?.map((contact, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center gap-3">
                           {getContactIcon(contact.tipo)}
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-slate-900">
                               {getContactLabel(contact.tipo)}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-slate-600">
                               {contact.url}
                             </p>
                           </div>

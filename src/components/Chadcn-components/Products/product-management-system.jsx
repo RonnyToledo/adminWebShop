@@ -458,7 +458,7 @@ export function ProductManagementSystem() {
                                       snapshot.isDragging &&
                                         "shadow-lg rotate-2 scale-105",
                                       isProductSelected(product.productId) &&
-                                        "border border-gray-300 bg-primary/5"
+                                        "border border-slate-300 bg-primary/5"
                                     )}
                                   >
                                     <div className="flex items-center gap-2 md:gap-4">
@@ -474,7 +474,7 @@ export function ProductManagementSystem() {
                                         }
                                         onClick={(e) => e.stopPropagation()}
                                       />
-                                      <h4 className="text-gray-700">
+                                      <h4 className="text-slate-700">
                                         {product.order < 9999
                                           ? product.order + 1
                                           : ""}
@@ -521,14 +521,14 @@ export function ProductManagementSystem() {
                                         <h3 className="font-semibold text-foreground truncate">
                                           {product.title}
                                         </h3>
-                                        <p className="text-sm text-muted-foreground text-gray-600">
+                                        <p className="text-sm text-muted-foreground text-slate-600">
                                           Creado:{" "}
                                           {format(
                                             new Date(product.creado),
                                             "short"
                                           )}
                                         </p>
-                                        <p className="text-sm text-primary text-gray-800">
+                                        <p className="text-sm text-primary text-slate-800">
                                           ${product.price.toFixed(2)} -{" "}
                                           {webshop?.store?.monedas.find(
                                             (currency) =>

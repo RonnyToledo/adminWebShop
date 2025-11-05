@@ -7,7 +7,7 @@ const GoogleButton = () => {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       type="button"
-      className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+      className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
     >
       <svg
         className="w-5 h-5"
@@ -31,7 +31,7 @@ const GoogleButton = () => {
           fill="#EA4335"
         />
       </svg>
-      <span className="text-sm font-medium text-gray-700">
+      <span className="text-sm font-medium text-slate-700">
         Continue with Google
       </span>
     </motion.button>

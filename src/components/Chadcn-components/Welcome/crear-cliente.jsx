@@ -359,18 +359,18 @@ export function CrearClienteComponent({
               name="name"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Nombre del Negocio
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         placeholder="Ingrese el nombre del negocio"
-                        className="pl-12 h-14 border-2 border-gray-200 focus:border-slate-500 text-lg"
+                        className="pl-12 h-14 border-2 border-slate-200 focus:border-slate-500 text-lg"
                         {...field}
                       />
                       <Building2
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
                         size={24}
                       />
                     </div>
@@ -390,7 +390,7 @@ export function CrearClienteComponent({
               name="country"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     País
                   </FormLabel>
                   <Select
@@ -433,7 +433,7 @@ export function CrearClienteComponent({
               name="Provincia"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Provincia
                   </FormLabel>
                   <Select
@@ -475,7 +475,7 @@ export function CrearClienteComponent({
               name="municipio"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Municipio
                   </FormLabel>
                   <Select
@@ -517,14 +517,14 @@ export function CrearClienteComponent({
               name="moneda_default"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Moneda Principal (siglas)
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         placeholder="Ej: CUP, USD, MLC"
-                        className="pl-12 h-14 border-2 border-gray-200 text-lg"
+                        className="pl-12 h-14 border-2 border-slate-200 text-lg"
                         {...field}
                         maxLength={4}
                         onInput={(e) => {
@@ -559,7 +559,7 @@ export function CrearClienteComponent({
                         }}
                       />
                       <Building2
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
                         size={24}
                       />
                     </div>
@@ -573,7 +573,7 @@ export function CrearClienteComponent({
               name="stock"
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Usar control de inventario para la disponibilidad de
                     productos (stock){" "}
                   </FormLabel>
@@ -594,7 +594,7 @@ export function CrearClienteComponent({
               name="email"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Email
                   </FormLabel>
                   <FormControl>
@@ -602,14 +602,14 @@ export function CrearClienteComponent({
                       <Input
                         type="email"
                         placeholder="ejemplo@correo.com"
-                        className="pl-12 h-14 border-2 border-gray-200 text-lg"
+                        className="pl-12 h-14 border-2 border-slate-200 text-lg"
                         {...field}
                         readOnly={
                           !!user?.user?.user.email || !!user?.user.email
                         }
                       />
                       <Mail
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
                         size={24}
                       />
                     </div>
@@ -624,7 +624,7 @@ export function CrearClienteComponent({
               name="cell"
               render={({ field }) => (
                 <FormItem className="group">
-                  <FormLabel className="text-gray-700 font-medium text-lg">
+                  <FormLabel className="text-slate-700 font-medium text-lg">
                     Teléfono
                   </FormLabel>
                   <FormControl>
@@ -657,7 +657,7 @@ export function CrearClienteComponent({
 
   /* ------------------ RENDER principal (igual estructura que tenías) ------------------ */
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-slate-50 p-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -667,7 +667,7 @@ export function CrearClienteComponent({
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
             Crear Nuevo Cliente
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             Complete la información para registrar su negocio
           </p>
         </div>
@@ -682,7 +682,7 @@ export function CrearClienteComponent({
                     ? "bg-green-600 text-white"
                     : index === currentStep
                     ? "bg-slate-700 text-white scale-110"
-                    : "bg-gray-200 text-gray-400"
+                    : "bg-slate-200 text-slate-400"
                 }`}
               >
                 {index < currentStep ? (
@@ -691,7 +691,7 @@ export function CrearClienteComponent({
                   <step.icon className="w-6 h-6" />
                 )}
               </div>
-              <span className="text-xs mt-2 text-gray-600 hidden sm:block text-center max-w-20">
+              <span className="text-xs mt-2 text-slate-600 hidden sm:block text-center max-w-20">
                 {step.title}
               </span>
             </div>
@@ -700,7 +700,7 @@ export function CrearClienteComponent({
 
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-slate-200 rounded-full h-2">
             <div
               className="bg-slate-700 h-2 rounded-full"
               style={{
@@ -708,15 +708,15 @@ export function CrearClienteComponent({
               }}
             ></div>
           </div>
-          <div className="text-center mt-2 text-sm text-gray-600">
+          <div className="text-center mt-2 text-sm text-slate-600">
             Paso {currentStep + 1} de {formSteps.length}
           </div>
         </div>
 
         {/* Form Card */}
-        <Card className="shadow-lg border border-gray-200 bg-white min-h-[400px]">
+        <Card className="shadow-lg border border-slate-200 bg-white min-h-[400px]">
           <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl text-gray-800 flex items-center justify-center gap-3">
+            <CardTitle className="text-2xl text-slate-800 flex items-center justify-center gap-3">
               {(() => {
                 const IconComponent = formSteps[currentStep].icon;
                 return <IconComponent className="w-8 h-8 text-slate-700" />;
@@ -748,7 +748,7 @@ export function CrearClienteComponent({
                     variant="outline"
                     onClick={prevStep}
                     disabled={currentStep === 0}
-                    className="h-12 px-6 border-2 border-gray-300"
+                    className="h-12 px-6 border-2 border-slate-300"
                   >
                     {" "}
                     <ArrowLeft className="mr-2 h-5 w-5" /> Anterior{" "}
@@ -788,7 +788,7 @@ export function CrearClienteComponent({
         </Card>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-gray-500 text-sm">
+        <div className="text-center mt-8 text-slate-500 text-sm">
           <p>¿Necesita ayuda? Contacte a nuestro equipo de soporte</p>
         </div>
       </div>

@@ -153,7 +153,7 @@ export default function Component({ ThemeContext, specific }) {
   // Estado de carga
   if (!webshop?.events) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-slate-50">
         <p>Cargando pedido...</p>
       </div>
     );
@@ -162,14 +162,14 @@ export default function Component({ ThemeContext, specific }) {
   // Pedido no encontrado
   if (!dataPedido) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-slate-50">
         <p>No se encontró el pedido con ID: {specific}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-slate-50">
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-6">
@@ -267,7 +267,7 @@ export default function Component({ ThemeContext, specific }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-slate-900">
                   {dataPedido?.desc?.pedido.reduce(
                     (sum, order) =>
                       sum +
@@ -279,7 +279,7 @@ export default function Component({ ThemeContext, specific }) {
                     0
                   )}
                 </div>
-                <div className="text-sm text-gray-600">Total de pedidos</div>
+                <div className="text-sm text-slate-600">Total de pedidos</div>
               </CardContent>
             </Card>
             <Card>
@@ -304,7 +304,7 @@ export default function Component({ ThemeContext, specific }) {
                     100
                   ).toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-600">Total</div>
+                <div className="text-sm text-slate-600">Total</div>
               </CardContent>
             </Card>
             <Card>
@@ -325,7 +325,7 @@ export default function Component({ ThemeContext, specific }) {
                     )
                     .toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-600">Inversion</div>
+                <div className="text-sm text-slate-600">Inversion</div>
               </CardContent>
             </Card>
             <Card>
@@ -355,7 +355,7 @@ export default function Component({ ThemeContext, specific }) {
                     100
                   ).toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-600">Ganancia</div>
+                <div className="text-sm text-slate-600">Ganancia</div>
               </CardContent>
             </Card>
           </div>
@@ -369,7 +369,7 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
     <TableRow>
       <TableCell>
         <div className="flex items-center space-x-3">
-          <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+          <div className="relative w-12 h-12 bg-slate-100 rounded-lg overflow-hidden">
             <Image
               src={order?.image || logoApp}
               alt={order?.title || ""}
@@ -378,7 +378,7 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
             />
           </div>
           <div>
-            <div className="font-medium text-gray-900">
+            <div className="font-medium text-slate-900">
               {order?.title || ""}
             </div>
           </div>

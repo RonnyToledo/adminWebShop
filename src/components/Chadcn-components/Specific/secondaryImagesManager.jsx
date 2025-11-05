@@ -215,7 +215,7 @@ export default function SecondaryImagesManager({
               draggedImage === index ? "scale-105 rotate-2 z-10" : ""
             }`}
           >
-            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors duration-300">
+            <div className="aspect-square bg-slate-100 rounded-lg overflow-hidden border-2 border-dashed border-slate-300 hover:border-blue-400 transition-colors duration-300">
               {img ? (
                 <div className="relative w-full h-full">
                   <Image
@@ -249,7 +249,7 @@ export default function SecondaryImagesManager({
                   </div>
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="bg-white/90 rounded p-1">
-                      <GripVertical className="w-3 h-3 text-gray-600" />
+                      <GripVertical className="w-3 h-3 text-slate-600" />
                     </div>
                   </div>
                 </div>
@@ -258,8 +258,8 @@ export default function SecondaryImagesManager({
                   className="w-full h-full flex flex-col items-center justify-center cursor-pointer"
                   onClick={() => fileInputRefs.current[index]?.click()}
                 >
-                  <Plus className="w-8 h-8 text-gray-400 mb-1" />
-                  <p className="text-xs text-gray-600 text-center">
+                  <Plus className="w-8 h-8 text-slate-400 mb-1" />
+                  <p className="text-xs text-slate-600 text-center">
                     Subir imagen {index + 1}
                   </p>
                 </div>

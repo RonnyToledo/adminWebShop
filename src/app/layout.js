@@ -25,7 +25,6 @@ export const metadata = {
 export default async function AdminLayout({ children }) {
   const userSession = await fetchUserSessionServer();
   const userId = userSession?.id;
-
   if (userId) {
     console.info("Usuario recibido:", userId);
   } else {
