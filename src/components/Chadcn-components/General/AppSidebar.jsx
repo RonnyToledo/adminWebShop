@@ -1,12 +1,11 @@
 "use client";
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarHeader,
@@ -44,8 +43,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { logoApp } from "@/utils/image";
+import {logoApp} from "@/utils/image"
 import { logOut } from "@/components/globalFunction/loginFunction";
+import { Settings, Eye } from "lucide-react";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -64,6 +64,8 @@ const iconMap = {
   ColorLensRoundedIcon,
   AttachMoneyRoundedIcon,
   AppSettingsAltRoundedIcon,
+  Settings,
+  Eye,
   LogoutRoundedIcon,
   AlignHorizontalLeftRoundedIcon,
 };
@@ -86,13 +88,20 @@ export default function AppSidebar({ ThemeContext }) {
 
     const Icon = iconMap[link.icon] || HomeRoundedIcon;
     return (
-      <SidebarMenuItem key={index}>
-        <SidebarMenuButton asChild tooltip={link.label}>
+      <SidebarMenuItem
+        key={index}
+        className="flex flex-row items-center justify-center"
+      >
+        <SidebarMenuButton
+          asChild
+          tooltip={link.label}
+          className="p-1 h-fit group-data-[collapsible=icon]:!p-1"
+        >
           <Link
             href={link.href || pathname}
-            className=" flex items-center rounded-lg text-slate-500 px-1 gap-2 py-2 transition-all hover:text-slate-700 "
+            className="p-0 flex items-center rounded-lg text-slate-500 gap-2 transition-all hover:text-slate-700 "
           >
-            <Icon />
+            <Icon className="size-6" />
             <span>{link.label}</span>
           </Link>
         </SidebarMenuButton>
@@ -101,7 +110,7 @@ export default function AppSidebar({ ThemeContext }) {
   };
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="h-12">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="sm">
@@ -135,9 +144,10 @@ export default function AppSidebar({ ThemeContext }) {
               <Separator key={index} />
             ) : (
               <SidebarGroup key={index} className="p-1">
-                <SidebarGroupLabel>{link.group}</SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>{link.links.map(renderLinkNav)}</SidebarMenu>
+                  <SidebarMenu className="gap-1">
+                    {link.links.map(renderLinkNav)}
+                  </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             );

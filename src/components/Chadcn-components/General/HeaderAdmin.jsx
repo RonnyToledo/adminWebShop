@@ -40,7 +40,7 @@ export default function HeaderAdmin({ ThemeContext }) {
   });
 
   return (
-    <div className="flex sticky top-0 w-full flex-col backdrop-blur-lg z-[10]">
+    <div className="flex sticky top-0 w-full flex-col bg-white shadow-md z-[10]">
       <div className="flex flex-col sm:gap-4 p-2">
         <header className="sticky flex justify-between top-0 z-30 h-14 items-center gap-4 border-b sm:static sm:h-auto sm:border-0 backdrop-blur-lg ">
           <div className="flex items-center gap-4">

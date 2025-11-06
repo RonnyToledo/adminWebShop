@@ -1,5 +1,19 @@
 [
   {
+    "group": "Home",
+
+    "links": [
+      {
+        "label": "Hogar",
+        "href": "/",
+        "icon": "HomeRoundIcon"
+      }
+    ]
+  },
+  {
+    "separator": true
+  },
+  {
     "group": "Productos",
 
     "links": [
@@ -58,6 +72,16 @@
     "group": "Edit",
 
     "links": [
+      {
+        "label": "Configuracion",
+        "href": "/configuracion",
+        "icon": "Settings"
+      },
+      {
+        "label": "Guia",
+        "href": "/guia",
+        "icon": "Eye"
+      },
       {
         "label": "Theme",
         "href": "/theme",

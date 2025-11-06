@@ -58,7 +58,6 @@ export default function MyProvider({ children, user, data }) {
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
-  console.log(!!user, !!data);
 
   // Ejecutar validación solo en mount y cuando cambia el usuario
   useEffect(() => {
@@ -70,10 +69,9 @@ export default function MyProvider({ children, user, data }) {
 
   // Manejo de redirecciones y validaciones
   const handleUserValidation = useCallback(async () => {
-    console.log("validacion");
     // Si es ruta pública, permitir
     if (isPublicRoute && !isLogin.current) {
-      console.log("Ruta protegida");
+      console.info("Ruta protegida");
       return;
     }
 
@@ -113,7 +111,7 @@ export default function MyProvider({ children, user, data }) {
 
     // Usuario válido: establecer datos SOLO en la primera carga
     if (user && data && !isInitialized.current) {
-      console.log("Inicializando datos del usuario");
+      console.info("Inicializando datos del usuario");
       setWebshop(data);
       isInitialized.current = true;
 
@@ -127,7 +125,7 @@ export default function MyProvider({ children, user, data }) {
   // Detectar cambios de ruta para logs (opcional)
   useEffect(() => {
     if (previousPathname.current !== pathname) {
-      console.log("Navegación:", previousPathname.current, "→", pathname);
+      console.info("Navegación:", previousPathname.current, "→", pathname);
       previousPathname.current = pathname;
     }
   }, [pathname]);
@@ -205,8 +203,6 @@ export default function MyProvider({ children, user, data }) {
       supabase.removeChannel(channel);
     };
   }, [user, toast]);
-
-  console.log("WebShop State:", webshop);
 
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
