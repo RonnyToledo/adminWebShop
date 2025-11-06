@@ -53,8 +53,15 @@ export function CreatePostForm() {
         loading: "Subiendo Post",
         success: (response) => {
           // Actualiza el estado con la respuesta (usar updater para seguridad)
-          console.log(response);
+          setWebshop({
+            ...webshop,
+            store: {
+              ...webshop?.store,
 
+              blogs: [...webshop?.store?.blogs, response.data.data],
+            },
+          });
+          router.push("/blog");
           // Puedes devolver el texto que quieres que muestre el toast en success
           return "Tarea Ejecutada — Información actualizada";
         },

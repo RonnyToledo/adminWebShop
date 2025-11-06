@@ -57,10 +57,10 @@ export default function BlogPage() {
               key={post.id}
               className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {post.image_url && (
+              {post.image && (
                 <div className="relative h-48 w-full overflow-hidden bg-muted">
                   <Image
-                    src={post.image_url || "/placeholder.svg"}
+                    src={post.image || logoApp}
                     alt={post.title}
                     fill
                     className="object-cover transition-transform hover:scale-105"
@@ -74,15 +74,11 @@ export default function BlogPage() {
                   </Link>
                 </CardTitle>
                 <CardDescription className="line-clamp-2">
-                  {post.excerpt}
+                  {post.abstract}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <User className="h-4 w-4" />
-                    <span>{post.author}</span>
-                  </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     <time dateTime={post.created_at}>

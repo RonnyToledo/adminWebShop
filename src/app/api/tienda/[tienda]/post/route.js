@@ -45,19 +45,20 @@ export async function POST(req) {
       image = uploadedRes?.secure_url ?? uploadedRes;
     }
     const datos = { image, abstract, description, slug, title, ui_store };
-    console.log(datos);
+
     const { data, error } = await supabase
       .from("blogs")
       .insert(datos)
-      .select("*");
+      .select("*")
+      .single();
+
     if (error) {
       NextResponse.json(
         { error: error?.message ?? String(error) },
         { status: 500 }
       );
     }
-    console.log(data);
-    return NextResponse.json({ result: "AAAA" }, { status: 200 });
+    return NextResponse.json({ data }, { status: 200 });
   } catch (err) {
     console.error("error:", err);
     return NextResponse.json(
