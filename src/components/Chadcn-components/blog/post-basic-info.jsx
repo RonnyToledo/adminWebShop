@@ -11,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import ImageUploadDrag from "@/components/component/ImageDND";
+import Image from "next/image";
 
 export function PostBasicInfo({ initialData, onComplete }) {
   const [formData, setFormData] = useState({
@@ -23,6 +25,7 @@ export function PostBasicInfo({ initialData, onComplete }) {
     author: initialData.author,
     published: initialData.published,
   });
+  const [newImage, setNewImage] = useState(false);
 
   const handleTitleChange = (title) => {
     setFormData((prev) => ({
@@ -48,9 +51,9 @@ export function PostBasicInfo({ initialData, onComplete }) {
       return;
     }
 
-    onComplete(formData);
+    onComplete({ ...formData, imageUrl: newImage });
   };
-
+  console.log(newImage);
   return (
     <Card className="m-2">
       <CardHeader>
@@ -123,41 +126,53 @@ export function PostBasicInfo({ initialData, onComplete }) {
           </div>
 
           {/* URL de Imagen */}
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">Imagen Destacada</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              placeholder="https://ejemplo.com/imagen.jpg"
-              value={formData.imageUrl}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* Vista previa de imagen */}
-          {formData.imageUrl && (
-            <div className="space-y-2 md:col-span-2">
-              <Label>Vista Previa</Label>
-              <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-lg border bg-muted">
-                <img
-                  src={formData.imageUrl || "/placeholder.svg"}
-                  alt="Vista previa"
-                  className="object-cover w-full h-full"
+          <div className="md:col-span-2">
+            {newImage ? (
+              <div className="relative">
+                <Image
+                  alt="Logo"
+                  className="rounded-xl  mx-auto my-1 aspect-square"
+                  height={300}
+                  width={300}
+                  src={
+                    newImage
+                      ? URL.createObjectURL(newImage)
+                      : webshop?.store?.urlPoster || logoApp
+                  }
+                  style={{
+                    objectFit: "cover",
+                  }}
                 />
+
+                <div className="absolute top-1 right-1 z-[1]">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="rounded-full p-2 h-8 w-8"
+                    size="icon"
+                    onClick={() => setNewImage(null)} // Borra la nueva imagen
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="h-full">
+                <ImageUploadDrag
+                  setImageNew={setNewImage} // Permite subir nueva imagen
+                  imageNew={newImage}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Esta será la primera imagen que verán los clientes
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Botón continuar */}
         <div className="flex justify-end pt-4 mt-4 border-t">
-          <Button
-            onClick={handleContinue}
-            size="lg"
-            className="gap-2 text-slate-800"
-          >
+          <Button onClick={handleContinue} size="lg" className="gap-2 ">
             Continuar al Editor
             <ArrowRight className="h-4 w-4" />
           </Button>

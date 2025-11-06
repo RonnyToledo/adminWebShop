@@ -39,7 +39,7 @@ export default function Component({ ThemeContext }) {
         <div className="mb-8">
           <Link
             className="flex items-center gap-2 text-lg font-medium text-slate-900 mb-6"
-            href="/header"
+            href="/configuracion"
           >
             {webshop?.store?.name || "Nombre de la tienda"}
             <Edit2 className="h-4 w-4 text-slate-500" />

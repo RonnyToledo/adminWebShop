@@ -1,5 +1,5 @@
 // @/app/api/send-notification
-import { getSupabase } from "@/lib/supa";
+import { supabase } from "@/lib/supa";
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 
@@ -13,7 +13,6 @@ webpush.setVapidDetails(
 // Manejo del método POST
 export async function POST(req) {
   try {
-    const supabase = await getSupabase();
     // Extrae los datos del cuerpo de la solicitud
     const { title, message } = await req.json();
     // Recupera las suscripciones de la tabla `subscriptions`

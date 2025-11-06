@@ -43,7 +43,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {logoApp} from "@/utils/image"
+import BookIcon from "@mui/icons-material/Book";
+import { logoApp } from "@/utils/image";
 import { logOut } from "@/components/globalFunction/loginFunction";
 import { Settings, Eye } from "lucide-react";
 
@@ -54,6 +55,7 @@ const iconMap = {
   DatasetLinkedRoundedIcon,
   CategoryRoundedIcon,
   BarChartIcon,
+  BookIcon,
   AddCardIcon,
   AddCircleRoundedIcon,
   ListIcon,

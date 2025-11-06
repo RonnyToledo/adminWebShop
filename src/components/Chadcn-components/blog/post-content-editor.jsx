@@ -31,6 +31,7 @@ import {
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import axios from "axios";
 import { toast } from "sonner";
+import { IA } from "./IA";
 function validateHTML(html) {
   const errors = [];
 
@@ -375,6 +376,7 @@ export function PostContentEditor({ initialContent, onBack, onComplete }) {
       await onComplete(content);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear el post");
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -382,28 +384,25 @@ export function PostContentEditor({ initialContent, onBack, onComplete }) {
     try {
       setIsGeminiQuestion(true);
       const formData = new FormData();
-      formData.append("text", content);
-      const postPromise = axios.post(
-        `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/gemini`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      formData.append("text", `${IA} ${content}`);
+      const postPromise = axios.post(`/api/gemini`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       // toast.promise espera la promesa y muestra estados
       toast.promise(postPromise, {
-        loading: "Guardando descuento...",
+        loading: "Optimizando estructura del post...",
         success: (response) => {
           // Actualiza el estado con la respuesta (usar updater para seguridad)
-          console.log(response);
+          setContent(response.data.result);
 
           // Puedes devolver el texto que quieres que muestre el toast en success
           return "Tarea Ejecutada — Información actualizada";
         },
         error: (err) => {
+          console.error(err);
           // Puedes devolver un mensaje de error que se mostrará en el toast
           // Logging más detallado se hace en el catch
-          return "Error al guardar el descuento";
+          return "Error devolver el texto";
         },
       });
     } catch (error) {

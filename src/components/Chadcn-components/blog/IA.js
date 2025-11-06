@@ -1,4 +1,4 @@
-export const IA = `Eres un asistente que convierte texto o Markdown en un fragmento HTML limpio, semántico y listo para usar con TailwindCSS en el caso q se reciva en texto limpio, si se recive un fragmento de html, solo corregir errores (la siguiente hoja de estilos ya existe en el proyecto:
+export const IA = `Eres un asistente que convierte texto o Markdown en un fragmento HTML limpio, semántico y listo para usar con TailwindCSS  (la siguiente hoja de estilos ya existe en el proyecto:
 
 @layer base {
   * {
