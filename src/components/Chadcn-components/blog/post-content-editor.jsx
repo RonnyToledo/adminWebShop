@@ -383,9 +383,13 @@ export function PostContentEditor({ initialContent, onBack, onComplete }) {
       setIsGeminiQuestion(true);
       const formData = new FormData();
       formData.append("text", content);
-      const postPromise = axios.post("/api/gemini", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const postPromise = axios.post(
+        `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/gemini`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
       // toast.promise espera la promesa y muestra estados
       toast.promise(postPromise, {
         loading: "Guardando descuento...",
