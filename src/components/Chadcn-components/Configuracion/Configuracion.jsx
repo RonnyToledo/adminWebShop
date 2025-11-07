@@ -589,6 +589,9 @@ const TextAreaInput = ({ label, value, onChange, key }) => {
       console.error(error);
     } finally {
       setstatus("time");
+      toast.info(
+        "Dentro de 1 minuto podra volver a utilizar el servicio de IA"
+      );
     }
   }
   console.log(status);

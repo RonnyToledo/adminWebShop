@@ -39,7 +39,7 @@ export function FromData({ children, store, ThemeContext }) {
           // Actualizamos el estado local con el store nuevo
           setWebshop((prev) => ({
             ...prev,
-            store: { ...prev.store, monedas: response.data.data.monedas },
+            store: { ...store, monedas: response.data.data.monedas },
           }));
 
           // Reseteamos el formulario si existe la referencia
