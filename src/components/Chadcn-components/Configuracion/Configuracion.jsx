@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useContext, useMemo } from "react";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
 import { InputStore, SwitchStore } from "./Input-Store";
-import { Instagram, Phone, Mail } from "lucide-react";
+import { Instagram, Phone, Mail, Loader2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import ConfiguracionState from "./configuracionState";
 import { toast } from "sonner";
 import axios from "axios";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import { buildImprovementPrompt } from "./TextIAModel";
 
 export default function Configuracion({ ThemeContext, country }) {
   const { webshop } = useContext(ThemeContext);
@@ -37,18 +39,6 @@ export default function Configuracion({ ThemeContext, country }) {
     horario: [],
     envios: [],
   });
-  useEffect(() => {
-    async function Toque() {
-      const result = await axios.get(
-        "https://tasas.eltoque.com/v1/trmi?date_from=2022-10-27%2000%3A00%3A01&date_to=2022-10-27%2023%3A59%3A01",
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      console.log(result);
-    }
-    Toque();
-  }, []);
 
   useEffect(() => {
     setStore(webshop?.store);
@@ -169,24 +159,26 @@ export default function Configuracion({ ThemeContext, country }) {
             <TextAreaInput
               label="Mensaje de Bienvenida"
               value={store?.parrrafo || ""}
-              onChange={(e) =>
+              onChange={(value) =>
                 setStore((prev) => ({
                   ...prev,
-                  parrrafo: e.target.value,
+                  parrrafo: value,
                 }))
               }
+              key={"parrrafo"}
             />
           </div>
           <div className="mx-6">
             <TextAreaInput
               label="Cuenta tu historia al cliente"
               value={store?.history || ""}
-              onChange={(e) =>
+              onChange={(value) =>
                 setStore((prev) => ({
                   ...prev,
-                  history: e.target.value,
+                  history: value,
                 }))
               }
+              key={"history"}
             />
           </div>
           <div className="mx-6">
@@ -556,12 +548,75 @@ const TextInput = ({ label, value, onChange }) => (
   </div>
 );
 
-const TextAreaInput = ({ label, value, onChange }) => (
-  <div className="space-y-2">
-    <Label>{label}</Label>
-    <Textarea value={value} rows={5} onChange={onChange} />
-  </div>
-);
+const TextAreaInput = ({ label, value, onChange, key }) => {
+  const [status, setstatus] = useState("run");
+
+  useEffect(() => {
+    if (status === "time") {
+      setTimeout(() => setstatus("run"), 1000 * 60); // se cierra solo a los 300ms
+    }
+  }, [status]);
+
+  function GeminiUpdated(value) {
+    setstatus("loading");
+    try {
+      const formData = new FormData();
+      const text = buildImprovementPrompt(!!value, key, value);
+      console.log(text);
+      formData.append("text", text);
+      const postPromise = axios.post(`/api/gemini`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      console.log("Haciendo Promise");
+
+      // toast.promise espera la promesa y muestra estados
+      toast.promise(postPromise, {
+        loading: "Optimizando estructura del post...",
+        success: (response) => {
+          // Actualiza el estado con la respuesta (usar updater para seguridad)
+          onChange(response.data.result);
+          // Puedes devolver el texto que quieres que muestre el toast en success
+          return "Tarea Ejecutada — Información actualizada";
+        },
+        error: (err) => {
+          console.error(err);
+          // Puedes devolver un mensaje de error que se mostrará en el toast
+          // Logging más detallado se hace en el catch
+          return "Error devolver el texto";
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setstatus("time");
+    }
+  }
+  console.log(status);
+  return (
+    <div className="relative space-y-2">
+      <Label>{label}</Label>
+      <Textarea
+        value={value}
+        rows={5}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        className="absolute bottom-1 right-1 p-2"
+        size="sm"
+        disabled={status !== "run"}
+        onClick={() => GeminiUpdated(value)}
+      >
+        {status === "loading" ? (
+          <Loader2 className="animate-spin text-slate-700" />
+        ) : (
+          <AutoAwesomeIcon className="text-slate-700" />
+        )}
+      </Button>
+    </div>
+  );
+};
 function getFirstAvailableId(monedas) {
   const used = new Set((monedas || []).map((m) => Number(m.id)));
   let candidate = 1;
