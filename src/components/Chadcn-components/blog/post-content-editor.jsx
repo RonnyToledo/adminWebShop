@@ -161,6 +161,7 @@ export function PostContentEditor({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+  const [usedIAButton, setUsedIAButton] = useState(0);
 
   useEffect(() => {
     if (content) {
@@ -386,6 +387,7 @@ export function PostContentEditor({
     }
   };
   async function GeminiQuestions() {
+    setUsedIAButton(usedIAButton + 1);
     try {
       setIsGeminiQuestion(true);
       const formData = new FormData();
@@ -414,6 +416,11 @@ export function PostContentEditor({
       console.error(error);
     } finally {
       setIsGeminiQuestion(false);
+      toast.info(
+        `Tienes ${
+          3 - usedIAButton
+        } usos más de la inteligencia artificial para tu texto`
+      );
     }
   }
   return (
@@ -470,7 +477,10 @@ export function PostContentEditor({
             </CardHeader>
             <CardContent>
               <div className="p-2 flex justify-end">
-                <Button onClick={() => GeminiQuestions()}>
+                <Button
+                  onClick={() => GeminiQuestions()}
+                  disabled={usedIAButton > 3}
+                >
                   {isGeminiQuestion ? (
                     <Loader2 className="animate-spin" />
                   ) : (
