@@ -31,7 +31,7 @@ import {
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import axios from "axios";
 import { toast } from "sonner";
-import { IA } from "./IA";
+import { IA, newIA } from "./IA";
 function validateHTML(html) {
   const errors = [];
 
@@ -143,7 +143,12 @@ function validateHTML(html) {
   };
 }
 
-export function PostContentEditor({ initialContent, onBack, onComplete }) {
+export function PostContentEditor({
+  initialContent,
+  onBack,
+  onComplete,
+  slug,
+}) {
   const [content, setContent] = useState(initialContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeminiQuestion, setIsGeminiQuestion] = useState(false);
@@ -384,7 +389,7 @@ export function PostContentEditor({ initialContent, onBack, onComplete }) {
     try {
       setIsGeminiQuestion(true);
       const formData = new FormData();
-      formData.append("text", `${IA} ${content}`);
+      formData.append("text", content ? `${IA} ${content}` : newIA(slug));
       const postPromise = axios.post(`/api/gemini`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -465,13 +470,13 @@ export function PostContentEditor({ initialContent, onBack, onComplete }) {
             </CardHeader>
             <CardContent>
               <div className="p-2 flex justify-end">
-                <Button onClick={() => GeminiQuestions()} disabled={!content}>
+                <Button onClick={() => GeminiQuestions()}>
                   {isGeminiQuestion ? (
                     <Loader2 className="animate-spin" />
                   ) : (
                     <AutoAwesomeIcon />
                   )}
-                  Mejorar con IA
+                  {content ? " Mejorar con IA" : "Crear con IA"}
                 </Button>
               </div>
               <div className="relative">

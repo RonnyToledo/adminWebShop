@@ -156,6 +156,7 @@ export default function AppSidebar({ ThemeContext }) {
           }
         })}
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>

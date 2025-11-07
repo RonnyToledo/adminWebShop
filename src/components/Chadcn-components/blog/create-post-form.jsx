@@ -93,6 +93,7 @@ export function CreatePostForm() {
           initialContent={formData.content}
           onBack={handleBack}
           onComplete={handleContentComplete}
+          slug={formData.slug}
         />
       )}
     </div>

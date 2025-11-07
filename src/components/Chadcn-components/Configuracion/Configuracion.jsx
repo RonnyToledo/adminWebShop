@@ -22,6 +22,7 @@ import WeeklyAvailability from "@/components/Chadcn-components/Configuracion/Wee
 import { Textarea } from "@/components/ui/textarea";
 import ConfiguracionState from "./configuracionState";
 import { toast } from "sonner";
+import axios from "axios";
 
 export default function Configuracion({ ThemeContext, country }) {
   const { webshop } = useContext(ThemeContext);
@@ -36,6 +37,18 @@ export default function Configuracion({ ThemeContext, country }) {
     horario: [],
     envios: [],
   });
+  useEffect(() => {
+    async function Toque() {
+      const result = await axios.get(
+        "https://tasas.eltoque.com/v1/trmi?date_from=2022-10-27%2000%3A00%3A01&date_to=2022-10-27%2023%3A59%3A01",
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      console.log(result);
+    }
+    Toque();
+  }, []);
 
   useEffect(() => {
     setStore(webshop?.store);
