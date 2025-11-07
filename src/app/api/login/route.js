@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
+import { createServerSupabase } from "@/lib/serverSupabase";
 import { parseISO, differenceInDays, addDays } from "date-fns";
 
 // ============================================
@@ -75,6 +75,7 @@ function diasRestantesPara30(date) {
 // ============================================
 async function refreshAccessTokenIfNeeded(cookieValue) {
   try {
+    const supabase = createServerSupabase();
     const parsedCookie = JSON.parse(cookieValue);
     const { access_token, refresh_token } = parsedCookie;
 
@@ -116,6 +117,7 @@ async function refreshAccessTokenIfNeeded(cookieValue) {
 // ============================================
 async function validateUserAccess(userId) {
   try {
+    const supabase = createServerSupabase();
     // Consultas en paralelo para mejor rendimiento
     const [sitiosResult, userResult] = await Promise.all([
       supabase.from("Sitios").select("vence").eq("Editor", userId).single(),
@@ -185,6 +187,7 @@ async function handleCookieUpdate(cookieStore, newCookie) {
 }
 
 async function clearSessionAndSignOut(cookieStore) {
+  const supabase = createServerSupabase();
   await supabase.auth.signOut();
   const clearCookie = clearSessionCookie();
   cookieStore.delete(clearCookie.name);
@@ -271,6 +274,7 @@ export async function POST(req) {
   }
 
   try {
+    const supabase = createServerSupabase();
     // Autenticar usuario
     const { data: session, error } = await supabase.auth.signInWithPassword({
       email,
@@ -359,6 +363,7 @@ export async function PUT(req) {
   };
 
   try {
+    const supabase = createServerSupabase();
     const { data: signUpData, error } = await supabase.auth.signUp(payload);
 
     if (error) {

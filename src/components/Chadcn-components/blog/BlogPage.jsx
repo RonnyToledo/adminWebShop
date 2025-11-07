@@ -1,8 +1,8 @@
 "use client";
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, User, ArrowRight, Plus } from "lucide-react";
+import { Calendar, Plus, LoaderIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,15 +11,64 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
+import axios from "axios";
 
 export default function BlogPage() {
   const { webshop, setWebshop } = useContext(ThemeContext);
+  const [loading, setloading] = useState("");
   // En producción, esto vendría de Supabase
-  console.log(webshop);
+  async function DeletePost(params, image) {
+    if (!params) {
+      return;
+    }
+    console.log(params);
+    setloading(params);
+
+    try {
+      const form = new FormData();
+      form.append("slug", params);
+      if (image) form.append("image", image);
+
+      const postPromise = axios.delete(
+        `/api/tienda/${webshop?.store?.sitioweb}/post`,
+        form,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      toast.promise(postPromise, {
+        loading: "Subiendo Post",
+        success: () => {
+          // Actualiza el estado con la respuesta (usar updater para seguridad)
+          setWebshop({
+            ...webshop,
+            store: {
+              ...webshop?.store,
+              blogs: webshop?.store?.blogs.filter((p) => p.slug !== params),
+            },
+          });
+          // Puedes devolver el texto que quieres que muestre el toast en success
+          return "Tarea Ejecutada — Información actualizada";
+        },
+        error: (err) => {
+          console.error(err);
+          // Puedes devolver un mensaje de error que se mostrará en el toast
+          // Logging más detallado se hace en el catch
+          return "Error al guardar el post";
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setloading("");
+    }
+  }
+  console.log(loading);
+  console.log(webshop?.store?.blogs);
   return (
     <div className="min-h-screen bg-background">
       {/* Posts Grid */}
@@ -57,21 +106,18 @@ export default function BlogPage() {
               key={post.id}
               className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {post.image && (
-                <div className="relative h-48 w-full overflow-hidden bg-muted">
-                  <Image
-                    src={post.image || logoApp}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform hover:scale-105"
-                  />
-                </div>
-              )}
+              <div className="relative h-48 w-full overflow-hidden bg-muted">
+                <Image
+                  src={post.image || logoApp}
+                  alt={post.title}
+                  fill
+                  className="object-cover transition-transform hover:scale-105"
+                />
+              </div>
+
               <CardHeader>
                 <CardTitle className="text-xl text-balance">
-                  <Link href={`/blog/${post.slug}`} className="hover:underline">
-                    {post.title}
-                  </Link>
+                  {post.title}
                 </CardTitle>
                 <CardDescription className="line-clamp-2">
                   {post.abstract}
@@ -92,8 +138,17 @@ export default function BlogPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button variant="ghost" className="w-full group">
-                  Delete
+                <Button
+                  variant="ghost"
+                  disabled={!!loading}
+                  className="w-full group"
+                  onClick={() => DeletePost(post.slug, post.image)}
+                >
+                  {post.slug == loading ? (
+                    <LoaderIcon className="animate-spin" />
+                  ) : (
+                    "Delete"
+                  )}
                 </Button>
               </CardFooter>
             </Card>

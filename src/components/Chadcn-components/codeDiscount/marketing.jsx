@@ -212,7 +212,7 @@ export function Marketing({ ThemeContext }) {
       </Badge>
     );
   };
-  console.log(filtered);
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}

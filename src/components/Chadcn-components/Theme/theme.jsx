@@ -32,7 +32,7 @@ export default function Theme({ ThemeContext }) {
       minimalista: false,
     },
   });
-  console.log(store?.edit);
+
   useEffect(() => {
     setStore(webshop.store);
   }, [webshop.store]);

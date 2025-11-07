@@ -53,7 +53,7 @@ export function PostBasicInfo({ initialData, onComplete }) {
 
     onComplete({ ...formData, imageUrl: newImage });
   };
-  console.log(newImage);
+
   return (
     <Card className="m-2">
       <CardHeader>

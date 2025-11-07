@@ -39,7 +39,9 @@ export function CreatePostForm() {
       form.append("title", formData.title);
       form.append("description", content);
       form.append("abstract", formData.excerpt);
-      form.append("image", formData.imageUrl);
+      if (formData.imageUrl) {
+        form.append("image", formData.imageUrl);
+      }
 
       const postPromise = axios.post(
         `/api/tienda/${webshop?.store?.sitioweb}/post`,
@@ -77,7 +79,7 @@ export function CreatePostForm() {
       throw error;
     }
   };
-  console.log(formData);
+
   return (
     <div>
       {step === 1 && (
