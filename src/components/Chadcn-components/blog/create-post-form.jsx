@@ -30,6 +30,7 @@ export function CreatePostForm() {
   const handleBack = () => {
     setStep(1);
   };
+  console.log(formData);
 
   const handleContentComplete = async (content) => {
     try {

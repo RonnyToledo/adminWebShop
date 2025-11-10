@@ -37,7 +37,7 @@ export async function POST(req) {
 
     const formData = await req.formData();
     const ui_store = formData.get("ui_store");
-    const slug = generateUniqueSlug("blogs", formData.get("slug"));
+    const slug = await generateUniqueSlug("blogs", formData.get("slug"));
     const title = formData.get("title");
     const description = formData.get("description");
     const abstract = formData.get("abstract");
