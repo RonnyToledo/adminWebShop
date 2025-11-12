@@ -19,7 +19,7 @@ export const logOut = async (router) => {
       console.error("Error al cerrar sesión:", data.error);
       // Incluso si hay error, redirigir al login por seguridad
       router.refresh();
-      router.push("/login");
+      window.location.replace("/login");
       return { success: false, error: data.error };
     }
 

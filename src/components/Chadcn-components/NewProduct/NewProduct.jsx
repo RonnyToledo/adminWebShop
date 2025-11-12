@@ -41,7 +41,7 @@ export default function NewProduct({ ThemeContext }) {
   const handleSubmit = async (e) => {
     // timestamp
     const now = new Date();
-
+    console.log(products);
     // Validaciones mínimas
     if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
       toast.error(
@@ -76,7 +76,10 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("price", String(products.price ?? ""));
     formData.append("visible", String(products.visible ?? ""));
     formData.append("UID", String(webshop?.store?.UUID));
-    formData.append("default_moneda", String(webshop?.store?.default_moneda));
+    formData.append(
+      "default_moneda",
+      String(products.default_moneda || webshop?.store?.default_moneda)
+    );
     formData.append("order", String(10000));
     formData.append("stock", String(products.stock));
     formData.append("oldPrice", String(products.oldPrice ?? ""));

@@ -28,18 +28,16 @@ export default function BlogPage() {
     console.log(params);
     setloading(params);
 
-    try {
-      const form = new FormData();
-      form.append("slug", params);
-      if (image) form.append("image", image);
+    const url = `/api/tienda/${webshop?.store?.sitioweb}/post`;
 
-      const postPromise = axios.delete(
-        `/api/tienda/${webshop?.store?.sitioweb}/post`,
-        form,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+    const form = new FormData();
+    form.append("slug", params);
+    if (image) form.append("image", image);
+    try {
+      const postPromise = fetch(url, {
+        method: "DELETE",
+        body: form, // NO headers Content-Type
+      });
       toast.promise(postPromise, {
         loading: "Subiendo Post",
         success: () => {

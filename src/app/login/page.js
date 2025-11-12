@@ -1,10 +1,14 @@
 import React from "react";
 import { ResponsiveLogin } from "@/components/Chadcn-components/Login/responsive-login";
-import { fetchUserSessionServer } from "@/components/globalFunction/loginFunction";
+import { checkUser } from "../layout";
 
 export default async function usePage() {
-  const userSession = await fetchUserSessionServer();
-  const user = userSession?.id;
-  if (user) console.info("Usuario recivido");
-  return <ResponsiveLogin user={user} />;
+  const { userId } = await checkUser();
+  if (userId) {
+    console.info("Usuario recibido:", userId);
+  } else {
+    console.warn("No hay usuario, redirigiendo a login");
+  }
+  if (userId) console.info("Usuario recivido");
+  return <ResponsiveLogin user={userId} />;
 }

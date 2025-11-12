@@ -264,7 +264,7 @@ export default function CreateAccount() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_REDIRECT_URL}/updatePassword`,
+          redirectTo: `${process.env.NEXT_PUBLIC_DEPLOYMENT}/updatePassword`,
         },
       });
       if (error) throw error;

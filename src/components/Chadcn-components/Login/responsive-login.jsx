@@ -10,8 +10,9 @@ import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import Loading from "../../component/loading";
-import { logIn } from "@/components/globalFunction/loginFunction";
 import { ThemeContext } from "@/context/useContext";
+
+import { authService } from "@/lib/supabase";
 
 export function ResponsiveLogin({ user }) {
   const { webshop } = useContext(ThemeContext);
@@ -29,23 +30,23 @@ export function ResponsiveLogin({ user }) {
   }, [user, router]);
 
   const handleSubmit = async (e) => {
-    setLoading(true);
     e.preventDefault();
+
+    setLoading(true);
+
     try {
-      await logIn(email, password);
-      // Esperar un poco para que se guarde la cookie
+      await authService.signIn(email, password);
+      router.refresh();
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Recargar la página completamente para que el servidor valide la sesión
-      setLoadingCharge(true);
-      router.refresh();
+      window.location.replace("/");
+    } catch (err) {
+      console.error(err);
 
-      // Pequeño delay para asegurar que se actualizó la cookie
-    } catch (error) {
-      console.error(error.message);
-      toast.error(error.message);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (loadingCharge) {

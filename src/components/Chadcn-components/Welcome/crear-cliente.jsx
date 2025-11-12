@@ -124,7 +124,7 @@ export function CrearClienteComponent({
       Provincia: "",
       municipio: "",
       moneda_default: "CUP",
-      email: user?.user?.user.email || user?.user.email || "",
+      email: user?.email || user?.email || "",
       cell: "",
       stock: false,
     },
@@ -272,7 +272,7 @@ export function CrearClienteComponent({
   async function onSubmit(values) {
     setIsSubmitting(true);
     const formData = new FormData();
-    formData.append("user", user?.user?.user.id || user?.user.id || "");
+    formData.append("user", user?.id || user?.user.id || "");
     Object.entries(values).forEach(([key, value]) => {
       formData.append(key, value);
     });
@@ -286,7 +286,7 @@ export function CrearClienteComponent({
       if (result.status === 200 || result.status === 201) {
         toast(`Éxito al crear su tienda, ya puede empezar a trabajar
           ${result?.data?.success || ""}`);
-        router.push("/");
+        window.location.replace("/");
         form.reset();
         setLoadingGeneral(true);
         setCurrentStep(0);
@@ -604,9 +604,7 @@ export function CrearClienteComponent({
                         placeholder="ejemplo@correo.com"
                         className="pl-12 h-14 border-2 border-slate-200 text-lg"
                         {...field}
-                        readOnly={
-                          !!user?.user?.user.email || !!user?.user.email
-                        }
+                        readOnly={!!user?.email || !!user?.user.email}
                       />
                       <Mail
                         className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"

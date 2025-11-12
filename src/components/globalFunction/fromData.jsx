@@ -8,7 +8,7 @@ export function FromData({ children, store, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const form = useRef(null);
-
+  console.log(webshop);
   async function handleSubmit(e) {
     e.preventDefault();
     setDownloading(true);

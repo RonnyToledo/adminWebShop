@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+/*import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/serverSupabase";
 import { parseISO, differenceInDays, addDays } from "date-fns";
@@ -387,5 +387,128 @@ export async function PUT(req) {
       { error: "No se pudo conectar con el servidor. Intente más tarde." },
       { status: 502 }
     );
+  }
+}
+*/
+// app/api/login/route.js
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+// GET - Obtener userId del usuario autenticado
+export async function GET(request) {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      userId: user.id,
+      email: user.email,
+      user: user,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// POST - SignIn (Iniciar sesión)
+export async function POST(request) {
+  try {
+    const { email, password } = await request.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email y contraseña son requeridos" },
+        { status: 400 }
+      );
+    }
+
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      message: "Inicio de sesión exitoso",
+      userId: data.user.id,
+      user: data.user,
+      session: data.session,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// PUT - SignUp (Registrarse)
+export async function PUT(request) {
+  try {
+    const { email, password, metadata } = await request.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email y contraseña son requeridos" },
+        { status: 400 }
+      );
+    }
+
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata || {},
+      },
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      message: "Registro exitoso",
+      userId: data.user?.id,
+      user: data.user,
+      session: data.session,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE - SignOut (Cerrar sesión)
+export async function DELETE(request) {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      message: "Cierre de sesión exitoso",
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

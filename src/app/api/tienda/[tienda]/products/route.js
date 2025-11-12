@@ -114,7 +114,7 @@ export async function POST(request, { params }) {
         ? JSON.parse(SecondaryImage)
         : SecondaryImage, // JS array -> será enviado como JSONB
   };
-
+  console.log(payload);
   // 3) Llamada RPC
   const { data: newProduct, error } = await supabase
     .rpc("create_product", payload)
@@ -126,6 +126,7 @@ export async function POST(request, { params }) {
       { status: error.code === "PGRST400" ? 400 : 500 }
     );
   }
+  console.log("newProduct", newProduct);
   return NextResponse.json(
     {
       ...newProduct,

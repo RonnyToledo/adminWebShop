@@ -9,6 +9,7 @@ import { fetchStoreData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
 import { fetchUserSessionServer } from "@/components/globalFunction/loginFunction";
 import "./globals.css";
+import { serverAuthService } from "@/lib/server-auth";
 
 export const metadata = {
   title: "ADMIN",
@@ -23,8 +24,7 @@ export const metadata = {
 };
 
 export default async function AdminLayout({ children }) {
-  const userSession = await fetchUserSessionServer();
-  const userId = userSession?.id;
+  const { userId } = await checkUser();
   if (userId) {
     console.info("Usuario recibido:", userId);
   } else {
@@ -46,7 +46,17 @@ export default async function AdminLayout({ children }) {
   );
 }
 
-async function initializeData(userId) {
+export const checkUser = async () => {
+  const user = await serverAuthService.getCurrentUser();
+  if (!user) {
+    console.log("/login");
+    return { userId: "", user: {}, email: "" };
+  } else {
+    return user;
+  }
+};
+
+export async function initializeData(userId) {
   if (!userId) return null;
 
   try {

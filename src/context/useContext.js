@@ -14,6 +14,8 @@ import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useToast } from "@/components/ui/use-toast";
 
+import { authService } from "@/lib/supabase";
+
 export const ThemeContext = createContext();
 
 const initialState = {
@@ -50,7 +52,8 @@ export default function MyProvider({ children, user, data }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-
+  const [user1, setUser1] = useState(null);
+  const [loading, setLoading] = useState(true);
   // Refs para controlar la inicialización
   const isInitialized = useRef(false);
   const isLogin = useRef(false);
@@ -58,6 +61,8 @@ export default function MyProvider({ children, user, data }) {
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
+
+  console.log(user1);
 
   // Ejecutar validación solo en mount y cuando cambia el usuario
   useEffect(() => {
@@ -87,9 +92,7 @@ export default function MyProvider({ children, user, data }) {
     if (data?.user?.role === "user") {
       console.error("Usuario denegado");
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_PATH}/api/login`, {
-          method: "DELETE",
-        });
+        await authService.signOut();
         router.push("/login");
       } catch (error) {
         console.error("Error cerrando sesión:", error);

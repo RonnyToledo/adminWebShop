@@ -23,43 +23,20 @@ const toIntegerOrNull = (v) => {
 const LogUser = async () => {
   const cookie = (await cookies()).get("sb-access-token");
   if (!cookie) {
-    return {
-      ok: false,
-      status: 401,
-      message: "No se encontró la cookie de sesión",
-    };
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 }
+    );
   }
-
-  let parsedCookie;
-  try {
-    parsedCookie = JSON.parse(cookie.value);
-  } catch (e) {
-    return { ok: false, status: 400, message: "Cookie inválida" };
-  }
-
-  if (!parsedCookie.access_token || !parsedCookie.refresh_token) {
-    return {
-      ok: false,
-      status: 401,
-      message: "Token no encontrado en la cookie",
-    };
-  }
-
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
   // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
+  await supabase.auth.setSession({
     access_token: parsedCookie.access_token,
     refresh_token: parsedCookie.refresh_token,
   });
-
-  if (errorS)
-    return {
-      ok: false,
-      status: 401,
-      message: "Error al establecer la sesión",
-      detail: errorS,
-    };
-
-  return { ok: true, session };
 };
 
 export async function GET() {
@@ -111,14 +88,9 @@ const datos = {
 };
 
 export async function POST(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status }
-    );
-  }
+  await LogUser();
 
+  console.log("asas");
   const data = await request.formData();
 
   const name = data.get("name") || datos.name;

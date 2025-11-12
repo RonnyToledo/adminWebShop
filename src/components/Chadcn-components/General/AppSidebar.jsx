@@ -1,5 +1,5 @@
 "use client";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -45,8 +45,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import BookIcon from "@mui/icons-material/Book";
 import { logoApp } from "@/utils/image";
-import { logOut } from "@/components/globalFunction/loginFunction";
 import { Settings, Eye } from "lucide-react";
+import { authService } from "@/lib/supabase";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -76,6 +76,18 @@ export default function AppSidebar({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
   const pathname = usePathname();
   const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await authService.signOut();
+      router.refresh();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      router.push("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   const renderLinkNav = (link, index) => {
     if (
@@ -210,7 +222,7 @@ export default function AppSidebar({ ThemeContext }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-red-600"
-                  onClick={() => logOut(router)}
+                  onClick={() => handleSignOut()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar Sesión</span>

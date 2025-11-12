@@ -6,6 +6,7 @@ import {
 } from "@/components/globalFunction/imagesMove";
 import { cookies } from "next/headers"; // Importar cookies desde headers
 import { diffArrays } from "@/components/globalFunction/diferenciasDeArray";
+import { restoreSessionFromCookie } from "@/lib/logUser";
 
 const LogUser = async () => {
   const cookie = (await cookies()).get("sb-access-token");
@@ -46,7 +47,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  await LogUser();
+  await restoreSessionFromCookie();
   const data = await request.formData();
   const urlPosterNew = data.get("urlPosterNew");
   const bannerNew = data.get("bannerNew");
@@ -103,13 +104,13 @@ export async function PUT(request, { params }) {
     redes: JSON.parse(data.get("redes") || "[]"),
     contacto: JSON.parse(data.get("contacto") || "[]"),
   };
+  console.log(payload);
   //Preparando nueva Imagen
   const { data: tienda, error } = await supabase
     .from("Sitios")
     .update([payload])
     .eq("sitioweb", sitioweb)
-    .select("* ,monedas(*)")
-    .single();
+    .select("* ,monedas(*)");
 
   if (error) {
     console.error(error);
@@ -121,7 +122,7 @@ export async function PUT(request, { params }) {
       }
     );
   }
-
+  console.log(tienda);
   return NextResponse.json({ message: "Actualizacion exitosa", data: tienda });
 }
 // supabase: instancia ya creada

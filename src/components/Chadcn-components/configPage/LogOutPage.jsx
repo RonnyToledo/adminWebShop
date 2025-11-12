@@ -2,11 +2,21 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { logOut } from "@/components/globalFunction/loginFunction";
 
 export default function LogoutPage() {
   const router = useRouter();
 
+  const handleSignOut = async () => {
+    try {
+      await authService.signOut();
+      router.refresh();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      router.push("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
   return (
     <div className="p-4 top-0 left-0 flex flex-col items-center justify-center min-w-[100vw] min-h-[100vh] bg-[#f3f4f6] dark:bg-[#1e293b] text-[#334155] dark:text-[#f1f5f9]">
       <div className="max-w-md w-full px-6 py-8 bg-white dark:bg-[#0f172a] rounded-lg shadow-lg">
@@ -22,7 +32,7 @@ export default function LogoutPage() {
           creación/activación de su tienda online. Gracias y disculpe las
           molestias.
         </p>
-        <Button onClick={() => logOut(router)}>Cerrar sesión</Button>
+        <Button onClick={() => handleSignOut()}>Cerrar sesión</Button>
       </div>
     </div>
   );

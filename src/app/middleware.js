@@ -1,55 +1,42 @@
-// middleware.ts
-import { createServerClient } from "@supabase/ssr";
+// middleware.js
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 
-export async function middleware(request) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+export async function middleware(req) {
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            supabaseResponse.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
+  // Refrescar sesión si está expirada
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Rutas protegidas
+  const protectedPaths = ["/", "/", "/"];
+  const isProtectedPath = protectedPaths.some((path) =>
+    req.nextUrl.pathname.startsWith(path)
   );
 
-  // IMPORTANTE: Esto refresca la sesión si es necesario
-  // No remover esta línea aunque parezca que no hace nada
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Redirigir a login si no hay sesión en ruta protegida
+  if (isProtectedPath && !session) {
+    const redirectUrl = new URL("/login", req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
 
-  // Opcional: Redirigir si no está autenticado
-  // if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-  //   const url = request.nextUrl.clone()
-  //   url.pathname = '/login'
-  //   return NextResponse.redirect(url)
-  // }
+  // Redirigir a dashboard si ya está autenticado e intenta ir a login
+  if (req.nextUrl.pathname === "/login" && session) {
+    const redirectUrl = new URL("/", req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
 
-  return supabaseResponse;
+  return res;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/login",
   ],
 };

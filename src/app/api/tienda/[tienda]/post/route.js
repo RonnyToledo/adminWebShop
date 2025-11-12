@@ -43,13 +43,12 @@ export async function POST(req) {
     const abstract = formData.get("abstract");
     const img = formData.get("image");
     let image = null;
-    console.log(img, !!img);
+
     if (img) {
       const uploadedRes = await UploadNewImage(img);
       image = uploadedRes?.secure_url ?? uploadedRes;
     }
     const datos = { image, abstract, description, slug, title, ui_store };
-    console.log(datos);
 
     const { data, error } = await supabase
       .from("blogs")
@@ -80,7 +79,6 @@ export async function DELETE(req) {
 
     const formData = await req.formData();
     const slug = formData.get("slug");
-
     const img = formData.get("image");
 
     if (img) {
