@@ -29,6 +29,7 @@ import {
   EyeOff,
   X,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -52,24 +53,55 @@ import { toast } from "sonner";
 import Link from "next/link";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
 
+// Constante para productos sin categoría
+const UNCATEGORIZED_ID = "uncategorized";
+
 export function ProductManagementSystem() {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [products, setProducts] = useState([]);
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
-
   const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
-    // Solo actualizar si realmente hay cambios
-    if (JSON.stringify(products) !== JSON.stringify(webshop.products)) {
-      setProducts(webshop.products);
+    if (JSON.stringify(products) !== JSON.stringify(webshop?.products || [])) {
+      setProducts(webshop?.products || []);
     }
-  }, [webshop.products]);
+  }, [webshop?.products]);
+
+  // Obtener productos sin categoría o con categoría inválida
+  const getUncategorizedProducts = () => {
+    const validCategoryIds =
+      webshop?.store?.categoria?.map((cat) => cat.id) || [];
+    return products.filter(
+      (product) =>
+        !product.caja ||
+        product.caja === UNCATEGORIZED_ID ||
+        !validCategoryIds.includes(product.caja)
+    );
+  };
+
+  // Obtener todas las categorías incluyendo "Sin categoría"
+  const getAllCategories = () => {
+    const categories = [...(webshop?.store?.categoria || [])];
+    const uncategorizedProducts = getUncategorizedProducts();
+
+    if (uncategorizedProducts.length > 0) {
+      categories.push({
+        id: UNCATEGORIZED_ID,
+        name: "Sin categoría",
+        isVirtual: true,
+      });
+    }
+
+    return categories;
+  };
 
   const DragAndDrop = (result) => {
     const { source, destination, draggableId } = result;
+
     if (!destination) return;
+
     const sourceCategory = source.droppableId;
     const destCategory = destination.droppableId;
     const sourceIndex = source.index;
@@ -80,7 +112,7 @@ export function ProductManagementSystem() {
       setProducts((prevProducts) =>
         OrderProducts(
           prevProducts,
-          webshop.store.categoria.map((obj) => obj.id),
+          getAllCategories().map((obj) => obj.id),
           sourceIndex,
           destIndex,
           sourceCategory
@@ -91,20 +123,25 @@ export function ProductManagementSystem() {
       setProducts((prevProducts) => {
         const newPrev = prevProducts.map((prod) =>
           prod.productId === draggableId
-            ? { ...prod, caja: destCategory, order: destIndex }
+            ? {
+                ...prod,
+                caja: destCategory === UNCATEGORIZED_ID ? null : destCategory,
+                order: destIndex,
+              }
             : prod
         );
 
         const productToMove = newPrev.find(
           (prod) => prod.productId === draggableId
         );
+
         if (productToMove) {
-          // Aplicar la nueva organización
           return OrderProducts(
             newPrev,
-            webshop?.store?.categoria.map((obj) => obj.id),
+            getAllCategories().map((obj) => obj.id),
             sourceIndex,
-            destIndex
+            destIndex,
+            destCategory
           );
         }
         return newPrev;
@@ -121,6 +158,7 @@ export function ProductManagementSystem() {
       )
     );
   };
+
   const getSelectedProductIds = () => {
     return selectedProducts.map((selected) => selected.productId);
   };
@@ -130,6 +168,7 @@ export function ProductManagementSystem() {
       (selected) => selected.productId === productId
     );
   };
+
   const toggleProductSelection = (productId, image) => {
     setSelectedProducts((prev) => {
       const isSelected = prev.some(
@@ -144,19 +183,12 @@ export function ProductManagementSystem() {
   };
 
   const toggleSelectAllInCategory = (categoryId) => {
-    const category = webshop?.store?.categoria.find(
-      (cat) => cat.id === categoryId
-    );
-    if (!category) return;
-    const categoryProducts = products
-      .filter((p) => p.caja == category.id)
-      .map((p) => ({
-        productId: p.productId,
-        image: p.image,
-      }));
-    const categoryProductIds = products
-      .filter((p) => p.caja == category.id)
-      .map((p) => p.productId);
+    const categoryProducts = getCategoryProducts(categoryId).map((p) => ({
+      productId: p.productId,
+      image: p.image,
+    }));
+
+    const categoryProductIds = categoryProducts.map((p) => p.productId);
     const selectedIds = getSelectedProductIds();
     const allSelected = categoryProductIds.every((productId) =>
       selectedIds.includes(productId)
@@ -164,12 +196,10 @@ export function ProductManagementSystem() {
 
     setSelectedProducts((prev) => {
       if (allSelected) {
-        // Remover todos los productos de esta categoría
         return prev.filter(
           (selected) => !categoryProductIds.includes(selected.productId)
         );
       } else {
-        // Agregar todos los productos de esta categoría que no estén seleccionados
         const newSelections = categoryProducts.filter(
           (product) =>
             !prev.some((selected) => selected.productId === product.productId)
@@ -179,6 +209,14 @@ export function ProductManagementSystem() {
     });
   };
 
+  // Función auxiliar para obtener productos de una categoría
+  const getCategoryProducts = (categoryId) => {
+    if (categoryId === UNCATEGORIZED_ID) {
+      return getUncategorizedProducts();
+    }
+    return products.filter((p) => p.caja === categoryId);
+  };
+
   const clearSelection = () => {
     setSelectedProducts([]);
   };
@@ -186,7 +224,6 @@ export function ProductManagementSystem() {
   const deleteProduct = async (value) => {
     setDownloading(true);
 
-    // validación mínima
     if (!value || (Array.isArray(value) && value.length === 0)) {
       setDownloading(false);
       toast.error("No hay productos para eliminar");
@@ -196,23 +233,17 @@ export function ProductManagementSystem() {
     const formData = new FormData();
     formData.append("values", JSON.stringify(value));
 
-    // construimos la promesa de eliminación (axios devuelve una Promise)
     const deletePromise = axios.delete(
-      `/api/tienda/${webshop.store.sitioweb}/products/`,
+      `/api/tienda/${webshop?.store?.sitioweb}/products/`,
       {
         data: formData,
-        // No forzar Content-Type para que el navegador ponga el boundary correcto
-        // headers: { "Content-Type": "multipart/form-data" },
       }
     );
 
     try {
-      // toast.promise mostrará loading / success / error automáticamente
       const res = await toast.promise(deletePromise, {
         loading: "Eliminando productos...",
         success: (response) => {
-          // si la petición fue satisfactoria, actualizamos el estado aquí
-          // (usar getSelectedProductIds() tal como lo tenías)
           const selectedIds = value.map((selected) => selected.productId);
           setWebshop((prev) => ({
             ...prev,
@@ -222,28 +253,21 @@ export function ProductManagementSystem() {
           }));
 
           setSelectedProducts([]);
-
-          // personaliza el mensaje de éxito según la respuesta del backend
           return (
             response?.data?.message ?? "Productos eliminados correctamente"
           );
         },
         error: (err) => {
-          // Sonner espera string; devolvemos mensaje legible
           const msg =
             err?.response?.data?.message ?? err?.message ?? "Error al eliminar";
           return `Error: ${msg}`;
         },
       });
 
-      // `res` es la respuesta axios en caso de éxito (opcional devolver o usar)
       return res;
     } catch (err) {
-      // ya mostramos toast de error desde toast.promise, pero igual logueamos
       console.error("deleteProduct error:", err);
       toast.error("Error");
-      // opcional: lanzar para manejo fuera de la función
-      // throw err;
     } finally {
       setDownloading(false);
     }
@@ -252,10 +276,11 @@ export function ProductManagementSystem() {
   const SaveData = async () => {
     setDownloading(true);
 
-    // obtenemos los productos modificados
-    const modified = obtenerProductosModificados(webshop.products, products);
+    const modified = obtenerProductosModificados(
+      webshop?.products || [],
+      products
+    );
 
-    // validación rápida: si no hay cambios, avisamos y salimos
     if (!modified || (Array.isArray(modified) && modified.length === 0)) {
       setDownloading(false);
       toast("No hay cambios para guardar");
@@ -265,35 +290,26 @@ export function ProductManagementSystem() {
     const formData = new FormData();
     formData.append("products", JSON.stringify(modified));
 
-    // la promesa que realiza la petición PUT
     const putPromise = axios.put(
-      `/api/tienda/${webshop.store.sitioweb}/products`,
+      `/api/tienda/${webshop?.store?.sitioweb}/products`,
       formData
-      // no pongas headers aquí; dejar que el navegador determine Content-Type + boundary
     );
 
     try {
-      // toast.promise mostrará loading / success / error automáticamente
-      const res = toast.promise(putPromise, {
+      const res = await toast.promise(putPromise, {
         loading: "Guardando cambios...",
         success: (response) => {
-          // Actualizamos el estado local con la lista 'products' (asumiendo que 'products' ya
-          // contiene la versión actualizada que quieres guardar en el backend)
           setWebshop((prev) => ({
             ...prev,
             products: products,
           }));
 
-          // opcional: si quieres limpiar/reevaluar algún estado, hazlo aquí
-          // setSomeOtherState(...);
-          // mensaje de éxito mostrado por Sonner
           const count = Array.isArray(modified) ? modified.length : 1;
           return `${count} producto${count === 1 ? "" : "s"} actualizado${
             count === 1 ? "" : "s"
           } correctamente`;
         },
         error: (err) => {
-          // Construimos un mensaje legible para el usuario
           const msg =
             err?.response?.data?.message ??
             err?.message ??
@@ -302,10 +318,8 @@ export function ProductManagementSystem() {
         },
       });
 
-      // devuelve la respuesta si hace falta usarla
       return res;
     } catch (err) {
-      // El toast de error ya salió por toast.promise, pero dejamos el log
       console.error("SaveData error:", err);
     } finally {
       setDownloading(false);
@@ -313,6 +327,7 @@ export function ProductManagementSystem() {
   };
 
   const totalSelected = selectedProducts.length;
+  const allCategories = getAllCategories();
 
   return (
     <div className="space-y-3 md:space-y-6">
@@ -368,10 +383,9 @@ export function ProductManagementSystem() {
 
       <DragDropContext onDragEnd={DragAndDrop}>
         <div className="grid gap-3 md:gap-6">
-          {webshop?.store?.categoria.map((category) => {
-            const categoryProductIds = products
-              .filter((p) => p.caja == category.id)
-              .map((p) => p.productId);
+          {allCategories.map((category) => {
+            const categoryProducts = getCategoryProducts(category.id);
+            const categoryProductIds = categoryProducts.map((p) => p.productId);
             const selectedIds = getSelectedProductIds();
             const selectedInCategory = categoryProductIds.filter((id) =>
               selectedIds.includes(id)
@@ -382,13 +396,20 @@ export function ProductManagementSystem() {
             const someSelectedInCategory =
               selectedInCategory > 0 &&
               selectedInCategory < categoryProductIds.length;
+
             return (
-              <Card key={category.id} className="bg-card">
+              <Card
+                key={category.id}
+                className={cn(
+                  "bg-card",
+                  category.isVirtual &&
+                    "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"
+                )}
+              >
                 <CardHeader className="p-3 md:pb-4">
                   <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {products.filter((obj) => obj.caja == category.id)
-                        .length > 0 && (
+                      {categoryProducts.length > 0 && (
                         <Checkbox
                           checked={allSelectedInCategory}
                           ref={(el) => {
@@ -399,7 +420,10 @@ export function ProductManagementSystem() {
                           }
                         />
                       )}
-                      <span className="text-xl font-bold text-card-foreground">
+                      <span className="text-xl font-bold text-card-foreground flex items-center gap-2">
+                        {category.isVirtual && (
+                          <AlertTriangle className="w-5 h-5 text-amber-500" />
+                        )}
                         {category.name}
                       </span>
                       {selectedInCategory > 0 && (
@@ -414,10 +438,13 @@ export function ProductManagementSystem() {
                     </div>
                     <Badge
                       variant="secondary"
-                      className="bg-secondary text-secondary-foreground"
+                      className={cn(
+                        "bg-secondary text-secondary-foreground",
+                        category.isVirtual &&
+                          "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                      )}
                     >
-                      {products.filter((obj) => obj.caja == category.id).length}{" "}
-                      productos
+                      {categoryProducts.length} productos
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -431,13 +458,14 @@ export function ProductManagementSystem() {
                           "min-h-[100px] rounded-lg border-2 border-dashed transition-colors",
                           snapshot.isDraggingOver
                             ? "border-primary bg-primary/5"
+                            : category.isVirtual
+                            ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10"
                             : "border-border bg-muted/20"
                         )}
                       >
-                        <div className="grid  gap-2 md:gap-4 p-2 md:p-4">
-                          {products
-                            .filter((obj) => obj.caja == category.id)
-                            .sort((a, b) => a.order - b.order)
+                        <div className="grid gap-2 md:gap-4 p-2 md:p-4">
+                          {categoryProducts
+                            .sort((a, b) => (a.order || 0) - (b.order || 0))
                             .map((product, index) => (
                               <Draggable
                                 key={product.productId}
@@ -475,8 +503,8 @@ export function ProductManagementSystem() {
                                         onClick={(e) => e.stopPropagation()}
                                       />
                                       <h4 className="text-slate-700">
-                                        {product.order < 9999
-                                          ? product.order + 1
+                                        {(product.order ?? 0) < 9999
+                                          ? (product.order ?? 0) + 1
                                           : ""}
                                         .
                                       </h4>
@@ -490,8 +518,8 @@ export function ProductManagementSystem() {
                                               width={300}
                                               height={200}
                                               src={product.image || logoApp}
-                                              alt={product.title}
-                                              className="w-16 h-16 filter object-cover rounded-md border border-border  aspect-square"
+                                              alt={product.title || "Producto"}
+                                              className="w-16 h-16 filter object-cover rounded-md border border-border aspect-square"
                                               style={{
                                                 filter: product.stock
                                                   ? "initial"
@@ -511,7 +539,7 @@ export function ProductManagementSystem() {
                                             width={300}
                                             height={200}
                                             src={product.image || logoApp}
-                                            alt={product.title}
+                                            alt={product.title || "Producto"}
                                             className="w-full h-auto rounded-lg aspect-square"
                                           />
                                         </DialogContent>
@@ -519,23 +547,25 @@ export function ProductManagementSystem() {
 
                                       <div className="flex-1 min-w-0">
                                         <h3 className="font-semibold text-foreground truncate">
-                                          {product.title}
+                                          {product.title || "Sin título"}
                                         </h3>
                                         <p className="text-sm text-muted-foreground text-slate-600">
                                           Creado:{" "}
-                                          {format(
-                                            new Date(product.creado),
-                                            "short"
-                                          )}
+                                          {product.creado
+                                            ? format(
+                                                new Date(product.creado),
+                                                "short"
+                                              )
+                                            : "N/A"}
                                         </p>
                                         <p className="text-sm text-primary text-slate-800">
-                                          ${product.price.toFixed(2)} -{" "}
-                                          {webshop?.store?.monedas.find(
+                                          ${(product.price || 0).toFixed(2)} -{" "}
+                                          {webshop?.store?.monedas?.find(
                                             (currency) =>
-                                              currency.id ==
+                                              currency.id ===
                                               product?.default_moneda
                                           )?.nombre ??
-                                            webshop?.store?.monedas.find(
+                                            webshop?.store?.monedas?.find(
                                               (currency) => currency.defecto
                                             )?.nombre ??
                                             ""}
@@ -546,7 +576,7 @@ export function ProductManagementSystem() {
                                         {!webshop?.store?.stocks && (
                                           <div className="flex flex-col items-center gap-2">
                                             <Switch
-                                              checked={product.stock}
+                                              checked={!!product.stock}
                                               onCheckedChange={() =>
                                                 setProducts((prev) =>
                                                   prev.map((prod) =>
@@ -572,10 +602,10 @@ export function ProductManagementSystem() {
                                             </span>
                                           </div>
                                         )}
-                                        <div className="flex  flex-col-reverse items-center gap-2">
+                                        <div className="flex flex-col-reverse items-center gap-2">
                                           <Switch
                                             className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
-                                            checked={product.visible}
+                                            checked={!!product.visible}
                                             onCheckedChange={() =>
                                               toggleProductStatus(
                                                 product.productId,
@@ -591,7 +621,7 @@ export function ProductManagementSystem() {
                                         </div>
                                       </div>
 
-                                      <div className="hidden md:flex flex-col-reverse gap-1 ">
+                                      <div className="hidden md:flex flex-col-reverse gap-1">
                                         {product.stock ? (
                                           webshop?.store?.stocks ? (
                                             <Badge
@@ -690,10 +720,11 @@ export function ProductManagementSystem() {
                               </Draggable>
                             ))}
                           {provided.placeholder}
-                          {products.filter((obj) => obj.caja == category.id)
-                            .length === 0 && (
+                          {categoryProducts.length === 0 && (
                             <div className="text-center py-8 text-muted-foreground">
-                              Arrastra productos aquí o agrega nuevos
+                              {category.isVirtual
+                                ? "No hay productos sin categoría"
+                                : "Arrastra productos aquí o agrega nuevos"}
                             </div>
                           )}
                         </div>
@@ -718,17 +749,28 @@ export function ProductManagementSystem() {
           Guardar
         </Button>
       </div>
-      <ConfimationOut action={hasPendingChanges(products, webshop.products)} />
+      <ConfimationOut
+        action={hasPendingChanges(products, webshop?.products || [])}
+      />
     </div>
   );
 }
+
 const reorder = (list, startIndex, endIndex) => {
   const result = [...list];
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
   return result;
 };
+
 function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
+  if (!Array.isArray(productos) || !Array.isArray(categorias)) {
+    console.error(
+      "OrderProducts: productos o categorías no son arrays válidos"
+    );
+    return productos || [];
+  }
+
   const productosOrdenados = {};
 
   // Inicializar el objeto con categorías vacías
@@ -738,33 +780,45 @@ function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
 
   // Llenar el objeto con productos según su categoría
   productos.forEach((producto) => {
-    if (productosOrdenados[producto.caja]) {
-      productosOrdenados[producto.caja].push(producto);
+    const productoCategoria = producto.caja || UNCATEGORIZED_ID;
+    if (productosOrdenados[productoCategoria]) {
+      productosOrdenados[productoCategoria].push(producto);
+    } else {
+      // Si la categoría no existe, añadirla como sin categoría
+      if (!productosOrdenados[UNCATEGORIZED_ID]) {
+        productosOrdenados[UNCATEGORIZED_ID] = [];
+      }
+      productosOrdenados[UNCATEGORIZED_ID].push(producto);
     }
   });
 
-  if (specific !== "none" && specific != undefined) {
-    // Reordenar los productos en la categoría específica
-    const reorderedProducts = reorder(
-      productos.filter((obj) => obj.caja == specific),
-      startIndex,
-      endIndex
+  if (specific && specific !== "none") {
+    const productosEnCategoria = productos.filter(
+      (obj) => (obj.caja || UNCATEGORIZED_ID) === specific
     );
-    // Asignar el resultado de la categoría reordenada
-    productosOrdenados[specific] = reorderedProducts;
+
+    if (productosEnCategoria.length > 0) {
+      const reorderedProducts = reorder(
+        productosEnCategoria,
+        startIndex,
+        endIndex
+      );
+      productosOrdenados[specific] = reorderedProducts;
+    }
   }
+
+  // Productos que no pertenecen a ninguna categoría válida
   const sin_category = productos.filter(
-    (prod) => !categorias.includes(prod.caja)
+    (prod) => !categorias.includes(prod.caja || UNCATEGORIZED_ID)
   );
 
-  // Retornar el resultado final con el orden asignado
   return [...asignarOrden(productosOrdenados), ...sin_category];
 }
+
 const asignarOrden = (productos) => {
   const resultadoFinal = [];
 
   Object.keys(productos).forEach((categoria) => {
-    // Verificar que productos[categoria] sea un arreglo
     if (Array.isArray(productos[categoria])) {
       resultadoFinal.push(
         ...productos[categoria].map((prod, index) => ({
@@ -782,11 +836,19 @@ const asignarOrden = (productos) => {
 
   return resultadoFinal;
 };
+
 const hasPendingChanges = (data, store) => {
   return JSON.stringify(data) !== JSON.stringify(store);
 };
+
 const obtenerProductosModificados = (productosOriginales, productosNuevos) => {
-  // Crear un objeto de búsqueda para los productos originales
+  if (!Array.isArray(productosOriginales) || !Array.isArray(productosNuevos)) {
+    console.error(
+      "obtenerProductosModificados: Los parámetros deben ser arrays"
+    );
+    return [];
+  }
+
   const productosMap = Object.fromEntries(
     productosOriginales.map((producto) => [producto.productId, producto])
   );

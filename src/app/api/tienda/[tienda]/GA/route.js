@@ -27,6 +27,10 @@ const auth = new GoogleAuth({
 const analyticsDataClient = new BetaAnalyticsDataClient({ auth });
 
 export async function GET(request, { params }) {
+  const headers = new Headers();
+  headers.set("Access-Control-Allow-Origin", "http://localhost:4000");
+  headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   const tienda = (await params).tienda;
 
   try {
