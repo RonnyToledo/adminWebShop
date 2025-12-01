@@ -332,7 +332,7 @@ export function ProductManagementSystem() {
   return (
     <div className="space-y-3 md:space-y-6">
       {totalSelected > 0 && (
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-primary/5 backdrop-blur-lg border-primary/20 sticky top-16 z-10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="font-medium text-primary">
