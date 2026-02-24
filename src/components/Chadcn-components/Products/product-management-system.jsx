@@ -18,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,7 +50,7 @@ import { useRouter } from "next/navigation";
 import { format } from "@formkit/tempo";
 import Image from "next/image";
 import axios from "axios";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import Link from "next/link";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
 
@@ -77,7 +78,7 @@ export function ProductManagementSystem() {
       (product) =>
         !product.caja ||
         product.caja === UNCATEGORIZED_ID ||
-        !validCategoryIds.includes(product.caja)
+        !validCategoryIds.includes(product.caja),
     );
   };
 
@@ -115,8 +116,8 @@ export function ProductManagementSystem() {
           getAllCategories().map((obj) => obj.id),
           sourceIndex,
           destIndex,
-          sourceCategory
-        )
+          sourceCategory,
+        ),
       );
     } else {
       // Mover el producto a una nueva categoría
@@ -128,11 +129,11 @@ export function ProductManagementSystem() {
                 caja: destCategory === UNCATEGORIZED_ID ? null : destCategory,
                 order: destIndex,
               }
-            : prod
+            : prod,
         );
 
         const productToMove = newPrev.find(
-          (prod) => prod.productId === draggableId
+          (prod) => prod.productId === draggableId,
         );
 
         if (productToMove) {
@@ -141,7 +142,7 @@ export function ProductManagementSystem() {
             getAllCategories().map((obj) => obj.id),
             sourceIndex,
             destIndex,
-            destCategory
+            destCategory,
           );
         }
         return newPrev;
@@ -154,8 +155,8 @@ export function ProductManagementSystem() {
       prev.map((product) =>
         product.productId === productId
           ? { ...product, [field]: !product[field] }
-          : product
-      )
+          : product,
+      ),
     );
   };
 
@@ -165,14 +166,14 @@ export function ProductManagementSystem() {
 
   const isProductSelected = (productId) => {
     return selectedProducts.some(
-      (selected) => selected.productId === productId
+      (selected) => selected.productId === productId,
     );
   };
 
   const toggleProductSelection = (productId, image) => {
     setSelectedProducts((prev) => {
       const isSelected = prev.some(
-        (selected) => selected.productId === productId
+        (selected) => selected.productId === productId,
       );
       if (isSelected) {
         return prev.filter((selected) => selected.productId !== productId);
@@ -191,18 +192,18 @@ export function ProductManagementSystem() {
     const categoryProductIds = categoryProducts.map((p) => p.productId);
     const selectedIds = getSelectedProductIds();
     const allSelected = categoryProductIds.every((productId) =>
-      selectedIds.includes(productId)
+      selectedIds.includes(productId),
     );
 
     setSelectedProducts((prev) => {
       if (allSelected) {
         return prev.filter(
-          (selected) => !categoryProductIds.includes(selected.productId)
+          (selected) => !categoryProductIds.includes(selected.productId),
         );
       } else {
         const newSelections = categoryProducts.filter(
           (product) =>
-            !prev.some((selected) => selected.productId === product.productId)
+            !prev.some((selected) => selected.productId === product.productId),
         );
         return [...prev, ...newSelections];
       }
@@ -226,7 +227,10 @@ export function ProductManagementSystem() {
 
     if (!value || (Array.isArray(value) && value.length === 0)) {
       setDownloading(false);
-      toast.error("No hay productos para eliminar");
+      sileo.error({
+        title: "Error",
+        description: "No hay productos para eliminar",
+      });
       return;
     }
 
@@ -237,37 +241,45 @@ export function ProductManagementSystem() {
       `/api/tienda/${webshop?.store?.sitioweb}/products/`,
       {
         data: formData,
-      }
+      },
     );
 
     try {
-      const res = await toast.promise(deletePromise, {
-        loading: "Eliminando productos...",
+      const res = await sileo.promise(deletePromise, {
+        loading: { title: "Eliminando productos..." },
         success: (response) => {
           const selectedIds = value.map((selected) => selected.productId);
           setWebshop((prev) => ({
             ...prev,
             products: prev.products.filter(
-              (product) => !selectedIds.includes(product.productId)
+              (product) => !selectedIds.includes(product.productId),
             ),
           }));
 
           setSelectedProducts([]);
-          return (
-            response?.data?.message ?? "Productos eliminados correctamente"
-          );
+          return {
+            title: "Productos eliminados correctamente",
+            description:
+              response?.data?.message ?? "Productos eliminados correctamente",
+          };
         },
         error: (err) => {
           const msg =
             err?.response?.data?.message ?? err?.message ?? "Error al eliminar";
-          return `Error: ${msg}`;
+          return {
+            title: "Error al eliminar productos",
+            description: msg,
+          };
         },
       });
 
       return res;
     } catch (err) {
       console.error("deleteProduct error:", err);
-      toast.error("Error");
+      sileo.error({
+        title: "Error",
+        description: "Error al eliminar productos",
+      });
     } finally {
       setDownloading(false);
     }
@@ -278,12 +290,15 @@ export function ProductManagementSystem() {
 
     const modified = obtenerProductosModificados(
       webshop?.products || [],
-      products
+      products,
     );
 
     if (!modified || (Array.isArray(modified) && modified.length === 0)) {
       setDownloading(false);
-      toast("No hay cambios para guardar");
+      sileo.info({
+        title: "No hay cambios para guardar",
+        description: "No se detectaron modificaciones en los productos.",
+      });
       return;
     }
 
@@ -292,12 +307,12 @@ export function ProductManagementSystem() {
 
     const putPromise = axios.put(
       `/api/tienda/${webshop?.store?.sitioweb}/products`,
-      formData
+      formData,
     );
 
     try {
-      const res = await toast.promise(putPromise, {
-        loading: "Guardando cambios...",
+      const res = await sileo.promise(putPromise, {
+        loading: { title: "Guardando cambios..." },
         success: (response) => {
           setWebshop((prev) => ({
             ...prev,
@@ -305,16 +320,21 @@ export function ProductManagementSystem() {
           }));
 
           const count = Array.isArray(modified) ? modified.length : 1;
-          return `${count} producto${count === 1 ? "" : "s"} actualizado${
-            count === 1 ? "" : "s"
-          } correctamente`;
+          return {
+            title: `${count} producto${count === 1 ? "" : "s"} actualizado${
+              count === 1 ? "" : "s"
+            } correctamente`,
+          };
         },
         error: (err) => {
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo actualizar";
-          return `Error: ${msg}`;
+          return {
+            title: "Error al guardar cambios",
+            description: msg,
+          };
         },
       });
 
@@ -388,7 +408,7 @@ export function ProductManagementSystem() {
             const categoryProductIds = categoryProducts.map((p) => p.productId);
             const selectedIds = getSelectedProductIds();
             const selectedInCategory = categoryProductIds.filter((id) =>
-              selectedIds.includes(id)
+              selectedIds.includes(id),
             ).length;
             const allSelectedInCategory =
               categoryProductIds.length > 0 &&
@@ -403,7 +423,7 @@ export function ProductManagementSystem() {
                 className={cn(
                   "bg-card",
                   category.isVirtual &&
-                    "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"
+                    "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20",
                 )}
               >
                 <CardHeader className="p-3 md:pb-4">
@@ -441,14 +461,14 @@ export function ProductManagementSystem() {
                       className={cn(
                         "bg-secondary text-secondary-foreground",
                         category.isVirtual &&
-                          "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                          "bg-amber-500/20 text-amber-700 dark:text-amber-300",
                       )}
                     >
                       {categoryProducts.length} productos
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
+                <CardContent className="p-1 pt-0 md:p-6 md:pt-0">
                   <Droppable droppableId={category.id}>
                     {(provided, snapshot) => (
                       <div
@@ -459,11 +479,11 @@ export function ProductManagementSystem() {
                           snapshot.isDraggingOver
                             ? "border-primary bg-primary/5"
                             : category.isVirtual
-                            ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10"
-                            : "border-border bg-muted/20"
+                              ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10"
+                              : "border-border bg-muted/20",
                         )}
                       >
-                        <div className="grid gap-2 md:gap-4 p-2 md:p-4">
+                        <div className="grid gap-1 md:gap-4 p-1 md:p-4">
                           {categoryProducts
                             .sort((a, b) => (a.order || 0) - (b.order || 0))
                             .map((product, index) => (
@@ -478,83 +498,82 @@ export function ProductManagementSystem() {
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
                                     className={cn(
-                                      `bg-gradient-to-br from-background ${
-                                        product.visible
-                                          ? "to-background"
-                                          : "to-red-500/10"
-                                      } border border-border rounded-lg p-2 md:p-4 transition-all`,
+                                      `bg-gradient-to-br from-background border border-border rounded-lg p-2 md:p-4 transition-all ${
+                                        !product.visible
+                                          ? "from-red-600/10 to-red-900/10"
+                                          : product.stock
+                                            ? "to-background"
+                                            : "from-slate-400/10 to-slate-600/10"
+                                      } `,
                                       snapshot.isDragging &&
                                         "shadow-lg rotate-2 scale-105",
                                       isProductSelected(product.productId) &&
-                                        "border border-slate-300 bg-primary/5"
+                                        "border border-slate-300 bg-primary/5",
                                     )}
                                   >
-                                    <div className="flex items-center gap-2 md:gap-4">
+                                    <div className="flex items-center gap-1 md:gap-4">
                                       <Checkbox
                                         checked={isProductSelected(
-                                          product.productId
+                                          product.productId,
                                         )}
                                         onCheckedChange={() =>
                                           toggleProductSelection(
                                             product.productId,
-                                            product.image
+                                            product.image,
                                           )
                                         }
                                         onClick={(e) => e.stopPropagation()}
                                       />
-                                      <h4 className="text-slate-700">
+                                      <h4 className="text-slate-700 hidden md:flex">
                                         {(product.order ?? 0) < 9999
                                           ? (product.order ?? 0) + 1
                                           : ""}
                                         .
                                       </h4>
-                                      <Dialog>
-                                        <DialogTrigger
-                                          asChild
-                                          className="hidden md:flex"
-                                        >
-                                          <div className="cursor-pointer hover:opacity-80 transition-opacity">
+
+                                      <div className="cursor-pointer hover:opacity-80 transition-opacity">
+                                        <Image
+                                          width={300}
+                                          height={200}
+                                          src={product.image || logoApp}
+                                          alt={product.title || "Producto"}
+                                          className="w-16 h-16 filter object-cover rounded-md border border-border aspect-square backdrop-blur-2xl"
+                                          style={{
+                                            filter:
+                                              !product.stock || !product.visible
+                                                ? "grayscale(1)"
+                                                : "initial",
+                                          }}
+                                        />
+                                      </div>
+
+                                      <div className="flex-1 min-w-0">
+                                        <Dialog>
+                                          <DialogTrigger asChild>
+                                            <h3 className="font-semibold text-foreground line-clamp-1 max-w-[40dvw]  d:w-auto">
+                                              {product.title || "Sin título"}
+                                            </h3>
+                                          </DialogTrigger>
+
+                                          <DialogContent className="max-w-2xl flex flex-col gap-0 justify-center items-center bg-transparent w-fit p-0 border-none">
+                                            <DialogHeader>
+                                              <DialogTitle></DialogTitle>
+                                              <DialogDescription></DialogDescription>
+                                            </DialogHeader>
                                             <Image
                                               width={300}
                                               height={200}
                                               src={product.image || logoApp}
                                               alt={product.title || "Producto"}
-                                              className="w-16 h-16 filter object-cover rounded-md border border-border aspect-square"
-                                              style={{
-                                                filter: product.stock
-                                                  ? "initial"
-                                                  : "grayscale(1)",
-                                              }}
+                                              className="w-[300dvw/4] md:w-[100dvw/2] h-auto object-cover rounded-lg aspect-square"
                                             />
-                                          </div>
-                                        </DialogTrigger>
-
-                                        <DialogContent className="max-w-2xl">
-                                          <DialogHeader>
-                                            <DialogTitle></DialogTitle>
-                                            <DialogDescription></DialogDescription>
-                                          </DialogHeader>
-
-                                          <Image
-                                            width={300}
-                                            height={200}
-                                            src={product.image || logoApp}
-                                            alt={product.title || "Producto"}
-                                            className="w-full h-auto rounded-lg aspect-square"
-                                          />
-                                        </DialogContent>
-                                      </Dialog>
-
-                                      <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-foreground truncate">
-                                          {product.title || "Sin título"}
-                                        </h3>
+                                          </DialogContent>
+                                        </Dialog>
                                         <p className="text-sm text-muted-foreground text-slate-600">
-                                          Creado:{" "}
                                           {product.creado
                                             ? format(
                                                 new Date(product.creado),
-                                                "short"
+                                                "short",
                                               )
                                             : "N/A"}
                                         </p>
@@ -563,16 +582,16 @@ export function ProductManagementSystem() {
                                           {webshop?.store?.monedas?.find(
                                             (currency) =>
                                               currency.id ===
-                                              product?.default_moneda
+                                              product?.default_moneda,
                                           )?.nombre ??
                                             webshop?.store?.monedas?.find(
-                                              (currency) => currency.defecto
+                                              (currency) => currency.defecto,
                                             )?.nombre ??
                                             ""}
                                         </p>
                                       </div>
 
-                                      <div className="flex gap-3">
+                                      <div className="gap-3 hidden md:flex">
                                         {!webshop?.store?.stocks && (
                                           <div className="flex flex-col items-center gap-2">
                                             <Switch
@@ -588,8 +607,8 @@ export function ProductManagementSystem() {
                                                             ? 0
                                                             : 1,
                                                         }
-                                                      : prod
-                                                  )
+                                                      : prod,
+                                                  ),
                                                 )
                                               }
                                             />
@@ -609,7 +628,7 @@ export function ProductManagementSystem() {
                                             onCheckedChange={() =>
                                               toggleProductStatus(
                                                 product.productId,
-                                                "visible"
+                                                "visible",
                                               )
                                             }
                                           />
@@ -667,30 +686,82 @@ export function ProductManagementSystem() {
 
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="sm">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="size-8 px-2"
+                                          >
                                             <MoreVertical className="w-4 h-4" />
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                          {!webshop?.store?.stocks && (
+                                            <DropdownMenuItem className="flex items-center justify-between gap-2 md:hidden">
+                                              <span className="text-sm">
+                                                {product.stock
+                                                  ? webshop?.store?.stocks
+                                                    ? `${product.stock} unidades`
+                                                    : "En Stock"
+                                                  : "Agotado"}
+                                              </span>
+                                              <Switch
+                                                checked={!!product.stock}
+                                                onCheckedChange={() =>
+                                                  setProducts((prev) =>
+                                                    prev.map((prod) =>
+                                                      product.productId ===
+                                                      prod.productId
+                                                        ? {
+                                                            ...product,
+                                                            stock: product.stock
+                                                              ? 0
+                                                              : 1,
+                                                          }
+                                                        : prod,
+                                                    ),
+                                                  )
+                                                }
+                                              />
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuItem className="flex  items-center justify-between gap-2 md:hidden">
+                                            <span className="text-sm">
+                                              {!product.visible
+                                                ? "Oculto"
+                                                : "Visible"}
+                                            </span>
+                                            <Switch
+                                              className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
+                                              checked={!!product.visible}
+                                              onCheckedChange={() =>
+                                                toggleProductStatus(
+                                                  product.productId,
+                                                  "visible",
+                                                )
+                                              }
+                                            />
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
                                           <DropdownMenuItem asChild>
                                             <Link
                                               href={`/products/${product.productId}`}
                                             >
-                                              <Edit className="w-4 h-4 mr-2" />
+                                              <Edit className="size-4 mr-2" />
                                               Editar producto
                                             </Link>
                                           </DropdownMenuItem>
-
                                           <DropdownMenuItem asChild>
                                             <Link
                                               href={`/products/${product.productId}`}
                                             >
-                                              <Eye className="w-4 h-4 mr-2" />
+                                              <Eye className="size-4 mr-2" />
                                               Ver en tienda
                                             </Link>
                                           </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+
                                           <DropdownMenuItem
-                                            className="text-destructive"
+                                            className="text-destructive gap-2"
                                             onClick={async () =>
                                               await deleteProduct([
                                                 {
@@ -702,12 +773,12 @@ export function ProductManagementSystem() {
                                           >
                                             {!downloading ? (
                                               <>
-                                                <Trash2 className="h-3 w-3" />
+                                                <Trash2 className="size-4" />
                                                 Eliminar
                                               </>
                                             ) : (
                                               <>
-                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                <Loader2 className="size-4 animate-spin" />
                                                 Eliminando
                                               </>
                                             )}
@@ -766,7 +837,7 @@ const reorder = (list, startIndex, endIndex) => {
 function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
   if (!Array.isArray(productos) || !Array.isArray(categorias)) {
     console.error(
-      "OrderProducts: productos o categorías no son arrays válidos"
+      "OrderProducts: productos o categorías no son arrays válidos",
     );
     return productos || [];
   }
@@ -794,14 +865,14 @@ function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
 
   if (specific && specific !== "none") {
     const productosEnCategoria = productos.filter(
-      (obj) => (obj.caja || UNCATEGORIZED_ID) === specific
+      (obj) => (obj.caja || UNCATEGORIZED_ID) === specific,
     );
 
     if (productosEnCategoria.length > 0) {
       const reorderedProducts = reorder(
         productosEnCategoria,
         startIndex,
-        endIndex
+        endIndex,
       );
       productosOrdenados[specific] = reorderedProducts;
     }
@@ -809,7 +880,7 @@ function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
 
   // Productos que no pertenecen a ninguna categoría válida
   const sin_category = productos.filter(
-    (prod) => !categorias.includes(prod.caja || UNCATEGORIZED_ID)
+    (prod) => !categorias.includes(prod.caja || UNCATEGORIZED_ID),
   );
 
   return [...asignarOrden(productosOrdenados), ...sin_category];
@@ -824,12 +895,12 @@ const asignarOrden = (productos) => {
         ...productos[categoria].map((prod, index) => ({
           ...prod,
           order: index,
-        }))
+        })),
       );
     } else {
       console.warn(
         `La categoría ${categoria} no es un arreglo`,
-        productos[categoria]
+        productos[categoria],
       );
     }
   });
@@ -844,13 +915,13 @@ const hasPendingChanges = (data, store) => {
 const obtenerProductosModificados = (productosOriginales, productosNuevos) => {
   if (!Array.isArray(productosOriginales) || !Array.isArray(productosNuevos)) {
     console.error(
-      "obtenerProductosModificados: Los parámetros deben ser arrays"
+      "obtenerProductosModificados: Los parámetros deben ser arrays",
     );
     return [];
   }
 
   const productosMap = Object.fromEntries(
-    productosOriginales.map((producto) => [producto.productId, producto])
+    productosOriginales.map((producto) => [producto.productId, producto]),
   );
 
   return productosNuevos.filter((productoNuevo) => {

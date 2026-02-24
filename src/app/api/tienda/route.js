@@ -90,7 +90,6 @@ const datos = {
 export async function POST(request, { params }) {
   await LogUser();
 
-  console.log("asas");
   const data = await request.formData();
 
   const name = data.get("name") || datos.name;

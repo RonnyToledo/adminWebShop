@@ -29,7 +29,7 @@ import { logoApp } from "@/utils/image";
 import ImageUploadDrag from "../component/ImageDND";
 import { v4 as uuidv4 } from "uuid";
 import SecondaryImagesManager from "./Specific/secondaryImagesManager";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import Image from "next/image";
 import { Trash2, Info, X } from "lucide-react";
 import axios from "axios";
@@ -50,6 +50,14 @@ export function ProductEditForm({
   const [loadingCategory, setloadingCategory] = useState(false);
 
   const updateProduct = (field, value) => {
+    if (field == "price") {
+      console.log(field, value);
+      onProductChange({
+        ...product,
+        price: value,
+        oldPrice: product.oldPrice > value ? product.oldPrice : 0,
+      });
+    }
     onProductChange({ ...product, [field]: value });
   };
 
@@ -61,11 +69,11 @@ export function ProductEditForm({
     ) {
       setSelectedMoneda(
         webshop?.store?.monedas.find(
-          (currency) => currency.id == product?.default_moneda
+          (currency) => currency.id == product?.default_moneda,
         )?.id
           ? product?.default_moneda
-          : webshop?.store?.monedas.find((currency) => currency.defecto)
-              ?.nombre ?? ""
+          : (webshop?.store?.monedas.find((currency) => currency.defecto)
+              ?.nombre ?? ""),
       );
     }
   }, [product?.default_moneda]);
@@ -78,14 +86,17 @@ export function ProductEditForm({
       ]);
       setNewTag("");
     } else {
-      toast.error("Error: Etiqueta ya creada o invalida");
+      sileo.error({
+        title: "Error",
+        description: "Etiqueta ya creada o invalida",
+      });
     }
   };
 
   const removeTag = (tagToRemove) => {
     updateProduct(
       "caracteristicas",
-      product?.caracteristicas.filter((tag) => tag !== tagToRemove)
+      product?.caracteristicas.filter((tag) => tag !== tagToRemove),
     );
   };
 
@@ -100,14 +111,14 @@ export function ProductEditForm({
 
   const updateAddon = (addonId, field, value) => {
     const updatedAddons = product?.agregados.map((addon) =>
-      addon.id === addonId ? { ...addon, [field]: value } : addon
+      addon.id === addonId ? { ...addon, [field]: value } : addon,
     );
     updateProduct("agregados", updatedAddons);
   };
 
   const removeAddon = (addonId) => {
     const filteredAddons = product?.agregados.filter(
-      (addon) => addon.id !== addonId
+      (addon) => addon.id !== addonId,
     );
     updateProduct("agregados", filteredAddons);
   };
@@ -137,13 +148,19 @@ export function ProductEditForm({
     setloadingCategory(true);
     // Validaciones básicas antes de llamar a la API
     if (!newCategory || newCategory.trim() === "") {
-      toast.error("Debes indicar el nombre de la categoría.");
+      sileo.error({
+        title: "Error",
+        description: "Debes indicar el nombre de la categoría.",
+      });
       return;
     }
     if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
-      toast.error(
-        "Información de la tienda incompleta. Revisa la configuración."
-      );
+      sileo.error({
+        title: "Error",
+        description:
+          "Información de la tienda incompleta. Revisa la configuración.",
+      });
+
       return;
     }
     // Preparamos el payload (JSON). No meter headers en el cuerpo.
@@ -159,12 +176,15 @@ export function ProductEditForm({
       {
         // Para JSON axios suele poner Content-Type por defecto, pero lo dejamos explícito si lo prefieres:
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
     try {
-      // toast.promise gestionará loading / success / error visualmente
-      const res = toast.promise(postPromise, {
-        loading: "Creando categoría...",
+      // sileo.promise gestionará loading / success / error visualmente
+      const res = sileo.promise(postPromise, {
+        loading: {
+          title: "Creando categoría...",
+          description: "Por favor, espera mientras se crea la categoría.",
+        },
         success: (response) => {
           // Aceptamos 200 o 201 como éxito
           if (response?.status === 200 || response?.status === 201) {
@@ -199,24 +219,28 @@ export function ProductEditForm({
             }
             // Limpiar estado del formulario
             setnewCategory("");
-            return response?.data?.message ?? "Categoría creada correctamente";
+            return {
+              title:
+                response?.data?.message ?? "Categoría creada correctamente",
+            };
           }
           // Si el status no es 200/201 lo tratamos como mensaje inesperado
-          return `Respuesta inesperada del servidor: ${response?.status}`;
+          return {
+            title: "Error",
+            description: `Respuesta inesperada del servidor: ${response?.status}`,
+          };
         },
         error: (err) => {
-          // Mensaje legible para mostrar en el toast
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo crear la categoría";
-          return `Error: ${msg}`;
+          return { title: "Error", description: `Error: ${msg}` };
         },
       });
       // Opcional: devolver la respuesta si quien llama la función la necesita
       return res;
     } catch (err) {
-      // El toast de error ya se mostró mediante toast.promise; igual registramos para debugging
       console.error("addCategory error:", err);
     } finally {
       // Aseguramos limpiar estados en cualquier caso
@@ -277,7 +301,7 @@ export function ProductEditForm({
                       "text-xs",
                       product?.title?.length > 60
                         ? "text-destructive"
-                        : "text-muted-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     {product?.title?.length}/60
@@ -305,7 +329,7 @@ export function ProductEditForm({
                       "text-xs",
                       product?.descripcion?.length > 500
                         ? "text-destructive"
-                        : "text-muted-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     {product?.descripcion?.length}/500
@@ -518,12 +542,12 @@ export function ProductEditForm({
                   type="number"
                   placeholder="0.00"
                   value={product?.price}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     updateProduct(
                       "price",
-                      Number.parseFloat(e.target.value) || 0
-                    )
-                  }
+                      Number.parseFloat(e.target.value) || 0,
+                    );
+                  }}
                 />
                 <p className="text-xs text-muted-foreground">
                   Precio que pagarán tus clientes
@@ -540,7 +564,7 @@ export function ProductEditForm({
                   onChange={(e) =>
                     updateProduct(
                       "priceCompra",
-                      Number.parseFloat(e.target.value) || 0
+                      Number.parseFloat(e.target.value) || 0,
                     )
                   }
                 />
@@ -559,7 +583,7 @@ export function ProductEditForm({
                   onChange={(e) =>
                     updateProduct(
                       "embalaje",
-                      Number.parseFloat(e.target.value) || 0
+                      Number.parseFloat(e.target.value) || 0,
                     )
                   }
                 />
@@ -579,7 +603,7 @@ export function ProductEditForm({
                     onChange={(e) =>
                       updateProduct(
                         "stock",
-                        Number.parseFloat(e.target.value) || 0
+                        Number.parseFloat(e.target.value) || 0,
                       )
                     }
                   />
@@ -612,7 +636,7 @@ export function ProductEditForm({
                       {Number(
                         ((product?.price - product?.priceCompra) /
                           product?.price) *
-                          100
+                          100,
                       ).toFixed(2)}
                       %
                     </div>
@@ -836,7 +860,7 @@ export function ProductEditForm({
                               updateAddon(
                                 addon.id,
                                 "price",
-                                Number.parseFloat(e.target.value) || 0
+                                Number.parseFloat(e.target.value) || 0,
                               )
                             }
                             placeholder="0.00"

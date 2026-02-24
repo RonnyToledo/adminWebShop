@@ -52,8 +52,6 @@ export default function MyProvider({ children, user, data }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const [user1, setUser1] = useState(null);
-  const [loading, setLoading] = useState(true);
   // Refs para controlar la inicialización
   const isInitialized = useRef(false);
   const isLogin = useRef(false);
@@ -61,8 +59,6 @@ export default function MyProvider({ children, user, data }) {
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
-
-  console.log(user1);
 
   // Ejecutar validación solo en mount y cuando cambia el usuario
   useEffect(() => {

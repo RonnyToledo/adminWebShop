@@ -124,10 +124,10 @@ export default function AppSidebar({ ThemeContext }) {
   };
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-12">
+      <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm">
+            <SidebarMenuButton className="flex flex-col md:flex-row h-auto">
               <div>
                 <Link href="/">
                   <Image

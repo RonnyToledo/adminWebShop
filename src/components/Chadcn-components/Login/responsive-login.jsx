@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import IllustrationLogin from "../../icons/IllustrationLogin";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import Loading from "../../component/loading";
 import { ThemeContext } from "@/context/useContext";
 
@@ -43,7 +43,10 @@ export function ResponsiveLogin({ user }) {
     } catch (err) {
       console.error(err);
 
-      toast.error(err.message);
+      sileo.error({
+        title: "Error al iniciar sesión",
+        description: err.message || "Error inesperado al iniciar sesión.",
+      });
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import {
   Dialog,
   DialogContent,
@@ -65,8 +65,8 @@ export default function Category({ ThemeContext }) {
       searchTerm == ""
         ? data.category
         : data.category.filter((obj) =>
-            obj.name.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+            obj.name.toLowerCase().includes(searchTerm.toLowerCase()),
+          ),
     );
   }, [searchTerm, data.category]);
 
@@ -76,7 +76,10 @@ export default function Category({ ThemeContext }) {
 
     // validaciones rápidas
     if (!categoryToDelete) {
-      toast.error("No se recibió el UUID de la categoría a eliminar.");
+      sileo.error({
+        title: "Error",
+        description: "No se recibió el UUID de la categoría a eliminar.",
+      });
       setDeleting(false);
       return;
     }
@@ -92,16 +95,18 @@ export default function Category({ ThemeContext }) {
     });
 
     try {
-      // Usamos toast.promise para gestionar los estados visuales automáticamente
-      const res = toast.promise(deletePromise, {
-        loading: "Eliminando categoría...",
+      const res = sileo.promise(deletePromise, {
+        loading: {
+          title: "Eliminando categoría...",
+          description: "Estamos eliminando la categoría seleccionada.",
+        },
         success: (response) => {
           // Solo al resolverse correctamente actualizamos el estado local
           const currentCategories = webshop?.store?.categoria ?? [];
 
           // Filtramos por id (asegúrate que el campo coincida: .id)
           const updatedCategories = currentCategories.filter(
-            (item) => item.id !== categoryToDelete
+            (item) => item.id !== categoryToDelete,
           );
 
           setWebshop((prev) => ({
@@ -113,22 +118,27 @@ export default function Category({ ThemeContext }) {
           }));
 
           // Mensaje de éxito: preferimos usar el mensaje del backend si existe
-          return response?.data?.message ?? "Categoría eliminada correctamente";
+          return {
+            title: "Categoría eliminada",
+            description:
+              response?.data?.message ?? "Categoría eliminada correctamente",
+          };
         },
         error: (err) => {
-          // Devolvemos cadena legible para el toast de error
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "Error al eliminar la categoría";
-          return `Error: ${msg}`;
+          return {
+            title: "Error al eliminar categoría",
+            description: msg,
+          };
         },
       });
 
       // opcional: devolver la respuesta para quien llame a handleDelete
       return res;
     } catch (err) {
-      // Aunque toast.promise ya mostró el toast de error, logeamos para debugging
       console.error("handleDelete error:", err);
       // Si necesitas lógica adicional en el catch (rollback, métricas), ponla aquí
     } finally {
@@ -142,7 +152,10 @@ export default function Category({ ThemeContext }) {
 
     // Validaciones rápidas para evitar peticiones inválidas
     if (!webshop?.store?.sitioweb) {
-      toast.error("Configuración de tienda incompleta: faltó 'sitioweb'.");
+      sileo.error({
+        title: "Error",
+        description: "Configuración de tienda incompleta: faltó 'sitioweb'.",
+      });
       setDownloading(false);
       return;
     }
@@ -150,7 +163,10 @@ export default function Category({ ThemeContext }) {
     // Evitar enviar datos vacíos
     const categories = data?.category ?? [];
     if (!Array.isArray(categories)) {
-      toast.error("El formato de 'category' no es válido.");
+      sileo.error({
+        title: "Error",
+        description: "El formato de 'category' no es válido.",
+      });
       setDownloading(false);
       return;
     }
@@ -166,14 +182,16 @@ export default function Category({ ThemeContext }) {
     // Construimos la promesa axios
     const putPromise = axios.put(
       `/api/tienda/${webshop.store.sitioweb}/categoria`,
-      formData
+      formData,
       // NO pongas headers: { "Content-Type": "multipart/form-data" } — axios/browser manejan el boundary
     );
 
     try {
-      // toast.promise maneja el loading/success/error y permite devolver mensajes personalizados
-      const res = toast.promise(putPromise, {
-        loading: "Actualizando categorías...",
+      const res = sileo.promise(putPromise, {
+        loading: {
+          title: "Actualizando categorías",
+          description: "Estamos actualizando las categorías.",
+        },
         success: (response) => {
           // Extraemos las categorías devueltas por el backend o hacemos fallback
           const returnedCategories =
@@ -189,9 +207,12 @@ export default function Category({ ThemeContext }) {
           }));
 
           // Mensaje de éxito (usa el message del backend si existe)
-          return (
-            response?.data?.message ?? "Categorías actualizadas correctamente"
-          );
+          return {
+            title: "Categorías actualizadas",
+            description:
+              response?.data?.message ??
+              "Categorías actualizadas correctamente",
+          };
         },
         error: (err) => {
           // Construimos un mensaje legible
@@ -199,14 +220,16 @@ export default function Category({ ThemeContext }) {
             err?.response?.data?.message ??
             err?.message ??
             "No se pudieron actualizar las categorías";
-          return `Error: ${msg}`;
+          return {
+            title: "Error al actualizar categorías",
+            description: msg,
+          };
         },
       });
 
       // Opcional: devolver la respuesta para quien llame a handleSubmit
       return res;
     } catch (err) {
-      // El toast ya mostró el error; aquí dejamos registro para debugging y métricas
       console.error("handleSubmit error:", err);
       // Si quieres, aquí podrías reintentar o limpiar estados específicos
     } finally {
@@ -219,16 +242,21 @@ export default function Category({ ThemeContext }) {
 
     // Validaciones básicas antes de llamar a la API
     if (!newCat || !newCat.name || newCat.name.trim() === "") {
-      toast.error("Debes indicar el nombre de la categoría.");
+      sileo.error({
+        title: "Error",
+        description: "Debes indicar el nombre de la categoría.",
+      });
       form.current?.reset();
       setAdd(false);
       return;
     }
 
     if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
-      toast.error(
-        "Información de la tienda incompleta. Revisa la configuración."
-      );
+      sileo.error({
+        title: "Error",
+        description:
+          "Información de la tienda incompleta. Revisa la configuración.",
+      });
       setAdd(false);
       return;
     }
@@ -247,13 +275,15 @@ export default function Category({ ThemeContext }) {
       {
         // Para JSON axios suele poner Content-Type por defecto, pero lo dejamos explícito si lo prefieres:
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
 
     try {
-      // toast.promise gestionará loading / success / error visualmente
-      const res = toast.promise(postPromise, {
-        loading: "Creando categoría...",
+      const res = sileo.promise(postPromise, {
+        loading: {
+          title: "Creando categoría",
+          description: "Estamos creando la nueva categoría.",
+        },
         success: (response) => {
           // Aceptamos 200 o 201 como éxito
           if (response?.status === 200 || response?.status === 201) {
@@ -288,26 +318,34 @@ export default function Category({ ThemeContext }) {
             setNewCat({});
             form.current?.reset();
 
-            return response?.data?.message ?? "Categoría creada correctamente";
+            return {
+              title: "Categoría creada",
+              description:
+                response?.data?.message ?? "Categoría creada correctamente",
+            };
           }
 
           // Si el status no es 200/201 lo tratamos como mensaje inesperado
-          return `Respuesta inesperada del servidor: ${response?.status}`;
+          return {
+            title: "Error al crear categoría",
+            description: `Respuesta inesperada del servidor: ${response?.status}`,
+          };
         },
         error: (err) => {
-          // Mensaje legible para mostrar en el toast
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo crear la categoría";
-          return `Error: ${msg}`;
+          return {
+            title: "Error al crear categoría",
+            description: msg,
+          };
         },
       });
 
       // Opcional: devolver la respuesta si quien llama la función la necesita
       return res;
     } catch (err) {
-      // El toast de error ya se mostró mediante toast.promise; igual registramos para debugging
       console.error("addCategory error:", err);
     } finally {
       // Aseguramos limpiar estados en cualquier caso
@@ -323,7 +361,7 @@ export default function Category({ ThemeContext }) {
     const reorderedCategories = reorder(
       data.category,
       source.index,
-      destination.index
+      destination.index,
     );
     setData((prevData) => ({ ...prevData, category: reorderedCategories }));
   };
@@ -545,7 +583,7 @@ const CategoryItem = ({
                     category: prevState.category.map((obj) =>
                       category.id === obj.id
                         ? { ...obj, subtienda: checked }
-                        : obj
+                        : obj,
                     ),
                   }))
                 }
@@ -617,12 +655,12 @@ const ordenarCategorias = (categorias, productos, campo, orden = "asc") => {
   // Calcular el total del campo (precio o visitas) para cada categoría
   const categoriasOrdenadas = categorias.map((categoria) => {
     const productosFiltrados = productos.filter(
-      (producto) => producto.caja === categoria.id
+      (producto) => producto.caja === categoria.id,
     );
 
     const totalCampo = productosFiltrados.reduce(
       (total, producto) => total + (producto[campo] || 0),
-      0
+      0,
     );
 
     return {

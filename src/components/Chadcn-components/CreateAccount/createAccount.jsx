@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supa";
 import { motion } from "framer-motion";
 import { ImageUpload } from "../Configuracion/image-upload";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import Image from "next/image";
 import { logoApp } from "@/utils/image";
 import axios from "axios";
@@ -48,8 +48,8 @@ const compressImage = async (file, maxWidth = 1024, quality = 0.8) => {
         else resolve(new File([blob], file.name, { type: file.type }));
       },
       file.type,
-      quality
-    )
+      quality,
+    ),
   );
 };
 
@@ -202,7 +202,7 @@ export default function CreateAccount() {
         } else {
           // Si no podemos subir y es grande, avisamos al usuario
           throw new Error(
-            "No se pudo subir la imagen. Intenta con otra imagen o pega una URL."
+            "No se pudo subir la imagen. Intenta con otra imagen o pega una URL.",
           );
         }
       }
@@ -233,14 +233,14 @@ export default function CreateAccount() {
     setLoading(true);
     try {
       const promise = performSignup();
-      toast.promise(promise, {
-        loading: "Creando cuenta...",
+      sileo.promise(promise, {
+        loading: { title: "Creando cuenta..." },
         success: (res) => {
           const msg = res?.message ?? "Cuenta creada correctamente.";
           if (res?.userId) {
             router.push("/");
           }
-          return msg;
+          return { title: "Cuenta creada", description: msg };
         },
         error: (err) => {
           const msg =
@@ -248,11 +248,14 @@ export default function CreateAccount() {
             err?.error_description ??
             "Error al crear la cuenta. Revisa la consola y logs del servidor.";
           console.error("Signup error:", err);
-          return `${msg}`;
+          return { title: "Error al crear cuenta", description: msg };
         },
       });
     } catch (error) {
-      toast.error(error.message || "Error inesperado al crear la cuenta.");
+      sileo.error({
+        title: "Error al crear cuenta",
+        description: error.message || "Error inesperado al crear la cuenta.",
+      });
       console.error("handleSignup error:", error);
     } finally {
       setLoading(false);
@@ -269,7 +272,11 @@ export default function CreateAccount() {
       });
       if (error) throw error;
     } catch (err) {
-      toast.error("Error al iniciar sesión con Google");
+      sileo.error({
+        title: "Error al iniciar sesión con Google",
+        description:
+          err.message || "Error inesperado al iniciar sesión con Google.",
+      });
       console.error(err);
     }
   };

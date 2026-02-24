@@ -34,7 +34,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Calendar, Percent } from "lucide-react";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 
 export function Marketing({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -43,7 +43,7 @@ export function Marketing({ ThemeContext }) {
   const [loading, setloading] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
+  console.log(webshop);
   useEffect(() => {
     setDiscounts(webshop?.code);
   }, [webshop]);
@@ -56,7 +56,10 @@ export function Marketing({ ThemeContext }) {
   const handleAddDiscount = async () => {
     // Validación rápida
     if (!newDiscount.code || !newDiscount.expiresAt) {
-      toast.error("Faltan campos: código o fecha de expiración");
+      sileo.error({
+        title: "Error al crear código de descuento",
+        description: "Faltan campos: código o fecha de expiración",
+      });
       return;
     }
 
@@ -73,22 +76,25 @@ export function Marketing({ ThemeContext }) {
       const postPromise = axios.post(
         `/api/tienda/${webshop?.store?.sitioweb}/discountCode`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        { headers: { "Content-Type": "multipart/form-data" } },
       );
 
-      // toast.promise espera la promesa y muestra estados
-      const res = toast.promise(postPromise, {
-        loading: "Guardando descuento...",
+      const res = sileo.promise(postPromise, {
+        loading: { title: "Guardando descuento..." },
         success: (response) => {
           // Actualiza el estado con la respuesta (usar updater para seguridad)
           setDiscounts((prev) => [...prev, ...response.data]);
-          // Puedes devolver el texto que quieres que muestre el toast en success
-          return "Tarea Ejecutada — Información actualizada";
+          return {
+            title: "Tarea Ejecutada",
+            description: "Información actualizada",
+          };
         },
         error: (err) => {
-          // Puedes devolver un mensaje de error que se mostrará en el toast
           // Logging más detallado se hace en el catch
-          return "Error al guardar el descuento";
+          return {
+            title: "Error al guardar el descuento",
+            description: "No se pudo guardar el descuento.",
+          };
         },
       });
 
@@ -98,7 +104,7 @@ export function Marketing({ ThemeContext }) {
       if (error.response) {
         console.error(
           "Error en la respuesta del servidor:",
-          error.response.data
+          error.response.data,
         );
         console.error("Estado:", error.response.status);
       } else if (error.request) {
@@ -106,39 +112,42 @@ export function Marketing({ ThemeContext }) {
       } else {
         console.error("Error al configurar la solicitud:", error.message);
       }
-      // (Opcional) mostrar un toast extra con más detalle
-      // toast.error("No se pudo guardar el descuento. Revisa la consola.");
     } finally {
       // limpiar formulario y estado de loading siempre
       setNewDiscount({ code: "", discount: 0, expiresAt: "" });
       setloading(false);
     }
   };
-  // Maneja eliminar descuento (usa toast.promise)
   const handleRemoveDiscount = async (id) => {
     try {
       const deletePromise = axios.delete(
-        `/api/tienda/${webshop?.store?.sitioweb}/discountCode?id=${id}`
+        `/api/tienda/${webshop?.store?.sitioweb}/discountCode?id=${id}`,
       );
 
-      toast.promise(deletePromise, {
-        loading: "Eliminando descuento...",
+      sileo.promise(deletePromise, {
+        loading: { title: "Eliminando descuento..." },
         success: (res) => {
           // Actualiza estado de forma segura
           setDiscounts((prev) => prev.filter((d) => d.id !== id));
 
-          return "Codigo Eliminado";
+          return {
+            title: "Código eliminado",
+            description: "El código de descuento fue eliminado correctamente.",
+          };
         },
         error: (err) => {
           console.error("Error en request removeDiscount:", err);
-          return "Error al eliminar el descuento";
+          return {
+            title: "Error al eliminar el descuento",
+            description: "No se pudo eliminar el código de descuento.",
+          };
         },
       });
     } catch (error) {
       if (error.response) {
         console.error(
           "Error en la respuesta del servidor:",
-          error.response.data
+          error.response.data,
         );
         console.error("Estado:", error.response.status);
       } else if (error.request) {
@@ -168,8 +177,10 @@ export function Marketing({ ThemeContext }) {
     });
 
     try {
-      toast.promise(supaPromise, {
-        loading: value ? "Activando marketing..." : "Desactivando marketing...",
+      sileo.promise(supaPromise, {
+        loading: value
+          ? { title: "Activando marketing..." }
+          : { title: "Desactivando marketing..." },
         success: (data) => {
           // data es lo devuelto por supabase (array con el registro actualizado)
           setWebshop((prev) => ({
@@ -177,11 +188,19 @@ export function Marketing({ ThemeContext }) {
             store: { ...prev.store, marketing: value },
           }));
 
-          return "Actualizacion exitosa";
+          return {
+            title: "Actualización exitosa",
+            description:
+              "La configuración del marketing fue actualizada correctamente.",
+          };
         },
         error: (err) => {
           console.error("Error en request handleSwitch:", err);
-          return "Error al actualizar la configuración";
+          return {
+            title: "Error al actualizar la configuración",
+            description:
+              "No se pudo actualizar la configuración del marketing.",
+          };
         },
       });
     } catch (error) {
@@ -193,9 +212,9 @@ export function Marketing({ ThemeContext }) {
     setFiltered(
       searchTerm !== ""
         ? discounts.filter((code) =>
-            code.code.toLowerCase().includes(searchTerm.toLowerCase())
+            code.code.toLowerCase().includes(searchTerm.toLowerCase()),
           )
-        : discounts
+        : discounts,
     );
   }, [discounts, searchTerm]);
 
@@ -401,6 +420,7 @@ export function Marketing({ ThemeContext }) {
                 <TableHead>Descuento</TableHead>
                 <TableHead>Expira</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Views</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -424,6 +444,7 @@ export function Marketing({ ThemeContext }) {
                     </span>
                   </TableCell>
                   <TableCell>{getStatusBadge(code)}</TableCell>
+                  <TableCell>{code.visitas}</TableCell>
                   <TableCell>
                     <Button
                       variant="outline"

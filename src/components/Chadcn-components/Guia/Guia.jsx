@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import React, { useContext } from "react";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import QrCode from "@/components/Chadcn-components/Guia/QRcode";
 import { ThemeContext } from "@/context/useContext";
 import { CopyIcon } from "lucide-react";
@@ -53,9 +53,12 @@ export default function Guia() {
     if (navigator?.clipboard) {
       try {
         navigator.clipboard.writeText(text);
-        toast.info("Texto copiado al portpapeles");
+        sileo.info({ title: "Texto copiado al portapapeles" });
       } catch (err) {
-        toast(`Error al copiar texto: ${err.message}`);
+        sileo.error({
+          title: "Error al copiar texto",
+          description: err.message,
+        });
       }
     }
   };
@@ -76,7 +79,7 @@ export default function Guia() {
               <Button
                 onClick={() =>
                   copyToClipboard(
-                    `https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`
+                    `https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`,
                   )
                 }
                 size="icon"

@@ -11,7 +11,6 @@ export default async function page() {
     console.warn("No hay usuario, redirigiendo a login");
   }
   const data = await initializeData(userId);
-  console.log(data, user);
   if (data?.user?.role == "manager" && data?.user?.login) {
     redirect("/");
   }

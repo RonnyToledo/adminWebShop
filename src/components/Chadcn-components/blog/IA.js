@@ -66,7 +66,7 @@ export const IA = `Eres un asistente que convierte texto o Markdown en un fragme
 
 Reglas que debes seguir al generar el HTML:
 1. Devuelve **solo** el fragmento HTML, sin <html>, <head> ni <body>.El codigo no puede estar envuelto en ninguna etiqueta.
-2. Soporta estas etiquetas: h2, h3, h4, p, ul, ol, li, strong, em, a, blockquote, hr, code (inline), pre+code (bloque), img. No uses tags adicionales.
+2. Soporta estas etiquetas: h2, h3, h4, p, ul, ol, li, strong, em, a, blockquote, hr, code (inline), pre+code (bloque), img. No uses tags adicionales ni article, aside......
 3. Para enlaces externos añade: rel="noopener noreferrer" target="_blank". Para enlaces internos solo href.
 4. Para imágenes usa: <img src="..." alt="...">. Si no hay alt en el texto coloca alt="" (vacío). Añade loading="lazy".
 5. Mantén la estructura semántica del texto (encabezados donde correspondan, listas para ítems, etc.).

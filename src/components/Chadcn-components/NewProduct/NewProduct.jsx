@@ -4,10 +4,12 @@ import { useState, useEffect, useRef, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { logoApp } from "@/utils/image";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import { ProductEditForm } from "../product-edit-form";
 import { extractBlobFilesFromArray } from "@/components/globalFunction/extractBlobFilesFromArray";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
+import Image from "next/image";
 
 const initialCase = {
   venta: true,
@@ -41,33 +43,46 @@ export default function NewProduct({ ThemeContext }) {
   const handleSubmit = async (e) => {
     // timestamp
     const now = new Date();
-    console.log(products);
     // Validaciones mínimas
     if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
-      toast.error(
-        "Configuración de tienda incompleta. Revisa los datos de la tienda."
-      );
+      sileo.error({
+        title: "Configuración de tienda incompleta",
+        description: "Revisa los datos de la tienda.",
+      });
       router.refresh();
       return;
     }
     if (!products?.title || products.title.trim() === "") {
-      toast.error("El producto necesita un título.");
+      sileo.error({
+        title: "Producto sin título",
+        description: "El producto necesita un título.",
+      });
       return;
     }
     if (!products?.price || isNaN(products.price) || products.price < 0) {
-      toast.error("El producto necesita un precio válido.");
+      sileo.error({
+        title: "Precio inválido",
+        description: "El producto necesita un precio válido.",
+      });
       return;
     }
     if (!products?.caja || products.title.trim() === "") {
-      toast.error("Se necesita selecconar una categoría.");
+      sileo.error({
+        title: "Categoría no seleccionada",
+        description: "Se necesita seleccionar una categoría.",
+      });
       return;
     }
     if (products.priceCompra > products.price) {
-      toast.error("El precio de compra no puede ser mayor al precio de venta.");
+      sileo.error({
+        title: "Precio de compra inválido",
+        description:
+          "El precio de compra no puede ser mayor al precio de venta.",
+      });
       return;
     }
     const imagesecondary = products?.imagesecondary.filter(
-      (obj) => obj !== logoApp
+      (obj) => obj !== logoApp,
     );
     const imagesecondaryWebshop = [];
     // Construir FormData
@@ -78,7 +93,7 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("UID", String(webshop?.store?.UUID));
     formData.append(
       "default_moneda",
-      String(products.default_moneda || webshop?.store?.default_moneda)
+      String(products.default_moneda || webshop?.store?.default_moneda),
     );
     formData.append("order", String(10000));
     formData.append("stock", String(products.stock));
@@ -91,14 +106,14 @@ export default function NewProduct({ ThemeContext }) {
     formData.append("span", String(products.span ?? ""));
     formData.append(
       "caracteristicas",
-      JSON.stringify(products.caracteristicas ?? [])
+      JSON.stringify(products.caracteristicas ?? []),
     );
     formData.append("agregados", JSON.stringify(products.agregados ?? []));
     formData.append("imagesecondary", JSON.stringify(imagesecondary));
 
     formData.append(
       "imagesecondaryCopy",
-      JSON.stringify(imagesecondaryWebshop)
+      JSON.stringify(imagesecondaryWebshop),
     );
     if (
       JSON.stringify(imagesecondaryWebshop) !== JSON.stringify(imagesecondary)
@@ -138,19 +153,21 @@ export default function NewProduct({ ThemeContext }) {
         onUploadProgress: (progressEvent) => {
           if (!progressEvent.lengthComputable) return;
           const percent = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
+            (progressEvent.loaded * 100) / progressEvent.total,
           );
           // si tienes un estado para progreso, actualízalo (opcional)
           // setUploadProgress(percent);
           console.debug("Upload progress:", percent, "%");
         },
-      }
+      },
     );
 
     try {
-      // toast.promise mostrará loading / success / error automáticamente.
-      const res = toast.promise(postPromise, {
-        loading: "Creando producto...",
+      const res = sileo.promise(postPromise, {
+        loading: {
+          title: "Creando producto...",
+          description: "Por favor espera mientras se crea el producto.",
+        },
         success: (response) => {
           // Aceptamos status 200 o 201
           if (response?.status === 200 || response?.status === 201) {
@@ -171,31 +188,76 @@ export default function NewProduct({ ThemeContext }) {
             setProducts({ ...products, ...initialCase } ?? {}); // restablece al estado inicial
             setNewImage(null);
             // setUploadProgress(0); // si usaste progreso
-            return response?.data?.message ?? "Producto creado correctamente";
+            return {
+              title: "Producto creado correctamente",
+              description: (
+                <div className="flex flex-col gap-3">
+                  {/* Product card detail */}
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/50 p-2.5">
+                    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-secondary">
+                      <Image
+                        src={products.image || logoApp}
+                        alt={products.title}
+                        height={50}
+                        width={50}
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground">
+                        {products.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {webshop?.store?.categoria?.find(
+                          (c) => c.id === products.caja,
+                        )?.name || "Categoría no encontrada"}
+                      </p>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="text-sm font-bold text-foreground">
+                          $ {Number(products.price).toFixed(2)}{" "}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Animated badge */}
+                    <span className="rounded-md bg-success px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success-foreground">
+                      {!products.visible
+                        ? "Inactivo"
+                        : products.stock === 0
+                          ? "Agotado"
+                          : "Activo"}
+                    </span>
+                  </div>
+                </div>
+              ),
+            };
           }
 
           // Si el servidor respondió con otro código, devolvemos mensaje
-          return `Respuesta inesperada del servidor: ${response?.status}`;
+          return {
+            title: "Error inesperado",
+            description: `Respuesta inesperada del servidor: ${response?.status}`,
+          };
         },
         error: (err) => {
-          // Mensaje legible para el toast de error
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo crear el producto";
-          return `Error: ${msg}`;
+          return { title: "Error al crear producto", description: msg };
         },
       });
 
       // opcional: devolver la respuesta si se necesita más manejo
       return res;
     } catch (err) {
-      // El toast ya ha mostrado el error; log para debug
-      toast.error(
-        err?.response?.data?.message ??
+      sileo.error({
+        title: "Error al crear producto",
+        description:
+          err?.response?.data?.message ??
           err?.message ??
-          "No se pudo crear el producto"
-      );
+          "No se pudo crear el producto",
+      });
       console.error("Error al crear producto:", err);
     }
   };

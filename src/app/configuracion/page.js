@@ -3,6 +3,7 @@ import { ThemeContext } from "@/context/useContext";
 import Configuracion from "@/components/Chadcn-components/Configuracion/Configuracion";
 
 export default async function page() {
+  console.log(process.env.NEXT_PUBLIC_PATH);
   const country = await fetch(
     `${process.env.NEXT_PUBLIC_PATH}/api/filter/country`
   );

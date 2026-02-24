@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ArrowRight, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
 
@@ -42,12 +42,12 @@ export function PostBasicInfo({ initialData, onComplete }) {
 
   const handleContinue = () => {
     if (!formData.title.trim()) {
-      toast.error("El título es obligatorio");
+      sileo.error({ title: "Error", description: "El título es obligatorio" });
       return;
     }
 
     if (!formData.slug.trim()) {
-      toast.error("El slug es obligatorio");
+      sileo.error({ title: "Error", description: "El slug es obligatorio" });
       return;
     }
 

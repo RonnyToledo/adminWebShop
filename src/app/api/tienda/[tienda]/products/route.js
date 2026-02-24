@@ -12,7 +12,7 @@ const LogUser = async () => {
   if (!cookie) {
     return NextResponse.json(
       { message: "No se encontró la cookie de sesión" },
-      { status: 401 }
+      { status: 401 },
     );
   }
   const parsedCookie = JSON.parse(cookie.value);
@@ -54,11 +54,11 @@ export async function POST(request, { params }) {
         await DestroyImage(obj);
         console.info(`${obj} ================ eliminado`);
         return "ok";
-      })
+      }),
   );
   // Crear mapa filename -> blob
   const filesByName = new Map(
-    uploadedFiles.map((f) => [f.name || (f.filename ?? ""), f])
+    uploadedFiles.map((f) => [f.name || (f.filename ?? ""), f]),
   );
   // crear estructura que espera handleNewSecondaryImages
   const newImageSecondary = newImagesMeta
@@ -81,7 +81,7 @@ export async function POST(request, { params }) {
     const uploadRes = await new Promise((res, rej) => {
       cloudinary.uploader
         .upload_stream({ resource_type: "image" }, (err, result) =>
-          err ? rej(err) : res(result)
+          err ? rej(err) : res(result),
         )
         .end(buffer);
     });
@@ -123,10 +123,9 @@ export async function POST(request, { params }) {
     console.error("RPC create_product error:", error);
     return NextResponse.json(
       { message: error.message, details: error.details },
-      { status: error.code === "PGRST400" ? 400 : 500 }
+      { status: error.code === "PGRST400" ? 400 : 500 },
     );
   }
-  console.log("newProduct", newProduct);
   return NextResponse.json(
     {
       ...newProduct,
@@ -135,7 +134,7 @@ export async function POST(request, { params }) {
           ? JSON.parse(newProduct.caracteristicas)
           : newProduct.caracteristicas,
     },
-    { status: 201 }
+    { status: 201 },
   );
 }
 export async function PUT(request, { params }) {
@@ -151,7 +150,7 @@ export async function PUT(request, { params }) {
     console.error("Error en la actualización:", error);
     return NextResponse.json(
       { message: `Error: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -167,7 +166,7 @@ export async function DELETE(request, { params }) {
     if (!valuesRaw) {
       return NextResponse.json(
         { message: "No se recibieron 'values' en el formData" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -177,14 +176,14 @@ export async function DELETE(request, { params }) {
     } catch (err) {
       return NextResponse.json(
         { message: "JSON inválido en 'values'", detail: err.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!Array.isArray(values) || values.length === 0) {
       return NextResponse.json(
         { message: "'values' debe ser un array no vacío" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -211,7 +210,7 @@ export async function DELETE(request, { params }) {
     if (ids.length === 0) {
       return NextResponse.json(
         { message: "No se encontraron productId válidos en 'values'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -227,20 +226,20 @@ export async function DELETE(request, { params }) {
           message: "Error al borrar productos",
           detail: error.message ?? error,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     console.info("Tarea completada: productos borrados", ids);
     return NextResponse.json(
       { message: "Tarea completada", tienda },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err) {
     console.error("Error inesperado en DELETE:", err);
     return NextResponse.json(
       { message: "Error interno del servidor", detail: err.message ?? err },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -261,13 +260,13 @@ async function updateProductsInBatches(products, batchSize = 10) {
           .select("*");
         if (error) {
           console.error(
-            `Error al actualizar el producto ${title}: ${error.message}`
+            `Error al actualizar el producto ${title}: ${error.message}`,
           );
           throw new Error(
-            `Error actualizando producto ${title}: ${error.message}`
+            `Error actualizando producto ${title}: ${error.message}`,
           );
         }
-      })
+      }),
     );
   }
 }
@@ -304,7 +303,7 @@ async function handleNewSecondaryImages(newImageSecondary, SecondaryImage) {
 
   // inicializamos con los valores existentes (o null si no existía)
   const updated = Array.from({ length: neededLength }, (_, i) =>
-    i < existing.length ? existing[i] : null
+    i < existing.length ? existing[i] : null,
   );
 
   // --- Procesar cada item ---

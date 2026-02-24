@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 
 export function PedidosTable() {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -39,23 +39,35 @@ export function PedidosTable() {
   const handleExportToPDF = async () => {
     try {
       // 1) Confirmar pedidos (solo los no vistos)
-      toast.promise(
+      sileo.promise(
         ConfirmarPedidos(
           pedidosState.filter((obj) => !obj.visto).map((obj) => obj.UID_Venta),
           setLoadVerified,
-          webshop?.store?.sitioweb
+          webshop?.store?.sitioweb,
         ),
         {
-          loading: "Confirmando pedidos no vistos...",
-          success: () => "Pedidos confirmados correctamente",
-          error: (err) => err?.message ?? "Error al confirmar pedidos",
-        }
+          loading: { title: "Confirmando pedidos no vistos..." },
+          success: () => ({
+            title: "Pedidos confirmados correctamente",
+            description: "Los pedidos han sido confirmados con éxito.",
+          }),
+          error: (err) => ({
+            title: "Error al confirmar pedidos",
+            description: err?.message ?? "Error al confirmar los pedidos",
+          }),
+        },
       );
       // 2) Exportar a PDF (usa setWebshop y setPDF dentro de la función)
-      const pdfResult = toast.promise(exportToPDF(pedidosState), {
-        loading: "Generando PDF...",
-        success: () => "PDF generado con éxito",
-        error: (err) => err?.message ?? "Error al generar el PDF",
+      const pdfResult = sileo.promise(exportToPDF(pedidosState), {
+        loading: { title: "Generando PDF..." },
+        success: () => ({
+          title: "PDF generado con éxito",
+          description: "El PDF ha sido generado correctamente.",
+        }),
+        error: (err) => ({
+          title: "Error al generar PDF",
+          description: err?.message ?? "Error al generar el PDF",
+        }),
       });
       setWebshop((prev) => ({
         ...prev,
@@ -74,17 +86,23 @@ export function PedidosTable() {
       .map((obj) => obj.UID_Venta);
     try {
       // 1) Confirmar pedidos
-      toast.promise(
+      sileo.promise(
         ConfirmarPedidos(
           uidsToConfirm,
           setLoadVerified,
-          webshop?.store?.sitioweb
+          webshop?.store?.sitioweb,
         ),
         {
-          loading: "Confirmando pedidos...",
-          success: () => `Se confirmaron ${uidsToConfirm.length} pedido(s)`,
-          error: (err) => err?.message ?? "Error al confirmar pedidos",
-        }
+          loading: { title: "Confirmando pedidos..." },
+          success: () => ({
+            title: "Pedidos confirmados correctamente",
+            description: `Se confirmaron ${uidsToConfirm.length} pedido(s)`,
+          }),
+          error: (err) => ({
+            title: "Error al confirmar pedidos",
+            description: err?.message ?? "Error al confirmar los pedidos",
+          }),
+        },
       );
       // marcar como vistos en el estado local (solo si quieres reflejarlo en UI)
       setWebshop((prev) => ({
@@ -92,13 +110,19 @@ export function PedidosTable() {
         events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
       }));
       // 2) Enviar a WhatsApp
-      const result = toast.promise(
+      const result = sileo.promise(
         sendToWhatsApp(pedidosState, webshop?.store, setWebshop, setWhatsApp),
         {
-          loading: "Enviando pedidos a WhatsApp...",
-          success: () => "Pedidos enviados a WhatsApp correctamente",
-          error: (err) => err?.message ?? "Error al enviar a WhatsApp",
-        }
+          loading: { title: "Enviando pedidos a WhatsApp..." },
+          success: () => ({
+            title: "Pedidos enviados a WhatsApp correctamente",
+          }),
+          error: (err) => ({
+            title: "Error al enviar pedidos a WhatsApp",
+            description:
+              err?.message ?? "Error al enviar los pedidos a WhatsApp",
+          }),
+        },
       );
       return result;
     } catch (error) {
@@ -138,20 +162,25 @@ export function PedidosTable() {
                   pedidosState.length == 0 || WhatsApp || PDF || loadVerified
                 }
                 onClick={async () =>
-                  toast.promise(
+                  sileo.promise(
                     ConfirmarPedidos(
                       pedidosState
                         .filter((obj) => !obj.visto)
                         .map((obj) => obj.UID_Venta),
                       setLoadVerified,
-                      webshop?.store?.sitioweb
+                      webshop?.store?.sitioweb,
                     ),
                     {
-                      loading: "Confirmando pedidos...",
-                      success: () => "Pedidos confirmados",
-                      error: (err) =>
-                        err?.message ?? "Error al confirmar pedidos",
-                    }
+                      loading: { title: "Confirmando pedidos..." },
+                      success: () => ({
+                        title: "Pedidos confirmados correctamente",
+                      }),
+                      error: (err) => ({
+                        title: "Error al confirmar pedidos",
+                        description:
+                          err?.message ?? "Error al confirmar los pedidos",
+                      }),
+                    },
                   )
                 }
               >
@@ -255,23 +284,28 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
   const [downloading, setDownloading] = useState(false);
   const ConfirmarPedidoUnico = async (order) => {
     try {
-      const result = toast.promise(
+      const result = sileo.promise(
         ConfirmarPedidos([order], setDownloading, webshop?.store?.sitioweb),
         {
-          loading: "Confirmando pedido...",
+          loading: { title: "Confirmando pedido..." },
           success: (data) => {
             // opcional: personaliza el texto según lo que devuelva `ConfirmarPedidos`
-            return `Pedido ${order} confirmado`;
+            return {
+              title: `Pedido ${order} confirmado`,
+            };
           },
-          error: (err) => err?.message ?? "Error al confirmar el pedido",
-        }
+          error: (err) => ({
+            title: "Error al confirmar pedido",
+            description: err?.message ?? "Error al confirmar el pedido",
+          }),
+        },
       );
 
       // actualizar estado solo si la promesa tuvo éxito
       setWebshop((prev) => ({
         ...prev,
         events: prev?.events.map((obj) =>
-          obj.UID_Venta === order ? { ...obj, visto: true } : obj
+          obj.UID_Venta === order ? { ...obj, visto: true } : obj,
         ),
       }));
 
@@ -363,9 +397,9 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
                             producto.Cant +
                             producto.agregados.reduce(
                               (suma, ag) => suma + ag.cant,
-                              0
+                              0,
                             ),
-                          0
+                          0,
                         )}
                       </span>
                       <span className="text-sm text-slate-500">
@@ -375,9 +409,9 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
                             producto.Cant +
                             producto.agregados.reduce(
                               (suma, ag) => suma + ag.cant,
-                              0
+                              0,
                             ),
-                          0
+                          0,
                         ) === 1
                           ? "producto"
                           : "productos"}
@@ -430,13 +464,15 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
                               const phoneNumber = order.phonenumber;
                               const message = `Hola, soy de ${webshop?.store?.name}`;
                               const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
-                                message
+                                message,
                               )}`;
                               window.open(url, "_blank"); // abre WhatsApp en una nueva pestaña
                             } else {
-                              toast.error(
-                                "El usuario no ha dado número de teléfono para ser localizado"
-                              );
+                              sileo.error({
+                                title: "Error",
+                                description:
+                                  "El usuario no ha dado número de teléfono para ser localizado",
+                              });
                             }
                           }}
                         >
@@ -450,7 +486,7 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
                               sitioweb,
                               order.UID_Venta,
                               setDownloading,
-                              setWebshop
+                              setWebshop,
                             )
                           }
                         >
@@ -490,7 +526,7 @@ export async function exportToPDF(pedidos) {
     doc.text(
       `Pedido #${pedidoIndex + 1} - Cliente: ${pedido.nombre}\n`,
       14,
-      doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 28
+      doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 28,
     );
 
     const productos = [];
@@ -555,7 +591,7 @@ export async function exportToPDF(pedidos) {
   doc.text(
     `Total Global de Ventas: $${totalGlobal.toFixed(2)}`,
     14,
-    doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 30
+    doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 30,
   );
 
   // Guardar el archivo PDF generado con el nombre de los pedidos
@@ -568,7 +604,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
     store?.sitioweb,
     pedidos.map((obj) => obj.UID_Venta),
     setWebshop,
-    setWhatsApp
+    setWhatsApp,
   );
   let mensaje = "";
   let totalPedido = 0; // Variable para el precio total de cada pedido
@@ -594,7 +630,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
         mensaje += `   ${index + 1}. ${producto.title} x${
           producto.Cant
         }: ${Number(
-          producto.Cant * producto.price * (1 / store?.moneda_default.valor)
+          producto.Cant * producto.price * (1 / store?.moneda_default.valor),
         ).toFixed(2)}\n`;
       }
       producto.agregados.forEach((agregate) => {
@@ -611,7 +647,7 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
     });
 
     mensaje += `- Total de la orden: ${Number(
-      compra.desc.total * (1 - compra.desc.code.discount / 100)
+      compra.desc.total * (1 - compra.desc.code.discount / 100),
     ).toFixed(2)} ${store?.moneda_default.moneda}\n`;
     mensaje += `${
       compra.desc.code.name != ""
@@ -644,7 +680,7 @@ async function ConfirmarPedidos(uids, setDownloading, sitioweb) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Error al ejecutar la función RPC:", error);

@@ -126,7 +126,7 @@ export async function PUT(request, { params }) {
         : SecondaryImage, // JS array -> será enviado como JSONB
     _agregados: data.get("agregados") ? JSON.parse(data.get("agregados")) : [],
   };
-
+  console.log(payload);
   const { data: tienda, error } = await supabase
     .rpc("update_product", payload)
     .single();

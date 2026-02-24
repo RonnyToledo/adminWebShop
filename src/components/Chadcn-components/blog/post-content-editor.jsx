@@ -1,9 +1,7 @@
 "use client";
 
-import React from "react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -27,62 +25,131 @@ import {
   Bold,
   Italic,
   Minus,
+  Code2,
 } from "lucide-react";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import axios from "axios";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import { IA, newIA } from "./IA";
+import { HTMLEditor } from "./html-editor";
+import { HTMLPreviewWithLinkPreviews } from "./link-preview";
+
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+const MAX_IA_USES = 3;
+
+const ALLOWED_TAGS = [
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "p",
+  "br",
+  "hr",
+  "strong",
+  "em",
+  "b",
+  "i",
+  "u",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "a",
+  "img",
+  "div",
+  "span",
+  "code",
+  "pre",
+];
+
+const HTML_BUTTONS = [
+  { label: "H2", icon: Type, insert: "<h2></h2>", cursorOffset: -5 },
+  { label: "H3", icon: Type, insert: "<h3></h3>", cursorOffset: -5 },
+  { label: "P", icon: Type, insert: "<p></p>", cursorOffset: -4 },
+  {
+    label: "Lista",
+    icon: List,
+    insert: "<ul>\n  <li></li>\n</ul>",
+    cursorOffset: -11,
+  },
+  {
+    label: "Negrita",
+    icon: Bold,
+    insert: "<strong></strong>",
+    cursorOffset: -9,
+  },
+  { label: "Cursiva", icon: Italic, insert: "<em></em>", cursorOffset: -5 },
+  {
+    label: "Link",
+    icon: LinkIcon,
+    insert: '<a href=""></a>',
+    cursorOffset: -6,
+  },
+  {
+    label: "Img",
+    icon: ImageIcon,
+    insert: '<img src="/placeholder.svg" alt="" />',
+    cursorOffset: -12,
+  },
+  {
+    label: "Cita",
+    icon: Quote,
+    insert: "<blockquote><p></p></blockquote>",
+    cursorOffset: -17,
+  },
+  { label: "Code", icon: Code, insert: "<code></code>", cursorOffset: -7 },
+  { label: "HR", icon: Minus, insert: "<hr />", cursorOffset: 0 },
+];
+
+const COMMON_TAGS = [
+  "h2",
+  "h3",
+  "h4",
+  "p",
+  "strong",
+  "em",
+  "ul",
+  "ol",
+  "li",
+  "a",
+  "img",
+  "blockquote",
+  "code",
+  "pre",
+  "div",
+  "span",
+  "br",
+  "hr",
+];
+
+const VOID_TAGS = ["br", "hr", "img"];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function validateHTML(html) {
+  if (!html.trim()) return { isValid: true, errors: [] };
+
   const errors = [];
-
-  if (!html.trim()) {
-    return { isValid: true, errors: [] };
-  }
-
   const tempDiv = document.createElement("div");
 
   try {
     tempDiv.innerHTML = html;
 
-    const allowedTags = [
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "p",
-      "br",
-      "hr",
-      "strong",
-      "em",
-      "b",
-      "i",
-      "u",
-      "ul",
-      "ol",
-      "li",
-      "blockquote",
-      "a",
-      "img",
-      "div",
-      "span",
-      "code",
-      "pre",
-    ];
-
-    const allTags = Array.from(tempDiv.querySelectorAll("*"));
-    const invalidTags = allTags.filter(
-      (el) => !allowedTags.includes(el.tagName.toLowerCase())
+    // 1. Etiquetas no permitidas
+    const invalidTags = [...tempDiv.querySelectorAll("*")].filter(
+      (el) => !ALLOWED_TAGS.includes(el.tagName.toLowerCase()),
     );
-
     if (invalidTags.length > 0) {
-      const uniqueInvalidTags = [
+      const unique = [
         ...new Set(invalidTags.map((el) => el.tagName.toLowerCase())),
       ];
-      errors.push(`Etiquetas no permitidas: ${uniqueInvalidTags.join(", ")}`);
+      errors.push(`Etiquetas no permitidas: ${unique.join(", ")}`);
     }
 
+    // 2. Balance de etiquetas
     const stack = [];
     const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*>/g;
     let match;
@@ -91,18 +158,14 @@ function validateHTML(html) {
       const fullTag = match[0];
       const tagName = match[1].toLowerCase();
 
-      if (fullTag.endsWith("/>") || ["br", "hr", "img"].includes(tagName)) {
-        continue;
-      }
+      if (fullTag.endsWith("/>") || VOID_TAGS.includes(tagName)) continue;
 
       if (fullTag.startsWith("</")) {
         if (stack.length === 0) {
           errors.push(`Etiqueta de cierre sin apertura: </${tagName}>`);
         } else if (stack[stack.length - 1] !== tagName) {
           errors.push(
-            `Etiqueta mal cerrada: se esperaba </${
-              stack[stack.length - 1]
-            }> pero se encontró </${tagName}>`
+            `Etiqueta mal cerrada: se esperaba </${stack[stack.length - 1]}> pero se encontró </${tagName}>`,
           );
         } else {
           stack.pop();
@@ -114,34 +177,51 @@ function validateHTML(html) {
 
     if (stack.length > 0) {
       errors.push(
-        `Etiquetas sin cerrar: ${stack.map((tag) => `<${tag}>`).join(", ")}`
+        `Etiquetas sin cerrar: ${stack.map((t) => `<${t}>`).join(", ")}`,
       );
     }
 
-    const images = tempDiv.querySelectorAll("img");
-    images.forEach((img, index) => {
+    // 3. Accesibilidad: alt en imágenes
+    tempDiv.querySelectorAll("img").forEach((img, i) => {
       if (!img.getAttribute("alt")) {
         errors.push(
-          `La imagen ${index + 1} necesita un atributo "alt" para accesibilidad`
+          `La imagen ${i + 1} necesita un atributo "alt" para accesibilidad`,
         );
       }
     });
 
-    const links = tempDiv.querySelectorAll("a");
-    links.forEach((link, index) => {
+    // 4. href en enlaces
+    tempDiv.querySelectorAll("a").forEach((link, i) => {
       if (!link.getAttribute("href")) {
-        errors.push(`El enlace ${index + 1} necesita un atributo "href"`);
+        errors.push(`El enlace ${i + 1} necesita un atributo "href"`);
       }
     });
-  } catch (error) {
+  } catch {
     errors.push("Error al parsear el HTML: estructura inválida");
   }
 
+  return { isValid: errors.length === 0, errors };
+}
+
+/** Genera el snippet de completado para un tag dado */
+function buildCompletion(tagName) {
+  if (tagName === "img") {
+    return {
+      completion: `<img src="/placeholder.svg" alt="" />`,
+      cursorOffset: 10,
+    };
+  }
+  if (VOID_TAGS.includes(tagName)) {
+    const completion = `<${tagName} />`;
+    return { completion, cursorOffset: completion.length };
+  }
   return {
-    isValid: errors.length === 0,
-    errors,
+    completion: `<${tagName}></${tagName}>`,
+    cursorOffset: tagName.length + 2,
   };
 }
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 
 export function PostContentEditor({
   initialContent,
@@ -149,160 +229,117 @@ export function PostContentEditor({
   onComplete,
   slug,
 }) {
-  const [content, setContent] = useState(initialContent);
+  const [content, setContent] = useState(initialContent ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGeminiQuestion, setIsGeminiQuestion] = useState(false);
+  const [isGeminiLoading, setIsGeminiLoading] = useState(false);
   const [error, setError] = useState("");
   const [htmlValidation, setHtmlValidation] = useState({
     isValid: true,
     errors: [],
   });
-  const textareaRef = useRef(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-  const [usedIAButton, setUsedIAButton] = useState(0);
 
+  // BUG FIX: useRef para el contador evita stale-closure en GeminiQuestions
+  const iaUsesRef = useRef(0);
+  const [iaUsesDisplay, setIaUsesDisplay] = useState(0); // sólo para render
+  const textareaRef = useRef(null);
+
+  // Validación en tiempo real
   useEffect(() => {
-    if (content) {
-      const validation = validateHTML(content);
-      setHtmlValidation(validation);
-    } else {
-      setHtmlValidation({ isValid: true, errors: [] });
-    }
+    setHtmlValidation(
+      content ? validateHTML(content) : { isValid: true, errors: [] },
+    );
   }, [content]);
 
-  const htmlButtons = [
-    { label: "H2", icon: Type, insert: "<h2></h2>", cursorOffset: -5 },
-    { label: "H3", icon: Type, insert: "<h3></h3>", cursorOffset: -5 },
-    { label: "P", icon: Type, insert: "<p></p>", cursorOffset: -4 },
-    {
-      label: "Lista",
-      icon: List,
-      insert: "<ul>\n  <li></li>\n</ul>",
-      cursorOffset: -11,
+  // ─── Inserción de tags ─────────────────────────────────────────────────────
+
+  const insertHTMLTag = useCallback(
+    (insert, cursorOffset) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const { selectionStart: start, selectionEnd: end } = textarea;
+      const newContent =
+        content.substring(0, start) + insert + content.substring(end);
+      setContent(newContent);
+
+      setTimeout(() => {
+        const newPos = start + insert.length + cursorOffset;
+        textarea.focus();
+        textarea.setSelectionRange(newPos, newPos);
+      }, 0);
     },
-    {
-      label: "Negrita",
-      icon: Bold,
-      insert: "<strong></strong>",
-      cursorOffset: -9,
-    },
-    { label: "Cursiva", icon: Italic, insert: "<em></em>", cursorOffset: -5 },
-    {
-      label: "Link",
-      icon: LinkIcon,
-      insert: '<a href=""></a>',
-      cursorOffset: -6,
-    },
-    {
-      label: "Img",
-      icon: ImageIcon,
-      insert: '<img src="/placeholder.svg" alt="" />',
-      cursorOffset: -12,
-    },
-    {
-      label: "Cita",
-      icon: Quote,
-      insert: "<blockquote><p></p></blockquote>",
-      cursorOffset: -17,
-    },
-    { label: "Code", icon: Code, insert: "<code></code>", cursorOffset: -7 },
-    { label: "HR", icon: Minus, insert: "<hr />", cursorOffset: 0 },
-  ];
+    [content],
+  );
 
-  const insertHTMLTag = (insert, cursorOffset) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  // ─── Autocompletado ────────────────────────────────────────────────────────
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = content;
-    const before = text.substring(0, start);
-    const after = text.substring(end);
+  const handleKeyDown = useCallback(
+    (e) => {
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const text = content;
 
-    const newContent = before + insert + after;
-    setContent(newContent);
+      const beforeCursor = text.substring(0, start);
+      const lastOpenBracket = beforeCursor.lastIndexOf("<");
+      const lastCloseBracket = beforeCursor.lastIndexOf(">");
 
-    setTimeout(() => {
-      const newCursorPos = start + insert.length + cursorOffset;
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
+      const inOpenTag = lastOpenBracket > lastCloseBracket;
 
-  const handleKeyDown = (e) => {
-    const textarea = e.currentTarget;
-    const start = textarea.selectionStart;
-    const text = content;
-
-    const beforeCursor = text.substring(0, start);
-    const lastOpenBracket = beforeCursor.lastIndexOf("<");
-    const lastCloseBracket = beforeCursor.lastIndexOf(">");
-
-    if (lastOpenBracket > lastCloseBracket) {
-      const partialTag = beforeCursor
-        .substring(lastOpenBracket + 1)
-        .toLowerCase();
-
-      const commonTags = [
-        "h2",
-        "h3",
-        "h4",
-        "p",
-        "strong",
-        "em",
-        "ul",
-        "ol",
-        "li",
-        "a",
-        "img",
-        "blockquote",
-        "code",
-        "pre",
-        "div",
-        "span",
-        "br",
-        "hr",
-      ];
-
-      const matches = commonTags.filter((tag) => tag.startsWith(partialTag));
-
-      if (e.key === "Tab" && matches.length > 0) {
-        e.preventDefault();
-
-        const tagToComplete = matches[0];
-        const before = text.substring(0, lastOpenBracket);
-        const after = text.substring(start);
-
-        let completion = "";
-        let cursorOffset = 0;
-
-        if (["br", "hr", "img"].includes(tagToComplete)) {
-          if (tagToComplete === "img") {
-            completion = `<img src="/placeholder.svg" alt="" />`;
-            cursorOffset = 10;
-          } else {
-            completion = `<${tagToComplete} />`;
-            cursorOffset = completion.length;
-          }
-        } else {
-          completion = `<${tagToComplete}></${tagToComplete}>`;
-          cursorOffset = tagToComplete.length + 2;
+      // Navegación de sugerencias
+      if (showSuggestions) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedSuggestion((p) => (p + 1) % suggestions.length);
+          return;
         }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedSuggestion(
+            (p) => (p - 1 + suggestions.length) % suggestions.length,
+          );
+          return;
+        }
+        if (e.key === "Escape") {
+          setShowSuggestions(false);
+          return;
+        }
+      }
 
-        const newContent = before + completion + after;
-        setContent(newContent);
-
-        setTimeout(() => {
-          textarea.focus();
-          const newPos = before.length + cursorOffset;
-          textarea.setSelectionRange(newPos, newPos);
-        }, 0);
-
+      if (!inOpenTag) {
+        setShowSuggestions(false);
         return;
       }
 
+      const partialTag = beforeCursor
+        .substring(lastOpenBracket + 1)
+        .toLowerCase();
+      const matches = COMMON_TAGS.filter((t) => t.startsWith(partialTag));
+
+      // Tab: completar con la primera sugerencia
+      if (e.key === "Tab" && matches.length > 0) {
+        e.preventDefault();
+        applyCompletion(matches[0], text, lastOpenBracket, start);
+        setShowSuggestions(false);
+        return;
+      }
+
+      // Enter con sugerencia activa
+      if (e.key === "Enter" && showSuggestions && suggestions.length > 0) {
+        e.preventDefault();
+        applyCompletion(
+          suggestions[selectedSuggestion],
+          text,
+          lastOpenBracket,
+          start,
+        );
+        setShowSuggestions(false);
+        return;
+      }
+
+      // Mostrar/ocultar lista de sugerencias
       if (matches.length > 0 && partialTag.length > 0) {
         setSuggestions(matches);
         setShowSuggestions(true);
@@ -310,56 +347,84 @@ export function PostContentEditor({
       } else {
         setShowSuggestions(false);
       }
-    } else {
-      setShowSuggestions(false);
-    }
+    },
+    [content, showSuggestions, suggestions, selectedSuggestion],
+  );
 
-    if (showSuggestions) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedSuggestion((prev) => (prev + 1) % suggestions.length);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedSuggestion(
-          (prev) => (prev - 1 + suggestions.length) % suggestions.length
-        );
-      } else if (e.key === "Enter" && suggestions.length > 0) {
-        e.preventDefault();
-        const tagToComplete = suggestions[selectedSuggestion];
-        const beforeCursor = text.substring(0, start);
-        const lastOpenBracket = beforeCursor.lastIndexOf("<");
-        const before = text.substring(0, lastOpenBracket);
-        const after = text.substring(start);
+  function applyCompletion(tagName, text, lastOpenBracket, start) {
+    const { completion, cursorOffset } = buildCompletion(tagName);
+    const before = text.substring(0, lastOpenBracket);
+    const after = text.substring(start);
+    const newContent = before + completion + after;
+    setContent(newContent);
 
-        let completion = "";
-        let cursorOffset = 0;
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      const newPos = before.length + cursorOffset;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  }
 
-        if (["br", "hr", "img"].includes(tagToComplete)) {
-          if (tagToComplete === "img") {
-            completion = `<img src="/placeholder.svg" alt="" />`;
-            cursorOffset = 10;
-          } else {
-            completion = `<${tagToComplete} />`;
-            cursorOffset = completion.length;
-          }
-        } else {
-          completion = `<${tagToComplete}></${tagToComplete}>`;
-          cursorOffset = tagToComplete.length + 2;
+  // ─── Gemini ────────────────────────────────────────────────────────────────
+
+  // BUG FIX: la función ya no crea race conditions ni muestra contadores erróneos.
+  //   ya maneja los estados de forma asíncrona; el finally se ejecutaba ANTES
+  //   de que la promesa resolviera, mostrando el contador desfasado.
+  const GeminiQuestions = useCallback(async () => {
+    if (iaUsesRef.current >= MAX_IA_USES) return;
+
+    setIsGeminiLoading(true);
+
+    const formData = new FormData();
+    formData.append("text", content ? `${IA} ${content}` : newIA(slug));
+
+    const postPromise = axios.post("/api/gemini", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    sileo.promise(postPromise, {
+      loading: {
+        title: "Optimizando estructura del post...",
+        description: "Estamos mejorando el contenido de tu publicación.",
+      },
+      success: (response) => {
+        setContent(response.data.result);
+
+        // Incrementar contador sólo cuando la IA responde con éxito
+        iaUsesRef.current += 1;
+        setIaUsesDisplay(iaUsesRef.current);
+
+        const remaining = MAX_IA_USES - iaUsesRef.current;
+        // BUG FIX: el aviso de "usos restantes" va aquí, no en finally,
+        // para que el número sea correcto y se muestre después del éxito.
+        if (remaining > 0) {
+          setTimeout(() => {
+            toast.info(
+              `Te ${remaining === 1 ? "queda" : "quedan"} ${remaining} uso${remaining === 1 ? "" : "s"} de IA`,
+            );
+          }, 1500);
         }
 
-        const newContent = before + completion + after;
-        setContent(newContent);
+        return {
+          title: "Tarea ejecutada",
+          description: "Contenido actualizado",
+        };
+      },
+      error: (err) => {
+        console.error("[Gemini]", err);
+        return { title: "Error", description: "Error al procesar con IA" };
+      },
+    });
 
-        setTimeout(() => {
-          textarea.focus();
-          const newPos = before.length + cursorOffset;
-          textarea.setSelectionRange(newPos, newPos);
-        }, 0);
+    // BUG FIX: setIsGeminiLoading(false) debe ir en .finally() de la PROMESA,
+    // no en el finally del try/catch externo que se ejecuta de forma síncrona
+    // antes de que axios resuelva.
+    postPromise.finally(() => setIsGeminiLoading(false));
+  }, [content, slug]);
 
-        setShowSuggestions(false);
-      }
-    }
-  };
+  // ─── Submit ────────────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
     setError("");
@@ -368,16 +433,14 @@ export function PostContentEditor({
       setError("El contenido es obligatorio");
       return;
     }
-
     if (!htmlValidation.isValid) {
       setError(
-        "El contenido HTML tiene errores. Por favor corrígelos antes de continuar."
+        "El contenido HTML tiene errores. Por favor corrígelos antes de continuar.",
       );
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       await onComplete(content);
     } catch (err) {
@@ -386,45 +449,14 @@ export function PostContentEditor({
       setIsSubmitting(false);
     }
   };
-  async function GeminiQuestions() {
-    setUsedIAButton(usedIAButton + 1);
-    try {
-      setIsGeminiQuestion(true);
-      const formData = new FormData();
-      formData.append("text", content ? `${IA} ${content}` : newIA(slug));
-      const postPromise = axios.post(`/api/gemini`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      // toast.promise espera la promesa y muestra estados
-      toast.promise(postPromise, {
-        loading: "Optimizando estructura del post...",
-        success: (response) => {
-          // Actualiza el estado con la respuesta (usar updater para seguridad)
-          setContent(response.data.result);
 
-          // Puedes devolver el texto que quieres que muestre el toast en success
-          return "Tarea Ejecutada — Información actualizada";
-        },
-        error: (err) => {
-          console.error(err);
-          // Puedes devolver un mensaje de error que se mostrará en el toast
-          // Logging más detallado se hace en el catch
-          return "Error devolver el texto";
-        },
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsGeminiQuestion(false);
-      toast.info(
-        `Tienes ${
-          3 - usedIAButton
-        } usos más de la inteligencia artificial para tu texto`
-      );
-    }
-  }
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  const iaExhausted = iaUsesDisplay >= MAX_IA_USES;
+
   return (
     <div className="space-y-4 p-4">
+      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Editor de Contenido</h2>
@@ -443,10 +475,11 @@ export function PostContentEditor({
         </div>
       </div>
 
+      {/* Toolbar sticky */}
       <Card className="sticky top-16 z-10 shadow-md">
         <CardContent className="pt-4">
           <div className="flex flex-wrap gap-1">
-            {htmlButtons.map((btn) => (
+            {HTML_BUTTONS.map((btn) => (
               <Button
                 key={btn.label}
                 type="button"
@@ -464,77 +497,63 @@ export function PostContentEditor({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ">
+      {/* Grid editor / preview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {/* Editor */}
-        <div className="space-y-3 md:col-span-1 lg:col-span-2 ">
+        <div className="space-y-3 md:col-span-1 lg:col-span-2">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Código HTML</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Code2 className="h-4 w-4" />
+                Editor HTML
+              </CardTitle>
               <CardDescription className="text-xs">
-                Escribe <code className="bg-muted px-1 rounded">&lt;h2</code> +
-                Tab para autocompletar
+                {'Agrega enlaces con <a href="https://...">texto</a>'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="p-2 flex justify-end">
                 <Button
-                  onClick={() => GeminiQuestions()}
-                  disabled={usedIAButton > 3}
+                  onClick={GeminiQuestions}
+                  disabled={isGeminiLoading || iaExhausted}
+                  title={iaExhausted ? "Límite de usos de IA alcanzado" : ""}
                 >
-                  {isGeminiQuestion ? (
+                  {isGeminiLoading ? (
                     <Loader2 className="animate-spin" />
                   ) : (
                     <AutoAwesomeIcon />
                   )}
-                  {content ? " Mejorar con IA" : "Crear con IA"}
+                  <span className="ml-1">
+                    {content ? "Mejorar con IA" : "Crear con IA"}
+                    {!iaExhausted && (
+                      <span className="ml-1 text-xs opacity-60">
+                        ({MAX_IA_USES - iaUsesDisplay} restantes)
+                      </span>
+                    )}
+                  </span>
                 </Button>
               </div>
-              <div className="relative">
-                <Textarea
-                  ref={textareaRef}
-                  placeholder="<h2>Mi Título</h2>&#10;<p>Escribe tu contenido aquí...</p> o puedes pegar un texto y mejorarlo con IA"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={24}
-                  className={`font-mono text-sm ${
-                    !htmlValidation.isValid ? "border-destructive" : ""
-                  }`}
-                />
 
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-40 bg-popover border rounded-md shadow-lg">
-                    <div className="p-1">
-                      {suggestions.map((tag, index) => (
-                        <div
-                          key={tag}
-                          className={`px-2 py-1.5 text-xs rounded cursor-pointer font-mono ${
-                            index === selectedSuggestion
-                              ? "bg-accent text-accent-foreground"
-                              : "hover:bg-accent/50"
-                          }`}
-                        >
-                          &lt;{tag}&gt;
-                        </div>
-                      ))}
-                    </div>
-                    <div className="border-t px-2 py-1.5 text-[10px] text-muted-foreground">
-                      ↑↓ Enter/Tab
-                    </div>
-                  </div>
-                )}
-              </div>
+              <HTMLEditor
+                value={content}
+                onChange={setContent}
+                rows={18}
+                placeholder={
+                  '<p>Escribe HTML con <a href="https://...">enlaces</a></p>'
+                }
+              />
             </CardContent>
           </Card>
 
+          {/* Errores de validación */}
           {!htmlValidation.isValid && htmlValidation.errors.length > 0 && (
             <Alert variant="destructive" className="py-2">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <p className="font-semibold text-sm mb-1">Errores de HTML:</p>
                 <ul className="list-disc list-inside space-y-0.5 text-xs">
-                  {htmlValidation.errors.map((error, index) => (
-                    <li key={index}>{error}</li>
+                  {htmlValidation.errors.map((e, i) => (
+                    <li key={i}>{e}</li>
                   ))}
                 </ul>
               </AlertDescription>
@@ -545,12 +564,13 @@ export function PostContentEditor({
             <Alert className="border-green-500 bg-green-50 dark:bg-green-950 py-2">
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-600 dark:text-green-400 text-sm">
-                HTML válido - Sin errores
+                HTML válido — Sin errores
               </AlertDescription>
             </Alert>
           )}
         </div>
 
+        {/* Preview */}
         <Card className="lg:sticky lg:top-4 lg:self-start">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
@@ -563,10 +583,7 @@ export function PostContentEditor({
           <CardContent>
             <div className="h-[600px] overflow-y-auto border rounded-lg p-4 bg-background">
               {content ? (
-                <div
-                  className="prose prose-slate dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
+                <HTMLPreviewWithLinkPreviews html={content} />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                   <p>Escribe en el editor para ver la vista previa</p>
@@ -577,6 +594,7 @@ export function PostContentEditor({
         </Card>
       </div>
 
+      {/* Error de submit */}
       {error && (
         <Alert variant="destructive" className="py-2">
           <AlertCircle className="h-4 w-4" />
@@ -584,6 +602,7 @@ export function PostContentEditor({
         </Alert>
       )}
 
+      {/* Acciones */}
       <Card>
         <CardContent className="pt-4">
           <div className="flex flex-col sm:flex-row gap-3">

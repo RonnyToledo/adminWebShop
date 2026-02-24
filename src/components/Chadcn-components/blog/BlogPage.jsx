@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import { Button } from "@/components/ui/button";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
@@ -25,7 +25,6 @@ export default function BlogPage() {
     if (!params) {
       return;
     }
-    console.log(params);
     setloading(params);
 
     const url = `/api/tienda/${webshop?.store?.sitioweb}/post`;
@@ -38,8 +37,11 @@ export default function BlogPage() {
         method: "DELETE",
         body: form, // NO headers Content-Type
       });
-      toast.promise(postPromise, {
-        loading: "Subiendo Post",
+      sileo.promise(postPromise, {
+        loading: {
+          title: "Eliminando Post",
+          description: "Por favor, espera mientras se elimina el post.",
+        },
         success: () => {
           // Actualiza el estado con la respuesta (usar updater para seguridad)
           setWebshop({
@@ -49,14 +51,15 @@ export default function BlogPage() {
               blogs: webshop?.store?.blogs.filter((p) => p.slug !== params),
             },
           });
-          // Puedes devolver el texto que quieres que muestre el toast en success
-          return "Tarea Ejecutada — Información actualizada";
+          return {
+            title: "Tarea Ejecutada",
+            description: "Información actualizada",
+          };
         },
         error: (err) => {
           console.error(err);
-          // Puedes devolver un mensaje de error que se mostrará en el toast
           // Logging más detallado se hace en el catch
-          return "Error al guardar el post";
+          return { title: "Error", description: "Error al eliminar el post" };
         },
       });
     } catch (error) {
@@ -65,8 +68,6 @@ export default function BlogPage() {
       setloading("");
     }
   }
-  console.log(loading);
-  console.log(webshop?.store?.blogs);
   return (
     <div className="min-h-screen bg-background">
       {/* Posts Grid */}

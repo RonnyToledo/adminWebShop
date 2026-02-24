@@ -2,6 +2,5 @@ import UpdatePassword from "@/components/Chadcn-components/updatePassword/update
 import React from "react";
 
 export default function usePage() {
-  console.log("A");
   return <UpdatePassword />;
 }

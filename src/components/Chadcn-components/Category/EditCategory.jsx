@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import axios from "axios";
 import { logoApp } from "@/utils/image";
 
@@ -55,16 +55,19 @@ export default function EditCategory({ ThemeContext, uid }) {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
       if (res.status == 200) {
-        toast("Categoria Actulizada correctamente");
+        sileo.success({
+          title: "Categoría actualizada",
+          description: "La categoría fue actualizada correctamente.",
+        });
         setWebshop({
           ...webshop,
           store: {
             ...webshop?.store,
             categoria: webshop?.store?.categoria.map((obj) =>
-              obj.id == category?.id ? res.data : obj
+              obj.id == category?.id ? res.data : obj,
             ),
           },
         });
@@ -72,7 +75,10 @@ export default function EditCategory({ ThemeContext, uid }) {
       }
     } catch (error) {
       console.error("Error al enviar el comentario:", error);
-      toast.error("No se pudo actualizar la configuracion.");
+      sileo.error({
+        title: "Error al actualizar categoría",
+        description: "No se pudo actualizar la categoría.",
+      });
     } finally {
       setDownloading(false);
     }
@@ -99,8 +105,8 @@ export default function EditCategory({ ThemeContext, uid }) {
                 category?.newImage
                   ? URL.createObjectURL(category?.newImage)
                   : category?.image
-                  ? category?.image
-                  : logoApp
+                    ? category?.image
+                    : logoApp
               }
               alt={category?.name || `Category`}
               width={100}

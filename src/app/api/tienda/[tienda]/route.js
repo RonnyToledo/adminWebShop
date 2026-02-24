@@ -100,11 +100,14 @@ export async function PUT(request, { params }) {
     domicilio: data.get("domicilio") == "true",
     history: data.get("history"),
     envios: data.get("envios"),
-    edit: data.get("edit"),
+    grid: data.get("grid"),
+    horizontal: data.get("horizontal"),
+    square: data.get("square"),
+    minimalista: data.get("minimalista"),
+    color: data.get("color"),
     redes: JSON.parse(data.get("redes") || "[]"),
     contacto: JSON.parse(data.get("contacto") || "[]"),
   };
-  console.log(payload);
   //Preparando nueva Imagen
   const { data: tienda, error } = await supabase
     .from("Sitios")
@@ -122,7 +125,6 @@ export async function PUT(request, { params }) {
       }
     );
   }
-  console.log(tienda);
   return NextResponse.json({ message: "Actualizacion exitosa", data: tienda });
 }
 // supabase: instancia ya creada

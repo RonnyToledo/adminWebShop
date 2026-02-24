@@ -21,7 +21,7 @@ import ProfileHeader from "./profile-header";
 import WeeklyAvailability from "@/components/Chadcn-components/Configuracion/WeeklyAvailability";
 import { Textarea } from "@/components/ui/textarea";
 import ConfiguracionState from "./configuracionState";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import axios from "axios";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { buildImprovementPrompt } from "./TextIAModel";
@@ -39,6 +39,7 @@ export default function Configuracion({ ThemeContext, country }) {
     horario: [],
     envios: [],
   });
+  console.log(webshop);
 
   useEffect(() => {
     setStore(webshop?.store);
@@ -47,9 +48,11 @@ export default function Configuracion({ ThemeContext, country }) {
   const selectedIdStr = useMemo(
     () =>
       String(
-        store?.monedas.find((m) => m.defecto)?.id ?? store?.monedas[0]?.id ?? ""
+        store?.monedas.find((m) => m.defecto)?.id ??
+          store?.monedas[0]?.id ??
+          "",
       ),
-    [store?.monedas]
+    [store?.monedas],
   );
 
   const [localNew, setLocalNew] = useState({
@@ -68,7 +71,7 @@ export default function Configuracion({ ThemeContext, country }) {
   function updateValor(id, raw) {
     const valor = Number(raw) || 0;
     const updated = (store?.monedas || []).map((m) =>
-      m.id === id ? { ...m, valor } : m
+      m.id === id ? { ...m, valor } : m,
     );
     setStore({ ...(store ?? {}), monedas: updated });
   }
@@ -77,22 +80,31 @@ export default function Configuracion({ ThemeContext, country }) {
     const filtered = (store?.monedas || []).filter((m) => m.id !== id);
 
     if ((store?.monedas || []).find((m) => m.id == id)?.defecto) {
-      toast.error("No puedes eliminar la moneda por defecto");
+      sileo.error({
+        title: "Error al eliminar moneda",
+        description: "No puedes eliminar la moneda por defecto",
+      });
       return;
     }
     if (filtered.length === 0) {
-      toast.error("No te puedes quedar sin monedas");
+      sileo.error({
+        title: "Error al eliminar moneda",
+        description: "No te puedes quedar sin monedas",
+      });
       return;
     }
     if (
       webshop?.products.filter((prod) => prod.default_moneda == id).length > 0
     ) {
-      toast.error("Estas vendiendo productos en esta moneda");
+      sileo.error({
+        title: "Error al eliminar moneda",
+        description: "Estas vendiendo productos en esta moneda",
+      });
       return;
     }
     // if we removed the defecto one, ensure first becomes defecto
     const hadDefectoRemoved = store?.monedas.some(
-      (m) => m.id === id && m.defecto
+      (m) => m.id === id && m.defecto,
     );
     let normalized = filtered;
 
@@ -110,12 +122,18 @@ export default function Configuracion({ ThemeContext, country }) {
     const nombre = (localNew.nombre || "").trim();
     const valor = Number(localNew.valor || 0);
     if (!nombre || !isFinite(valor) || valor <= 0) {
-      toast.error("Faltan datos");
+      sileo.error({
+        title: "Error al agregar moneda",
+        description: "Faltan datos o valor inválido",
+      });
       return;
     }
 
     if (store?.monedas.some((obj) => obj.nombre == nombre)) {
-      toast.error("Ya existe dicha moneda");
+      sileo.error({
+        title: "Error al agregar moneda",
+        description: "Ya existe dicha moneda",
+      });
       return;
     }
 
@@ -165,7 +183,7 @@ export default function Configuracion({ ThemeContext, country }) {
                   parrrafo: value,
                 }))
               }
-              key={"parrrafo"}
+              keyWords={"parrrafo"}
             />
           </div>
           <div className="mx-6">
@@ -178,7 +196,7 @@ export default function Configuracion({ ThemeContext, country }) {
                   history: value,
                 }))
               }
-              key={"history"}
+              keyWords={"history"}
             />
           </div>
           <div className="mx-6">
@@ -548,7 +566,7 @@ const TextInput = ({ label, value, onChange }) => (
   </div>
 );
 
-const TextAreaInput = ({ label, value, onChange, key }) => {
+const TextAreaInput = ({ label, value, onChange, keyWords }) => {
   const [status, setstatus] = useState("run");
 
   useEffect(() => {
@@ -561,40 +579,42 @@ const TextAreaInput = ({ label, value, onChange, key }) => {
     setstatus("loading");
     try {
       const formData = new FormData();
-      const text = buildImprovementPrompt(!!value, key, value);
-      console.log(text);
+      const text = buildImprovementPrompt(!!value, keyWords, value);
       formData.append("text", text);
       const postPromise = axios.post(`/api/gemini`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      console.log("Haciendo Promise");
 
-      // toast.promise espera la promesa y muestra estados
-      toast.promise(postPromise, {
-        loading: "Optimizando estructura del post...",
+      sileo.promise(postPromise, {
+        loading: { title: "Optimizando estructura del post..." },
         success: (response) => {
           // Actualiza el estado con la respuesta (usar updater para seguridad)
           onChange(response.data.result);
-          // Puedes devolver el texto que quieres que muestre el toast en success
-          return "Tarea Ejecutada — Información actualizada";
+          return {
+            title: "Tarea Ejecutada",
+            description: "Información actualizada",
+          };
         },
         error: (err) => {
           console.error(err);
-          // Puedes devolver un mensaje de error que se mostrará en el toast
           // Logging más detallado se hace en el catch
-          return "Error devolver el texto";
+          return {
+            title: "Error al optimizar",
+            description: "No se pudo optimizar el contenido.",
+          };
         },
       });
     } catch (error) {
       console.error(error);
     } finally {
       setstatus("time");
-      toast.info(
-        "Dentro de 1 minuto podra volver a utilizar el servicio de IA"
-      );
+      sileo.info({
+        title: "Servicio de IA",
+        description:
+          "Dentro de 1 minuto podra volver a utilizar el servicio de IA",
+      });
     }
   }
-  console.log(status);
   return (
     <div className="relative space-y-2">
       <Label>{label}</Label>

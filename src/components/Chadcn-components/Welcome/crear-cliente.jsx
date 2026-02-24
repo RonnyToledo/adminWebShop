@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import {
   Building2,
   Mail,
@@ -77,7 +77,7 @@ const stepSchemas = [
       .max(4, "Máximo 4 caracteres")
       .regex(
         /^[A-Z]{1,4}$/,
-        "Solo letras mayúsculas (A-Z), sin espacios, máximo 4"
+        "Solo letras mayúsculas (A-Z), sin espacios, máximo 4",
       ),
     stock: z.boolean(),
   }),
@@ -107,7 +107,7 @@ export function CrearClienteComponent({
   const [defaultCountryIso, setDefaultCountryIso] = useState(
     process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
       countries[0]?.isoCode ||
-      "CU"
+      "CU",
   );
   const [selectedCountryIso, setSelectedCountryIso] =
     useState(defaultCountryIso);
@@ -178,7 +178,7 @@ export function CrearClienteComponent({
     try {
       const base = process.env.NEXT_PUBLIC_PATH ?? "";
       const url = `${base}/api/filter/state?country=${encodeURIComponent(
-        countryIso
+        countryIso,
       )}`;
       const resp = await fetch(url, { signal });
       if (!resp.ok) {
@@ -218,7 +218,7 @@ export function CrearClienteComponent({
 
       const base = process.env.NEXT_PUBLIC_PATH ?? "";
       const url = `${base}/api/filter/city?country=${encodeURIComponent(
-        countryIso
+        countryIso,
       )}&state=${encodeURIComponent(stateParam)}`;
 
       const resp = await fetch(url, { signal });
@@ -284,15 +284,20 @@ export function CrearClienteComponent({
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (result.status === 200 || result.status === 201) {
-        toast(`Éxito al crear su tienda, ya puede empezar a trabajar
-          ${result?.data?.success || ""}`);
+        sileo.success({
+          title: "Éxito al crear su tienda",
+          description: `Ya puede empezar a trabajar ${result?.data?.success || ""}`,
+        });
         window.location.replace("/");
         form.reset();
         setLoadingGeneral(true);
         setCurrentStep(0);
       }
     } catch (error) {
-      toast.error(error?.message || "Ocurrió un error al crear el cliente");
+      sileo.error({
+        title: "Error al crear su tienda",
+        description: error?.message || "Ocurrió un error al crear el cliente",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -540,7 +545,7 @@ export function CrearClienteComponent({
                           e.preventDefault();
                           const paste =
                             (e.clipboardData || window.clipboardData).getData(
-                              "text"
+                              "text",
                             ) || "";
                           const cleaned = paste
                             .replace(/[^A-Za-z]/g, "")
@@ -679,8 +684,8 @@ export function CrearClienteComponent({
                   index < currentStep
                     ? "bg-green-600 text-white"
                     : index === currentStep
-                    ? "bg-slate-700 text-white scale-110"
-                    : "bg-slate-200 text-slate-400"
+                      ? "bg-slate-700 text-white scale-110"
+                      : "bg-slate-200 text-slate-400"
                 }`}
               >
                 {index < currentStep ? (

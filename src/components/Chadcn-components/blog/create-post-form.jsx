@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { PostBasicInfo } from "./post-basic-info";
 import { PostContentEditor } from "./post-content-editor";
 import { ThemeContext } from "@/context/useContext";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import axios from "axios";
 
 export function CreatePostForm() {
@@ -30,7 +30,6 @@ export function CreatePostForm() {
   const handleBack = () => {
     setStep(1);
   };
-  console.log(formData);
 
   const handleContentComplete = async (content) => {
     try {
@@ -49,11 +48,14 @@ export function CreatePostForm() {
         form,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
-      toast.promise(postPromise, {
-        loading: "Subiendo Post",
+      sileo.promise(postPromise, {
+        loading: {
+          title: "Subiendo Post",
+          description: "Por favor, espera mientras se sube el post.",
+        },
         success: (response) => {
           // Actualiza el estado con la respuesta (usar updater para seguridad)
           setWebshop({
@@ -66,13 +68,16 @@ export function CreatePostForm() {
           });
           router.push("/blog");
           // Puedes devolver el texto que quieres que muestre el toast en success
-          return "Tarea Ejecutada — Información actualizada";
+          return {
+            title: "Tarea Ejecutada",
+            description: "Información actualizada",
+          };
         },
         error: (err) => {
           console.error(err);
           // Puedes devolver un mensaje de error que se mostrará en el toast
           // Logging más detallado se hace en el catch
-          return "Error al guardar el post";
+          return { title: "Error", description: "Error al crear el post" };
         },
       });
     } catch (error) {

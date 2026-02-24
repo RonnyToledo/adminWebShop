@@ -18,41 +18,62 @@ import {
   Minimize2,
 } from "lucide-react";
 import { FromData } from "@/components/globalFunction/fromData";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+const colors = [
+  "oklch(27.8% 0.033 256.848)",
+  "oklch(45.5% 0.188 13.697)",
+  "oklch(45.2% 0.211 324.591)",
+  "oklch(43.8% 0.218 303.724)",
+  "oklch(39.8% 0.195 277.366)",
+  "oklch(42.4% 0.199 265.638)",
+  "oklch(45% 0.085 224.283)",
+  "oklch(43.2% 0.095 166.913)",
+  "oklch(47.6% 0.114 61.907)",
+  "oklch(44.4% 0.177 26.899)",
+];
 
 export default function Theme({ ThemeContext }) {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("Theme must be used within ThemeProvider");
   const { webshop } = context;
 
-  const [store, setStore] = useState({
-    edit: {
-      grid: false,
+  const [store, setStore] = useState(
+    webshop.store || {
+      grid: true,
       square: false,
       horizontal: false,
       minimalista: false,
-    },
-  });
+    }
+  );
 
   useEffect(() => {
     setStore(webshop.store);
   }, [webshop.store]);
-  useEffect(() => {
-    if (store?.edit?.grid) {
-      setStore({
-        ...store,
-        edit: { ...store?.edit, horizontal: false },
-      });
-    }
-  }, [store?.edit?.grid]);
-  useEffect(() => {
-    if (store?.edit?.horizontal) {
-      setStore({
-        ...store,
-        edit: { ...store?.edit, grid: false },
-      });
-    }
-  }, [store?.edit?.horizontal]);
 
+  useEffect(() => {
+    if (store?.grid) {
+      setStore({
+        ...store,
+        horizontal: false,
+      });
+    }
+  }, [store?.grid]);
+
+  useEffect(() => {
+    if (store?.horizontal) {
+      setStore({
+        ...store,
+        grid: false,
+      });
+    }
+  }, [store?.horizontal]);
+  console.log({
+    grid: Number(store?.grid),
+    horizontal: Number(store?.horizontal),
+    square: Number(store?.square),
+    minimalista: Number(store?.minimalista),
+  });
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <FromData store={store} ThemeContext={ThemeContext}>
@@ -69,7 +90,31 @@ export default function Theme({ ThemeContext }) {
             Customize the appearance of your store products
           </p>
         </div>
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Colors</h3>
 
+          <ScrollArea className="w-2/3 py-4">
+            <div className="flex w-max space-x-4 p-4">
+              {colors.map((color, index) => (
+                <div
+                  key={index}
+                  className={`p-1 rounded-lg transition-all shrink-0 ${
+                    color === store.color
+                      ? "border-2 border-blue-500"
+                      : "border-2 border-transparent"
+                  }`}
+                >
+                  <div
+                    className="w-20 h-20 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: color }}
+                    onClick={() => setStore({ ...store, color })}
+                  ></div>
+                </div>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
             {/* Grid Settings */}
@@ -91,13 +136,13 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={Number(store?.edit?.grid)}
+                  defaultValue={Number(store?.grid)}
                   onValueChange={(value) => {
                     // Convierte el string del evento ("true" o "false") a booleano
                     const isGrid = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store?.edit, grid: isGrid },
+                      grid: isGrid,
                     });
                   }}
                   className="grid grid-cols-2 gap-4"
@@ -143,13 +188,13 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={Number(store?.edit?.square)}
+                  defaultValue={Number(store?.square)}
                   onValueChange={(value) => {
                     // Convierte el string del evento ("true" o "false") a booleano
                     const isSquare = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store?.edit, square: isSquare },
+                      square: isSquare,
                     });
                   }}
                   className="grid grid-cols-2 gap-4"
@@ -195,13 +240,13 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={Number(store?.edit?.horizontal)}
+                  defaultValue={Number(store?.horizontal)}
                   onValueChange={(value) => {
                     // Convierte el string del evento ("true" o "false") a booleano
                     const isHorizontal = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store?.edit, horizontal: isHorizontal },
+                      horizontal: isHorizontal,
                     });
                   }}
                   className="grid grid-cols-2 gap-4"
@@ -247,13 +292,13 @@ export default function Theme({ ThemeContext }) {
               </CardHeader>
               <CardContent className="pt-0">
                 <RadioGroup
-                  defaultValue={Number(store?.edit?.minimalista)}
+                  defaultValue={Number(store?.minimalista)}
                   onValueChange={(value) => {
                     // Convierte el string del evento ("true" o "false") a booleano
                     const isMinimalista = value === 1;
                     setStore({
                       ...store,
-                      edit: { ...store?.edit, minimalista: isMinimalista },
+                      minimalista: isMinimalista,
                     });
                   }}
                   className="grid grid-cols-2 gap-4"
@@ -311,31 +356,27 @@ export default function Theme({ ThemeContext }) {
 
                   <div
                     className={`grid gap-3 ${
-                      store?.edit?.grid ? "grid-cols-2" : "grid-cols-1"
+                      store?.grid ? "grid-cols-2" : "grid-cols-1"
                     }`}
                   >
                     {Array.from({ length: 5 }).map((_, index) => (
                       <div
                         key={index}
                         className={`grid bg-white rounded-lg shadow-sm space-x-2 border-slate-200 p-3 space-y-3 hover:shadow-md transition-shadow ${
-                          store?.edit?.horizontal
-                            ? "grid-cols-2"
-                            : "grid-cols-1"
+                          store?.horizontal ? "grid-cols-2" : "grid-cols-1"
                         }`}
                       >
                         <div className="flex justify-center items-center">
                           <Skeleton
                             className={`w-full rounded-md ${
-                              store?.edit?.square
-                                ? "aspect-square"
-                                : "aspect-[4/3]"
+                              store?.square ? "aspect-square" : "aspect-[4/3]"
                             }`}
                           />
                         </div>
                         <div className="space-y-2">
                           <Skeleton className="w-full h-4 rounded-md" />
                           <Skeleton className="w-3/4 h-3 rounded-md" />
-                          {!store?.edit?.minimalista ? (
+                          {!store?.minimalista ? (
                             <>
                               <Skeleton className="w-1/2 h-3 rounded-md" />
                               <div className="flex justify-between items-center pt-1">

@@ -1,7 +1,7 @@
 // ============================================
 // 4. layout.js (OPTIMIZADO)
 // ============================================
-import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { Toaster as SileoToaster } from "sileo";
 import { Toaster as UiToaster } from "@/components/ui/toaster";
 import styles from "./Sonner.module.css";
 import MyProvider from "@/context/useContext";
@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }) {
       <body>
         <MyProvider user={userId} data={data || {}}>
           <main className="">{children}</main>
-          <SonnerToaster position="top-center" richColors />
+          <SileoToaster position="top-center" />
           <UiToaster />
         </MyProvider>
       </body>
@@ -71,10 +71,6 @@ export async function initializeData(userId) {
       horario: JSON.parse(store?.Sitios?.horario),
       categoria: store?.Sitios?.categorias.sort((a, b) => a.order - b.order),
       envios: JSON.parse(store?.Sitios?.envios),
-      edit:
-        typeof store?.Sitios?.edit === "string"
-          ? JSON.parse(store?.Sitios?.edit)
-          : store?.Sitios?.edit,
     };
 
     const eventsParsed =
@@ -85,12 +81,12 @@ export async function initializeData(userId) {
 
     const productosParsed = OrderProducts(
       store?.Sitios?.Products,
-      tiendaParsed?.categoria
+      tiendaParsed?.categoria,
     );
 
     // Fetch Google Analytics
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/tienda/${tiendaParsed?.sitioweb}/GA`
+      `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/tienda/${tiendaParsed?.sitioweb}/GA`,
     );
 
     const gaData = response.ok ? await response.json() : {};

@@ -30,7 +30,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { FromData } from "@/components/globalFunction/fromData";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 
 export default function SocialContactPage() {
   const { webshop } = useContext(ThemeContext);
@@ -48,24 +48,36 @@ export default function SocialContactPage() {
   const addRed = () => {
     if (newRed.tipo && newRed.url && newRed.user) {
       if ([...contacto, newContact].length >= 4) {
-        toast.error("Maxima cantidad permitida alcanzada");
+        sileo.error({
+          title: "Error",
+          description: "Maxima cantidad permitida alcanzada",
+        });
       }
       setRedes([...redes, newRed].slice(0, 3));
       setNewRed({});
     } else {
-      toast.error("Faltan datos");
+      sileo.error({
+        title: "Error",
+        description: "Faltan datos requeridos",
+      });
     }
   };
 
   const addContact = () => {
     if (newContact.tipo && newContact.url) {
       if ([...contacto, newContact].length >= 4) {
-        toast.error("Maxima cantidad permitida alcanzada");
+        sileo.error({
+          title: "Error",
+          description: "Maxima cantidad permitida alcanzada",
+        });
       }
       setContacto([...contacto, newContact].slice(0, 3));
       setNewContact({});
     } else {
-      toast.error("Faltan datos");
+      sileo.error({
+        title: "Error",
+        description: "Faltan datos requeridos",
+      });
     }
   };
 

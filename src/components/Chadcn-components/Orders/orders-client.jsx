@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import axios from "axios";
 import { logoApp } from "@/utils/image";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import { useRouter } from "next/navigation";
 
 const initialState = {
@@ -80,7 +80,7 @@ export default function Component({ ThemeContext, specific }) {
 
   useEffect(() => {
     setDataPedido(
-      (webshop?.events || []).find((obj) => obj.UID_Venta === specific)
+      (webshop?.events || []).find((obj) => obj.UID_Venta === specific),
     );
   }, [specific, webshop?.events]);
 
@@ -90,7 +90,7 @@ export default function Component({ ThemeContext, specific }) {
         sum +
         (order?.Cant || 0) +
         (order?.agregados ?? []).reduce((s, ag) => s + (ag?.cant || 0), 0),
-      0
+      0,
     );
 
     if (total === 0) {
@@ -105,13 +105,19 @@ export default function Component({ ThemeContext, specific }) {
   }, [dataPedido?.desc?.pedido, router]);
 
   async function Update(value) {
-    toast.promise(
+    sileo.promise(
       updateDesc(webshop?.store.sitioweb, value, setWebshop, setDownloading),
       {
-        loading: "Actualizando pedido...",
-        success: () => "Pedido actualizado correctamente",
-        error: (err) => err?.message ?? "Error al actualizar el pedido",
-      }
+        loading: { title: "Actualizando pedido..." },
+        success: () => ({
+          title: "Pedido actualizado correctamente",
+          description: "El pedido ha sido actualizado con éxito.",
+        }),
+        error: (err) => ({
+          title: "Error al actualizar pedido",
+          description: err?.message ?? "Error al actualizar el pedido",
+        }),
+      },
     );
   }
 
@@ -119,7 +125,7 @@ export default function Component({ ThemeContext, specific }) {
     if (name) {
       //Codigo si es con agregado
       const updatedAgregados = pedido.agregados.map((obj) =>
-        obj.name === name ? { ...obj, cant: obj.cant - 1 } : obj
+        obj.name === name ? { ...obj, cant: obj.cant - 1 } : obj,
       );
       //Ingresar codigo para atualizar setWebshop\
       const valueAux = {
@@ -129,7 +135,7 @@ export default function Component({ ThemeContext, specific }) {
           pedido: dataPedido?.desc?.pedido.map((obj) =>
             pedido.productId == obj.productId
               ? { ...obj, agregados: updatedAgregados }
-              : obj
+              : obj,
           ),
         },
       };
@@ -142,7 +148,7 @@ export default function Component({ ThemeContext, specific }) {
           pedido: dataPedido?.desc?.pedido.map((obj) =>
             pedido.productId == obj.productId
               ? { ...obj, Cant: obj.Cant - 1 }
-              : obj
+              : obj,
           ),
         },
       };
@@ -274,9 +280,9 @@ export default function Component({ ThemeContext, specific }) {
                       (order.Cant || 0) +
                       order.agregados.reduce(
                         (sumAg, ag) => sumAg + (ag.cant || 0),
-                        0
+                        0,
                       ),
-                    0
+                    0,
                   )}
                 </div>
                 <div className="text-sm text-slate-600">Total de pedidos</div>
@@ -296,9 +302,9 @@ export default function Component({ ThemeContext, specific }) {
                             sumAg +
                             ((ag.cant || 0) *
                               (ag.price || 0 + (order.embalaje || 0)) || 0),
-                          0
+                          0,
                         ),
-                      0
+                      0,
                     ) *
                       (100 - (dataPedido?.desc?.code?.discount || 0))) /
                     100
@@ -319,9 +325,9 @@ export default function Component({ ThemeContext, specific }) {
                           (sumAg, ag) =>
                             sumAg +
                             ((ag.cant || 0) * (order.priceCompra || 0) || 0),
-                          0
+                          0,
                         ),
-                      0
+                      0,
                     )
                     .toLocaleString()}
                 </div>
@@ -347,9 +353,9 @@ export default function Component({ ThemeContext, specific }) {
                               (ag.price -
                                 ((order.priceCompra || 0) +
                                   (order.embalaje || 0)) || 0) || 0),
-                          0
+                          0,
                         ),
-                      0
+                      0,
                     ) *
                       (100 - (dataPedido?.desc?.code?.discount || 0))) /
                     100
@@ -417,7 +423,7 @@ const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
     const response = await axios.put(
       `/api/tienda/${sitioweb}/checkOrders`,
       Event,
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
 
     if (response.status === 200) {
@@ -425,7 +431,7 @@ const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
         return {
           ...prev,
           events: prev.events.map((obj) =>
-            obj.UID_Venta === Event.UID_Venta ? Event : obj
+            obj.UID_Venta === Event.UID_Venta ? Event : obj,
           ),
         };
       });

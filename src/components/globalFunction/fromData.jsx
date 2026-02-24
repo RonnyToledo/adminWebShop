@@ -2,13 +2,12 @@
 import React, { useRef, useState, useContext } from "react";
 import axios from "axios";
 import { Button } from "../ui/button";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 
 export function FromData({ children, store, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const form = useRef(null);
-  console.log(webshop);
   async function handleSubmit(e) {
     e.preventDefault();
     setDownloading(true);
@@ -32,14 +31,13 @@ export function FromData({ children, store, ThemeContext }) {
     const putPromise = axios.put(`/api/tienda/${store.sitioweb}/`, formData);
 
     try {
-      // toast.promise muestra loading / success / error automáticamente
-      const res = toast.promise(putPromise, {
-        loading: "Actualizando configuración...",
+      const res = sileo.promise(putPromise, {
+        loading: { title: "Actualizando configuración..." },
         success: (response) => {
           // Actualizamos el estado local con el store nuevo
           setWebshop((prev) => ({
             ...prev,
-            store: { ...store, monedas: response.data.data.monedas },
+            store: { ...store, monedas: response.data.data[0].monedas },
           }));
 
           // Reseteamos el formulario si existe la referencia
@@ -52,24 +50,28 @@ export function FromData({ children, store, ThemeContext }) {
           }
 
           // Mensaje de éxito (puedes usar response.data para mensajes del backend)
-          return (
-            response?.data?.message ?? "Configuración actualizada correctamente"
-          );
+          return {
+            title: "Éxito",
+            description:
+              response?.data?.message ??
+              "Configuración actualizada correctamente",
+          };
         },
         error: (err) => {
-          // Toast espera un string; devolvemos un mensaje legible
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo actualizar la configuración";
-          return `Error: ${msg}`;
+          return {
+            title: "Error",
+            description: `Error: ${msg}`,
+          };
         },
       });
 
       // opcional: devolver la respuesta para quien llame a handleSubmit
       return res;
     } catch (err) {
-      // El toast de error ya fue mostrado por toast.promise, pero dejamos el log
       console.error("handleSubmit error:", err);
     } finally {
       setDownloading(false);

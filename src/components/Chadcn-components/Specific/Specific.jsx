@@ -7,7 +7,9 @@ import ConfimationOut from "@/components/globalFunction/confimationOut";
 import { logoApp } from "@/utils/image";
 import { extractBlobFilesFromArray } from "@/components/globalFunction/extractBlobFilesFromArray";
 import { ProductEditForm } from "../product-edit-form";
-import { toast } from "sonner";
+import { sileo } from "sileo";
+import { Check } from "lucide-react";
+import Image from "next/image";
 
 const defaultProduct = {
   productId: null,
@@ -42,14 +44,13 @@ export default function Specific({ specific, ThemeContext }) {
   useEffect(() => {
     setProducts(
       webshop?.products?.find((prod) => prod.productId === specific) ??
-        defaultProduct
+        defaultProduct,
     );
   }, [webshop?.products, specific]);
 
   /**
    * SaveData: envía la edición de un producto (incluye imágenes secundarias nuevas).
    * - No forzamos Content-Type (el navegador añade el boundary).
-   * - Usa toast.promise para UX consistente.
    * - Maneja progreso de subida (onUploadProgress) opcionalmente.
    */
   async function SaveData() {
@@ -57,12 +58,18 @@ export default function Specific({ specific, ThemeContext }) {
 
     // Validaciones iniciales
     if (!webshop?.store?.sitioweb) {
-      toast.error("La configuración de la tienda no está completa.");
+      sileo.error({
+        title: "Error",
+        description: "La configuración de la tienda no está completa.",
+      });
       setDownloading(false);
       return;
     }
     if (!products?.productId) {
-      toast.error("Producto inválido o falta productId.");
+      sileo.error({
+        title: "Error",
+        description: "Producto inválido o falta productId.",
+      });
       setDownloading(false);
       return;
     }
@@ -82,17 +89,17 @@ export default function Specific({ specific, ThemeContext }) {
       // recalculo seguro de oldPrice: solo si hay oldPrice numérico y price < oldPrice
       const oldPriceVal =
         price < oldPriceNum && oldPriceNum > 0 ? oldPriceNum : 0;
-
+      console.log("AAAAAAa", oldPriceVal, products.oldPrice);
       // Filtramos imagesecondary local (eliminando logoApp si aplica)
       const imagesecondary = (products?.imagesecondary ?? []).filter(
-        (obj) => obj !== logoApp
+        (obj) => obj !== logoApp,
       );
 
       // imagesecondary actual que hay en el webshop
       const imagesecondaryWebshop =
         webshop?.products?.find(
           (obj) =>
-            String(obj.productId) === String(specific ?? products.productId)
+            String(obj.productId) === String(specific ?? products.productId),
         )?.imagesecondary ?? [];
 
       // Construcción de FormData
@@ -108,7 +115,7 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("caja", String(products.caja ?? ""));
       formData.append(
         "caracteristicas",
-        JSON.stringify(products?.caracteristicas ?? [])
+        JSON.stringify(products?.caracteristicas ?? []),
       );
       formData.append("favorito", String(favorito));
       formData.append("stock", String(stock));
@@ -116,7 +123,7 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("default_moneda", String(products.default_moneda ?? ""));
       formData.append(
         "storeId",
-        String(products.storeId ?? webshop?.store?.UUID ?? "")
+        String(products.storeId ?? webshop?.store?.UUID ?? ""),
       );
       formData.append("visible", String(visible));
       formData.append("Id", String(products.productId ?? ""));
@@ -129,7 +136,7 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("agregados", JSON.stringify(products?.agregados ?? []));
       formData.append(
         "imagesecondaryCopy",
-        JSON.stringify(imagesecondaryWebshop)
+        JSON.stringify(imagesecondaryWebshop),
       );
 
       // Si las secundarias han cambiado, extraemos blobs y las añadimos al FormData
@@ -177,61 +184,107 @@ export default function Specific({ specific, ThemeContext }) {
           onUploadProgress: (progressEvent) => {
             if (progressEvent.lengthComputable) {
               const pct = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
+                (progressEvent.loaded * 100) / progressEvent.total,
               );
               // Si tienes estado de progreso, úsalo:
               // setUploadProgress(pct);
               console.debug("Upload progress:", pct, "%");
             }
           },
-        }
+        },
       );
 
-      // Usamos toast.promise para manejar la UX
-      const res = toast.promise(putPromise, {
-        loading: "Actualizando producto...",
+      const res = sileo.promise(putPromise, {
+        loading: { title: "Actualizando producto..." },
         success: (response) => {
           // Extraemos la entidad actualizada (compatibilidad con distintos formatos de API)
           const updated = response?.data?.data ?? response?.data ?? null;
 
           if (!updated) {
             // Si no vino el recurso actualizado, avisamos y no tocamos el estado (o podríamos aplicar fallback)
-            return (
-              response?.data?.message ??
-              "Producto actualizado (sin datos devueltos)."
-            );
+            return {
+              title: "Producto actualizado",
+              description:
+                response?.data?.message ??
+                "Producto actualizado (sin datos devueltos).",
+            };
           }
 
           // Actualizamos webshop de forma inmutable: sustituimos solo el producto afectado
           setWebshop((prev) => ({
             ...prev,
             products: (prev?.products ?? []).map((p) =>
-              String(p.productId) === String(updated.productId) ? updated : p
+              String(p.productId) === String(updated.productId) ? updated : p,
             ),
           }));
 
           setNewImage(null);
           // setUploadProgress(0);
-          // Mensaje de éxito que se mostrará en el toast
-          return (
-            response?.data?.message ?? "Producto actualizado correctamente"
-          );
+          return {
+            title: "Producto actualizado",
+            description: (
+              <div className="flex flex-col gap-3">
+                {/* Product card detail */}
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/50 p-2.5">
+                  <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-secondary">
+                    <Image
+                      src={products.image || logoApp}
+                      alt={products.title}
+                      height={50}
+                      width={50}
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {products.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {webshop?.store?.categoria?.find(
+                        (c) => c.id === products.caja,
+                      )?.name || "Categoría no encontrada"}
+                    </p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-sm font-bold text-foreground">
+                        $ {Number(products.price).toFixed(2)}{" "}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Animated badge */}
+                  <span className="rounded-md bg-success px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success-foreground">
+                    {!products.visible
+                      ? "Inactivo"
+                      : products.stock === 0
+                        ? "Agotado"
+                        : "Activo"}
+                  </span>
+                </div>
+              </div>
+            ),
+          };
         },
         error: (err) => {
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo actualizar el producto";
-          return `Error: ${msg}`;
+          return {
+            title: "Error al actualizar producto",
+            description: `Error: ${msg}`,
+          };
         },
       });
 
       return res;
     } catch (err) {
       // Si hay un error antes de la promesa (p. ej. extractBlobFilesFromArray lanzó),
-      // mostramos un toast y lo logueamos.
       console.error("SaveData error:", err);
-      toast.error(err?.message ?? "Error inesperado al preparar el producto.");
+      sileo.error({
+        title: "Error",
+        description:
+          err?.message ?? "Error inesperado al preparar el producto.",
+      });
     } finally {
       setDownloading(false);
     }
@@ -246,7 +299,7 @@ export default function Specific({ specific, ThemeContext }) {
           newImage={newImage}
           changes={hasPendingChanges(
             webshop?.products?.find((obj) => obj.productId == specific),
-            products
+            products,
           )}
           setNewImage={setNewImage}
         />
@@ -266,7 +319,7 @@ export default function Specific({ specific, ThemeContext }) {
       <ConfimationOut
         action={hasPendingChanges(
           webshop?.products?.find((obj) => obj.productId == specific),
-          products
+          products,
         )}
       />
     </main>

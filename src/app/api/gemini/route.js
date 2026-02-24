@@ -2,65 +2,76 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
-const ORIGIN = process.env.ALLOWED_ORIGIN || "http://localhost:4000";
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const ORIGIN = process.env.NEXT_PUBLIC_PATH ?? "http://localhost:4001";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": ORIGIN,
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Methods": "POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-export async function OPTIONS() {
+// ✅ Cliente singleton — se crea una vez, no en cada request
+const apiKey = process.env.GEMINI_API_KEY;
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function errorResponse(message, status) {
+  return NextResponse.json(
+    { error: message },
+    { status, headers: corsHeaders },
+  );
+}
+
+function extractText(response) {
+  if (!response || typeof response !== "object") return "";
+  const r = response;
+
+  return (
+    r.text ?? r.output?.[0]?.content?.[0]?.text ?? JSON.stringify(response)
+  );
+}
+
+// ─── Handlers ─────────────────────────────────────────────────────────────────
+
+export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(req) {
+  if (!ai) return errorResponse("Missing GEMINI_API_KEY on server", 500);
+
+  // Valida Content-Type antes de parsear
+  if (!req.headers.get("content-type")?.includes("multipart/form-data")) {
+    return errorResponse("Expected multipart/form-data", 415);
+  }
+
+  let text;
+
   try {
-    // Solo server-side: asegúrate de no exponer GEMINI_API_KEY al cliente
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Missing GEMINI_API_KEY on server" },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
     const formData = await req.formData();
-    const textRaw = formData.get("text");
-    const text = (
-      typeof textRaw === "string" ? textRaw : String(textRaw ?? "")
-    ).trim();
+    const raw = formData.get("text");
+    text = (typeof raw === "string" ? raw : String(raw ?? "")).trim();
+  } catch {
+    return errorResponse("Invalid form data", 400);
+  }
 
-    if (!text) {
-      return NextResponse.json(
-        { error: "No text provided" },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+  if (!text) return errorResponse("No text provided", 400);
 
-    // El SDK suele aceptar la API key via env var o al crear el cliente.
-    const ai = new GoogleGenAI({ apiKey }); // explícito = seguro
+  try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: text,
-      // config: { temperature: 0.7, candidateCount: 1 } // opcional
     });
 
-    // Manejo defensivo del resultado (según versiones del SDK)
-    const resultText =
-      response?.text ??
-      // algunas versiones devuelven structure más compleja
-      response?.output?.[0]?.content?.[0]?.text ??
-      JSON.stringify(response);
-
     return NextResponse.json(
-      { result: resultText },
-      { status: 200, headers: corsHeaders }
+      { result: extractText(response) },
+      { status: 200, headers: corsHeaders },
     );
   } catch (err) {
-    console.error("Gemini error:", err);
-    return NextResponse.json(
-      { error: err?.message ?? String(err) },
-      { status: 500, headers: corsHeaders }
-    );
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[Gemini]", message);
+    return errorResponse(message, 502); // 502 = fallo upstream, no nuestro
   }
 }
