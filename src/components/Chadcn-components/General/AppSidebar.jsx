@@ -184,13 +184,16 @@ export default function AppSidebar({ ThemeContext }) {
                         webshop?.user?.image ||
                         "https://res.cloudinary.com/dbgnyc842/image/upload/v1753625183/Identidades/%C3%8Dcono-de-usuario-minimalista-en-gris_z11vpk.jpg"
                       }
-                      alt={webshop?.user?.name}
+                      alt={webshop?.user?.name || "User"}
                     />
                     <AvatarFallback className="rounded-lg">
                       {webshop?.user?.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                        ? webshop.user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                        : "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">

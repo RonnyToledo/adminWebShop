@@ -1,27 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "@/lib/cloudinary";
-
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 }
-    );
-  }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
+import { LogUser } from "@/lib/logUser";
 
 export async function POST(request, { params }) {
   // Obtenemos el cuerpo enviado desde el cliente
@@ -29,7 +10,13 @@ export async function POST(request, { params }) {
   if (data) console.info(data);
   try {
     // Actualiza la categoría de la tienda
-    await LogUser();
+    const log = await LogUser();
+    if (!log.ok) {
+      return NextResponse.json(
+        { message: log.message, detail: log.detail || null },
+        { status: log.status },
+      );
+    }
 
     const { data: newData, error: tiendaError } = await supabase
       .from("categorias")
@@ -39,10 +26,10 @@ export async function POST(request, { params }) {
 
     if (tiendaError) {
       console.error(
-        `Error al actualizar el producto ${cat.name}: ${tiendaError}`
+        `Error al actualizar el producto ${cat.name}: ${tiendaError}`,
       );
       throw new Error(
-        `Error actualizando producto ${cat.name}: ${tiendaError.message}`
+        `Error actualizando producto ${cat.name}: ${tiendaError.message}`,
       );
     }
 
@@ -54,7 +41,7 @@ export async function POST(request, { params }) {
     console.error("Error en la actualización:", error);
     return NextResponse.json(
       { message: `Error: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -62,10 +49,16 @@ export async function PUT(request, { params }) {
   const data = await request.formData();
   const categoria = JSON.parse(data.get("categoria"));
   const UUID = data.get("UUID");
-  if (categoria) console.info("Categoria recivida");
+  if (categoria) console.info("Categoria recibida");
   try {
     // Actualiza la categoría de la tienda
-    await LogUser();
+    const log = await LogUser();
+    if (!log.ok) {
+      return NextResponse.json(
+        { message: log.message, detail: log.detail || null },
+        { status: log.status },
+      );
+    }
 
     await Promise.all(
       categoria.map(async (cat) => {
@@ -80,13 +73,13 @@ export async function PUT(request, { params }) {
         // Si hay un error en la actualización, lo lanza
         if (tiendaError) {
           console.error(
-            `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
+            `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`,
           );
           throw new Error(
-            `Error actualizando producto ${cat.id}: ${tiendaError.message}`
+            `Error actualizando producto ${cat.id}: ${tiendaError.message}`,
           );
         }
-      })
+      }),
     );
     console.info("categorias ok");
 
@@ -107,7 +100,7 @@ export async function PUT(request, { params }) {
     console.error("Error en la actualización:", error.message);
     return NextResponse.json(
       { message: `Error: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -116,7 +109,7 @@ function handleError(error) {
   console.error(error);
   return NextResponse.json(
     { message: error.message || "Ocurrió un error desconocido" },
-    { status: 400 }
+    { status: 400 },
   );
 }
 
@@ -125,7 +118,13 @@ export async function DELETE(request, { params }) {
   const { UUID, image } = await request.json();
   try {
     // Actualiza la categoría de la tienda
-    await LogUser();
+    const log = await LogUser();
+    if (!log.ok) {
+      return NextResponse.json(
+        { message: log.message, detail: log.detail || null },
+        { status: log.status },
+      );
+    }
     if (image) {
       const publicId = extractPublicId(image);
       cloudinary.uploader.destroy(publicId, (error, result) => {
@@ -136,7 +135,7 @@ export async function DELETE(request, { params }) {
             { message: error },
             {
               status: 402,
-            }
+            },
           );
         } else {
           console.info("Imagen eliminada:", result);
@@ -155,10 +154,10 @@ export async function DELETE(request, { params }) {
     // Si hay un error en la actualización, lo lanza
     if (tiendaError) {
       console.error(
-        `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`
+        `Error al actualizar el producto ${cat.id}: ${tiendaError.message}`,
       );
       throw new Error(
-        `Error actualizando producto ${cat.id}: ${tiendaError.message}`
+        `Error actualizando producto ${cat.id}: ${tiendaError.message}`,
       );
     }
 
@@ -169,7 +168,7 @@ export async function DELETE(request, { params }) {
     console.error("Error en la actualización:", error.message);
     return NextResponse.json(
       { message: `Error: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

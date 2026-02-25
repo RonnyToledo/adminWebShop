@@ -11,20 +11,20 @@ export async function middleware(req) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Rutas protegidas
-  const protectedPaths = ["/", "/", "/"];
-  const isProtectedPath = protectedPaths.some((path) =>
-    req.nextUrl.pathname.startsWith(path)
-  );
+  const pathname = req.nextUrl.pathname;
 
-  // Redirigir a login si no hay sesión en ruta protegida
-  if (isProtectedPath && !session) {
+  // Rutas públicas que no requieren sesión
+  const publicPaths = ["/login", "/configPage", "/resetPassword"];
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+
+  // Redirigir a login si no hay sesión y no es ruta pública
+  if (!session && !isPublicPath) {
     const redirectUrl = new URL("/login", req.url);
     return NextResponse.redirect(redirectUrl);
   }
 
   // Redirigir a dashboard si ya está autenticado e intenta ir a login
-  if (req.nextUrl.pathname === "/login" && session) {
+  if (session && pathname === "/login") {
     const redirectUrl = new URL("/", req.url);
     return NextResponse.redirect(redirectUrl);
   }
@@ -34,9 +34,13 @@ export async function middleware(req) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/profile/:path*",
-    "/settings/:path*",
-    "/login",
+    /*
+     * Coincidir con todas las rutas excepto las que comienzan con:
+     * - api (rutas de API)
+     * - _next/static (archivos estáticos)
+     * - _next/image (archivos de optimización de imágenes)
+     * - favicon.ico (archivo de icono)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

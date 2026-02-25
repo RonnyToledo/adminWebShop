@@ -65,13 +65,11 @@ export function ProductManagementSystem() {
   const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
-    if (JSON.stringify(products) !== JSON.stringify(webshop?.products || [])) {
-      setProducts(webshop?.products || []);
-    }
+    setProducts(webshop?.products || []);
   }, [webshop?.products]);
 
   // Obtener productos sin categoría o con categoría inválida
-  const getUncategorizedProducts = () => {
+  const uncategorizedProducts = React.useMemo(() => {
     const validCategoryIds =
       webshop?.store?.categoria?.map((cat) => cat.id) || [];
     return products.filter(
@@ -80,12 +78,11 @@ export function ProductManagementSystem() {
         product.caja === UNCATEGORIZED_ID ||
         !validCategoryIds.includes(product.caja),
     );
-  };
+  }, [products, webshop?.store?.categoria]);
 
   // Obtener todas las categorías incluyendo "Sin categoría"
-  const getAllCategories = () => {
+  const allCategories = React.useMemo(() => {
     const categories = [...(webshop?.store?.categoria || [])];
-    const uncategorizedProducts = getUncategorizedProducts();
 
     if (uncategorizedProducts.length > 0) {
       categories.push({
@@ -96,7 +93,7 @@ export function ProductManagementSystem() {
     }
 
     return categories;
-  };
+  }, [webshop?.store?.categoria, uncategorizedProducts]);
 
   const DragAndDrop = (result) => {
     const { source, destination, draggableId } = result;
@@ -113,7 +110,7 @@ export function ProductManagementSystem() {
       setProducts((prevProducts) =>
         OrderProducts(
           prevProducts,
-          getAllCategories().map((obj) => obj.id),
+          allCategories.map((obj) => obj.id),
           sourceIndex,
           destIndex,
           sourceCategory,
@@ -139,7 +136,7 @@ export function ProductManagementSystem() {
         if (productToMove) {
           return OrderProducts(
             newPrev,
-            getAllCategories().map((obj) => obj.id),
+            allCategories.map((obj) => obj.id),
             sourceIndex,
             destIndex,
             destCategory,
@@ -211,12 +208,15 @@ export function ProductManagementSystem() {
   };
 
   // Función auxiliar para obtener productos de una categoría
-  const getCategoryProducts = (categoryId) => {
-    if (categoryId === UNCATEGORIZED_ID) {
-      return getUncategorizedProducts();
-    }
-    return products.filter((p) => p.caja === categoryId);
-  };
+  const getCategoryProducts = React.useCallback(
+    (categoryId) => {
+      if (categoryId === UNCATEGORIZED_ID) {
+        return uncategorizedProducts;
+      }
+      return products.filter((p) => p.caja === categoryId);
+    },
+    [products, uncategorizedProducts],
+  );
 
   const clearSelection = () => {
     setSelectedProducts([]);
@@ -347,7 +347,6 @@ export function ProductManagementSystem() {
   };
 
   const totalSelected = selectedProducts.length;
-  const allCategories = getAllCategories();
 
   return (
     <div className="space-y-3 md:space-y-6">

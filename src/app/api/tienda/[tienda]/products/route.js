@@ -1,40 +1,33 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
+import { LogUser } from "@/lib/logUser";
 import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
 
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
+export async function GET(request, { params }) {
+  const log = await LogUser();
+  if (!log.ok) {
     return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 },
+      { message: log.message, detail: log.detail || null },
+      { status: log.status },
     );
   }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
-
-export async function GET(request, { params }) {
-  await LogUser();
 
   const { data: tienda } = await supabase.from("Products").select("*");
   return NextResponse.json(tienda);
 }
 
 export async function POST(request, { params }) {
-  await LogUser();
+  const log = await LogUser();
+  if (!log.ok) {
+    return NextResponse.json(
+      { message: log.message, detail: log.detail || null },
+      { status: log.status },
+    );
+  }
 
   const data = await request.formData();
   const imageFile = data.get("image");
@@ -157,8 +150,14 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    // Verificar usuario (puede lanzar)
-    await LogUser();
+    // Verificar usuario
+    const log = await LogUser();
+    if (!log.ok) {
+      return NextResponse.json(
+        { message: log.message, detail: log.detail || null },
+        { status: log.status },
+      );
+    }
 
     // Obtener formData y parsear valores
     const data = await request.formData();
@@ -245,7 +244,10 @@ export async function DELETE(request, { params }) {
 }
 
 async function updateProductsInBatches(products, batchSize = 10) {
-  await LogUser();
+  const log = await LogUser();
+  if (!log.ok) {
+    throw new Error(log.message);
+  }
 
   for (let i = 0; i < products.length; i += batchSize) {
     const batch = products.slice(i, i + batchSize);

@@ -7,7 +7,7 @@ import styles from "./Sonner.module.css";
 import MyProvider from "@/context/useContext";
 import { fetchStoreData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
-import { fetchUserSessionServer } from "@/components/globalFunction/loginFunction";
+import { fetchGAData } from "@/lib/ga-utils";
 import "./globals.css";
 import { serverAuthService } from "@/lib/server-auth";
 
@@ -84,12 +84,8 @@ export async function initializeData(userId) {
       tiendaParsed?.categoria,
     );
 
-    // Fetch Google Analytics
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_DEPLOYMENT}/api/tienda/${tiendaParsed?.sitioweb}/GA`,
-    );
-
-    const gaData = response.ok ? await response.json() : {};
+    // Fetch Google Analytics directly
+    const gaData = await fetchGAData(tiendaParsed?.sitioweb);
 
     // Cleanup
     delete tiendaParsed?.Products;

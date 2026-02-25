@@ -28,7 +28,7 @@ const imagenes = [
 ];
 
 export default function Component({ ThemeContext }) {
-  const { webshop, setwebshop } = useContext(ThemeContext);
+  const { webshop } = useContext(ThemeContext);
   const router = useRouter();
   return (
     <div className="min-h-screen bg-slate-50">
@@ -157,6 +157,7 @@ export default function Component({ ThemeContext }) {
   );
 }
 function CarruselNew({ products }) {
+  const router = useRouter();
   return (
     <Card className="p-6">
       <div className="flex flex-col items-center text-center">
@@ -204,6 +205,7 @@ function CarruselNew({ products }) {
   );
 }
 function PorductoNuevo({ product }) {
+  const router = useRouter();
   return (
     <Card className="p-6">
       <div className="flex flex-col items-center text-center">
