@@ -49,6 +49,7 @@ const PUBLIC_ROUTES = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(data || initialState);
+  const [OpenSidebar, setOpenSidebar] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -194,7 +195,7 @@ export default function MyProvider({ children, user, data }) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "Notification" },
-        handleNotification
+        handleNotification,
       )
       .subscribe();
 
@@ -207,11 +208,18 @@ export default function MyProvider({ children, user, data }) {
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>
         {!isPublicRoute && !isProtectedRoute && (
-          <AppSidebar ThemeContext={ThemeContext} />
+          <AppSidebar
+            ThemeContext={ThemeContext}
+            isOpen={OpenSidebar}
+            onClose={() => setOpenSidebar(false)}
+          />
         )}
         <div className="w-full">
           {!isPublicRoute && !isProtectedRoute && (
-            <HeaderAdmin ThemeContext={ThemeContext} />
+            <HeaderAdmin
+              ThemeContext={ThemeContext}
+              onMenuClick={() => setSidebarOpen(true)}
+            />
           )}
           {children}
         </div>

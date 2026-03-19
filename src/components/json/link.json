@@ -10,9 +10,7 @@
       }
     ]
   },
-  {
-    "separator": true
-  },
+
   {
     "group": "Productos",
 
@@ -38,9 +36,6 @@
         "icon": "BookIcon"
       }
     ]
-  },
-  {
-    "separator": true
   },
 
   {
@@ -68,9 +63,6 @@
         "icon": "AddCardIcon"
       }
     ]
-  },
-  {
-    "separator": true
   },
 
   {

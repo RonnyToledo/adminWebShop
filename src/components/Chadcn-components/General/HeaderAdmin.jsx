@@ -1,11 +1,9 @@
 "use client";
-import React from "react";
+import React, { useContext } from "react";
 import Link from "next/link";
 import dataCards from "@/components/json/card.json";
 import { usePathname } from "next/navigation";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,7 +11,6 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Dialog,
   DialogContent,
@@ -29,86 +26,8 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-
-export default function HeaderAdmin({ ThemeContext }) {
-  const pathname = usePathname();
-
-  const pathParts = pathname.split("/").filter((part) => part);
-  const breadcrumbs = pathParts.map((part, index) => {
-    const href = "/" + pathParts.slice(0, index + 1).join("/");
-    return { href, label: part };
-  });
-
-  return (
-    <div className="flex sticky top-0 w-full flex-col bg-white shadow-md z-[10]">
-      <div className="flex flex-col sm:gap-4 p-2">
-        <header className="sticky flex justify-between top-0 z-30 h-14 items-center gap-4 border-b sm:static sm:h-auto sm:border-0 backdrop-blur-lg ">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger />
-            {pathname === "/" ? (
-              <div className=" mx-auto  items-end gap-0 md:gap-2 grid grid-cols-1 md:grid-cols-2">
-                <h1 className="text-base md:text-2xl font-semibold text-slate-900">
-                  Bienvenido
-                </h1>
-                <div className="text-xs md:text-sm text-slate-600">
-                  Tienes preguntas?
-                  <Link
-                    href={"https://wa.me/5352489105"}
-                    className="text-blue-600 hover:underline"
-                  >
-                    <span className="font-medium">+53 52489105</span>
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <Breadcrumb>
-                <BreadcrumbList>
-                  {breadcrumbs.map((obj, ind) => (
-                    <div key={ind} className="flex items-center">
-                      <BreadcrumbItem>
-                        <BreadcrumbLink asChild>
-                          <Link
-                            href={obj.href}
-                            className="capitalize truncate max-w-20"
-                          >
-                            {obj.label}
-                          </Link>
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                      <BreadcrumbSeparator />
-                    </div>
-                  ))}
-                </BreadcrumbList>
-              </Breadcrumb>
-            )}
-          </div>
-          <div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="rounded-full p-2">
-                  <InfoOutlinedIcon />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Info</DialogTitle>
-                  <DialogDescription>
-                    Panel de información sobre la pantalla
-                  </DialogDescription>
-                </DialogHeader>
-                {dataCards
-                  .filter((obj) => obj.llave == identifyRoute(pathname))
-                  .map((card, index) => (
-                    <GuideCard key={index} {...card} />
-                  ))}
-              </DialogContent>
-            </Dialog>
-          </div>
-        </header>
-      </div>
-    </div>
-  );
-}
+import { Bell, HelpCircle, Pencil, Phone, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const GuideCard = ({ title, description, steps, link, buttonText }) => {
   return (
@@ -137,6 +56,113 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => {
     </div>
   );
 };
+
+export default function HeaderAdmin({
+  title = "Bienvenido",
+  phoneNumber = "+53 52489105",
+  ThemeContext,
+  onMenuClick,
+}) {
+  const { webshop } = useContext(ThemeContext);
+  const pathname = usePathname();
+
+  const pathParts = pathname.split("/").filter((part) => part);
+  const breadcrumbs = pathParts.map((part, index) => {
+    const href = "/" + pathParts.slice(0, index + 1).join("/");
+    return { href, label: part };
+  });
+  console.log(webshop);
+  return (
+    <header className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-border bg-card/50">
+      <div className="flex items-center gap-3 lg:gap-6">
+        {/* Mobile menu button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden shrink-0"
+          onClick={onMenuClick}
+          aria-label="Abrir menu"
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          {pathname === "/" ? (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-muted-foreground text-sm">
+                {webshop.store?.name ?? ""}
+              </span>
+              <button className="p-1 hover:bg-secondary rounded transition-colors">
+                <Pencil className="w-3 h-3 text-muted-foreground" />
+              </button>
+            </div>
+          ) : (
+            <Breadcrumb>
+              <BreadcrumbList>
+                {breadcrumbs.map((obj, ind) => (
+                  <div key={ind} className="flex items-center">
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link
+                          href={obj.href}
+                          className="capitalize truncate max-w-20"
+                        >
+                          {obj.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                  </div>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Phone className="w-4 h-4" />
+          <span>Tienes preguntas?</span>
+          <a
+            href={`tel:${phoneNumber}`}
+            className="text-primary hover:underline font-medium"
+          >
+            {phoneNumber}
+          </a>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+          </Button>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <HelpCircle className="w-5 h-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Info</DialogTitle>
+                <DialogDescription>
+                  Panel de información sobre la pantalla
+                </DialogDescription>
+              </DialogHeader>
+              {dataCards
+                .filter((obj) => obj.llave == identifyRoute(pathname))
+                .map((card, index) => (
+                  <GuideCard key={index} {...card} />
+                ))}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    </header>
+  );
+}
 const identifyRoute = (pathname) => {
   // Define un mapa de identificadores
   const routeMap = {
@@ -158,7 +184,7 @@ const identifyRoute = (pathname) => {
     const routeRegex = new RegExp(
       `^${route
         .replace(/\[.*?\]/g, "([^/]+)") // Reemplaza `[param]` por un patrón dinámico
-        .replace(/\//g, "\\/")}$`
+        .replace(/\//g, "\\/")}$`,
     );
     return routeRegex.test(pathname);
   });
