@@ -73,8 +73,8 @@ export default function HeaderAdmin({
   });
   console.log(webshop);
   return (
-    <header className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-border bg-card/50">
-      <div className="flex items-center gap-3 lg:gap-6">
+    <header className="sticky top-0 z-10 flex items-center justify-between p-2 md:px-4 lg:px-6 md:py-4 border-b border-border bg-card/90">
+      <div className="flex items-center gap-1 sm:gap-3 lg:gap-6">
         {/* Mobile menu button */}
         <Button
           variant="ghost"
@@ -88,7 +88,7 @@ export default function HeaderAdmin({
         <div>
           <h1 className="text-2xl font-bold text-foreground">{title}</h1>
           {pathname === "/" ? (
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center  gap-0.5 sm:gap-2 mt-1">
               <span className="text-muted-foreground text-sm">
                 {webshop.store?.name ?? ""}
               </span>
@@ -120,8 +120,8 @@ export default function HeaderAdmin({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-4 ">
+        <div className="items-center gap-2 text-sm text-muted-foreground hidden sm:flex">
           <Phone className="w-4 h-4" />
           <span>Tienes preguntas?</span>
           <a

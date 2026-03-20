@@ -13,7 +13,6 @@ import HeaderAdmin from "@/components/Chadcn-components/General/HeaderAdmin";
 import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useToast } from "@/components/ui/use-toast";
-import { sileo } from "sileo";
 
 import { authService } from "@/lib/supabase";
 
@@ -50,6 +49,7 @@ const PUBLIC_ROUTES = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
   const [webshop, setWebshop] = useState(data || initialState);
+  const [OpenSidebar, setOpenSidebar] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -80,10 +80,6 @@ export default function MyProvider({ children, user, data }) {
     // Si no hay usuario y no es ruta protegida
     if (!user && !isProtectedRoute) {
       console.info("No existe sesión, redirigiendo a login");
-      sileo.error({
-        title: "No existe sesión",
-        description: "redirigiendo a login",
-      });
       setWebshop((prev) => ({ ...prev, pathRedirect: pathname }));
       router.push("/login");
       return;
@@ -92,11 +88,6 @@ export default function MyProvider({ children, user, data }) {
     // Usuario con rol "user" no puede acceder
     if (data?.user?.role === "user") {
       console.error("Usuario denegado");
-      sileo.warning({
-        title: "Usuario denegado",
-        description: "Contacte con el soporte",
-      });
-
       try {
         await authService.signOut();
         router.push("/login");
@@ -113,10 +104,6 @@ export default function MyProvider({ children, user, data }) {
 
     // Nuevo manager: redirigir a bienvenida
     if (data?.user?.role === "manager" && data?.user?.login === false) {
-      sileo.info({
-        title: "Nuevo Manager",
-        description: "Redirigiendo a crear catálogo",
-      });
       console.info("Nuevo Manager, redirigiendo a crear catálogo");
       router.push("/welcome");
       return;
@@ -124,11 +111,6 @@ export default function MyProvider({ children, user, data }) {
 
     // Usuario válido: establecer datos SOLO en la primera carga
     if (user && data && !isInitialized.current) {
-      sileo.success({
-        title: "Bienvenido",
-        description: "Inicializando datos del usuario",
-      });
-
       console.info("Inicializando datos del usuario");
       setWebshop(data);
       isInitialized.current = true;
@@ -226,11 +208,18 @@ export default function MyProvider({ children, user, data }) {
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>
         {!isPublicRoute && !isProtectedRoute && (
-          <AppSidebar ThemeContext={ThemeContext} />
+          <AppSidebar
+            ThemeContext={ThemeContext}
+            isOpen={OpenSidebar}
+            onClose={() => setOpenSidebar(false)}
+          />
         )}
         <div className="w-full">
           {!isPublicRoute && !isProtectedRoute && (
-            <HeaderAdmin ThemeContext={ThemeContext} />
+            <HeaderAdmin
+              ThemeContext={ThemeContext}
+              onMenuClick={() => setOpenSidebar(!OpenSidebar)}
+            />
           )}
           {children}
         </div>

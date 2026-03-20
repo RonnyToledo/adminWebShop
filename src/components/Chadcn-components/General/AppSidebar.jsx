@@ -101,7 +101,7 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
 
   return (
     <>
-      <div className="sticky top-0 h-fit">
+      <div className="sticky top-0 h-fit z-[50]">
         <div
           className={cn(
             "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
@@ -114,7 +114,7 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
         {/* Sidebar */}
         <aside
           className={cn(
-            "fixed top-0 lg:static inset-y-0 left-0 z-50 flex flex-col h-screen w-72 lg:w-64 bg-sidebar border-r border-sidebar-border",
+            "fixed top-0 lg:static inset-y-0 left-0 z-[51] flex flex-col h-screen w-72 lg:w-64 bg-sidebar border-r border-sidebar-border",
             "transform transition-transform duration-300 ease-in-out lg:transform-none",
             isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           )}
