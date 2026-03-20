@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useContext, useMemo } from "react";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
 import { InputStore, SwitchStore } from "./Input-Store";
-import { Instagram, Phone, Mail, Loader2 } from "lucide-react";
+import {
+  Instagram,
+  Phone,
+  Mail,
+  Loader2,
+  BadgeCheck,
+  AlertCircle,
+} from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
@@ -28,10 +35,7 @@ import { buildImprovementPrompt } from "./TextIAModel";
 
 export default function Configuracion({ ThemeContext, country }) {
   const { webshop } = useContext(ThemeContext);
-  const [newAgregados, setNewAgregados] = useState({
-    moneda: "",
-    valor: 0,
-  });
+  const [newAgregados, setNewAgregados] = useState({ moneda: "", valor: 0 });
   const [store, setStore] = useState({
     comentario: [],
     categoria: [],
@@ -39,12 +43,11 @@ export default function Configuracion({ ThemeContext, country }) {
     horario: [],
     envios: [],
   });
-  console.log(webshop);
 
   useEffect(() => {
     setStore(webshop?.store);
   }, [webshop.store]);
-  // value for RadioGroup must be string; keep derived selectedId string
+
   const selectedIdStr = useMemo(
     () =>
       String(
@@ -78,7 +81,6 @@ export default function Configuracion({ ThemeContext, country }) {
 
   function deleteMoneda(id) {
     const filtered = (store?.monedas || []).filter((m) => m.id !== id);
-
     if ((store?.monedas || []).find((m) => m.id == id)?.defecto) {
       sileo.error({
         title: "Error al eliminar moneda",
@@ -98,16 +100,14 @@ export default function Configuracion({ ThemeContext, country }) {
     ) {
       sileo.error({
         title: "Error al eliminar moneda",
-        description: "Estas vendiendo productos en esta moneda",
+        description: "Estás vendiendo productos en esta moneda",
       });
       return;
     }
-    // if we removed the defecto one, ensure first becomes defecto
     const hadDefectoRemoved = store?.monedas.some(
       (m) => m.id === id && m.defecto,
     );
     let normalized = filtered;
-
     if (
       hadDefectoRemoved &&
       normalized.length > 0 &&
@@ -128,7 +128,6 @@ export default function Configuracion({ ThemeContext, country }) {
       });
       return;
     }
-
     if (store?.monedas.some((obj) => obj.nombre == nombre)) {
       sileo.error({
         title: "Error al agregar moneda",
@@ -136,112 +135,163 @@ export default function Configuracion({ ThemeContext, country }) {
       });
       return;
     }
-
-    // uso en tu código:
     const newId = getFirstAvailableId(store?.monedas ?? []);
     const newMon = {
       id: newId,
       nombre,
       valor,
       ui_store: store?.UUID ?? undefined,
-      defecto: store?.monedas.length === 0, // if first currency, set as default
+      defecto: store?.monedas.length === 0,
     };
-
     const updated = [...(store?.monedas || []), newMon];
-    // ensure only one defecto
     const normalized = updated.map((m, i) => ({
       ...m,
       defecto: m.defecto ? true : i === 0 && !updated.some((x) => x.defecto),
     }));
     setStore({ ...(store ?? {}), monedas: normalized });
-    // reset local form
     setLocalNew({ nombre: "", valor: "" });
   }
 
+  // Métricas derivadas del log para mostrar contexto en la UI
+  const productosActivos =
+    webshop?.products?.filter((p) => p.visible && !p.agotado).length ?? 0;
+  const productosAgotados =
+    webshop?.products?.filter((p) => p.agotado).length ?? 0;
+  const totalCategorias = store?.categoria?.length ?? 0;
+  const hasPending = hasPendingChanges(store, webshop?.store);
+
   return (
-    <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8">
+    <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8 space-y-6">
       <FromData store={store} ThemeContext={ThemeContext}>
-        <Card className="space-y-2">
-          <ProfileHeader store={store} setStore={setStore} />
-          <div className="mx-6">
-            <Label htmlFor="email">Nombre de la tienda</Label>
-            <InputStore
-              name={"Nombre del negocio"}
-              object={store}
-              value={store?.name}
-              action={setStore}
-              type={"text"}
-            />
+        {/* ── Encabezado de sección ─────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Configuración
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {store?.name ?? "Mi tienda"} ·{" "}
+              <span
+                className={
+                  store?.active ? "text-green-600" : "text-destructive"
+                }
+              >
+                {store?.active ? "Activa" : "Inactiva"}
+              </span>
+            </p>
           </div>
-          <div className="mx-6">
+          {hasPending && (
+            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              Cambios sin guardar
+            </div>
+          )}
+        </div>
+
+        {/* ── Resumen rápido del log ────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Productos activos", value: productosActivos },
+            { label: "Agotados", value: productosAgotados },
+            { label: "Categorías", value: totalCategorias },
+            { label: "Monedas", value: store?.monedas?.length ?? 0 },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="bg-muted/40 rounded-xl border border-border px-4 py-3"
+            >
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-xl font-semibold text-foreground mt-0.5">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Perfil + textos ──────────────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Perfil de la tienda</CardTitle>
+            <CardDescription>
+              Foto de portada, logo, nombre y descripción pública
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <ProfileHeader store={store} setStore={setStore} />
+
+            <div className="space-y-2">
+              <Label htmlFor="storeName">Nombre de la tienda</Label>
+              <InputStore
+                name={"Nombre del negocio"}
+                object={store}
+                value={store?.name}
+                action={setStore}
+                type={"text"}
+              />
+            </div>
+
             <TextAreaInput
-              label="Mensaje de Bienvenida"
+              label="Mensaje de bienvenida"
               value={store?.parrrafo || ""}
               onChange={(value) =>
-                setStore((prev) => ({
-                  ...prev,
-                  parrrafo: value,
-                }))
+                setStore((prev) => ({ ...prev, parrrafo: value }))
               }
               keyWords={"parrrafo"}
             />
-          </div>
-          <div className="mx-6">
+
             <TextAreaInput
-              label="Cuenta tu historia al cliente"
+              label="Historia del negocio"
               value={store?.history || ""}
               onChange={(value) =>
-                setStore((prev) => ({
-                  ...prev,
-                  history: value,
-                }))
+                setStore((prev) => ({ ...prev, history: value }))
               }
               keyWords={"history"}
             />
-          </div>
-          <div className="mx-6">
-            <WeeklyAvailability
-              horario={store?.horario || []}
-              onHorarioChange={(horario) =>
-                setStore((prev) => ({
-                  ...prev,
-                  horario: horario,
-                }))
-              }
-            />
-          </div>
+
+            <div>
+              <Label className="mb-2 block">Horario semanal</Label>
+              <WeeklyAvailability
+                horario={store?.horario || []}
+                onHorarioChange={(horario) =>
+                  setStore((prev) => ({ ...prev, horario }))
+                }
+              />
+            </div>
+          </CardContent>
         </Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+
+        {/* ── Grid de cards ────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Contacto */}
           <Card>
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
+              <CardTitle>Información de contacto</CardTitle>
               <CardDescription>
-                Add your business contact details and social media
+                Teléfono, correo y redes sociales del negocio
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-
+                <Label htmlFor="phoneNumber">Teléfono</Label>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
                   <InputStore
-                    name={"Numero de telefono"}
+                    name={"Número de teléfono"}
                     object={store}
                     value={store?.cell}
                     action={setStore}
                     type={"number"}
                   />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Phone number for orders and customer contact
+                <p className="text-xs text-muted-foreground">
+                  Número visible para pedidos y contacto con clientes
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
+                <Label htmlFor="email">Correo electrónico</Label>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                   <InputStore
                     name={"Email"}
                     object={store}
@@ -253,9 +303,9 @@ export default function Configuracion({ ThemeContext, country }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="instagram">Instagram Profile</Label>
-                <div className="flex items-center space-x-2">
-                  <Instagram className="w-4 h-4 text-muted-foreground" />
+                <Label htmlFor="instagram">Instagram</Label>
+                <div className="flex items-center gap-2">
+                  <Instagram className="w-4 h-4 text-muted-foreground shrink-0" />
                   <InputStore
                     name={"Instagram"}
                     object={store}
@@ -265,236 +315,261 @@ export default function Configuracion({ ThemeContext, country }) {
                   />
                 </div>
               </div>
+
+              {/* Redes detectadas del log */}
+              {store?.redes?.length > 0 && (
+                <div className="pt-2 border-t space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Redes configuradas
+                  </p>
+                  {store.redes.map((red) => (
+                    <div
+                      key={red.tipo}
+                      className="flex items-center gap-2 text-sm text-foreground"
+                    >
+                      <BadgeCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="capitalize">{red.tipo}</span>
+                      <span className="text-muted-foreground truncate">
+                        @{red.user}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
+          {/* Ubicación */}
           <ConfiguracionState
             store={store}
             setStore={setStore}
             country={country}
           />
 
+          {/* Configuración de operaciones */}
           <Card>
             <CardHeader>
-              <CardTitle>Business Settings</CardTitle>
+              <CardTitle>Operaciones del negocio</CardTitle>
               <CardDescription>
-                Configure your business operations and payment options
+                Carrito, pagos, stock, local y delivery
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Carrito</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permitir el uso de carrito de compras en el catalogo
-                    </p>
+            <CardContent className="space-y-3">
+              {[
+                {
+                  key: "carrito",
+                  label: "Carrito de compras",
+                  desc: "Permitir carrito en el catálogo",
+                },
+                {
+                  key: "act_tf",
+                  label: "Transferencias bancarias",
+                  desc: "Aceptar transferencias como método de pago",
+                },
+                {
+                  key: "stocks",
+                  label: "Control de stock",
+                  desc: "Manejar disponibilidad de productos desde la plataforma",
+                },
+                {
+                  key: "local",
+                  label: "Recogida en local",
+                  desc: "Activar el local como punto de recogida",
+                },
+              ].map(({ key, label, desc }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between rounded-lg border px-4 py-3 gap-4"
+                >
+                  <div className="space-y-0.5 flex-1 min-w-0">
+                    <Label className="text-sm font-medium">{label}</Label>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
                   </div>
                   <SwitchStore
-                    name={store?.carrito}
+                    name={store?.[key]}
                     object={store}
-                    title={"carrito"}
+                    title={key}
                     funcion={setStore}
                   />
                 </div>
+              ))}
 
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Bank Transfers</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Accept bank transfers as payment method
-                    </p>
-                  </div>
-                  <SwitchStore
-                    name={store?.act_tf}
-                    object={store}
-                    title={"act_tf"}
-                    funcion={setStore}
-                  />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Stock</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Manejar disponibilidad de productos desde la plataforma
-                    </p>
-                  </div>
-                  <SwitchStore
-                    name={store?.stocks}
-                    object={store}
-                    title={"stocks"}
-                    funcion={setStore}
-                  />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">
-                      Local para recogidas de productos
+              {/* Delivery con enlace condicional */}
+              <div className="rounded-lg border px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5 flex-1">
+                    <Label className="text-sm font-medium">
+                      Servicio de delivery
                     </Label>
-                    <p className="text-sm text-muted-foreground">
-                      En caso de no tener habilitado esta opcion y no tener
-                      entregas a domicilio, el sistema contara como si tuviera
-                      uno
+                    <p className="text-xs text-muted-foreground">
+                      Activar entregas a domicilio
+                      {store?.envios?.length > 0 && (
+                        <span className="ml-1 text-primary font-medium">
+                          · {store.envios.length} zona
+                          {store.envios.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <SwitchStore
-                    name={store?.local}
+                    name={store?.domicilio}
                     object={store}
-                    title={"local"}
+                    title={"domicilio"}
                     funcion={setStore}
                   />
                 </div>
-
-                <div className="rounded-lg border p-4 space-y-2">
-                  <div className="flex items-center justify-between ">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Delivery Service</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Enable delivery service for your customers
-                      </p>
-                    </div>
-                    <SwitchStore
-                      name={store?.domicilio}
-                      object={store}
-                      title={"domicilio"}
-                      funcion={setStore}
-                    />
+                {store?.domicilio && (
+                  <div className="pt-1">
+                    <Button type="button" variant="outline" size="sm" asChild>
+                      <Link href="/configuracion/domicilios">
+                        Gestionar zonas de envío →
+                      </Link>
+                    </Button>
                   </div>
-                  {store?.domicilio ? (
-                    <div className="w-full flex justify-center max-h-max">
-                      <Button type="button" variant="link">
-                        <Link href={`/configuracion/domicilios`}>
-                          Definir Domicilios
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : (
-                    <></>
-                  )}
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Monedas */}
           <Card>
             <CardHeader>
-              <CardTitle>Currency Settings</CardTitle>
-              <CardDescription>Configure your payment options</CardDescription>
+              <CardTitle>Monedas</CardTitle>
+              <CardDescription>
+                Configura las monedas y tasas de cambio
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <Label className="mb-2">Default Currency</Label>
-
-                  <RadioGroup
-                    value={selectedIdStr}
-                    onValueChange={(val) => {
-                      const id = Number(val);
-                      if (!isNaN(id)) setDefaultById(id);
-                    }}
-                    className="space-y-2"
-                  >
-                    {store?.monedas.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">
-                        No currencies defined
-                      </div>
-                    ) : (
-                      store?.monedas.map((m) => (
-                        <div
-                          key={m.id}
-                          className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
-                        >
-                          <div className="flex items-center gap-3">
-                            <RadioGroupItem
-                              value={String(m.id)}
-                              id={`mon-${m.id}`}
-                            />
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">
-                                {m.nombre}
+              <div className="space-y-2">
+                <Label>Moneda por defecto</Label>
+                <RadioGroup
+                  value={selectedIdStr}
+                  onValueChange={(val) => {
+                    const id = Number(val);
+                    if (!isNaN(id)) setDefaultById(id);
+                  }}
+                  className="space-y-1"
+                >
+                  {store?.monedas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No hay monedas configuradas
+                    </p>
+                  ) : (
+                    store?.monedas.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem
+                            value={String(m.id)}
+                            id={`mon-${m.id}`}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">
+                              {m.nombre}
+                            </span>
+                            {m.defecto && (
+                              <span className="text-xs text-primary font-medium">
+                                Por defecto
                               </span>
-                              <span className="text-xs text-muted-foreground">
-                                {m.defecto ? "Default" : ""}
-                              </span>
-                            </div>
+                            )}
                           </div>
-
-                          <div className="flex items-center gap-2">
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
                             <Input
                               type="number"
                               value={m.valor}
                               onChange={(e) =>
                                 updateValor(m.id, e.target.value)
                               }
-                              className="w-28"
+                              className="w-28 pr-8 text-right"
                             />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                deleteMoneda(m.id);
-                              }}
-                              aria-label={`Eliminar moneda ${m.nombre}`}
-                            >
-                              🗑
-                            </Button>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                              CUP
+                            </span>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              deleteMoneda(m.id);
+                            }}
+                            aria-label={`Eliminar moneda ${m.nombre}`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </Button>
                         </div>
-                      ))
-                    )}
-                  </RadioGroup>
+                      </div>
+                    ))
+                  )}
+                </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  Los valores son tasas de cambio relativas al CUP
+                </p>
+              </div>
 
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Select the default currency for your products
-                  </p>
-                </div>
-
-                {/* inline add currency */}
-                <div className="pt-4 border-t">
-                  <Label className="mb-2">Agregar Moneda</Label>
-                  <div className="grid grid-cols-3 gap-3 items-end">
-                    <div className="flex-1">
-                      <Label className="text-sm">Moneda</Label>
-                      <Input
-                        value={localNew.nombre}
-                        maxLength={4}
-                        minLength={2}
-                        pattern="[A-Za-z]{4}"
-                        title="Debe contener exactamente 4 letras"
-                        onChange={(e) =>
-                          setLocalNew((s) => ({
-                            ...s,
-                            nombre: e.target.value.toLocaleUpperCase(),
-                          }))
-                        }
-                        placeholder="Ej. USD"
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-sm">Tasa</Label>
-                      <Input
-                        type="number"
-                        value={localNew.valor}
-                        onChange={(e) =>
-                          setLocalNew((s) => ({ ...s, valor: e.target.value }))
-                        }
-                        placeholder="Ej. 370"
-                      />
-                    </div>
-
-                    <div>
-                      <Button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAddLocal();
-                        }}
-                      >
-                        Agregar
-                      </Button>
-                    </div>
+              {/* Agregar moneda */}
+              <div className="pt-4 border-t space-y-3">
+                <Label>Agregar moneda</Label>
+                <div className="grid grid-cols-3 gap-3 items-end">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                      Código
+                    </Label>
+                    <Input
+                      value={localNew.nombre}
+                      maxLength={4}
+                      minLength={2}
+                      onChange={(e) =>
+                        setLocalNew((s) => ({
+                          ...s,
+                          nombre: e.target.value.toLocaleUpperCase(),
+                        }))
+                      }
+                      placeholder="USD"
+                    />
                   </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                      Tasa (CUP)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={localNew.valor}
+                      onChange={(e) =>
+                        setLocalNew((s) => ({ ...s, valor: e.target.value }))
+                      }
+                      placeholder="470"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleAddLocal();
+                    }}
+                    className="w-full"
+                  >
+                    Agregar
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -505,99 +580,51 @@ export default function Configuracion({ ThemeContext, country }) {
     </main>
   );
 }
-function redondearAMultiploDe5(valor) {
-  if (valor < 5) {
-    // Redondear a 6 decimales si el valor es menor que 5
-    return parseFloat(valor.toFixed(6));
-  } else {
-    // Redondear al múltiplo de 5 más cercano
-    return Math.round(valor / 5) * 5;
-  }
+
+// ─── Helpers internos ─────────────────────────────────────────────────────────
+
+const hasPendingChanges = (data, store) =>
+  JSON.stringify(data) !== JSON.stringify(store);
+
+function getFirstAvailableId(monedas) {
+  const used = new Set((monedas || []).map((m) => Number(m.id)));
+  let candidate = 1;
+  while (used.has(candidate)) candidate++;
+  return candidate;
 }
 
-function PlusIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  );
-}
-
-function TrashIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-    </svg>
-  );
-}
-// Utilidad y helpers
-const hasPendingChanges = (data, store) => {
-  return JSON.stringify(data) !== JSON.stringify(store);
-};
-const TextInput = ({ label, value, onChange }) => (
-  <div className="space-y-2 mt-4">
-    <Label>{label}</Label>
-    <Input type="text" value={value} onChange={onChange} />
-  </div>
-);
+// ─── TextAreaInput con IA ─────────────────────────────────────────────────────
 
 const TextAreaInput = ({ label, value, onChange, keyWords }) => {
-  const [status, setstatus] = useState("run");
+  const [status, setStatus] = useState("run");
 
   useEffect(() => {
     if (status === "time") {
-      setTimeout(() => setstatus("run"), 1000 * 60); // se cierra solo a los 300ms
+      const t = setTimeout(() => setStatus("run"), 1000 * 60);
+      return () => clearTimeout(t);
     }
   }, [status]);
 
-  function GeminiUpdated(value) {
-    setstatus("loading");
+  function GeminiUpdated(val) {
+    setStatus("loading");
     try {
       const formData = new FormData();
-      const text = buildImprovementPrompt(!!value, keyWords, value);
+      const text = buildImprovementPrompt(!!val, keyWords, val);
       formData.append("text", text);
       const postPromise = axios.post(`/api/gemini`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
       sileo.promise(postPromise, {
-        loading: { title: "Optimizando estructura del post..." },
+        loading: { title: "Optimizando texto con IA..." },
         success: (response) => {
-          // Actualiza el estado con la respuesta (usar updater para seguridad)
           onChange(response.data.result);
           return {
-            title: "Tarea Ejecutada",
-            description: "Información actualizada",
+            title: "Texto actualizado",
+            description: "El contenido fue mejorado con IA",
           };
         },
         error: (err) => {
           console.error(err);
-          // Logging más detallado se hace en el catch
           return {
             title: "Error al optimizar",
             description: "No se pudo optimizar el contenido.",
@@ -607,14 +634,14 @@ const TextAreaInput = ({ label, value, onChange, keyWords }) => {
     } catch (error) {
       console.error(error);
     } finally {
-      setstatus("time");
+      setStatus("time");
       sileo.info({
         title: "Servicio de IA",
-        description:
-          "Dentro de 1 minuto podra volver a utilizar el servicio de IA",
+        description: "Podrás volver a usar la IA en 1 minuto",
       });
     }
   }
+
   return (
     <div className="relative space-y-2">
       <Label>{label}</Label>
@@ -622,27 +649,27 @@ const TextAreaInput = ({ label, value, onChange, keyWords }) => {
         value={value}
         rows={5}
         onChange={(e) => onChange(e.target.value)}
+        className="pr-12"
       />
       <Button
         type="button"
         variant="ghost"
-        className="absolute bottom-1 right-1 p-2"
+        className="absolute bottom-1.5 right-1.5 p-2 h-auto"
         size="sm"
         disabled={status !== "run"}
         onClick={() => GeminiUpdated(value)}
+        title={
+          status === "time"
+            ? "Espera 1 minuto para volver a usar la IA"
+            : "Mejorar con IA"
+        }
       >
         {status === "loading" ? (
-          <Loader2 className="animate-spin text-slate-700" />
+          <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
         ) : (
-          <AutoAwesomeIcon className="text-slate-700" />
+          <AutoAwesomeIcon sx={{ fontSize: 18 }} className="text-slate-500" />
         )}
       </Button>
     </div>
   );
 };
-function getFirstAvailableId(monedas) {
-  const used = new Set((monedas || []).map((m) => Number(m.id)));
-  let candidate = 1;
-  while (used.has(candidate)) candidate++;
-  return candidate;
-}

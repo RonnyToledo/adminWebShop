@@ -1,10 +1,27 @@
+/**
+ * buildImprovementPrompt
+ *
+ * @param {boolean|string} exists  - true/"si" si ya hay texto previo, false/"no" si no
+ * @param {string} textType        - clave del campo: "parrrafo" | "history" | ...
+ * @param {string} paragraph       - contenido actual del campo (puede estar vacío)
+ */
 export function buildImprovementPrompt({
   exists = "no",
   textType = "about",
   paragraph = "",
-}) {
+} = {}) {
+  // Acepta tanto booleanos (llamada desde TextAreaInput) como strings (llamada directa)
+  const hayTexto =
+    exists === true ||
+    exists === "si" ||
+    (typeof exists === "string" && exists.trim().length > 0 && exists !== "no");
+
   const typeLabel =
-    textType === "history" ? "Historia del negocio" : "About Me";
+    textType === "history" || textType === "history"
+      ? "Historia del negocio"
+      : textType === "parrrafo"
+        ? "Mensaje de bienvenida"
+        : "Descripción del negocio";
 
   const baseInstructions = `
 Eres un redactor profesional especializado en mejorar la legibilidad y claridad del contenido.
@@ -21,7 +38,7 @@ Tu objetivo es:
 Entrega únicamente el texto final mejorado, sin explicaciones, sin pasos y sin formato adicional.
 `.trim();
 
-  if (exists === "si") {
+  if (hayTexto) {
     return `
 ${baseInstructions}
 
@@ -34,8 +51,7 @@ Reescribe este contenido mejorándolo según las instrucciones.
 `.trim();
   }
 
-  if (exists === "no") {
-    return `
+  return `
 ${baseInstructions}
 
 No existe un párrafo previo.
@@ -45,5 +61,4 @@ Genera un texto nuevo para "${typeLabel}" siguiendo estas pautas:
 - Estilo: humano, cercano, profesional.
 - Debe sonar auténtico, como si lo hubiera escrito la persona dueña del negocio.
 `.trim();
-  }
 }

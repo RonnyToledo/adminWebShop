@@ -9,162 +9,139 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { SelectStore, InputStore } from "./Input-Store";
-import { MapPinned } from "lucide-react";
+import { MapPinned, MapPin } from "lucide-react";
 
 /**
- * ConfiguracionState - componente para seleccionar país / provincia / municipio
+ * ConfiguracionState — selección de país / provincia / municipio + dirección
  * Props:
- *  - store: objeto con la configuración actual
- *  - setStore: setter (función) para actualizar store
- *  - country: array de países [{ name, isoCode, ... }, ...]
+ *  - store:    objeto con la configuración actual
+ *  - setStore: setter para actualizar store
+ *  - country:  array de países [{ name, isoCode, ... }, ...]
  */
 export default function ConfiguracionState({ store, setStore, country }) {
-  const [states, setStates] = useState([]); // antes: state
-  const [cities, setCities] = useState([]); // antes: city
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
 
-  // Fetch de provincias/estados cuando cambia el país seleccionado
+  // Fetch provincias cuando cambia el país
   useEffect(() => {
     if (!store?.country || !Array.isArray(country) || country.length === 0) {
       setStates([]);
       return;
     }
-
     const controller = new AbortController();
-    const signal = controller.signal;
-
     async function fetchStates() {
       try {
         setLoadingStates(true);
-
         const countryObj = country.find((c) => c?.name === store.country);
         if (!countryObj?.isoCode) {
           setStates([]);
           setCities([]);
-          // opcional: limpiar la provincia y municipio si país inválido
           setStore((prev) => ({ ...prev, Provincia: "", municipio: "" }));
           return;
         }
-
-        const base = process.env.NEXT_PUBLIC_PATH ?? ""; // si usas un prefijo, ok; si no, queda ""
-        const url = `${base}/api/filter/state?country=${encodeURIComponent(
-          countryObj.isoCode
-        )}`;
-
-        const resp = await fetch(url, { signal });
+        const base = process.env.NEXT_PUBLIC_PATH ?? "";
+        const resp = await fetch(
+          `${base}/api/filter/state?country=${encodeURIComponent(countryObj.isoCode)}`,
+          { signal: controller.signal },
+        );
         if (!resp.ok) {
-          console.error("fetch states failed", resp.status);
           setStates([]);
           return;
         }
-
         const data = await resp.json();
         setStates(Array.isArray(data) ? data : []);
-
-        // Si no hay valor de Provincia en store, asigno el primero de la lista (si existe)
         setStore((prev) => ({
           ...prev,
           Provincia:
             prev.Provincia || (Array.isArray(data) && data[0]?.name) || "",
-          // no tocamos municipio aquí; lo dejamos como está o ya vacío si cambiaste país
         }));
       } catch (err) {
-        if (err.name === "AbortError") {
-          // fetch cancelado, no hacer nada
-        } else {
+        if (err.name !== "AbortError")
           console.error("Error fetching states:", err);
-        }
       } finally {
         setLoadingStates(false);
       }
     }
-
     fetchStates();
-
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [store?.country, country, setStore]);
 
-  // Fetch de ciudades cuando cambia la provincia/estado o el país
+  // Fetch ciudades cuando cambia la provincia
   useEffect(() => {
     if (
       !store?.country ||
       !store?.Provincia ||
-      !Array.isArray(country) ||
-      country.length === 0 ||
       !Array.isArray(states) ||
       states.length === 0
     ) {
       setCities([]);
       return;
     }
-
     const controller = new AbortController();
-    const signal = controller.signal;
-
     async function fetchCities() {
       try {
         setLoadingCities(true);
-
         const countryObj = country.find((c) => c?.name === store.country);
         const stateObj = states.find((s) => s?.name === store.Provincia);
-
         if (!countryObj?.isoCode || !stateObj?.isoCode) {
           setCities([]);
           setStore((prev) => ({ ...prev, municipio: "" }));
           return;
         }
-
         const base = process.env.NEXT_PUBLIC_PATH ?? "";
-        const url = `${base}/api/filter/city?country=${encodeURIComponent(
-          countryObj.isoCode
-        )}&state=${encodeURIComponent(stateObj.isoCode)}`;
-
-        const resp = await fetch(url, { signal });
+        const resp = await fetch(
+          `${base}/api/filter/city?country=${encodeURIComponent(countryObj.isoCode)}&state=${encodeURIComponent(stateObj.isoCode)}`,
+          { signal: controller.signal },
+        );
         if (!resp.ok) {
-          console.error("fetch cities failed", resp.status);
           setCities([]);
           return;
         }
-
         const data = await resp.json();
         setCities(Array.isArray(data) ? data : []);
-
         setStore((prev) => ({
           ...prev,
           municipio: prev.municipio || (Array.isArray(data) && data[0]) || "",
         }));
       } catch (err) {
-        if (err.name === "AbortError") {
-          // ignore
-        } else {
+        if (err.name !== "AbortError")
           console.error("Error fetching cities:", err);
-        }
       } finally {
         setLoadingCities(false);
       }
     }
-
     fetchCities();
-
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [store?.country, store?.Provincia, country, states, setStore]);
+
+  // Resumen de ubicación actual (del log)
+  const ubicacionActual = [store?.municipio, store?.Provincia, store?.country]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Location</CardTitle>
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-primary" />
+          <CardTitle>Ubicación</CardTitle>
+        </div>
         <CardDescription>
-          Set your business location and delivery area
+          País, provincia y municipio del negocio
         </CardDescription>
+        {/* Muestra la ubicación guardada actualmente */}
+        {ubicacionActual && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5 mt-1 w-fit">
+            <MapPinned className="w-3 h-3 shrink-0" />
+            {ubicacionActual}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="country">Country</Label>
+          <Label htmlFor="country">País</Label>
           <SelectStore
             array={country}
             onSelectChange={(value) =>
@@ -175,37 +152,37 @@ export default function ConfiguracionState({ store, setStore, country }) {
                 municipio: "",
               }))
             }
-            placeholder={"Seleccione su pais"}
+            placeholder="Seleccione su país"
             status={store?.country}
-            value={"name"}
+            value="name"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="province">Estado</Label>
+          <Label htmlFor="province">Provincia / Estado</Label>
           <SelectStore
             array={states}
             onSelectChange={(value) =>
               setStore((prev) => ({ ...prev, Provincia: value, municipio: "" }))
             }
-            placeholder={"Seleccione su provincia"}
+            placeholder="Seleccione su provincia"
             status={store?.Provincia}
-            value={"name"}
+            value="name"
             loading={loadingStates}
             disabled={!store?.country || states.length === 0}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="city">Ciudad</Label>
+          <Label htmlFor="city">Municipio / Ciudad</Label>
           <SelectStore
             array={cities}
             onSelectChange={(value) =>
               setStore((prev) => ({ ...prev, municipio: value }))
             }
-            placeholder={"Seleccione su municipio"}
+            placeholder="Seleccione su municipio"
             status={store?.municipio}
-            value={"name"}
+            value="name"
             loading={loadingCities}
             disabled={
               !store?.country || !store?.Provincia || cities.length === 0
@@ -214,17 +191,23 @@ export default function ConfiguracionState({ store, setStore, country }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="address">Address</Label>
-          <div className="flex items-center space-x-2">
-            <MapPinned className="w-4 h-4 text-muted-foreground" />
+          <Label htmlFor="address">Dirección</Label>
+          <div className="flex items-center gap-2">
+            <MapPinned className="w-4 h-4 text-muted-foreground shrink-0" />
             <InputStore
-              name={"Direccion"}
+              name="Dirección"
               object={store}
               value={store?.direccion}
               action={setStore}
-              type={"text"}
+              type="text"
             />
           </div>
+          {store?.ubicacion?.latitude && (
+            <p className="text-xs text-muted-foreground">
+              GPS: {store.ubicacion.latitude.toFixed(5)},{" "}
+              {store.ubicacion.longitude.toFixed(5)}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

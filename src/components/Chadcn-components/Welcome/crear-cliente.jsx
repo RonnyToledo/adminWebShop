@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,7 +12,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,46 +19,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { sileo } from "sileo";
 import {
   Building2,
   Mail,
-  Loader2,
   MapPin,
   ArrowRight,
   ArrowLeft,
   DollarSign,
   CheckCircle,
+  Coffee,
+  Check,
+  Package,
 } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import axios from "axios";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import "react-phone-input-2/lib/style.css";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import Loading from "../../component/loading";
-import { Switch } from "@/components/ui/switch";
+import { motion, AnimatePresence } from "framer-motion";
 import style from "./style.module.css";
 
-/* ------------------ validation schema ------------------ */
-/* guardamos country por nombre (tal como pediste) */
+// ─── Schemas ──────────────────────────────────────────────────────────────────
+
 const formSchema = z.object({
   name: z.string().min(1, "El nombre del negocio es requerido"),
-  country: z.string().min(1, "El país es requerido"), // name
-  Provincia: z.string().min(1, "La provincia es requerida"), // name
-  municipio: z.string().min(1, "El municipio es requerido"), // name
+  country: z.string().min(1, "El país es requerido"),
+  Provincia: z.string().min(1, "La provincia es requerida"),
+  municipio: z.string().min(1, "El municipio es requerido"),
   stock: z.boolean(),
   moneda_default: z.enum(["USD", "EURO", "MLC", "CUP"]),
   email: z.string().email("Email inválido"),
-  cell: z
-    .string()
-    .min(10, "El número de teléfono debe tener al menos 10 dígitos"),
+  cell: z.string().min(10, "El número debe tener al menos 10 dígitos"),
 });
 
 const stepSchemas = [
@@ -73,58 +64,101 @@ const stepSchemas = [
   z.object({
     moneda_default: z
       .string()
-      .min(3, "La moneda es requerida")
-      .max(4, "Máximo 4 caracteres")
-      .regex(
-        /^[A-Z]{1,4}$/,
-        "Solo letras mayúsculas (A-Z), sin espacios, máximo 4",
-      ),
+      .min(3)
+      .max(4)
+      .regex(/^[A-Z]{1,4}$/, "Solo letras mayúsculas, máximo 4"),
     stock: z.boolean(),
   }),
   z.object({
     email: z.string().email("Email inválido"),
-    cell: z
-      .string()
-      .min(10, "El número de teléfono debe tener al menos 10 dígitos"),
+    cell: z.string().min(10, "El número debe tener al menos 10 dígitos"),
   }),
 ];
 
-/* ------------------ main component ------------------ */
+// ─── Pasos ────────────────────────────────────────────────────────────────────
+
+const STEPS = [
+  { icon: Building2, title: "Negocio", description: "Nombre de tu negocio" },
+  {
+    icon: MapPin,
+    title: "Ubicación",
+    description: "País, provincia y municipio",
+  },
+  {
+    icon: DollarSign,
+    title: "Moneda",
+    description: "Moneda principal e inventario",
+  },
+  { icon: Mail, title: "Contacto", description: "Email y número de teléfono" },
+];
+
+// ─── Partículas ───────────────────────────────────────────────────────────────
+
+const PARTICLES = Array.from({ length: 6 }, (_, i) => ({
+  id: i,
+  size: [6, 10, 8, 5, 12, 7][i],
+  top: [15, 70, 40, 85, 25, 60][i],
+  left: [10, 20, 75, 55, 88, 40][i],
+  delay: [0, 1.2, 0.6, 2.1, 0.3, 1.7][i],
+  duration: [4, 5.5, 3.8, 6, 4.5, 5][i],
+}));
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function FieldInput({ id, label, focused, setFocused, error, children }) {
+  return (
+    <div className="space-y-2">
+      <label
+        htmlFor={id}
+        className={`block text-[11px] uppercase tracking-[0.12em] font-medium transition-colors duration-200 ${
+          focused === id ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {label}
+      </label>
+      {children}
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+
 export function CrearClienteComponent({
   user,
   countries = [{ name: "Cuba", isoCode: "CU" }],
 }) {
   const router = useRouter();
-  const [states, setStates] = useState([]); // estados/provincias desde API
-  const [municipios, setMunicipios] = useState([]); // ciudades desde API
+
+  const [states, setStates] = useState([]);
+  const [municipios, setMunicipios] = useState([]);
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingGeneral, setLoadingGeneral] = useState(false);
-  const [slideDirection, setSlideDirection] = useState("right");
   const [currentStep, setCurrentStep] = useState(0);
+  const [slideDir, setSlideDir] = useState(1); // 1 = forward, -1 = backward
+  const [focused, setFocused] = useState(null);
 
-  const [defaultCountryIso, setDefaultCountryIso] = useState(
+  const defaultCountryIso =
     process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
-      countries[0]?.isoCode ||
-      "CU",
-  );
+    countries[0]?.isoCode ||
+    "CU";
   const [selectedCountryIso, setSelectedCountryIso] =
     useState(defaultCountryIso);
   const defaultCountryName =
     (countries.find((c) => c.isoCode === defaultCountryIso) || countries[0])
-      ?.name ||
-    countries[0]?.name ||
-    "";
+      ?.name || "";
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      country: defaultCountryName, // guardamos name
+      country: defaultCountryName,
       Provincia: "",
       municipio: "",
       moneda_default: "CUP",
-      email: user?.email || user?.email || "",
+      email: user?.email || "",
       cell: "",
       stock: false,
     },
@@ -134,277 +168,221 @@ export function CrearClienteComponent({
     if (!user) router.push("/login");
   }, [user, router]);
 
-  /* ------------------ Helpers: normalizar respuestas ------------------ */
-  const normalizeStatesResponse = (data) => {
-    // Esperamos array de objetos { name, isoCode, ... } o array-of-arrays fallback
+  // ── Normalizers (sin cambios) ───────────────────────────────────────────────
+
+  const normalizeStates = (data) => {
     if (!Array.isArray(data)) return [];
-    if (Array.isArray(data[0])) {
-      // ejemplo: [ ["Prov name", "CU", "09", ...], ... ] -> map a objetos
-      return data.map((arr) => ({
-        name: arr[0],
-        isoCode: arr[2] ?? undefined,
-      }));
-    }
-    if (typeof data[0] === "object" && data[0] !== null) {
+    if (Array.isArray(data[0]))
+      return data.map((a) => ({ name: a[0], isoCode: a[2] }));
+    if (typeof data[0] === "object")
       return data.map((o) => ({
         name: o.name || o.nombre || String(o),
-        isoCode: o.isoCode || o.code || o.codigo,
+        isoCode: o.isoCode || o.code,
       }));
-    }
-    // fallback strings
-    return data.map((s) => ({ name: String(s), isoCode: undefined }));
+    return data.map((s) => ({ name: String(s) }));
   };
 
-  const normalizeCitiesResponseToNames = (data) => {
+  const normalizeCities = (data) => {
     if (!Array.isArray(data)) return [];
-    if (Array.isArray(data[0])) {
-      // [ ["Municipio", "CU", "09", lat, lon], ... ]
-      return data.map((it) => String(it[0]));
-    }
-    if (typeof data[0] === "object" && data[0] !== null) {
-      return data.map((it) => it.name || it.nombre || JSON.stringify(it));
-    }
-    // array de strings
-    return data.filter((it) => typeof it === "string").map((s) => String(s));
+    if (Array.isArray(data[0])) return data.map((a) => String(a[0]));
+    if (typeof data[0] === "object")
+      return data.map((o) => o.name || o.nombre || JSON.stringify(o));
+    return data.filter((s) => typeof s === "string");
   };
 
-  /* ------------------ Fetch states (provincias) por country isoCode ------------------ */
-  const fetchStates = async (countryIso, signal) => {
-    if (!countryIso) {
+  // ── Fetchers ────────────────────────────────────────────────────────────────
+
+  const fetchStates = async (iso, signal) => {
+    if (!iso) {
       setStates([]);
       return;
     }
     setLoadingStates(true);
     try {
       const base = process.env.NEXT_PUBLIC_PATH ?? "";
-      const url = `${base}/api/filter/state?country=${encodeURIComponent(
-        countryIso,
-      )}`;
-      const resp = await fetch(url, { signal });
-      if (!resp.ok) {
-        console.warn("fetch states failed", resp.status);
+      const res = await fetch(
+        `${base}/api/filter/state?country=${encodeURIComponent(iso)}`,
+        { signal },
+      );
+      if (!res.ok) {
         setStates([]);
         return;
       }
-      const data = await resp.json();
-      const normalized = normalizeStatesResponse(data);
-      setStates(normalized);
-
-      // Si no hay Provincia seleccionado en form, asignar el primero (por nombre)
-      const currentProvincia = form.getValues("Provincia");
-      if (!currentProvincia && normalized.length > 0) {
-        form.setValue("Provincia", normalized[0].name);
-      }
-    } catch (err) {
-      if (err.name !== "AbortError")
-        console.error("Error fetching states:", err);
-      setStates([]);
+      const norm = normalizeStates(await res.json());
+      setStates(norm);
+      if (!form.getValues("Provincia") && norm.length > 0)
+        form.setValue("Provincia", norm[0].name);
+    } catch (e) {
+      if (e.name !== "AbortError") setStates([]);
     } finally {
       setLoadingStates(false);
     }
   };
 
-  /* ------------------ Fetch cities (municipios) por countryIso + stateIso (obtenido desde states por name) */
-  const fetchCities = async (countryIso, provinceName, signal) => {
-    if (!countryIso || !provinceName) {
+  const fetchCities = async (iso, prov, signal) => {
+    if (!iso || !prov) {
       setMunicipios([]);
       return;
     }
     setLoadingCities(true);
     try {
-      // buscar isoCode de la provincia seleccionada dentro de states (porque guardamos solo name en form)
-      const provObj = states.find((s) => s.name === provinceName);
-      const stateParam = provObj?.isoCode ?? provinceName; // si no hay isoCode, enviamos nombre (fallback)
-
       const base = process.env.NEXT_PUBLIC_PATH ?? "";
-      const url = `${base}/api/filter/city?country=${encodeURIComponent(
-        countryIso,
-      )}&state=${encodeURIComponent(stateParam)}`;
-
-      const resp = await fetch(url, { signal });
-      if (!resp.ok) {
-        console.warn("fetch cities failed", resp.status);
+      const provObj = states.find((s) => s.name === prov);
+      const stateParam = provObj?.isoCode ?? prov;
+      const res = await fetch(
+        `${base}/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(stateParam)}`,
+        { signal },
+      );
+      if (!res.ok) {
         setMunicipios([]);
         return;
       }
-      const data = await resp.json();
-      const names = normalizeCitiesResponseToNames(data);
+      const names = normalizeCities(await res.json());
       setMunicipios(names);
-
-      // Si no hay municipio seleccionado en form, asignar el primero
-      if (!form.getValues("municipio") && names.length > 0) {
+      if (!form.getValues("municipio") && names.length > 0)
         form.setValue("municipio", names[0]);
-      }
-    } catch (err) {
-      if (err.name !== "AbortError")
-        console.error("Error fetching cities:", err);
-      setMunicipios([]);
+    } catch (e) {
+      if (e.name !== "AbortError") setMunicipios([]);
     } finally {
       setLoadingCities(false);
     }
   };
 
-  /* ------------------ selectedCountryIso: estado local que usamos para llamar APIs ------------------ */
-
-  /* cada vez que cambie selectedCountryIso -> fetch states */
   useEffect(() => {
-    const controller = new AbortController();
-    fetchStates(selectedCountryIso, controller.signal);
-    // reset provincia/municipio when country changed
+    const ctrl = new AbortController();
+    fetchStates(selectedCountryIso, ctrl.signal);
     form.setValue("Provincia", "");
     form.setValue("municipio", "");
     setMunicipios([]);
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setStates([]);
+    return () => ctrl.abort();
   }, [selectedCountryIso]);
 
-  /* cuando cambie Provincia (guardada por name) y selectedCountryIso -> fetch cities */
   const watchedProvincia = form.watch("Provincia");
   useEffect(() => {
-    const controller = new AbortController();
-    fetchCities(selectedCountryIso, watchedProvincia, controller.signal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => controller.abort();
+    const ctrl = new AbortController();
+    fetchCities(selectedCountryIso, watchedProvincia, ctrl.signal);
+    return () => ctrl.abort();
   }, [selectedCountryIso, watchedProvincia]);
 
-  /* ------------------ submit y navegación ------------------ */
+  // ── Submit / navegación ─────────────────────────────────────────────────────
 
   async function onSubmit(values) {
     setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append("user", user?.id || user?.user.id || "");
-    Object.entries(values).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
+    const fd = new FormData();
+    fd.append("user", user?.id || user?.user?.id || "");
+    Object.entries(values).forEach(([k, v]) => fd.append(k, v));
     try {
-      if (!isValidPhoneNumber(`+${values.cell}`)) {
-        throw new Error("Numero no valido");
-      }
-      const result = await axios.post(`/api/tienda/`, formData, {
+      if (!isValidPhoneNumber(`+${values.cell}`))
+        throw new Error("Número no válido");
+      const res = await axios.post("/api/tienda/", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      if (result.status === 200 || result.status === 201) {
+      if (res.status === 200 || res.status === 201) {
         sileo.success({
-          title: "Éxito al crear su tienda",
-          description: `Ya puede empezar a trabajar ${result?.data?.success || ""}`,
+          title: "Tienda creada",
+          description: `Ya puedes empezar a trabajar ${res?.data?.success || ""}`,
         });
         window.location.replace("/");
         form.reset();
         setLoadingGeneral(true);
         setCurrentStep(0);
       }
-    } catch (error) {
+    } catch (err) {
       sileo.error({
-        title: "Error al crear su tienda",
-        description: error?.message || "Ocurrió un error al crear el cliente",
+        title: "Error al crear tienda",
+        description: err?.message || "Ocurrió un error",
       });
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  const validateCurrentStep = async () => {
-    const currentValues = form.getValues();
-    const stepSchema = stepSchemas[currentStep];
+  const validateStep = async () => {
     try {
-      stepSchema.parse(currentValues);
+      stepSchemas[currentStep].parse(form.getValues());
       return true;
-    } catch (err) {
-      Object.keys(stepSchema.shape).forEach((field) => form.trigger(field));
+    } catch {
+      Object.keys(stepSchemas[currentStep].shape).forEach((f) =>
+        form.trigger(f),
+      );
       return false;
     }
   };
+
   const nextStep = async () => {
-    const ok = await validateCurrentStep();
-    if (ok && currentStep < 3) {
-      setSlideDirection("right");
-      setCurrentStep(currentStep + 1);
+    if ((await validateStep()) && currentStep < 3) {
+      setSlideDir(1);
+      setCurrentStep((s) => s + 1);
     }
   };
   const prevStep = () => {
     if (currentStep > 0) {
-      setSlideDirection("left");
-      setCurrentStep(currentStep - 1);
+      setSlideDir(-1);
+      setCurrentStep((s) => s - 1);
     }
   };
 
-  /* ------------------ UI render: Step 1 usa APIs (states + cities) ------------------ */
-  const formSteps = [
-    {
-      icon: Building2,
-      title: "Información del Negocio",
-      description: "Ingrese el nombre de su negocio",
-    },
-    {
-      icon: MapPin,
-      title: "Ubicación",
-      description: "Seleccione su país, provincia y municipio",
-    },
-    {
-      icon: DollarSign,
-      title: "Moneda",
-      description: "Elija la moneda principal de su negocio",
-    },
-    {
-      icon: Mail,
-      title: "Contacto",
-      description: "Proporcione su información de contacto",
-    },
-  ];
-  if (loadingGeneral) {
-    return <Loading />;
-  }
-  const renderStepContent = () => {
+  if (loadingGeneral) return <Loading />;
+
+  // ── Input nativo reutilizable ───────────────────────────────────────────────
+
+  const baseInput = `w-full bg-secondary/50 rounded-xl px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none border transition-all duration-200`;
+  const focusedClass = (id) =>
+    focused === id
+      ? "border-primary ring-2 ring-primary/10"
+      : "border-border hover:border-border/60";
+
+  // ── Contenido por paso ──────────────────────────────────────────────────────
+
+  const renderStep = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Nombre del Negocio
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        placeholder="Ingrese el nombre del negocio"
-                        className="pl-12 h-14 border-2 border-slate-200 focus:border-slate-500 text-lg"
-                        {...field}
-                      />
-                      <Building2
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
-                        size={24}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field, fieldState }) => (
+              <FieldInput
+                id="name"
+                label="Nombre del negocio"
+                focused={focused}
+                setFocused={setFocused}
+                error={fieldState.error?.message}
+              >
+                <input
+                  id="name"
+                  placeholder="Ej: Coffe-Bar Eclipse"
+                  onFocus={() => setFocused("name")}
+                  onBlur={() => setFocused(null)}
+                  className={`${baseInput} ${focusedClass("name")}`}
+                  {...field}
+                />
+              </FieldInput>
+            )}
+          />
         );
+
       case 1:
         return (
-          <div className="space-y-6">
-            {/* COUNTRY SELECT: valores son isoCode, pero en el form guardamos el name */}
+          <div className="space-y-5">
+            {/* País */}
             <FormField
               control={form.control}
               name="country"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    País
-                  </FormLabel>
+              render={({ field, fieldState }) => (
+                <FieldInput
+                  id="country"
+                  label="País"
+                  focused={focused}
+                  setFocused={setFocused}
+                  error={fieldState.error?.message}
+                >
                   <Select
                     onValueChange={(iso) => {
                       const c = countries.find((x) => x.isoCode === iso);
-                      const name = c ? c.name : iso;
-                      field.onChange(name); // guardar name en el form
-                      setSelectedCountryIso(iso); // usado para llamar APIs
-                      // resetear provincia/municipio
+                      field.onChange(c ? c.name : iso);
+                      setSelectedCountryIso(iso);
                       form.setValue("Provincia", "");
                       form.setValue("municipio", "");
                       setMunicipios([]);
@@ -412,13 +390,15 @@ export function CrearClienteComponent({
                     }}
                     value={selectedCountryIso}
                   >
-                    <FormControl>
-                      <SelectTrigger className="h-14">
-                        <SelectValue
-                          placeholder={field.value || "Seleccione país"}
-                        />
-                      </SelectTrigger>
-                    </FormControl>
+                    <SelectTrigger
+                      className={`${baseInput} h-auto`}
+                      onFocus={() => setFocused("country")}
+                      onBlur={() => setFocused(null)}
+                    >
+                      <SelectValue
+                        placeholder={field.value || "Seleccione país"}
+                      />
+                    </SelectTrigger>
                     <SelectContent>
                       {countries.map((c) => (
                         <SelectItem key={c.isoCode} value={c.isoCode}>
@@ -427,40 +407,43 @@ export function CrearClienteComponent({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
+                </FieldInput>
               )}
             />
 
-            {/* PROVINCIA SELECT (states fetched) */}
+            {/* Provincia */}
             <FormField
               control={form.control}
               name="Provincia"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Provincia
-                  </FormLabel>
+              render={({ field, fieldState }) => (
+                <FieldInput
+                  id="provincia"
+                  label="Provincia"
+                  focused={focused}
+                  setFocused={setFocused}
+                  error={fieldState.error?.message}
+                >
                   <Select
-                    onValueChange={(value) => {
-                      field.onChange(value); // guardamos name
-                      form.setValue("municipio", ""); // limpiamos municipio para recargar
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      form.setValue("municipio", "");
                     }}
                     value={field.value}
                     disabled={loadingStates || states.length === 0}
                   >
-                    <FormControl>
-                      <SelectTrigger className="h-14">
-                        <SelectValue
-                          placeholder={
-                            field.value ||
-                            (loadingStates
-                              ? "Cargando..."
-                              : "Seleccione provincia")
-                          }
-                        />
-                      </SelectTrigger>
-                    </FormControl>
+                    <SelectTrigger
+                      className={`${baseInput} h-auto`}
+                      onFocus={() => setFocused("provincia")}
+                      onBlur={() => setFocused(null)}
+                    >
+                      <SelectValue
+                        placeholder={
+                          loadingStates
+                            ? "Cargando..."
+                            : field.value || "Seleccione provincia"
+                        }
+                      />
+                    </SelectTrigger>
                     <SelectContent>
                       {states.map((s, i) => (
                         <SelectItem key={i} value={s.name}>
@@ -469,331 +452,457 @@ export function CrearClienteComponent({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
+                </FieldInput>
               )}
             />
 
-            {/* MUNICIPIO SELECT (cities fetched) */}
+            {/* Municipio */}
             <FormField
               control={form.control}
               name="municipio"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Municipio
-                  </FormLabel>
+              render={({ field, fieldState }) => (
+                <FieldInput
+                  id="municipio"
+                  label="Municipio"
+                  focused={focused}
+                  setFocused={setFocused}
+                  error={fieldState.error?.message}
+                >
                   <Select
-                    onValueChange={(value) => field.onChange(value)}
+                    onValueChange={field.onChange}
                     value={field.value}
                     disabled={loadingCities || municipios.length === 0}
                   >
-                    <FormControl>
-                      <SelectTrigger className="h-14">
-                        <SelectValue
-                          placeholder={
-                            field.value ||
-                            (loadingCities
-                              ? "Cargando..."
-                              : "Seleccione municipio")
-                          }
-                        />
-                      </SelectTrigger>
-                    </FormControl>
+                    <SelectTrigger
+                      className={`${baseInput} h-auto`}
+                      onFocus={() => setFocused("municipio")}
+                      onBlur={() => setFocused(null)}
+                    >
+                      <SelectValue
+                        placeholder={
+                          loadingCities
+                            ? "Cargando..."
+                            : field.value || "Seleccione municipio"
+                        }
+                      />
+                    </SelectTrigger>
                     <SelectContent>
-                      {municipios.map((m, idx) => (
-                        <SelectItem key={idx} value={m}>
+                      {municipios.map((m, i) => (
+                        <SelectItem key={i} value={m}>
                           {m}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
+                </FieldInput>
               )}
             />
           </div>
         );
+
       case 2:
         return (
           <div className="space-y-6">
             <FormField
               control={form.control}
               name="moneda_default"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Moneda Principal (siglas)
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        placeholder="Ej: CUP, USD, MLC"
-                        className="pl-12 h-14 border-2 border-slate-200 text-lg"
-                        {...field}
-                        maxLength={4}
-                        onInput={(e) => {
-                          const target = e.target;
-                          const cleaned = (target.value || "")
-                            .replace(/[^A-Za-z]/g, "")
-                            .toUpperCase()
-                            .slice(0, 4);
-                          target.value = cleaned;
-                          field.onChange(cleaned);
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const paste =
-                            (e.clipboardData || window.clipboardData).getData(
-                              "text",
-                            ) || "";
-                          const cleaned = paste
-                            .replace(/[^A-Za-z]/g, "")
-                            .toUpperCase()
-                            .slice(0, 4);
-                          field.onChange(cleaned);
-                          if (e.target) e.target.value = cleaned;
-                        }}
-                        onBlur={(e) => {
-                          const v = (e.target.value || "")
-                            .replace(/[^A-Za-z]/g, "")
-                            .toUpperCase()
-                            .slice(0, 4);
-                          field.onBlur();
-                          field.onChange(v);
-                        }}
-                      />
-                      <Building2
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
-                        size={24}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <FieldInput
+                  id="moneda"
+                  label="Moneda principal (siglas)"
+                  focused={focused}
+                  setFocused={setFocused}
+                  error={fieldState.error?.message}
+                >
+                  <input
+                    id="moneda"
+                    placeholder="Ej: CUP, USD, MLC"
+                    maxLength={4}
+                    onFocus={() => setFocused("moneda")}
+                    onBlur={() => {
+                      setFocused(null);
+                      field.onBlur();
+                    }}
+                    className={`${baseInput} ${focusedClass("moneda")} font-mono tracking-widest`}
+                    {...field}
+                    onInput={(e) => {
+                      const v = e.target.value
+                        .replace(/[^A-Za-z]/g, "")
+                        .toUpperCase()
+                        .slice(0, 4);
+                      e.target.value = v;
+                      field.onChange(v);
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const v = (e.clipboardData.getData("text") || "")
+                        .replace(/[^A-Za-z]/g, "")
+                        .toUpperCase()
+                        .slice(0, 4);
+                      field.onChange(v);
+                      e.target.value = v;
+                    }}
+                  />
+                </FieldInput>
               )}
             />
+
             <FormField
               control={form.control}
               name="stock"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Usar control de inventario para la disponibilidad de
-                    productos (stock){" "}
-                  </FormLabel>
-                  <FormControl>
-                    <Switch {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <div className="flex items-start justify-between gap-4 p-4 rounded-xl border border-border bg-secondary/30">
+                  <div>
+                    <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <Package size={14} className="text-primary" />
+                      Control de inventario
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Gestiona la disponibilidad de productos por stock
+                    </p>
+                  </div>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </div>
               )}
             />
           </div>
         );
+
       case 3:
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <FormField
               control={form.control}
               name="email"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Email
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type="email"
-                        placeholder="ejemplo@correo.com"
-                        className="pl-12 h-14 border-2 border-slate-200 text-lg"
-                        {...field}
-                        readOnly={!!user?.email || !!user?.user.email}
-                      />
-                      <Mail
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
-                        size={24}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <FieldInput
+                  id="email"
+                  label="Correo electrónico"
+                  focused={focused}
+                  setFocused={setFocused}
+                  error={fieldState.error?.message}
+                >
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    onFocus={() => setFocused("email")}
+                    onBlur={() => setFocused(null)}
+                    readOnly={!!user?.email}
+                    className={`${baseInput} ${focusedClass("email")} ${user?.email ? "opacity-60 cursor-not-allowed" : ""}`}
+                    {...field}
+                  />
+                </FieldInput>
               )}
             />
 
             <FormField
               control={form.control}
               name="cell"
-              render={({ field }) => (
-                <FormItem className="group">
-                  <FormLabel className="text-slate-700 font-medium text-lg">
-                    Teléfono
-                  </FormLabel>
-                  <FormControl>
-                    <div className="phone-input-container">
-                      <PhoneInput
-                        country={selectedCountryIso.toLocaleLowerCase()}
-                        value={field.value}
-                        onChange={field.onChange}
-                        inputProps={{
-                          name: "phone",
-                          required: true,
-                          autoFocus: false,
-                        }}
-                        dropdownClass={style.dropdownClass}
-                        inputClass={style.inputClass}
-                        buttonClass={style.ButtonClass}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <FieldInput
+                  id="cell"
+                  label="Teléfono"
+                  focused={focused}
+                  setFocused={setFocused}
+                  error={fieldState.error?.message}
+                >
+                  <PhoneInput
+                    country={selectedCountryIso.toLowerCase()}
+                    value={field.value}
+                    onChange={field.onChange}
+                    inputProps={{
+                      name: "phone",
+                      required: true,
+                      autoFocus: false,
+                    }}
+                    dropdownClass={style.dropdownClass}
+                    inputClass={style.inputClass}
+                    buttonClass={style.ButtonClass}
+                  />
+                </FieldInput>
               )}
             />
           </div>
         );
+
       default:
         return null;
     }
   };
 
-  /* ------------------ RENDER principal (igual estructura que tenías) ------------------ */
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-700 rounded-full mb-4">
-            <Building2 className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-background flex overflow-hidden relative">
+      {/* Textura */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* ── Panel izquierdo ─────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, x: -40 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        className="hidden lg:flex flex-col justify-between flex-[0_0_38%] px-12 py-14 border-r border-border relative z-10"
+      >
+        {PARTICLES.map((p) => (
+          <motion.div
+            key={p.id}
+            animate={{ y: [-8, 8, -8], opacity: [0.12, 0.35, 0.12] }}
+            transition={{
+              duration: p.duration,
+              delay: p.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="absolute rounded-full bg-primary pointer-events-none"
+            style={{
+              width: p.size,
+              height: p.size,
+              top: `${p.top}%`,
+              left: `${p.left}%`,
+            }}
+          />
+        ))}
+
+        {/* Logo */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
+            <Coffee size={18} className="text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
-            Crear Nuevo Cliente
-          </h1>
-          <p className="text-slate-600">
-            Complete la información para registrar su negocio
+          <span className="text-foreground text-sm font-medium tracking-wide">
+            Roumenu
+          </span>
+        </div>
+
+        {/* Tagline */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <p className="text-[11px] text-primary uppercase tracking-[0.18em] mb-5 font-medium">
+            Nueva tienda
           </p>
-        </div>
+          <h2 className="text-[36px] font-normal leading-[1.15] text-foreground italic m-0">
+            Configura tu
+            <br />
+            <span className="text-primary">negocio</span>
+            <br />
+            en minutos.
+          </h2>
+        </motion.div>
 
-        {/* Progress Steps */}
-        <div className="flex justify-between mb-8">
-          {formSteps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  index < currentStep
-                    ? "bg-green-600 text-white"
-                    : index === currentStep
-                      ? "bg-slate-700 text-white scale-110"
-                      : "bg-slate-200 text-slate-400"
-                }`}
-              >
-                {index < currentStep ? (
-                  <CheckCircle className="w-6 h-6" />
-                ) : (
-                  <step.icon className="w-6 h-6" />
-                )}
-              </div>
-              <span className="text-xs mt-2 text-slate-600 hidden sm:block text-center max-w-20">
-                {step.title}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="w-full bg-slate-200 rounded-full h-2">
-            <div
-              className="bg-slate-700 h-2 rounded-full"
-              style={{
-                width: `${((currentStep + 1) / formSteps.length) * 100}%`,
-              }}
-            ></div>
-          </div>
-          <div className="text-center mt-2 text-sm text-slate-600">
-            Paso {currentStep + 1} de {formSteps.length}
-          </div>
-        </div>
-
-        {/* Form Card */}
-        <Card className="shadow-lg border border-slate-200 bg-white min-h-[400px]">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl text-slate-800 flex items-center justify-center gap-3">
-              {(() => {
-                const IconComponent = formSteps[currentStep].icon;
-                return <IconComponent className="w-8 h-8 text-slate-700" />;
-              })()}
-              {formSteps[currentStep].title}
-            </CardTitle>
-            <CardDescription className="text-lg">
-              {formSteps[currentStep].description}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+        {/* Pasos como checklist lateral */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.55, duration: 0.8 }}
+          className="space-y-3"
+        >
+          {STEPS.map((step, i) => {
+            const done = i < currentStep;
+            const active = i === currentStep;
+            return (
+              <div key={i} className="flex items-center gap-3">
                 <div
-                  key={currentStep}
-                  className={`animate-in ${
-                    slideDirection === "right"
-                      ? "slide-in-from-right-5"
-                      : "slide-in-from-left-5"
-                  } duration-500`}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                    done
+                      ? "bg-primary/20"
+                      : active
+                        ? "bg-primary/30 ring-2 ring-primary/30"
+                        : "bg-muted"
+                  }`}
                 >
-                  {renderStepContent()}
-                </div>
-
-                <div className="flex justify-between pt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={currentStep === 0}
-                    className="h-12 px-6 border-2 border-slate-300"
-                  >
-                    {" "}
-                    <ArrowLeft className="mr-2 h-5 w-5" /> Anterior{" "}
-                  </Button>
-
-                  {currentStep < 3 ? (
-                    <Button
-                      type="button"
-                      onClick={nextStep}
-                      className="h-12 px-6 bg-slate-700 text-white"
-                    >
-                      {" "}
-                      Siguiente <ArrowRight className="ml-2 h-5 w-5" />{" "}
-                    </Button>
+                  {done ? (
+                    <Check size={11} className="text-primary" />
                   ) : (
-                    <Button
-                      type="submit"
-                      className="h-12 px-6 bg-green-600 text-white"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />{" "}
-                          Creando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-5 w-5" /> Crear Cliente
-                        </>
-                      )}
-                    </Button>
+                    <step.icon
+                      size={11}
+                      className={
+                        active ? "text-primary" : "text-muted-foreground/50"
+                      }
+                    />
                   )}
                 </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+                <span
+                  className={`text-sm transition-colors duration-200 ${
+                    done
+                      ? "text-muted-foreground line-through"
+                      : active
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground/50"
+                  }`}
+                >
+                  {step.title}
+                </span>
+              </div>
+            );
+          })}
+        </motion.div>
 
-        {/* Footer */}
-        <div className="text-center mt-8 text-slate-500 text-sm">
-          <p>¿Necesita ayuda? Contacte a nuestro equipo de soporte</p>
-        </div>
+        <p className="text-xs text-muted-foreground/50 m-0">
+          © {new Date().getFullYear()} Roumenu
+        </p>
+      </motion.div>
+
+      {/* ── Panel derecho — formulario ──────────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center px-6 py-10 z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md"
+        >
+          {/* Logo mobile */}
+          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <Coffee size={15} className="text-primary-foreground" />
+            </div>
+            <span className="text-foreground text-sm font-medium">Roumenu</span>
+          </div>
+
+          {/* Encabezado del paso */}
+          <div className="mb-8">
+            <p className="text-[11px] text-primary uppercase tracking-[0.18em] mb-2 font-medium">
+              Paso {currentStep + 1} de {STEPS.length}
+            </p>
+            <h1 className="text-2xl font-normal text-foreground italic leading-tight mb-1">
+              {STEPS[currentStep].title}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {STEPS[currentStep].description}
+            </p>
+          </div>
+
+          {/* Barra de progreso */}
+          <div className="w-full h-0.5 bg-border rounded-full overflow-hidden mb-8">
+            <motion.div
+              className="h-full bg-primary rounded-full"
+              animate={{
+                width: `${((currentStep + 1) / STEPS.length) * 100}%`,
+              }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+
+          {/* Contenido del paso con animación */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep}
+                  initial={{ opacity: 0, x: slideDir * 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: slideDir * -24 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="min-h-[240px]"
+                >
+                  {renderStep()}
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Navegación */}
+              <div className="flex items-center justify-between mt-10 pt-6 border-t border-border">
+                <motion.button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  whileHover={{ scale: currentStep === 0 ? 1 : 1.02 }}
+                  whileTap={{ scale: currentStep === 0 ? 1 : 0.98 }}
+                  className={`flex items-center gap-2 text-sm px-5 py-2.5 rounded-xl border transition-all duration-200 ${
+                    currentStep === 0
+                      ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                      : "border-border text-foreground hover:bg-secondary/60 cursor-pointer"
+                  }`}
+                >
+                  <ArrowLeft size={15} />
+                  Anterior
+                </motion.button>
+
+                {currentStep < STEPS.length - 1 ? (
+                  <motion.button
+                    type="button"
+                    onClick={nextStep}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 text-sm px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer font-medium"
+                  >
+                    Siguiente
+                    <ArrowRight size={15} />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting}
+                    whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                    whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+                    className={`flex items-center gap-2 text-sm px-5 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                      isSubmitting
+                        ? "bg-muted text-muted-foreground cursor-not-allowed"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                    }`}
+                  >
+                    <AnimatePresence mode="wait">
+                      {isSubmitting ? (
+                        <motion.span
+                          key="sub"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                            className="inline-block w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground"
+                          />
+                          Creando tienda...
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="idle"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          <CheckCircle size={15} />
+                          Crear tienda
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                )}
+              </div>
+            </form>
+          </Form>
+
+          {/* Link ayuda */}
+          <div className="mt-8 pt-6 border-t border-border flex justify-center">
+            <span className="text-xs text-muted-foreground">
+              ¿Necesitas ayuda?{" "}
+              <a
+                href="mailto:soporte@roumenu.com"
+                className="text-primary hover:underline transition-colors"
+              >
+                Contacta soporte →
+              </a>
+            </span>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

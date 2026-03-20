@@ -11,9 +11,6 @@
     ]
   },
   {
-    "separator": true
-  },
-  {
     "group": "Productos",
 
     "links": [
@@ -38,9 +35,6 @@
         "icon": "BookIcon"
       }
     ]
-  },
-  {
-    "separator": true
   },
 
   {
@@ -68,9 +62,6 @@
         "icon": "AddCardIcon"
       }
     ]
-  },
-  {
-    "separator": true
   },
 
   {

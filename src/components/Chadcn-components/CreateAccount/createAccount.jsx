@@ -160,8 +160,8 @@ export default function CreateAccount() {
     try {
       const form = new FormData();
       form.append("file", file);
+      // axios detecta FormData y pone el Content-Type correcto automáticamente
       const res = await axios.post("/api/uploadImage", form, {
-        headers: { "Content-Type": "multipart/form-data" },
         timeout: 20000,
       });
       return res?.data?.secure_url || res?.data?.url || null;
@@ -177,33 +177,33 @@ export default function CreateAccount() {
     const pwErr = validatePassword(password);
     if (pwErr) throw new Error(pwErr);
 
-    let imagePayload = null;
+    // Subir imagen primero si existe (a /api/uploadImage que devuelve URL)
+    let avatarUrl = null;
     if (avatarFile) {
       const uploaded = await uploadImageToServer(avatarFile);
       if (uploaded) {
-        imagePayload = uploaded;
+        avatarUrl = uploaded;
       } else if (avatarFile.size <= 200 * 1024) {
         try {
-          imagePayload = await fileToBase64(avatarFile);
+          avatarUrl = await fileToBase64(avatarFile);
         } catch (err) {
           console.warn("No se pudo convertir a base64:", err);
         }
       } else {
-        throw new Error(
-          "No se pudo subir la imagen. Intenta con otra o pega una URL.",
-        );
+        throw new Error("No se pudo subir la imagen. Intenta con otra.");
       }
     }
 
-    const formData = new FormData();
-    formData.append("email", email);
-    formData.append("password", password);
-    formData.append("name", name);
-    if (imagePayload) formData.append("image", imagePayload);
-
-    const res = await axios.put("api/login", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    // API PUT espera JSON con { email, password, metadata }
+    const res = await axios.put("/api/login", {
+      email,
+      password,
+      metadata: {
+        full_name: name.trim(),
+        ...(avatarUrl ? { avatar_url: avatarUrl, picture: avatarUrl } : {}),
+      },
     });
+
     if (!res?.data) throw new Error("No se recibió respuesta del servidor.");
     if (res.status === 200 || res.status === 201) router.push("/login");
   };

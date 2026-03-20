@@ -1,21 +1,21 @@
 "use client";
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import axios from "axios";
 import {
-  Loader,
   Loader2,
   Trash2,
   MoreHorizontal,
   Eye,
   Verified,
+  MessageCircle,
+  Printer,
+  Package,
+  Calendar,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { ThemeContext } from "@/context/useContext";
 import { useRouter } from "next/navigation";
-import { Calendar, Package, MessageCircle, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -26,461 +26,189 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { sileo } from "sileo";
 
-export function PedidosTable() {
-  const { webshop, setWebshop } = useContext(ThemeContext);
-  const [pedidosState, setPedidosState] = useState(webshop?.events || []);
-  const [WhatsApp, setWhatsApp] = useState(false);
-  const [loadVerified, setLoadVerified] = useState(false);
-  const [PDF, setPDF] = useState(false);
-  useEffect(() => {
-    setPedidosState(webshop?.events || []);
-  }, [webshop?.events]);
-
-  const handleExportToPDF = async () => {
-    try {
-      // 1) Confirmar pedidos (solo los no vistos)
-      sileo.promise(
-        ConfirmarPedidos(
-          pedidosState.filter((obj) => !obj.visto).map((obj) => obj.UID_Venta),
-          setLoadVerified,
-          webshop?.store?.sitioweb,
-        ),
-        {
-          loading: { title: "Confirmando pedidos no vistos..." },
-          success: () => ({
-            title: "Pedidos confirmados correctamente",
-            description: "Los pedidos han sido confirmados con éxito.",
-          }),
-          error: (err) => ({
-            title: "Error al confirmar pedidos",
-            description: err?.message ?? "Error al confirmar los pedidos",
-          }),
-        },
-      );
-      // 2) Exportar a PDF (usa setWebshop y setPDF dentro de la función)
-      const pdfResult = sileo.promise(exportToPDF(pedidosState), {
-        loading: { title: "Generando PDF..." },
-        success: () => ({
-          title: "PDF generado con éxito",
-          description: "El PDF ha sido generado correctamente.",
-        }),
-        error: (err) => ({
-          title: "Error al generar PDF",
-          description: err?.message ?? "Error al generar el PDF",
-        }),
-      });
-      setWebshop((prev) => ({
-        ...prev,
-        events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
-      }));
-      return pdfResult;
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  };
-
-  const handleSendToWhatsApp = async () => {
-    const uidsToConfirm = pedidosState
-      .filter((obj) => !obj.visto)
-      .map((obj) => obj.UID_Venta);
-    try {
-      // 1) Confirmar pedidos
-      sileo.promise(
-        ConfirmarPedidos(
-          uidsToConfirm,
-          setLoadVerified,
-          webshop?.store?.sitioweb,
-        ),
-        {
-          loading: { title: "Confirmando pedidos..." },
-          success: () => ({
-            title: "Pedidos confirmados correctamente",
-            description: `Se confirmaron ${uidsToConfirm.length} pedido(s)`,
-          }),
-          error: (err) => ({
-            title: "Error al confirmar pedidos",
-            description: err?.message ?? "Error al confirmar los pedidos",
-          }),
-        },
-      );
-      // marcar como vistos en el estado local (solo si quieres reflejarlo en UI)
-      setWebshop((prev) => ({
-        ...prev,
-        events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
-      }));
-      // 2) Enviar a WhatsApp
-      const result = sileo.promise(
-        sendToWhatsApp(pedidosState, webshop?.store, setWebshop, setWhatsApp),
-        {
-          loading: { title: "Enviando pedidos a WhatsApp..." },
-          success: () => ({
-            title: "Pedidos enviados a WhatsApp correctamente",
-          }),
-          error: (err) => ({
-            title: "Error al enviar pedidos a WhatsApp",
-            description:
-              err?.message ?? "Error al enviar los pedidos a WhatsApp",
-          }),
-        },
-      );
-      return result;
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  };
-
+// ─── Botón de acción con tooltip ──────────────────────────────────────────────
+function ActionButton({ onClick, disabled, loading, icon: Icon, label }) {
   return (
-    <div className="min-h-screen  p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-start items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-slate-900">
-              Gestión de Pedidos
-            </h1>
-            <p className="text-slate-600">
-              Administra y supervisa todos los pedidos pendientes
-            </p>
-          </div>
-        </div>
-        {pedidosState.filter((obj) => !obj.visto).length > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="space-y-1">
-              <p className="text-slate-600 text-lg">
-                Confirmar todos los pedidos
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-transparent"
-                disabled={
-                  pedidosState.length == 0 || WhatsApp || PDF || loadVerified
-                }
-                onClick={async () =>
-                  sileo.promise(
-                    ConfirmarPedidos(
-                      pedidosState
-                        .filter((obj) => !obj.visto)
-                        .map((obj) => obj.UID_Venta),
-                      setLoadVerified,
-                      webshop?.store?.sitioweb,
-                    ),
-                    {
-                      loading: { title: "Confirmando pedidos..." },
-                      success: () => ({
-                        title: "Pedidos confirmados correctamente",
-                      }),
-                      error: (err) => ({
-                        title: "Error al confirmar pedidos",
-                        description:
-                          err?.message ?? "Error al confirmar los pedidos",
-                      }),
-                    },
-                  )
-                }
-              >
-                {!loadVerified ? (
-                  <>
-                    <Verified className="w-4 h-4" />
-                    <span className="sr-only">Confirmar todos</span>
-                  </>
-                ) : (
-                  <>
-                    <Loader className="animate-spin" />
-                    <span className="sr-only">Preparando</span>
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-transparent"
-                disabled={
-                  pedidosState.length == 0 || WhatsApp || PDF || loadVerified
-                }
-                onClick={handleSendToWhatsApp}
-              >
-                {!WhatsApp ? (
-                  <>
-                    <MessageCircle className="w-4 h-4" />
-                    <span className="sr-only">WhatsApp</span>
-                  </>
-                ) : (
-                  <>
-                    <Loader className="animate-spin" />
-                    <span className="sr-only">Preparando</span>
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-transparent"
-                disabled={
-                  pedidosState.length == 0 || WhatsApp || PDF || loadVerified
-                }
-                onClick={handleExportToPDF}
-              >
-                {!PDF ? (
-                  <>
-                    <Printer className="w-4 h-4" />
-                    <span className="sr-only">Imprimir</span>
-                  </>
-                ) : (
-                  <>
-                    <Loader className="animate-spin" />
-                    <span className="sr-only">Preparando</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <TablesPedidosBody
-          pedidosState={pedidosState.filter((obj) => !obj.visto)}
-          sitioweb={webshop?.store?.sitioweb}
-          verified={true}
-        />
-
-        <TablesPedidosBody
-          pedidosState={pedidosState.filter((obj) => obj.visto)}
-          sitioweb={webshop?.store?.sitioweb}
-        />
-
-        {/* Empty State (if no orders) */}
-        {pedidosState.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="space-y-4">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-                  <Package className="w-8 h-8 text-slate-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    No hay pedidos pendientes
-                  </h3>
-                  <p className="text-slate-500">
-                    Los nuevos pedidos aparecerán aquí cuando los clientes
-                    realicen compras.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={`flex items-center justify-center w-9 h-9 rounded-xl border border-border transition-all duration-200 ${
+        disabled
+          ? "opacity-40 cursor-not-allowed bg-transparent"
+          : "hover:bg-secondary/60 hover:border-primary/30 cursor-pointer bg-transparent"
+      }`}
+    >
+      {loading ? (
+        <Loader2 size={14} className="animate-spin text-muted-foreground" />
+      ) : (
+        <Icon size={14} className="text-foreground" />
+      )}
+    </button>
   );
 }
+
+// ─── Tabla de pedidos ─────────────────────────────────────────────────────────
 function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
   const router = useRouter();
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
-  const ConfirmarPedidoUnico = async (order) => {
-    try {
-      const result = sileo.promise(
-        ConfirmarPedidos([order], setDownloading, webshop?.store?.sitioweb),
-        {
-          loading: { title: "Confirmando pedido..." },
-          success: (data) => {
-            // opcional: personaliza el texto según lo que devuelva `ConfirmarPedidos`
-            return {
-              title: `Pedido ${order} confirmado`,
-            };
-          },
-          error: (err) => ({
-            title: "Error al confirmar pedido",
-            description: err?.message ?? "Error al confirmar el pedido",
-          }),
-        },
-      );
 
-      // actualizar estado solo si la promesa tuvo éxito
-      setWebshop((prev) => ({
-        ...prev,
-        events: prev?.events.map((obj) =>
-          obj.UID_Venta === order ? { ...obj, visto: true } : obj,
-        ),
-      }));
-
-      return result; // devuelve lo que devuelva ConfirmarPedidos si lo necesitas
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
+  const confirmarUnico = async (uid) => {
+    sileo.promise(
+      ConfirmarPedidos([uid], setDownloading, webshop?.store?.sitioweb),
+      {
+        loading: { title: "Confirmando pedido..." },
+        success: () => ({ title: `Pedido confirmado` }),
+        error: (err) => ({
+          title: "Error",
+          description: err?.message ?? "Error al confirmar",
+        }),
+      },
+    );
+    setWebshop((prev) => ({
+      ...prev,
+      events: prev?.events.map((obj) =>
+        obj.UID_Venta === uid ? { ...obj, visto: true } : obj,
+      ),
+    }));
   };
 
+  if (pedidosState.length === 0) return null;
+
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="bg-white border-b border-slate-200">
-        <CardTitle className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-          <Package className="w-5 h-5" />
-          {verified
-            ? "Lista de Pedidos sin confirmar"
-            : "Lista de Pedidos Confirmados"}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <div
+            className={`w-2 h-2 rounded-full shrink-0 ${verified ? "bg-amber-400" : "bg-emerald-500"}`}
+          />
+          {verified ? "Pendientes de confirmar" : "Pedidos confirmados"}
+          <span className="ml-auto text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+            {pedidosState.length}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left p-4 font-semibold text-slate-700">
-                  Cliente
-                </th>
-                <th className="text-left p-4 font-semibold text-slate-700">
-                  Identificador
-                </th>
-                <th className="text-left p-4 font-semibold text-slate-700">
-                  Compra
-                </th>
-                <th className="text-left p-4 font-semibold text-slate-700">
-                  Productos
-                </th>
-                <th className="text-left p-4 font-semibold text-slate-700">
-                  Acciones
-                </th>
+            <thead>
+              <tr className="border-b border-border">
+                {["Cliente", "ID pedido", "Fecha", "Productos", ""].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-4 py-3 text-[11px] text-muted-foreground uppercase tracking-[0.08em] font-medium"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {pedidosState.map((order, index) => (
                 <tr
                   key={order.id}
-                  className="hover:bg-slate-50 transition-colors"
+                  className="border-b border-border/50 hover:bg-secondary/30 transition-colors last:border-0"
                 >
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">
-                          {order.desc.people.charAt(0).toUpperCase() || "A"}
+                  {/* Cliente */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="w-7 h-7 shrink-0">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                          {(order.desc?.people || "?").charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium text-slate-900">
-                          {order.desc.people}
+                        <p className="text-sm font-medium text-foreground leading-tight">
+                          {order.desc?.people}
                         </p>
-                        <p className="text-sm text-slate-500">
-                          Cliente #{index + 1}
+                        <p className="text-[11px] text-muted-foreground">
+                          #{index + 1}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="p-4">
-                    <div className="space-y-1">
-                      <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700">
-                        {order.UID_Venta.substring(0, 8)}...
-                      </code>
-                      <p className="text-xs text-slate-500">ID del pedido</p>
+                  {/* ID */}
+                  <td className="px-4 py-3">
+                    <code className="text-xs bg-secondary px-2 py-1 rounded font-mono text-muted-foreground">
+                      {order.UID_Venta.substring(0, 8)}…
+                    </code>
+                  </td>
+                  {/* Fecha */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Calendar
+                        size={12}
+                        className="text-primary/60 shrink-0"
+                      />
+                      {new Date(order.created_at).toLocaleDateString("es-ES")}
                     </div>
                   </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-slate-700">
-                        {formatFecha(order.created_at)}
-                      </span>
-                    </div>
+                  {/* Productos */}
+                  <td className="px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">
+                      {order?.desc?.pedido.reduce(
+                        (sum, p) =>
+                          sum +
+                          p.Cant +
+                          p.agregados.reduce((s, ag) => s + ag.cant, 0),
+                        0,
+                      )}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      productos
+                    </span>
                   </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-900">
-                        {" "}
-                        {order?.desc?.pedido.reduce(
-                          (sum, producto) =>
-                            sum +
-                            producto.Cant +
-                            producto.agregados.reduce(
-                              (suma, ag) => suma + ag.cant,
-                              0,
-                            ),
-                          0,
-                        )}
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {order?.desc?.pedido.reduce(
-                          (sum, producto) =>
-                            sum +
-                            producto.Cant +
-                            producto.agregados.reduce(
-                              (suma, ag) => suma + ag.cant,
-                              0,
-                            ),
-                          0,
-                        ) === 1
-                          ? "producto"
-                          : "productos"}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="p-4">
+                  {/* Acciones */}
+                  <td className="px-4 py-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger disabled={downloading} asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          {!downloading ? (
-                            <MoreHorizontal className="h-4 w-4" />
+                        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                          {downloading ? (
+                            <Loader2 size={14} className="animate-spin" />
                           ) : (
-                            <Loader2 className="w-4 h-4" />
+                            <MoreHorizontal size={14} />
                           )}
-
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
+                        </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
+                      <DropdownMenuContent align="end">
                         {!order.visto && (
                           <DropdownMenuItem
-                            className="gap-2"
-                            onClick={async () =>
-                              await ConfirmarPedidoUnico(order.UID_Venta)
-                            }
+                            className="gap-2 text-sm"
+                            onClick={() => confirmarUnico(order.UID_Venta)}
                           >
-                            <Verified className="w-4 h-4" />
-                            Confirmar
+                            <Verified size={14} /> Confirmar
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                          className="gap-2"
+                          className="gap-2 text-sm"
                           onClick={() =>
                             router.push(`/orders/${order.UID_Venta}`)
                           }
                         >
-                          <Eye className="w-4 h-4" />
-                          Ver
+                          <Eye size={14} /> Ver detalle
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="gap-2"
+                          className="gap-2 text-sm"
                           onClick={() => {
                             if (order.phonenumber && order.phonenumber !== 0) {
-                              const phoneNumber = order.phonenumber;
-                              const message = `Hola, soy de ${webshop?.store?.name}`;
-                              const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
-                                message,
-                              )}`;
-                              window.open(url, "_blank"); // abre WhatsApp en una nueva pestaña
+                              window.open(
+                                `https://wa.me/${order.phonenumber}?text=${encodeURIComponent(`Hola, soy de ${webshop?.store?.name}`)}`,
+                                "_blank",
+                              );
                             } else {
                               sileo.error({
-                                title: "Error",
+                                title: "Sin teléfono",
                                 description:
-                                  "El usuario no ha dado número de teléfono para ser localizado",
+                                  "El cliente no proporcionó número de contacto",
                               });
                             }
                           }}
                         >
-                          <MessageCircle className="w-4 h-4" />
-                          Contactar cliente
+                          <MessageCircle size={14} /> Contactar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="gap-2"
+                          className="gap-2 text-sm text-destructive focus:text-destructive"
                           onClick={() =>
                             EliminateDesc(
                               sitioweb,
@@ -490,12 +218,7 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
                             )
                           }
                         >
-                          {!downloading ? (
-                            <Trash2 className="w-4 h-4" />
-                          ) : (
-                            <Loader2 className="w-4 h-4" />
-                          )}
-                          Eliminar
+                          <Trash2 size={14} /> Eliminar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -509,6 +232,202 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
     </Card>
   );
 }
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+export function PedidosTable() {
+  const { webshop, setWebshop } = useContext(ThemeContext);
+  const [pedidosState, setPedidosState] = useState(webshop?.events || []);
+  const [WhatsApp, setWhatsApp] = useState(false);
+  const [loadVerified, setLoadVerified] = useState(false);
+  const [PDF, setPDF] = useState(false);
+
+  useEffect(() => {
+    setPedidosState(webshop?.events || []);
+  }, [webshop?.events]);
+
+  const noVistos = pedidosState.filter((o) => !o.visto);
+  const vistos = pedidosState.filter((o) => o.visto);
+  const busy = pedidosState.length === 0 || WhatsApp || PDF || loadVerified;
+
+  const handleExportToPDF = async () => {
+    sileo.promise(
+      ConfirmarPedidos(
+        noVistos.map((o) => o.UID_Venta),
+        setLoadVerified,
+        webshop?.store?.sitioweb,
+      ),
+      {
+        loading: { title: "Confirmando pedidos..." },
+        success: () => ({ title: "Pedidos confirmados" }),
+        error: (e) => ({ title: "Error", description: e?.message }),
+      },
+    );
+    sileo.promise(exportToPDF(pedidosState), {
+      loading: { title: "Generando PDF..." },
+      success: () => ({ title: "PDF generado" }),
+      error: (e) => ({
+        title: "Error al generar PDF",
+        description: e?.message,
+      }),
+    });
+    setWebshop((prev) => ({
+      ...prev,
+      events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
+    }));
+  };
+
+  const handleSendToWhatsApp = async () => {
+    sileo.promise(
+      ConfirmarPedidos(
+        noVistos.map((o) => o.UID_Venta),
+        setLoadVerified,
+        webshop?.store?.sitioweb,
+      ),
+      {
+        loading: { title: "Confirmando pedidos..." },
+        success: () => ({ title: "Pedidos confirmados" }),
+        error: (e) => ({ title: "Error", description: e?.message }),
+      },
+    );
+    setWebshop((prev) => ({
+      ...prev,
+      events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
+    }));
+    sileo.promise(
+      sendToWhatsApp(pedidosState, webshop?.store, setWebshop, setWhatsApp),
+      {
+        loading: { title: "Enviando a WhatsApp..." },
+        success: () => ({ title: "Enviado a WhatsApp" }),
+        error: (e) => ({ title: "Error", description: e?.message }),
+      },
+    );
+  };
+
+  return (
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
+            Gestión
+          </p>
+          <h1 className="text-2xl font-normal text-foreground italic">
+            Pedidos
+          </h1>
+        </div>
+
+        {noVistos.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground mr-1">
+              {noVistos.length} sin confirmar
+            </span>
+            <ActionButton
+              onClick={() =>
+                sileo.promise(
+                  ConfirmarPedidos(
+                    noVistos.map((o) => o.UID_Venta),
+                    setLoadVerified,
+                    webshop?.store?.sitioweb,
+                  ),
+                  {
+                    loading: { title: "Confirmando..." },
+                    success: () => ({ title: "Confirmados" }),
+                    error: (e) => ({ title: "Error", description: e?.message }),
+                  },
+                )
+              }
+              disabled={busy}
+              loading={loadVerified}
+              icon={Verified}
+              label="Confirmar todos"
+            />
+            <ActionButton
+              onClick={handleSendToWhatsApp}
+              disabled={busy}
+              loading={WhatsApp}
+              icon={MessageCircle}
+              label="Enviar a WhatsApp"
+            />
+            <ActionButton
+              onClick={handleExportToPDF}
+              disabled={busy}
+              loading={PDF}
+              icon={Printer}
+              label="Exportar PDF"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Tablas */}
+      <TablesPedidosBody
+        pedidosState={noVistos}
+        sitioweb={webshop?.store?.sitioweb}
+        verified
+      />
+      <TablesPedidosBody
+        pedidosState={vistos}
+        sitioweb={webshop?.store?.sitioweb}
+      />
+
+      {/* Empty state */}
+      {pedidosState.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+              <Package size={24} className="text-muted-foreground" />
+            </div>
+            <div className="text-center">
+              <p className="font-medium text-foreground">
+                Sin pedidos pendientes
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Los nuevos pedidos aparecerán aquí cuando los clientes realicen
+                compras.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─── Helpers (sin cambios) ────────────────────────────────────────────────────
+async function ConfirmarPedidos(uids, setDownloading, sitioweb) {
+  setDownloading(true);
+  try {
+    await axios.post(
+      `/api/tienda/${sitioweb}/checkOrders`,
+      { uids },
+      { headers: { "Content-Type": "application/json" } },
+    );
+  } catch (error) {
+    console.error("Error al confirmar pedidos:", error);
+    throw error;
+  } finally {
+    setDownloading(false);
+  }
+}
+
+async function EliminateDesc(sitioweb, uid, setDownloading, setWebshop) {
+  setDownloading(true);
+  try {
+    await axios.delete(`/api/tienda/${sitioweb}/checkOrders`, {
+      data: { uid },
+      headers: { "Content-Type": "application/json" },
+    });
+    setWebshop((prev) => ({
+      ...prev,
+      events: prev.events.filter((o) => o.UID_Venta !== uid),
+    }));
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setDownloading(false);
+  }
+}
+
 export function TransformDate(dateString) {
   const fecha = new Date(dateString);
   return new Intl.DateTimeFormat("es-ES").format(fecha);
@@ -663,28 +582,4 @@ export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
 
   // Abrir WhatsApp Web con el mensaje
   window.open(`https://wa.me/${store?.cell}?text=${encodedMessage}`, "_blank");
-}
-
-function formatFecha(fechaString) {
-  const fecha = new Date(fechaString);
-  return fecha.toLocaleDateString("es-ES"); // 'dd/mm/aaaa'
-}
-async function ConfirmarPedidos(uids, setDownloading, sitioweb) {
-  setDownloading(true);
-
-  try {
-    const response = await axios.post(
-      `/api/tienda/${sitioweb}/checkOrders`,
-      { uids },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-  } catch (error) {
-    console.error("Error al ejecutar la función RPC:", error);
-  } finally {
-    setDownloading(false);
-  }
 }

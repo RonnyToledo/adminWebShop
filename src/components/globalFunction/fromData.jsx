@@ -88,7 +88,7 @@ export function FromData({ children, store, ThemeContext }) {
       <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
         <Button
           type="submit"
-          className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
+          className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl disabled:bg-gray-500 ${
             downloading ? "opacity-50 cursor-not-allowed" : ""
           }`}
           disabled={downloading}

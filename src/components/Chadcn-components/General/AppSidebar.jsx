@@ -1,18 +1,6 @@
 "use client";
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import navLinks from "@/components/json/link.json"; // ruta donde esté guardado el JSON
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
@@ -34,19 +22,12 @@ import AddCardIcon from "@mui/icons-material/AddCard";
 import EditIcon from "@mui/icons-material/Edit";
 import GroupIcon from "@mui/icons-material/Group";
 import Image from "next/image";
-import { ChevronUp, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import BookIcon from "@mui/icons-material/Book";
 import { logoApp } from "@/utils/image";
-import { Settings, Eye } from "lucide-react";
+import { Settings, Eye, ChevronDown, X } from "lucide-react";
 import { authService } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 const iconMap = {
   HomeRoundedIcon,
@@ -72,11 +53,12 @@ const iconMap = {
   AlignHorizontalLeftRoundedIcon,
 };
 
-export default function AppSidebar({ ThemeContext }) {
+export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
+  const [activeItem, setActiveItem] = useState("/");
   const { webshop } = useContext(ThemeContext);
   const pathname = usePathname();
   const router = useRouter();
-
+  console.log(navLinks);
   const handleSignOut = async () => {
     try {
       await authService.signOut();
@@ -89,152 +71,170 @@ export default function AppSidebar({ ThemeContext }) {
     }
   };
 
-  const renderLinkNav = (link, index) => {
-    if (
-      link.condition &&
-      ((link.condition.plan &&
-        !link.condition.plan.includes(webshop.store?.plan)) ||
-        (link.condition.theme && !webshop.store?.theme) ||
-        (link.condition.CodePromo && !webshop.store?.CodePromo))
-    ) {
-      return null;
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose?.();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
-    const Icon = iconMap[link.icon] || HomeRoundedIcon;
-    return (
-      <SidebarMenuItem
-        key={index}
-        className="flex flex-row items-center justify-center"
-      >
-        <SidebarMenuButton
-          asChild
-          tooltip={link.label}
-          className="p-1 h-fit group-data-[collapsible=icon]:!p-1"
-        >
-          <Link
-            href={link.href || pathname}
-            className="p-0 flex items-center rounded-lg text-slate-500 gap-2 transition-all hover:text-slate-700 "
-          >
-            <Icon className="size-6" />
-            <span>{link.label}</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
+  const handleNavClick = (href) => {
+    setActiveItem(href);
+    onClose?.();
   };
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton className="flex flex-col md:flex-row h-auto">
-              <div>
-                <Link href="/">
-                  <Image
-                    width={50}
-                    height={50}
-                    src={logoApp}
-                    alt={webshop?.store?.name || "Store Image"}
-                    className="object-cover aspect-square rounded-lg"
-                  />
-                </Link>
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">rouAdmin</span>
-                <span className="truncate text-xs">
-                  {" "}
-                  by <Link href="https://roudev.vercel.app">rouDev</Link>
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+    <>
+      <div className="sticky top-0 h-fit">
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
+            isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+          )}
+          onClick={onClose}
+          aria-hidden="true"
+        />
 
-      <SidebarContent>
-        {navLinks.map((link, index) => {
-          {
-            return link.separator ? (
-              <Separator key={index} />
-            ) : (
-              <SidebarGroup key={index} className="p-1">
-                <SidebarGroupContent>
-                  <SidebarMenu className="gap-1">
-                    {link.links.map(renderLinkNav)}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            );
-          }
-        })}
-      </SidebarContent>
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed top-0 lg:static inset-y-0 left-0 z-50 flex flex-col h-screen w-72 lg:w-64 bg-sidebar border-r border-sidebar-border",
+            "transform transition-transform duration-300 ease-in-out lg:transform-none",
+            isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          )}
+        >
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <Link href="/">
+                <Image
+                  width={50}
+                  height={50}
+                  src={logoApp}
+                  alt={webshop?.store?.name || "Store Image"}
+                  className="object-cover aspect-square rounded-lg"
+                />
+              </Link>
+            </div>
+            <div>
+              <h1 className="font-semibold text-sidebar-foreground">
+                Roumenu - Admin
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                by <Link href="https://roudev.vercel.app">rouDev</Link>
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="lg:hidden p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors"
+              aria-label="Cerrar menu"
+            >
+              <X className="w-5 h-5 text-sidebar-foreground" />
+            </button>
+          </div>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage
-                      src={
-                        webshop?.user?.image ||
-                        "https://res.cloudinary.com/dbgnyc842/image/upload/v1753625183/Identidades/%C3%8Dcono-de-usuario-minimalista-en-gris_z11vpk.jpg"
-                      }
-                      alt={webshop?.user?.name || "User"}
-                    />
-                    <AvatarFallback className="rounded-lg">
-                      {webshop?.user?.name
-                        ? webshop.user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                        : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {webshop?.user?.name}
-                    </span>
-                    <span className="truncate text-xs">
-                      {webshop?.user?.email}
-                    </span>
-                  </div>
-                  <ChevronUp className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            {navLinks.map((section, sectionIndex) => (
+              <div
+                key={sectionIndex}
+                className={cn(
+                  sectionIndex > 0 &&
+                    "mt-4 pt-4 border-t border-sidebar-border/50",
+                )}
               >
-                <DropdownMenuItem onClick={() => router.push("/guia")}>
-                  <PreviewRoundedIcon className="mr-2 h-4 w-4" />
-                  <span>Guia</span>
-                </DropdownMenuItem>
+                {section.group && (
+                  <h3 className="px-3 mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {section.group}
+                  </h3>
+                )}
+                <ul className="space-y-1">
+                  {section.links.map((item) => {
+                    const Icon = iconMap[item.icon] || HomeRoundedIcon;
+                    const isActive = activeItem === item.href;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setActiveItem(item.href)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "w-4 h-4",
+                              isActive && "text-primary",
+                            )}
+                          />
+                          <span>{item.label}</span>
+                          {item.badge && (
+                            <span className="ml-auto px-2 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
 
-                <DropdownMenuItem onClick={() => router.push("/configuracion")}>
-                  <AppSettingsAltRoundedIcon className="mr-2 h-4 w-4" />
-                  <span>Configuración</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => handleSignOut()}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Cerrar Sesión</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+          {/* User Profile */}
+          <div className="p-3 border-t border-sidebar-border">
+            <button
+              onClick={() => handleSignOut()}
+              className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors"
+            >
+              <Avatar className="w-9 h-9">
+                <AvatarImage
+                  src={
+                    webshop?.user?.image ||
+                    "https://res.cloudinary.com/dbgnyc842/image/upload/v1753625183/Identidades/%C3%8Dcono-de-usuario-minimalista-en-gris_z11vpk.jpg"
+                  }
+                  alt={webshop?.user?.name}
+                />
+                <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
+                  {webshop?.user?.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {webshop?.user?.name}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {webshop?.user?.email}
+                </p>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        </aside>
+      </div>
+    </>
   );
 }
