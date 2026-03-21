@@ -5,7 +5,26 @@ import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
-import { LogUser } from "@/lib/logUser";
+import { cookies } from "next/headers"; // Importar cookies desde headers
+
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 },
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204 });
@@ -13,14 +32,8 @@ export async function OPTIONS() {
 
 export async function POST(req) {
   try {
-    // Solo server-side
-    const log = await LogUser();
-    if (!log.ok) {
-      return NextResponse.json(
-        { message: log.message, detail: log.detail || null },
-        { status: log.status },
-      );
-    }
+    // Solo server-side: asegúrate de no exponer GEMINI_API_KEY al cliente
+    await LogUser();
 
     const formData = await req.formData();
     const ui_store = formData.get("ui_store");
@@ -61,14 +74,8 @@ export async function POST(req) {
 
 export async function DELETE(req) {
   try {
-    // Solo server-side
-    const log = await LogUser();
-    if (!log.ok) {
-      return NextResponse.json(
-        { message: log.message, detail: log.detail || null },
-        { status: log.status },
-      );
-    }
+    // Solo server-side: asegúrate de no exponer GEMINI_API_KEY al cliente
+    await LogUser();
 
     const formData = await req.formData();
     const slug = formData.get("slug");

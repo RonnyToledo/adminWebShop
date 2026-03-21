@@ -23,20 +23,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 import {
+  Loader2,
+  MoreHorizontal,
+  Trash2,
   Search,
   Plus,
   Edit,
   Package,
-  DotIcon as DragHandleDots2Icon,
+  GripVertical,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -50,7 +52,6 @@ export default function Category({ ThemeContext }) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [filteredCategories, setFilteredCategories] = useState([]);
 
-  // Cargar datos iniciales al montar el componente
   useEffect(() => {
     if (webshop?.store?.categoria.length > 0) {
       setData({
@@ -62,7 +63,7 @@ export default function Category({ ThemeContext }) {
 
   useEffect(() => {
     setFilteredCategories(
-      searchTerm == ""
+      searchTerm === ""
         ? data.category
         : data.category.filter((obj) =>
             obj.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -71,167 +72,84 @@ export default function Category({ ThemeContext }) {
   }, [searchTerm, data.category]);
 
   const handleDelete = async (categoryToDelete, image) => {
-    // bandera UI
     setDeleting(true);
-
-    // validaciones rápidas
     if (!categoryToDelete) {
       sileo.error({
         title: "Error",
-        description: "No se recibió el UUID de la categoría a eliminar.",
+        description: "No se recibió el UUID de la categoría.",
       });
       setDeleting(false);
       return;
     }
-
-    const url = `/api/tienda/${webshop?.store?.sitioweb}/categoria`;
-    const payload = { UUID: categoryToDelete, image };
-
-    // Construimos la promesa que realiza la petición al backend
-    const deletePromise = axios.delete(url, {
-      data: payload,
-      // para JSON no es obligatorio forzar el header; axios lo establecerá
-      // headers: { "Content-Type": "application/json" },
-    });
-
+    const deletePromise = axios.delete(
+      `/api/tienda/${webshop?.store?.sitioweb}/categoria`,
+      { data: { UUID: categoryToDelete, image } },
+    );
     try {
-      const res = sileo.promise(deletePromise, {
-        loading: {
-          title: "Eliminando categoría...",
-          description: "Estamos eliminando la categoría seleccionada.",
-        },
+      sileo.promise(deletePromise, {
+        loading: { title: "Eliminando categoría..." },
         success: (response) => {
-          // Solo al resolverse correctamente actualizamos el estado local
-          const currentCategories = webshop?.store?.categoria ?? [];
-
-          // Filtramos por id (asegúrate que el campo coincida: .id)
-          const updatedCategories = currentCategories.filter(
-            (item) => item.id !== categoryToDelete,
-          );
-
           setWebshop((prev) => ({
             ...prev,
             store: {
               ...prev.store,
-              categoria: updatedCategories,
+              categoria: prev.store.categoria.filter(
+                (item) => item.id !== categoryToDelete,
+              ),
             },
           }));
-
-          // Mensaje de éxito: preferimos usar el mensaje del backend si existe
           return {
             title: "Categoría eliminada",
-            description:
-              response?.data?.message ?? "Categoría eliminada correctamente",
+            description: response?.data?.message ?? "Eliminada correctamente",
           };
         },
-        error: (err) => {
-          const msg =
-            err?.response?.data?.message ??
-            err?.message ??
-            "Error al eliminar la categoría";
-          return {
-            title: "Error al eliminar categoría",
-            description: msg,
-          };
-        },
+        error: (err) => ({
+          title: "Error",
+          description:
+            err?.response?.data?.message ?? err?.message ?? "Error al eliminar",
+        }),
       });
-
-      // opcional: devolver la respuesta para quien llame a handleDelete
-      return res;
     } catch (err) {
-      console.error("handleDelete error:", err);
-      // Si necesitas lógica adicional en el catch (rollback, métricas), ponla aquí
+      console.error(err);
     } finally {
       setDeleting(false);
     }
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setDownloading(true);
-
-    // Validaciones rápidas para evitar peticiones inválidas
     if (!webshop?.store?.sitioweb) {
-      sileo.error({
-        title: "Error",
-        description: "Configuración de tienda incompleta: faltó 'sitioweb'.",
-      });
+      sileo.error({ title: "Error", description: "Faltó 'sitioweb'." });
       setDownloading(false);
       return;
     }
-
-    // Evitar enviar datos vacíos
-    const categories = data?.category ?? [];
-    if (!Array.isArray(categories)) {
-      sileo.error({
-        title: "Error",
-        description: "El formato de 'category' no es válido.",
-      });
-      setDownloading(false);
-      return;
-    }
-
-    // Construcción de FormData (no forzar Content-Type: el navegador lo hace)
     const formData = new FormData();
-    formData.append("categoria", JSON.stringify(categories));
+    formData.append("categoria", JSON.stringify(data?.category ?? []));
     formData.append("UUID", String(data?.UUID ?? ""));
-
-    // Opcional: si hay archivos asociados a categorías, los añadirías aquí.
-    // formData.append("file", someFile);
-
-    // Construimos la promesa axios
     const putPromise = axios.put(
       `/api/tienda/${webshop.store.sitioweb}/categoria`,
       formData,
-      // NO pongas headers: { "Content-Type": "multipart/form-data" } — axios/browser manejan el boundary
     );
-
     try {
-      const res = sileo.promise(putPromise, {
-        loading: {
-          title: "Actualizando categorías",
-          description: "Estamos actualizando las categorías.",
-        },
+      sileo.promise(putPromise, {
+        loading: { title: "Guardando categorías..." },
         success: (response) => {
-          // Extraemos las categorías devueltas por el backend o hacemos fallback
-          const returnedCategories =
-            response?.data?.data ?? response?.data ?? categories;
-
-          // Actualizamos el estado sólo una vez confirmado el éxito
+          const returned =
+            response?.data?.data ?? response?.data ?? data.category;
           setWebshop((prev) => ({
             ...prev,
-            store: {
-              ...prev.store,
-              categoria: returnedCategories,
-            },
+            store: { ...prev.store, categoria: returned },
           }));
-
-          // Mensaje de éxito (usa el message del backend si existe)
-          return {
-            title: "Categorías actualizadas",
-            description:
-              response?.data?.message ??
-              "Categorías actualizadas correctamente",
-          };
+          return { title: "Categorías actualizadas" };
         },
-        error: (err) => {
-          // Construimos un mensaje legible
-          const msg =
-            err?.response?.data?.message ??
-            err?.message ??
-            "No se pudieron actualizar las categorías";
-          return {
-            title: "Error al actualizar categorías",
-            description: msg,
-          };
-        },
+        error: (err) => ({
+          title: "Error",
+          description: err?.response?.data?.message ?? err?.message,
+        }),
       });
-
-      // Opcional: devolver la respuesta para quien llame a handleSubmit
-      return res;
     } catch (err) {
-      console.error("handleSubmit error:", err);
-      // Si quieres, aquí podrías reintentar o limpiar estados específicos
+      console.error(err);
     } finally {
       setDownloading(false);
     }
@@ -239,118 +157,48 @@ export default function Category({ ThemeContext }) {
 
   const addCategory = async () => {
     setAdd(true);
-
-    // Validaciones básicas antes de llamar a la API
-    if (!newCat || !newCat.name || newCat.name.trim() === "") {
-      sileo.error({
-        title: "Error",
-        description: "Debes indicar el nombre de la categoría.",
-      });
+    if (!newCat?.name?.trim()) {
+      sileo.error({ title: "Error", description: "Debes indicar el nombre." });
       form.current?.reset();
       setAdd(false);
       return;
     }
-
-    if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
-      sileo.error({
-        title: "Error",
-        description:
-          "Información de la tienda incompleta. Revisa la configuración.",
-      });
-      setAdd(false);
-      return;
-    }
-
-    // Preparamos el payload (JSON). No meter headers en el cuerpo.
     const payload = {
       ...newCat,
       storeId: webshop.store.UUID,
       order: data?.category?.length ?? 0,
     };
-
-    // Construimos la promesa de la petición POST
     const postPromise = axios.post(
       `/api/tienda/${webshop.store.sitioweb}/categoria`,
       payload,
-      {
-        // Para JSON axios suele poner Content-Type por defecto, pero lo dejamos explícito si lo prefieres:
-        headers: { "Content-Type": "application/json" },
-      },
+      { headers: { "Content-Type": "application/json" } },
     );
-
     try {
-      const res = sileo.promise(postPromise, {
-        loading: {
-          title: "Creando categoría",
-          description: "Estamos creando la nueva categoría.",
-        },
+      sileo.promise(postPromise, {
+        loading: { title: "Creando categoría..." },
         success: (response) => {
-          // Aceptamos 200 o 201 como éxito
-          if (response?.status === 200 || response?.status === 201) {
-            // Intentamos extraer la categoría devuelta por el servidor:
-            // primero response.data.data (tu patrón actual), si no existe, fallback a response.data
-            const createdCategory =
-              response?.data?.data ?? response?.data ?? null;
-
-            // Si el backend no devuelve la nueva categoría, aún podemos construirla localmente,
-            // pero preferimos usar lo que venga del servidor para mantener IDs/metadata correctos.
-            if (createdCategory) {
-              setWebshop((prevData) => ({
-                ...prevData,
-                store: {
-                  ...prevData.store,
-                  category: [...(prevData.category ?? []), createdCategory],
-                },
-              }));
-            } else {
-              // Fallback: añadimos lo mínimo que tenemos (puede carecer de UUID real del servidor)
-              const fallbackCat = { ...payload, id: `temp-${Date.now()}` };
-              setWebshop((prevData) => ({
-                ...prevData,
-                store: {
-                  ...prevData.store,
-                  category: [...(prevData.category ?? []), fallbackCat],
-                },
-              }));
-            }
-
-            // Limpiar estado del formulario
-            setNewCat({});
-            form.current?.reset();
-
-            return {
-              title: "Categoría creada",
-              description:
-                response?.data?.message ?? "Categoría creada correctamente",
-            };
-          }
-
-          // Si el status no es 200/201 lo tratamos como mensaje inesperado
-          return {
-            title: "Error al crear categoría",
-            description: `Respuesta inesperada del servidor: ${response?.status}`,
-          };
+          const created = response?.data?.data ?? response?.data ?? null;
+          const cat = created || { ...payload, id: `temp-${Date.now()}` };
+          setWebshop((prev) => ({
+            ...prev,
+            store: {
+              ...prev.store,
+              categoria: [...(prev.store.categoria ?? []), cat],
+            },
+          }));
+          setNewCat({});
+          form.current?.reset();
+          return { title: "Categoría creada" };
         },
-        error: (err) => {
-          const msg =
-            err?.response?.data?.message ??
-            err?.message ??
-            "No se pudo crear la categoría";
-          return {
-            title: "Error al crear categoría",
-            description: msg,
-          };
-        },
+        error: (err) => ({
+          title: "Error",
+          description: err?.response?.data?.message ?? err?.message,
+        }),
       });
-
-      // Opcional: devolver la respuesta si quien llama la función la necesita
-      return res;
     } catch (err) {
-      console.error("addCategory error:", err);
+      console.error(err);
     } finally {
-      // Aseguramos limpiar estados en cualquier caso
       setAdd(false);
-      // Aseguramos que newCat se resetea (ya lo hacemos en success), aquí como seguro final
       setNewCat({});
     }
   };
@@ -358,106 +206,113 @@ export default function Category({ ThemeContext }) {
   const onDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination || source.index === destination.index) return;
-    const reorderedCategories = reorder(
-      data.category,
-      source.index,
-      destination.index,
-    );
-    setData((prevData) => ({ ...prevData, category: reorderedCategories }));
+    const reordered = reorder(data.category, source.index, destination.index);
+    setData((prev) => ({ ...prev, category: reordered }));
   };
 
+  const hasPending =
+    JSON.stringify(data.category) !== JSON.stringify(webshop?.store?.categoria);
+
   return (
-    <main className="py-2 px-6 space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <main className="p-6 space-y-6 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Gestión de Categorías
+          <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
+            Catálogo
+          </p>
+          <h1 className="text-2xl font-normal text-foreground italic">
+            Categorías
           </h1>
-          <p className="text-slate-600 mt-1">
-            Administra las categorías de tu tienda
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {data.category.length} categorías ·{" "}
+            {data.category.filter((c) => c.subtienda).length} subtiendas
           </p>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              {add ? "Agregando categoría..." : "Agregar Categoría"}
-            </Button>
+            <button className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium shrink-0">
+              <Plus size={14} />
+              {add ? "Agregando..." : "Nueva categoría"}
+            </button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Agregar Nueva Categoría</DialogTitle>
+              <DialogTitle>Nueva categoría</DialogTitle>
               <DialogDescription>
                 Crea una nueva categoría para organizar tus productos.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nombre de la categoría</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground uppercase tracking-[0.1em]">
+                  Nombre
+                </Label>
                 <Input
-                  id="name"
                   value={newCat.name || ""}
                   onChange={(e) =>
                     setNewCat({ ...newCat, name: e.target.value })
                   }
-                  placeholder="Ej: Maquillaje de ojos"
+                  placeholder="Ej: Bebidas"
                 />
               </div>
-              <div>
-                <Label htmlFor="description">Descripción (opcional)</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground uppercase tracking-[0.1em]">
+                  Descripción (opcional)
+                </Label>
                 <Textarea
-                  id="description"
                   value={newCat.description || ""}
                   onChange={(e) =>
                     setNewCat({ ...newCat, description: e.target.value })
                   }
-                  placeholder="Describe brevemente esta categoría..."
-                  rows={3}
+                  placeholder="Describe brevemente..."
+                  rows={2}
                 />
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+                <Label className="text-sm">Subtienda</Label>
                 <Switch
-                  id="active"
-                  checked={newCat.subtienda}
-                  onCheckedChange={(checked) =>
-                    setNewCat({ ...newCat, subtienda: checked })
+                  checked={!!newCat.subtienda}
+                  onCheckedChange={(v) =>
+                    setNewCat({ ...newCat, subtienda: v })
                   }
                 />
-                <Label htmlFor="active">Subtienda</Label>
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
+              <button
                 onClick={() => setIsAddDialogOpen(false)}
+                className="text-sm px-4 py-2 rounded-xl border border-border text-foreground hover:bg-secondary/60 transition-colors"
               >
                 Cancelar
-              </Button>
-              <Button onClick={addCategory}>
-                {add ? "Creando Categoría..." : "Crear Categoría"}
-              </Button>
+              </button>
+              <button
+                onClick={addCategory}
+                className="text-sm px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+              >
+                {add ? "Creando..." : "Crear"}
+              </button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <Input
-            placeholder="Buscar categorías..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-4 text-sm text-slate-600">
-          <span>{data.category.length} categorías totales</span>
-          <span>
-            {data.category.filter((c) => c.subtienda).length} subtiendas
-          </span>
-        </div>
+
+      {/* Buscador */}
+      <div className="relative">
+        <Search
+          size={14}
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          placeholder="Buscar categorías..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-xs bg-secondary/50 border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+        />
       </div>
+
+      {/* Lista arrastrable */}
       <DragDropContext onDragEnd={onDragEnd}>
         <form onSubmit={handleSubmit} className="space-y-2">
           <Droppable droppableId={webshop?.store?.sitioweb || "unique"}>
@@ -465,52 +320,54 @@ export default function Category({ ThemeContext }) {
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="gap-1 md:gap-4 space-y-3"
+                className="space-y-2"
               >
-                {filteredCategories
-                  .sort((a, b) => a.order - b.order)
-                  .map((category, index) => (
-                    <CategoryItem
-                      key={index}
-                      index={index}
-                      category={category}
-                      products={webshop?.products}
-                      onDelete={handleDelete}
-                      deleting={deleting}
-                      setData={setData}
-                      handleSubmit={handleSubmit}
-                      downloading={downloading}
-                      onUpdateProducts={(updatedProducts) =>
-                        setData((prev) => ({
-                          ...prev,
-                          products: updatedProducts,
-                        }))
-                      }
-                    />
-                  ))}
+                <AnimatePresence>
+                  {filteredCategories
+                    .sort((a, b) => a.order - b.order)
+                    .map((category, index) => (
+                      <CategoryItem
+                        key={category.id || index}
+                        index={index}
+                        category={category}
+                        products={webshop?.products}
+                        onDelete={handleDelete}
+                        deleting={deleting}
+                        setData={setData}
+                      />
+                    ))}
+                </AnimatePresence>
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
-          <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">
-            <Button
-              className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
-                downloading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              disabled={downloading}
-              type="submit"
-              id="Guardar"
-            >
-              {downloading ? "Guardando..." : "Guardar"}
-            </Button>
-          </div>
+
+          {/* Botón guardar sticky */}
+          {hasPending && (
+            <div className="sticky bottom-4 flex justify-center pt-4">
+              <button
+                type="submit"
+                disabled={downloading}
+                className={`flex items-center gap-2 text-sm px-8 py-3 rounded-xl font-medium shadow-lg transition-all ${
+                  downloading
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+              >
+                {downloading && <Loader2 size={14} className="animate-spin" />}
+                {downloading ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          )}
         </form>
       </DragDropContext>
-      <ConfimationOut action={hasPendingChanges(data, webshop)} />
+
+      <ConfimationOut action={hasPending} />
     </main>
   );
 }
 
+// ─── CategoryItem ─────────────────────────────────────────────────────────────
 const CategoryItem = ({
   index,
   category,
@@ -518,165 +375,104 @@ const CategoryItem = ({
   onDelete,
   deleting,
   setData,
-  handleSubmit,
-  downloading,
 }) => {
-  const router = useRouter();
+  const productCount = (products || []).filter(
+    (p) => p.caja === category.id,
+  ).length;
+
   return (
-    <Draggable draggableId={`draggable-${index}`} index={index}>
-      {(provided) => (
-        <Card
+    <Draggable draggableId={`draggable-${category.id || index}`} index={index}>
+      {(provided, snapshot) => (
+        <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className={`transition-all hover:shadow-md ${
-            !category.isActive ? "opacity-60" : ""
+          className={`bg-background border border-border rounded-xl px-4 py-3 flex items-center gap-3 transition-colors ${
+            snapshot.isDragging
+              ? "shadow-md border-primary/30"
+              : "hover:border-border/80"
           }`}
         >
-          <CardContent className="p-2 md:p-4 ">
-            <div className="flex items-center gap-2 md:gap-4">
-              {/* Drag Handle */}
-              <div className="cursor-grab text-slate-400 hover:text-slate-600">
-                <DragHandleDots2Icon className="size-4" />
-              </div>
+          {/* Drag handle */}
+          <div
+            {...provided.dragHandleProps}
+            className="text-muted-foreground/50 hover:text-muted-foreground cursor-grab shrink-0"
+          >
+            <GripVertical size={14} />
+          </div>
 
-              {/* Category Icon */}
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-                <Package className="w-6 h-6 " />
-              </div>
+          {/* Icono */}
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Package size={15} className="text-primary" />
+          </div>
 
-              {/* Category Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-slate-900 truncate">
-                    {category.name}
-                  </h3>
-                  {category.subtienda && (
-                    <Badge variant="secondary" className="text-xs">
-                      Subtienda
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-4 text-sm text-slate-600 truncate">
-                  <span className="flex items-center gap-1">
-                    <Package className="w-4 h-4" />
-                    {
-                      products.filter((prod) => prod.caja === category.id)
-                        .length
-                    }{" "}
-                    productos
-                  </span>
-                  {category.description && (
-                    <span className="truncate max-w-xs">
-                      {category.description}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Status Toggle */}
-              <Switch
-                checked={category.subtienda}
-                onCheckedChange={(checked) =>
-                  setData((prevState) => ({
-                    ...prevState,
-                    category: prevState.category.map((obj) =>
-                      category.id === obj.id
-                        ? { ...obj, subtienda: checked }
-                        : obj,
-                    ),
-                  }))
-                }
-                className="data-[state=checked]:bg-green-600"
-              />
-
-              {/* Actions Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/category/${category.id}`}>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Editar
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onDelete(category.id, category.image)}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    {!deleting ? (
-                      <>
-                        <Trash2 className="h-3 w-3" />
-                        Eliminar
-                      </>
-                    ) : (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Eliminando
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground truncate">
+                {category.name}
+              </span>
+              {category.subtienda && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  Subtienda
+                </Badge>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-xs text-muted-foreground">
+              {productCount} producto{productCount !== 1 ? "s" : ""}
+              {category.description && ` · ${category.description}`}
+            </p>
+          </div>
+
+          {/* Switch subtienda */}
+          <Switch
+            checked={!!category.subtienda}
+            onCheckedChange={(v) =>
+              setData((prev) => ({
+                ...prev,
+                category: prev.category.map((obj) =>
+                  obj.id === category.id ? { ...obj, subtienda: v } : obj,
+                ),
+              }))
+            }
+          />
+
+          {/* Menú */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                <MoreHorizontal size={14} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/category/${category.id}`} className="gap-2">
+                  <Edit size={13} /> Editar
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDelete(category.id, category.image)}
+                className="gap-2 text-destructive focus:text-destructive"
+              >
+                {deleting ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Trash2 size={13} />
+                )}
+                Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )}
     </Draggable>
   );
 };
 
-// Utilidad y helpers
-const hasPendingChanges = (data, webshop) => {
-  return (
-    JSON.stringify(data.category) !== JSON.stringify(webshop?.store?.categoria)
-  );
-};
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const reorder = (list, startIndex, endIndex) => {
   const result = Array.from(list);
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
-  return result.map((obj, ind) => {
-    return { ...obj, order: ind };
-  });
-};
-
-const ordenarCategorias = (categorias, productos, campo, orden = "asc") => {
-  if (!["price", "visitas"].includes(campo)) {
-    throw new Error("El campo debe ser 'precio' o 'visitas'.");
-  }
-
-  // Calcular el total del campo (precio o visitas) para cada categoría
-  const categoriasOrdenadas = categorias.map((categoria) => {
-    const productosFiltrados = productos.filter(
-      (producto) => producto.caja === categoria.id,
-    );
-
-    const totalCampo = productosFiltrados.reduce(
-      (total, producto) => total + (producto[campo] || 0),
-      0,
-    );
-
-    return {
-      ...categoria,
-      total: totalCampo,
-    };
-  });
-
-  // Ordenar según el total del campo, en ascendente o descendente
-  categoriasOrdenadas.sort((a, b) => {
-    if (orden === "asc") {
-      return a.total - b.total;
-    } else if (orden === "desc") {
-      return b.total - a.total;
-    }
-    return 0;
-  });
-  return categoriasOrdenadas.map(({ total, ...rest }) => rest);
+  return result.map((obj, ind) => ({ ...obj, order: ind }));
 };

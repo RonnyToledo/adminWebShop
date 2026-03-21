@@ -4,8 +4,28 @@ import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
+import { cookies } from "next/headers"; // Importar cookies desde headers
 import { diffArrays } from "@/components/globalFunction/diferenciasDeArray";
-import { LogUser } from "@/lib/logUser";
+import { restoreSessionFromCookie } from "@/lib/logUser";
+
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 },
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
+  // Establecer la sesión con los tokens de la cookie
+  await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 
 export async function GET(request, { params }) {
   const supabase = createClient();
@@ -27,14 +47,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
-
+  await restoreSessionFromCookie();
   const data = await request.formData();
   const urlPosterNew = data.get("urlPosterNew");
   const bannerNew = data.get("bannerNew");

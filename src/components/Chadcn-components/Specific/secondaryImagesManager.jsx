@@ -1,13 +1,10 @@
-// SecondaryImagesManager.jsx (fragmento completo adaptado)
+// SecondaryImagesManager.jsx
 "use client";
-
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Upload, Trash2, Plus, GripVertical } from "lucide-react";
 import { logoApp } from "@/utils/image";
 
-// util: compara arrays de strings (orden y contenido)
 function arraysEqual(a = [], b = []) {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
@@ -30,21 +27,14 @@ export default function SecondaryImagesManager({
     return copy;
   };
 
-  // inicializa con logoApp por defecto
   const [images, setImages] = useState(() => normalize(initialImages));
-
   const fileInputRefs = useRef([]);
   const draggedIndexRef = useRef(null);
   const [draggedImage, setDraggedImage] = useState(null);
   const createdBlobUrlsRef = useRef(new Set());
-
-  // evita notificar al padre en la primera renderización
   const mountedRef = useRef(false);
-
-  // prevInitial para evitar sincronizaciones innecesarias
   const prevInitialRef = useRef(null);
 
-  // Notificar al padre cuando images cambie (pero NO en mount)
   useEffect(() => {
     if (!mountedRef.current) {
       mountedRef.current = true;
@@ -55,100 +45,73 @@ export default function SecondaryImagesManager({
       onChangeClean(images.filter(Boolean));
   }, [images, onChange, onChangeClean]);
 
-  // Solo sincronizamos initialImages si cambia realmente
   useEffect(() => {
     const norm = normalize(initialImages);
     if (!arraysEqual(prevInitialRef.current, norm)) {
       prevInitialRef.current = norm;
-      // solo actualizamos el estado interno si difiere
       setImages((cur) => (arraysEqual(cur, norm) ? cur : norm));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialImages]);
 
-  // cleanup blobs
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       createdBlobUrlsRef.current.forEach((u) => {
         try {
           URL.revokeObjectURL(u);
         } catch (_) {}
       });
       createdBlobUrlsRef.current.clear();
-    };
-  }, []);
+    },
+    [],
+  );
 
-  // ... (resto de handlers igual que tenías)
   const handleDragStart = (index) => (e) => {
     draggedIndexRef.current = index;
     setDraggedImage(index);
     if (e.dataTransfer) e.dataTransfer.setData("text/plain", String(index));
   };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+  const handleDragOver = (e) => e.preventDefault();
 
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
     const dtIndex = e.dataTransfer ? e.dataTransfer.getData("text/plain") : "";
     const from =
-      draggedIndexRef.current !== null && draggedIndexRef.current !== undefined
+      draggedIndexRef.current !== null
         ? draggedIndexRef.current
         : dtIndex
-        ? Number(dtIndex)
-        : null;
-
-    if (from === null || from === undefined || Number.isNaN(from)) {
+          ? Number(dtIndex)
+          : null;
+    if (from === null || Number.isNaN(from) || from === dropIndex) {
       setDraggedImage(null);
       draggedIndexRef.current = null;
       return;
     }
-    if (from === dropIndex) {
-      setDraggedImage(null);
-      draggedIndexRef.current = null;
-      return;
-    }
-
     setImages((prev) => {
-      // snapshot previo (para comparar blobs que desaparecen)
-      const prevArray = Array.isArray(prev) ? [...prev] : [];
-
-      // movimiento: removemos el elemento 'from' y lo insertamos en dropIndex
-      const next = [...prevArray];
+      const next = [...(Array.isArray(prev) ? prev : [])];
       const [moved] = next.splice(from, 1);
-
-      // si el origen está antes del destino, el índice de inserción baja en 1
       const insertIndex = from < dropIndex ? dropIndex - 1 : dropIndex;
       next.splice(insertIndex, 0, moved);
-
-      // --- manejar revocación de blob: URLs que desaparecen ---
-      // detectamos blobs "propios" (creados con URL.createObjectURL y guardados en el ref)
       const prevBlobs = new Set(
-        prevArray.filter(
+        prev.filter(
           (v) =>
             typeof v === "string" &&
             v.startsWith("blob:") &&
-            createdBlobUrlsRef.current.has(v)
-        )
+            createdBlobUrlsRef.current.has(v),
+        ),
       );
       const nextBlobs = new Set(
-        next.filter((v) => typeof v === "string" && v.startsWith("blob:"))
+        next.filter((v) => typeof v === "string" && v.startsWith("blob:")),
       );
-
       for (const b of prevBlobs) {
         if (!nextBlobs.has(b)) {
-          // si el blob ya no existe en el array final, lo revocamos y lo eliminamos del set
           try {
             URL.revokeObjectURL(b);
           } catch (_) {}
           createdBlobUrlsRef.current.delete(b);
         }
       }
-
       return next;
     });
-
     setDraggedImage(null);
     draggedIndexRef.current = null;
   };
@@ -156,27 +119,19 @@ export default function SecondaryImagesManager({
   const handleImageUpload = (index, file) => {
     if (!file) return;
     const url = URL.createObjectURL(file);
-
     const prev = images[index];
-    if (
-      prev &&
-      prev.startsWith &&
-      prev.startsWith("blob:") &&
-      createdBlobUrlsRef.current.has(prev)
-    ) {
+    if (prev?.startsWith?.("blob:") && createdBlobUrlsRef.current.has(prev)) {
       try {
         URL.revokeObjectURL(prev);
       } catch (_) {}
       createdBlobUrlsRef.current.delete(prev);
     }
-
     createdBlobUrlsRef.current.add(url);
     setImages((prev) => {
       const next = [...prev];
       next[index] = url;
       return next;
     });
-
     const input = fileInputRefs.current[index];
     if (input) input.value = "";
   };
@@ -186,9 +141,7 @@ export default function SecondaryImagesManager({
       const next = [...prev];
       const prevUrl = next[index];
       if (
-        prevUrl &&
-        prevUrl.startsWith &&
-        prevUrl.startsWith("blob:") &&
+        prevUrl?.startsWith?.("blob:") &&
         createdBlobUrlsRef.current.has(prevUrl)
       ) {
         try {
@@ -196,93 +149,92 @@ export default function SecondaryImagesManager({
         } catch (_) {}
         createdBlobUrlsRef.current.delete(prevUrl);
       }
-      next[index] = logoApp; // o "" según prefieras
+      next[index] = logoApp;
       return next;
     });
   };
 
   return (
-    <div>
-      <div className="grid grid-cols-3 gap-4">
-        {images.map((img, index) => (
-          <div
-            key={index}
-            draggable
-            onDragStart={handleDragStart(index)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, index)}
-            className={`relative group cursor-move transition-all duration-300 ${
-              draggedImage === index ? "scale-105 rotate-2 z-10" : ""
-            }`}
-          >
-            <div className="aspect-square bg-slate-100 rounded-lg overflow-hidden border-2 border-dashed border-slate-300 hover:border-blue-400 transition-colors duration-300">
-              {img ? (
-                <div className="relative w-full h-full">
-                  <Image
-                    src={img}
-                    alt={`Product ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => fileInputRefs.current[index]?.click()}
-                        className="bg-white/90 hover:bg-white h-8 w-8 p-0"
-                      >
-                        <Upload className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        disabled={img == logoApp}
-                        onClick={() => handleImageRemove(index)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-white/90 rounded p-1">
-                      <GripVertical className="w-3 h-3 text-slate-600" />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="w-full h-full flex flex-col items-center justify-center cursor-pointer"
-                  onClick={() => fileInputRefs.current[index]?.click()}
-                >
-                  <Plus className="w-8 h-8 text-slate-400 mb-1" />
-                  <p className="text-xs text-slate-600 text-center">
-                    Subir imagen {index + 1}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <input
-              ref={(el) => (fileInputRefs.current[index] = el)}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files && e.target.files[0];
-                if (file) handleImageUpload(index, file);
-              }}
-            />
-
-            <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
-              {index + 1}
-            </div>
+    <div className="grid grid-cols-3 gap-3">
+      {images.map((img, index) => (
+        <div
+          key={index}
+          draggable
+          onDragStart={handleDragStart(index)}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, index)}
+          className={`relative group cursor-move transition-all duration-200 ${draggedImage === index ? "scale-105 opacity-70" : ""}`}
+        >
+          {/* Badge número */}
+          <div className="absolute -top-2 -left-2 z-10 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-medium">
+            {index + 1}
           </div>
-        ))}
-      </div>
+
+          <div
+            className={`aspect-square rounded-xl overflow-hidden border-2 transition-colors duration-200 ${
+              draggedImage === index
+                ? "border-primary"
+                : "border-border hover:border-primary/40"
+            } bg-secondary`}
+          >
+            {img && img !== logoApp ? (
+              <div className="relative w-full h-full">
+                <Image
+                  src={img}
+                  alt={`Imagen ${index + 1}`}
+                  fill
+                  className="object-cover"
+                />
+
+                {/* Overlay en hover */}
+                <div className="absolute inset-0 bg-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRefs.current[index]?.click()}
+                    className="w-8 h-8 rounded-lg bg-background/90 flex items-center justify-center hover:bg-background transition-colors"
+                  >
+                    <Upload size={13} className="text-foreground" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleImageRemove(index)}
+                    className="w-8 h-8 rounded-lg bg-destructive/90 flex items-center justify-center hover:bg-destructive transition-colors"
+                  >
+                    <Trash2 size={13} className="text-white" />
+                  </button>
+                </div>
+
+                {/* Grip */}
+                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-background/80 rounded p-0.5">
+                    <GripVertical size={11} className="text-muted-foreground" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRefs.current[index]?.click()}
+                className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Plus size={20} />
+                <span className="text-[10px]">Imagen {index + 1}</span>
+              </button>
+            )}
+          </div>
+
+          <input
+            ref={(el) => (fileInputRefs.current[index] = el)}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageUpload(index, file);
+            }}
+          />
+        </div>
+      ))}
     </div>
   );
 }

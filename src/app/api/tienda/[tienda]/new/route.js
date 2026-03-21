@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
       { message: error },
       {
         status: 401,
-      }
+      },
     );
   }
 

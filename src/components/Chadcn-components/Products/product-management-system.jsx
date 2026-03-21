@@ -2,10 +2,9 @@
 
 import React, { useState, useContext, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -21,17 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
-  X,
-  Loader2,
-  AlertTriangle,
-} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +31,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
+  X,
+  Loader2,
+  AlertTriangle,
+  GripVertical,
+  Package,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
@@ -53,14 +53,13 @@ import axios from "axios";
 import { sileo } from "sileo";
 import Link from "next/link";
 import ConfimationOut from "@/components/globalFunction/confimationOut";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Constante para productos sin categoría
 const UNCATEGORIZED_ID = "uncategorized";
 
 export function ProductManagementSystem() {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [products, setProducts] = useState([]);
-  const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]);
 
@@ -68,163 +67,122 @@ export function ProductManagementSystem() {
     setProducts(webshop?.products || []);
   }, [webshop?.products]);
 
-  // Obtener productos sin categoría o con categoría inválida
+  // ── Datos derivados (lógica sin cambios) ──────────────────────────────────
+
   const uncategorizedProducts = React.useMemo(() => {
-    const validCategoryIds =
-      webshop?.store?.categoria?.map((cat) => cat.id) || [];
+    const validIds = webshop?.store?.categoria?.map((c) => c.id) || [];
     return products.filter(
-      (product) =>
-        !product.caja ||
-        product.caja === UNCATEGORIZED_ID ||
-        !validCategoryIds.includes(product.caja),
+      (p) =>
+        !p.caja || p.caja === UNCATEGORIZED_ID || !validIds.includes(p.caja),
     );
   }, [products, webshop?.store?.categoria]);
 
-  // Obtener todas las categorías incluyendo "Sin categoría"
   const allCategories = React.useMemo(() => {
-    const categories = [...(webshop?.store?.categoria || [])];
-
-    if (uncategorizedProducts.length > 0) {
-      categories.push({
+    const cats = [...(webshop?.store?.categoria || [])];
+    if (uncategorizedProducts.length > 0)
+      cats.push({
         id: UNCATEGORIZED_ID,
         name: "Sin categoría",
         isVirtual: true,
       });
-    }
-
-    return categories;
+    return cats;
   }, [webshop?.store?.categoria, uncategorizedProducts]);
 
-  const DragAndDrop = (result) => {
-    const { source, destination, draggableId } = result;
-
-    if (!destination) return;
-
-    const sourceCategory = source.droppableId;
-    const destCategory = destination.droppableId;
-    const sourceIndex = source.index;
-    const destIndex = destination.index;
-
-    if (sourceCategory === destCategory) {
-      // Reordenar dentro de la misma categoría
-      setProducts((prevProducts) =>
-        OrderProducts(
-          prevProducts,
-          allCategories.map((obj) => obj.id),
-          sourceIndex,
-          destIndex,
-          sourceCategory,
-        ),
-      );
-    } else {
-      // Mover el producto a una nueva categoría
-      setProducts((prevProducts) => {
-        const newPrev = prevProducts.map((prod) =>
-          prod.productId === draggableId
-            ? {
-                ...prod,
-                caja: destCategory === UNCATEGORIZED_ID ? null : destCategory,
-                order: destIndex,
-              }
-            : prod,
-        );
-
-        const productToMove = newPrev.find(
-          (prod) => prod.productId === draggableId,
-        );
-
-        if (productToMove) {
-          return OrderProducts(
-            newPrev,
-            allCategories.map((obj) => obj.id),
-            sourceIndex,
-            destIndex,
-            destCategory,
-          );
-        }
-        return newPrev;
-      });
-    }
-  };
-
-  const toggleProductStatus = (productId, field) => {
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.productId === productId
-          ? { ...product, [field]: !product[field] }
-          : product,
-      ),
-    );
-  };
-
-  const getSelectedProductIds = () => {
-    return selectedProducts.map((selected) => selected.productId);
-  };
-
-  const isProductSelected = (productId) => {
-    return selectedProducts.some(
-      (selected) => selected.productId === productId,
-    );
-  };
-
-  const toggleProductSelection = (productId, image) => {
-    setSelectedProducts((prev) => {
-      const isSelected = prev.some(
-        (selected) => selected.productId === productId,
-      );
-      if (isSelected) {
-        return prev.filter((selected) => selected.productId !== productId);
-      } else {
-        return [...prev, { productId, image }];
-      }
-    });
-  };
-
-  const toggleSelectAllInCategory = (categoryId) => {
-    const categoryProducts = getCategoryProducts(categoryId).map((p) => ({
-      productId: p.productId,
-      image: p.image,
-    }));
-
-    const categoryProductIds = categoryProducts.map((p) => p.productId);
-    const selectedIds = getSelectedProductIds();
-    const allSelected = categoryProductIds.every((productId) =>
-      selectedIds.includes(productId),
-    );
-
-    setSelectedProducts((prev) => {
-      if (allSelected) {
-        return prev.filter(
-          (selected) => !categoryProductIds.includes(selected.productId),
-        );
-      } else {
-        const newSelections = categoryProducts.filter(
-          (product) =>
-            !prev.some((selected) => selected.productId === product.productId),
-        );
-        return [...prev, ...newSelections];
-      }
-    });
-  };
-
-  // Función auxiliar para obtener productos de una categoría
   const getCategoryProducts = React.useCallback(
     (categoryId) => {
-      if (categoryId === UNCATEGORIZED_ID) {
-        return uncategorizedProducts;
-      }
+      if (categoryId === UNCATEGORIZED_ID) return uncategorizedProducts;
       return products.filter((p) => p.caja === categoryId);
     },
     [products, uncategorizedProducts],
   );
 
-  const clearSelection = () => {
-    setSelectedProducts([]);
+  // ── Lógica de selección (sin cambios) ────────────────────────────────────
+
+  const getSelectedProductIds = () => selectedProducts.map((s) => s.productId);
+  const isProductSelected = (id) =>
+    selectedProducts.some((s) => s.productId === id);
+  const clearSelection = () => setSelectedProducts([]);
+
+  const toggleProductSelection = (productId, image) => {
+    setSelectedProducts((prev) => {
+      const exists = prev.some((s) => s.productId === productId);
+      return exists
+        ? prev.filter((s) => s.productId !== productId)
+        : [...prev, { productId, image }];
+    });
   };
+
+  const toggleSelectAllInCategory = (categoryId) => {
+    const catProds = getCategoryProducts(categoryId).map((p) => ({
+      productId: p.productId,
+      image: p.image,
+    }));
+    const catIds = catProds.map((p) => p.productId);
+    const selIds = getSelectedProductIds();
+    const allSel = catIds.every((id) => selIds.includes(id));
+    setSelectedProducts((prev) =>
+      allSel
+        ? prev.filter((s) => !catIds.includes(s.productId))
+        : [
+            ...prev,
+            ...catProds.filter(
+              (p) => !prev.some((s) => s.productId === p.productId),
+            ),
+          ],
+    );
+  };
+
+  const toggleProductStatus = (productId, field) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.productId === productId ? { ...p, [field]: !p[field] } : p,
+      ),
+    );
+  };
+
+  // ── DnD ──────────────────────────────────────────────────────────────────
+
+  const DragAndDrop = (result) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+    const { droppableId: srcCat, index: srcIdx } = source;
+    const { droppableId: dstCat, index: dstIdx } = destination;
+    if (srcCat === dstCat) {
+      setProducts((prev) =>
+        OrderProducts(
+          prev,
+          allCategories.map((c) => c.id),
+          srcIdx,
+          dstIdx,
+          srcCat,
+        ),
+      );
+    } else {
+      setProducts((prev) => {
+        const updated = prev.map((p) =>
+          p.productId === draggableId
+            ? {
+                ...p,
+                caja: dstCat === UNCATEGORIZED_ID ? null : dstCat,
+                order: dstIdx,
+              }
+            : p,
+        );
+        return OrderProducts(
+          updated,
+          allCategories.map((c) => c.id),
+          srcIdx,
+          dstIdx,
+          dstCat,
+        );
+      });
+    }
+  };
+
+  // ── API (sin cambios) ─────────────────────────────────────────────────────
 
   const deleteProduct = async (value) => {
     setDownloading(true);
-
     if (!value || (Array.isArray(value) && value.length === 0)) {
       setDownloading(false);
       sileo.error({
@@ -233,53 +191,34 @@ export function ProductManagementSystem() {
       });
       return;
     }
-
     const formData = new FormData();
     formData.append("values", JSON.stringify(value));
-
     const deletePromise = axios.delete(
       `/api/tienda/${webshop?.store?.sitioweb}/products/`,
-      {
-        data: formData,
-      },
+      { data: formData },
     );
-
     try {
-      const res = await sileo.promise(deletePromise, {
+      await sileo.promise(deletePromise, {
         loading: { title: "Eliminando productos..." },
         success: (response) => {
-          const selectedIds = value.map((selected) => selected.productId);
+          const ids = value.map((s) => s.productId);
           setWebshop((prev) => ({
             ...prev,
-            products: prev.products.filter(
-              (product) => !selectedIds.includes(product.productId),
-            ),
+            products: prev.products.filter((p) => !ids.includes(p.productId)),
           }));
-
           setSelectedProducts([]);
           return {
-            title: "Productos eliminados correctamente",
-            description:
-              response?.data?.message ?? "Productos eliminados correctamente",
+            title: "Productos eliminados",
+            description: response?.data?.message,
           };
         },
-        error: (err) => {
-          const msg =
-            err?.response?.data?.message ?? err?.message ?? "Error al eliminar";
-          return {
-            title: "Error al eliminar productos",
-            description: msg,
-          };
-        },
+        error: (err) => ({
+          title: "Error al eliminar",
+          description: err?.response?.data?.message ?? err?.message,
+        }),
       });
-
-      return res;
     } catch (err) {
-      console.error("deleteProduct error:", err);
-      sileo.error({
-        title: "Error",
-        description: "Error al eliminar productos",
-      });
+      console.error(err);
     } finally {
       setDownloading(false);
     }
@@ -287,544 +226,529 @@ export function ProductManagementSystem() {
 
   const SaveData = async () => {
     setDownloading(true);
-
     const modified = obtenerProductosModificados(
       webshop?.products || [],
       products,
     );
-
-    if (!modified || (Array.isArray(modified) && modified.length === 0)) {
+    if (!modified || !modified.length) {
       setDownloading(false);
       sileo.info({
-        title: "No hay cambios para guardar",
-        description: "No se detectaron modificaciones en los productos.",
+        title: "Sin cambios",
+        description: "No se detectaron modificaciones.",
       });
       return;
     }
-
     const formData = new FormData();
     formData.append("products", JSON.stringify(modified));
-
     const putPromise = axios.put(
       `/api/tienda/${webshop?.store?.sitioweb}/products`,
       formData,
     );
-
     try {
-      const res = await sileo.promise(putPromise, {
+      await sileo.promise(putPromise, {
         loading: { title: "Guardando cambios..." },
-        success: (response) => {
-          setWebshop((prev) => ({
-            ...prev,
-            products: products,
-          }));
-
-          const count = Array.isArray(modified) ? modified.length : 1;
+        success: () => {
+          setWebshop((prev) => ({ ...prev, products }));
+          const c = modified.length;
           return {
-            title: `${count} producto${count === 1 ? "" : "s"} actualizado${
-              count === 1 ? "" : "s"
-            } correctamente`,
+            title: `${c} producto${c !== 1 ? "s" : ""} actualizado${c !== 1 ? "s" : ""}`,
           };
         },
-        error: (err) => {
-          const msg =
-            err?.response?.data?.message ??
-            err?.message ??
-            "No se pudo actualizar";
-          return {
-            title: "Error al guardar cambios",
-            description: msg,
-          };
-        },
+        error: (err) => ({
+          title: "Error al guardar",
+          description: err?.response?.data?.message ?? err?.message,
+        }),
       });
-
-      return res;
     } catch (err) {
-      console.error("SaveData error:", err);
+      console.error(err);
     } finally {
       setDownloading(false);
     }
   };
 
   const totalSelected = selectedProducts.length;
+  const hasPending = hasPendingChanges(products, webshop?.products || []);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-3 md:space-y-6">
-      {totalSelected > 0 && (
-        <Card className="bg-primary/5 backdrop-blur-lg border-primary/20 sticky top-16 z-10">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-primary">
-                {totalSelected} producto{totalSelected !== 1 ? "s" : ""}{" "}
-                seleccionado{totalSelected !== 1 ? "s" : ""}
-              </span>
-              <div className="flex gap-2">
-                <div className="flex items-center gap-4">
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
-                    <X className="w-4 h-4 md:mr-2" />
-                    <div className="hidden md:flex">Limpiar selección</div>
-                  </Button>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="w-4 h-4 md:mr-2" />
-                      <div className="hidden md:flex">
-                        Eliminar seleccionados
-                      </div>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción eliminará permanentemente {totalSelected}{" "}
-                        producto{totalSelected !== 1 ? "s" : ""}. Esta acción no
-                        se puede deshacer.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteProduct(selectedProducts)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Eliminar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+    <div className="space-y-4">
+      {/* Barra de selección masiva — sticky */}
+      <AnimatePresence>
+        {totalSelected > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="sticky top-4 z-20 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3 backdrop-blur-sm"
+          >
+            <span className="text-sm font-medium text-primary">
+              {totalSelected} producto{totalSelected !== 1 ? "s" : ""}{" "}
+              seleccionado{totalSelected !== 1 ? "s" : ""}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={clearSelection}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <X size={12} />
+                <span className="hidden sm:inline">Limpiar</span>
+              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-destructive text-white hover:bg-destructive/90 transition-colors">
+                    <Trash2 size={12} />
+                    <span className="hidden sm:inline">Eliminar</span>
+                    <span className="sm:hidden">{totalSelected}</span>
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      ¿Eliminar {totalSelected} producto
+                      {totalSelected !== 1 ? "s" : ""}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteProduct(selectedProducts)}
+                      className="bg-destructive text-white hover:bg-destructive/90"
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      {/* Categorías con drag & drop */}
       <DragDropContext onDragEnd={DragAndDrop}>
-        <div className="grid gap-3 md:gap-6">
+        <div className="space-y-4">
           {allCategories.map((category) => {
-            const categoryProducts = getCategoryProducts(category.id);
-            const categoryProductIds = categoryProducts.map((p) => p.productId);
-            const selectedIds = getSelectedProductIds();
-            const selectedInCategory = categoryProductIds.filter((id) =>
-              selectedIds.includes(id),
-            ).length;
-            const allSelectedInCategory =
-              categoryProductIds.length > 0 &&
-              selectedInCategory === categoryProductIds.length;
-            const someSelectedInCategory =
-              selectedInCategory > 0 &&
-              selectedInCategory < categoryProductIds.length;
+            const catProds = getCategoryProducts(category.id);
+            const catIds = catProds.map((p) => p.productId);
+            const selIds = getSelectedProductIds();
+            const selInCat = catIds.filter((id) => selIds.includes(id)).length;
+            const allSelInCat = catIds.length > 0 && selInCat === catIds.length;
+            const someSelInCat = selInCat > 0 && selInCat < catIds.length;
 
             return (
-              <Card
+              <div
                 key={category.id}
                 className={cn(
-                  "bg-card",
-                  category.isVirtual &&
-                    "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20",
+                  "border rounded-xl overflow-hidden",
+                  category.isVirtual ? "border-amber-400/40" : "border-border",
                 )}
               >
-                <CardHeader className="p-3 md:pb-4">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {categoryProducts.length > 0 && (
-                        <Checkbox
-                          checked={allSelectedInCategory}
-                          ref={(el) => {
-                            if (el) el.indeterminate = someSelectedInCategory;
-                          }}
-                          onCheckedChange={() =>
-                            toggleSelectAllInCategory(category.id)
-                          }
-                        />
-                      )}
-                      <span className="text-xl font-bold text-card-foreground flex items-center gap-2">
-                        {category.isVirtual && (
-                          <AlertTriangle className="w-5 h-5 text-amber-500" />
-                        )}
-                        {category.name}
+                {/* Header de categoría */}
+                <div
+                  className={cn(
+                    "flex items-center justify-between px-4 py-3 border-b",
+                    category.isVirtual
+                      ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-400/30"
+                      : "bg-secondary/30 border-border",
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {catProds.length > 0 && (
+                      <Checkbox
+                        checked={allSelInCat}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someSelInCat;
+                        }}
+                        onCheckedChange={() =>
+                          toggleSelectAllInCategory(category.id)
+                        }
+                      />
+                    )}
+                    {category.isVirtual && (
+                      <AlertTriangle
+                        size={14}
+                        className="text-amber-500 shrink-0"
+                      />
+                    )}
+                    <span className="text-sm font-medium text-foreground">
+                      {category.name}
+                    </span>
+                    {selInCat > 0 && (
+                      <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full">
+                        {selInCat} sel.
                       </span>
-                      {selectedInCategory > 0 && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-primary/10 text-primary"
-                        >
-                          {selectedInCategory} seleccionado
-                          {selectedInCategory !== 1 ? "s" : ""}
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge
-                      variant="secondary"
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-xs px-2 py-0.5 rounded-full font-medium",
+                      category.isVirtual
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                        : "bg-secondary text-muted-foreground",
+                    )}
+                  >
+                    {catProds.length} productos
+                  </span>
+                </div>
+
+                {/* Zona droppable */}
+                <Droppable droppableId={category.id}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
                       className={cn(
-                        "bg-secondary text-secondary-foreground",
-                        category.isVirtual &&
-                          "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+                        "min-h-[80px] transition-colors p-2 space-y-1.5",
+                        snapshot.isDraggingOver
+                          ? "bg-primary/5"
+                          : "bg-background",
                       )}
                     >
-                      {categoryProducts.length} productos
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-1 pt-0 md:p-6 md:pt-0">
-                  <Droppable droppableId={category.id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={cn(
-                          "min-h-[100px] rounded-lg border-2 border-dashed transition-colors",
-                          snapshot.isDraggingOver
-                            ? "border-primary bg-primary/5"
-                            : category.isVirtual
-                              ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10"
-                              : "border-border bg-muted/20",
-                        )}
-                      >
-                        <div className="grid gap-1 md:gap-4 p-1 md:p-4">
-                          {categoryProducts
-                            .sort((a, b) => (a.order || 0) - (b.order || 0))
-                            .map((product, index) => (
-                              <Draggable
-                                key={product.productId}
-                                draggableId={product.productId}
-                                index={index}
+                      {catProds
+                        .sort((a, b) => (a.order || 0) - (b.order || 0))
+                        .map((product, index) => (
+                          <Draggable
+                            key={product.productId}
+                            draggableId={product.productId}
+                            index={index}
+                          >
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={cn(
+                                  "flex items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-xl border transition-all",
+                                  snapshot.isDragging
+                                    ? "shadow-lg border-primary/30 rotate-1 scale-[1.02] bg-background"
+                                    : "border-border bg-background hover:border-border/80",
+                                  isProductSelected(product.productId) &&
+                                    "border-primary/40 bg-primary/5",
+                                  !product.visible && "opacity-60",
+                                )}
                               >
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={cn(
-                                      `bg-gradient-to-br from-background border border-border rounded-lg p-2 md:p-4 transition-all ${
-                                        !product.visible
-                                          ? "from-red-600/10 to-red-900/10"
-                                          : product.stock
-                                            ? "to-background"
-                                            : "from-slate-400/10 to-slate-600/10"
-                                      } `,
-                                      snapshot.isDragging &&
-                                        "shadow-lg rotate-2 scale-105",
-                                      isProductSelected(product.productId) &&
-                                        "border border-slate-300 bg-primary/5",
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-1 md:gap-4">
-                                      <Checkbox
-                                        checked={isProductSelected(
-                                          product.productId,
-                                        )}
+                                {/* Drag handle */}
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-grab touch-none"
+                                >
+                                  <GripVertical size={14} />
+                                </div>
+
+                                {/* Checkbox */}
+                                <Checkbox
+                                  checked={isProductSelected(product.productId)}
+                                  onCheckedChange={() =>
+                                    toggleProductSelection(
+                                      product.productId,
+                                      product.image,
+                                    )
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="shrink-0"
+                                />
+
+                                {/* Número orden — solo sm+ */}
+                                <span className="hidden sm:block text-[11px] text-muted-foreground/60 w-5 text-right shrink-0 tabular-nums">
+                                  {(product.order ?? 0) < 9999
+                                    ? (product.order ?? 0) + 1
+                                    : ""}
+                                </span>
+
+                                {/* Imagen con preview en Dialog */}
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <div className="shrink-0 cursor-pointer">
+                                      <Image
+                                        width={56}
+                                        height={56}
+                                        src={product.image || logoApp}
+                                        alt={product.title || "Producto"}
+                                        className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg border border-border"
+                                        style={{
+                                          filter:
+                                            !product.stock || !product.visible
+                                              ? "grayscale(1)"
+                                              : "none",
+                                        }}
+                                      />
+                                    </div>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-sm flex flex-col items-center gap-0 bg-transparent border-none p-0">
+                                    <DialogHeader>
+                                      <DialogTitle />
+                                      <DialogDescription />
+                                    </DialogHeader>
+                                    <Image
+                                      width={400}
+                                      height={400}
+                                      src={product.image || logoApp}
+                                      alt={product.title || "Producto"}
+                                      className="w-full h-auto object-cover rounded-xl aspect-square"
+                                    />
+                                  </DialogContent>
+                                </Dialog>
+
+                                {/* Info del producto */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">
+                                    {product.title || "Sin título"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {product.creado
+                                      ? format(
+                                          new Date(product.creado),
+                                          "short",
+                                        )
+                                      : "N/A"}
+                                  </p>
+                                  <p className="text-xs font-medium text-primary tabular-nums">
+                                    {(product.price || 0).toFixed(2)}{" "}
+                                    {webshop?.store?.monedas?.find(
+                                      (c) => c.id === product?.default_moneda,
+                                    )?.nombre ??
+                                      webshop?.store?.monedas?.find(
+                                        (c) => c.defecto,
+                                      )?.nombre ??
+                                      ""}
+                                  </p>
+                                </div>
+
+                                {/* Badges estado — ocultos en mobile, visibles sm+ */}
+                                <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
+                                  {product.stock ? (
+                                    webshop?.store?.stocks ? (
+                                      <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full border border-border">
+                                        {product.stock} u.
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                                        En stock
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
+                                      Agotado
+                                    </span>
+                                  )}
+                                  {!product.visible ? (
+                                    <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                                      <EyeOff size={9} />
+                                      Oculto
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                                      <Eye size={9} />
+                                      Visible
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Switches — solo en md+ */}
+                                <div className="hidden md:flex items-center gap-3 shrink-0">
+                                  {!webshop?.store?.stocks && (
+                                    <div className="flex flex-col items-center gap-1">
+                                      <Switch
+                                        checked={!!product.stock}
                                         onCheckedChange={() =>
-                                          toggleProductSelection(
-                                            product.productId,
-                                            product.image,
+                                          setProducts((prev) =>
+                                            prev.map((p) =>
+                                              p.productId === product.productId
+                                                ? {
+                                                    ...product,
+                                                    stock: product.stock
+                                                      ? 0
+                                                      : 1,
+                                                  }
+                                                : p,
+                                            ),
                                           )
                                         }
-                                        onClick={(e) => e.stopPropagation()}
                                       />
-                                      <h4 className="text-slate-700 hidden md:flex">
-                                        {(product.order ?? 0) < 9999
-                                          ? (product.order ?? 0) + 1
-                                          : ""}
-                                        .
-                                      </h4>
-
-                                      <div className="cursor-pointer hover:opacity-80 transition-opacity">
-                                        <Image
-                                          width={300}
-                                          height={200}
-                                          src={product.image || logoApp}
-                                          alt={product.title || "Producto"}
-                                          className="w-16 h-16 filter object-cover rounded-md border border-border aspect-square backdrop-blur-2xl"
-                                          style={{
-                                            filter:
-                                              !product.stock || !product.visible
-                                                ? "grayscale(1)"
-                                                : "initial",
-                                          }}
-                                        />
-                                      </div>
-
-                                      <div className="flex-1 min-w-0">
-                                        <Dialog>
-                                          <DialogTrigger asChild>
-                                            <h3 className="font-semibold text-foreground line-clamp-1 max-w-[40dvw]  d:w-auto">
-                                              {product.title || "Sin título"}
-                                            </h3>
-                                          </DialogTrigger>
-
-                                          <DialogContent className="max-w-2xl flex flex-col gap-0 justify-center items-center bg-transparent w-fit p-0 border-none">
-                                            <DialogHeader>
-                                              <DialogTitle></DialogTitle>
-                                              <DialogDescription></DialogDescription>
-                                            </DialogHeader>
-                                            <Image
-                                              width={300}
-                                              height={200}
-                                              src={product.image || logoApp}
-                                              alt={product.title || "Producto"}
-                                              className="w-[300dvw/4] md:w-[100dvw/2] h-auto object-cover rounded-lg aspect-square"
-                                            />
-                                          </DialogContent>
-                                        </Dialog>
-                                        <p className="text-sm text-muted-foreground text-slate-600">
-                                          {product.creado
-                                            ? format(
-                                                new Date(product.creado),
-                                                "short",
-                                              )
-                                            : "N/A"}
-                                        </p>
-                                        <p className="text-sm text-primary text-slate-800">
-                                          ${(product.price || 0).toFixed(2)} -{" "}
-                                          {webshop?.store?.monedas?.find(
-                                            (currency) =>
-                                              currency.id ===
-                                              product?.default_moneda,
-                                          )?.nombre ??
-                                            webshop?.store?.monedas?.find(
-                                              (currency) => currency.defecto,
-                                            )?.nombre ??
-                                            ""}
-                                        </p>
-                                      </div>
-
-                                      <div className="gap-3 hidden md:flex">
-                                        {!webshop?.store?.stocks && (
-                                          <div className="flex flex-col items-center gap-2">
-                                            <Switch
-                                              checked={!!product.stock}
-                                              onCheckedChange={() =>
-                                                setProducts((prev) =>
-                                                  prev.map((prod) =>
-                                                    product.productId ===
-                                                    prod.productId
-                                                      ? {
-                                                          ...product,
-                                                          stock: product.stock
-                                                            ? 0
-                                                            : 1,
-                                                        }
-                                                      : prod,
-                                                  ),
-                                                )
-                                              }
-                                            />
-                                            <span className="text-sm text-muted-foreground">
-                                              {product.stock
-                                                ? webshop?.store?.stocks
-                                                  ? `${product.stock} unidades`
-                                                  : "En Stock"
-                                                : "Agotado"}
-                                            </span>
-                                          </div>
-                                        )}
-                                        <div className="flex flex-col-reverse items-center gap-2">
-                                          <Switch
-                                            className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
-                                            checked={!!product.visible}
-                                            onCheckedChange={() =>
-                                              toggleProductStatus(
-                                                product.productId,
-                                                "visible",
-                                              )
-                                            }
-                                          />
-                                          <span className="text-sm text-muted-foreground">
-                                            {!product.visible
-                                              ? "Oculto"
-                                              : "Visible"}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      <div className="hidden md:flex flex-col-reverse gap-1">
-                                        {product.stock ? (
-                                          webshop?.store?.stocks ? (
-                                            <Badge
-                                              className="text-xs"
-                                              variant="outline"
-                                            >
-                                              {product.stock} unidades
-                                            </Badge>
-                                          ) : (
-                                            <Badge
-                                              className="text-xs"
-                                              variant="outline"
-                                            >
-                                              En stock
-                                            </Badge>
-                                          )
-                                        ) : (
-                                          <Badge
-                                            variant="destructive"
-                                            className="text-xs"
-                                          >
-                                            Agotado
-                                          </Badge>
-                                        )}
-                                        {!product.visible ? (
-                                          <Badge
-                                            variant="default"
-                                            className="text-xs"
-                                          >
-                                            <EyeOff className="w-3 h-3 mr-1" />
-                                            Oculto
-                                          </Badge>
-                                        ) : (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-xs"
-                                          >
-                                            <Eye className="w-3 h-3 mr-1" />
-                                            Visible
-                                          </Badge>
-                                        )}
-                                      </div>
-
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="size-8 px-2"
-                                          >
-                                            <MoreVertical className="w-4 h-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          {!webshop?.store?.stocks && (
-                                            <DropdownMenuItem className="flex items-center justify-between gap-2 md:hidden">
-                                              <span className="text-sm">
-                                                {product.stock
-                                                  ? webshop?.store?.stocks
-                                                    ? `${product.stock} unidades`
-                                                    : "En Stock"
-                                                  : "Agotado"}
-                                              </span>
-                                              <Switch
-                                                checked={!!product.stock}
-                                                onCheckedChange={() =>
-                                                  setProducts((prev) =>
-                                                    prev.map((prod) =>
-                                                      product.productId ===
-                                                      prod.productId
-                                                        ? {
-                                                            ...product,
-                                                            stock: product.stock
-                                                              ? 0
-                                                              : 1,
-                                                          }
-                                                        : prod,
-                                                    ),
-                                                  )
-                                                }
-                                              />
-                                            </DropdownMenuItem>
-                                          )}
-                                          <DropdownMenuItem className="flex  items-center justify-between gap-2 md:hidden">
-                                            <span className="text-sm">
-                                              {!product.visible
-                                                ? "Oculto"
-                                                : "Visible"}
-                                            </span>
-                                            <Switch
-                                              className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
-                                              checked={!!product.visible}
-                                              onCheckedChange={() =>
-                                                toggleProductStatus(
-                                                  product.productId,
-                                                  "visible",
-                                                )
-                                              }
-                                            />
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem asChild>
-                                            <Link
-                                              href={`/products/${product.productId}`}
-                                            >
-                                              <Edit className="size-4 mr-2" />
-                                              Editar producto
-                                            </Link>
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem asChild>
-                                            <Link
-                                              href={`/products/${product.productId}`}
-                                            >
-                                              <Eye className="size-4 mr-2" />
-                                              Ver en tienda
-                                            </Link>
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-
-                                          <DropdownMenuItem
-                                            className="text-destructive gap-2"
-                                            onClick={async () =>
-                                              await deleteProduct([
-                                                {
-                                                  productId: product.productId,
-                                                  image: product.image,
-                                                },
-                                              ])
-                                            }
-                                          >
-                                            {!downloading ? (
-                                              <>
-                                                <Trash2 className="size-4" />
-                                                Eliminar
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Loader2 className="size-4 animate-spin" />
-                                                Eliminando
-                                              </>
-                                            )}
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {product.stock ? "Stock" : "Agotado"}
+                                      </span>
                                     </div>
+                                  )}
+                                  <div className="flex flex-col items-center gap-1">
+                                    <Switch
+                                      checked={!!product.visible}
+                                      onCheckedChange={() =>
+                                        toggleProductStatus(
+                                          product.productId,
+                                          "visible",
+                                        )
+                                      }
+                                    />
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {product.visible ? "Visible" : "Oculto"}
+                                    </span>
                                   </div>
-                                )}
-                              </Draggable>
-                            ))}
-                          {provided.placeholder}
-                          {categoryProducts.length === 0 && (
-                            <div className="text-center py-8 text-muted-foreground">
-                              {category.isVirtual
-                                ? "No hay productos sin categoría"
-                                : "Arrastra productos aquí o agrega nuevos"}
-                            </div>
-                          )}
+                                </div>
+
+                                {/* Menú contextual */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0">
+                                      <MoreVertical size={14} />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-48"
+                                  >
+                                    {/* Switches en mobile dentro del menú */}
+                                    {!webshop?.store?.stocks && (
+                                      <DropdownMenuItem
+                                        className="flex items-center justify-between gap-2 md:hidden"
+                                        onSelect={(e) => e.preventDefault()}
+                                      >
+                                        <span className="text-sm">
+                                          {product.stock
+                                            ? "En stock"
+                                            : "Agotado"}
+                                        </span>
+                                        <Switch
+                                          checked={!!product.stock}
+                                          onCheckedChange={() =>
+                                            setProducts((prev) =>
+                                              prev.map((p) =>
+                                                p.productId ===
+                                                product.productId
+                                                  ? {
+                                                      ...product,
+                                                      stock: product.stock
+                                                        ? 0
+                                                        : 1,
+                                                    }
+                                                  : p,
+                                              ),
+                                            )
+                                          }
+                                        />
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem
+                                      className="flex items-center justify-between gap-2 md:hidden"
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
+                                      <span className="text-sm">
+                                        {product.visible ? "Visible" : "Oculto"}
+                                      </span>
+                                      <Switch
+                                        checked={!!product.visible}
+                                        onCheckedChange={() =>
+                                          toggleProductStatus(
+                                            product.productId,
+                                            "visible",
+                                          )
+                                        }
+                                      />
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator className="md:hidden" />
+                                    <DropdownMenuItem asChild>
+                                      <Link
+                                        href={`/products/${product.productId}`}
+                                        className="gap-2"
+                                      >
+                                        <Edit size={13} /> Editar
+                                      </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                      <Link
+                                        href={`/products/${product.productId}`}
+                                        className="gap-2"
+                                      >
+                                        <Eye size={13} /> Ver en tienda
+                                      </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive gap-2 focus:text-destructive"
+                                      onClick={() =>
+                                        deleteProduct([
+                                          {
+                                            productId: product.productId,
+                                            image: product.image,
+                                          },
+                                        ])
+                                      }
+                                    >
+                                      {downloading ? (
+                                        <>
+                                          <Loader2
+                                            size={13}
+                                            className="animate-spin"
+                                          />{" "}
+                                          Eliminando
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Trash2 size={13} /> Eliminar
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+
+                      {provided.placeholder}
+
+                      {catProds.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
+                          <Package size={20} className="opacity-40" />
+                          <p className="text-xs">
+                            {category.isVirtual
+                              ? "Sin productos sin categoría"
+                              : "Arrastra productos aquí"}
+                          </p>
                         </div>
-                      </div>
-                    )}
-                  </Droppable>
-                </CardContent>
-              </Card>
+                      )}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
             );
           })}
         </div>
       </DragDropContext>
-      <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
-        <Button
-          onClick={SaveData}
-          type="submit"
-          className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
-            downloading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          disabled={downloading}
-        >
-          Guardar
-        </Button>
-      </div>
+
+      {/* Botón guardar sticky */}
+      {hasPending && (
+        <div className="sticky bottom-4 flex justify-center">
+          <motion.button
+            onClick={SaveData}
+            disabled={downloading}
+            whileHover={{ scale: downloading ? 1 : 1.02 }}
+            whileTap={{ scale: downloading ? 1 : 0.98 }}
+            className={cn(
+              "flex items-center gap-2 text-sm px-10 py-3 rounded-xl font-medium shadow-lg transition-all",
+              downloading
+                ? "bg-muted text-muted-foreground cursor-not-allowed"
+                : "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            {downloading && <Loader2 size={14} className="animate-spin" />}
+            {downloading ? "Guardando..." : "Guardar cambios"}
+          </motion.button>
+        </div>
+      )}
+
       <ConfimationOut
         action={hasPendingChanges(products, webshop?.products || [])}
       />
     </div>
   );
 }
+
+// ─── Helpers (sin cambios) ────────────────────────────────────────────────────
 
 const reorder = (list, startIndex, endIndex) => {
   const result = [...list];
@@ -834,103 +758,57 @@ const reorder = (list, startIndex, endIndex) => {
 };
 
 function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
-  if (!Array.isArray(productos) || !Array.isArray(categorias)) {
-    console.error(
-      "OrderProducts: productos o categorías no son arrays válidos",
-    );
+  if (!Array.isArray(productos) || !Array.isArray(categorias))
     return productos || [];
-  }
-
-  const productosOrdenados = {};
-
-  // Inicializar el objeto con categorías vacías
-  categorias.forEach((categoria) => {
-    productosOrdenados[categoria] = [];
+  const ordenados = {};
+  categorias.forEach((cat) => {
+    ordenados[cat] = [];
   });
-
-  // Llenar el objeto con productos según su categoría
-  productos.forEach((producto) => {
-    const productoCategoria = producto.caja || UNCATEGORIZED_ID;
-    if (productosOrdenados[productoCategoria]) {
-      productosOrdenados[productoCategoria].push(producto);
-    } else {
-      // Si la categoría no existe, añadirla como sin categoría
-      if (!productosOrdenados[UNCATEGORIZED_ID]) {
-        productosOrdenados[UNCATEGORIZED_ID] = [];
-      }
-      productosOrdenados[UNCATEGORIZED_ID].push(producto);
+  productos.forEach((prod) => {
+    const catId = prod.caja || UNCATEGORIZED_ID;
+    if (ordenados[catId]) ordenados[catId].push(prod);
+    else {
+      if (!ordenados[UNCATEGORIZED_ID]) ordenados[UNCATEGORIZED_ID] = [];
+      ordenados[UNCATEGORIZED_ID].push(prod);
     }
   });
-
   if (specific && specific !== "none") {
-    const productosEnCategoria = productos.filter(
-      (obj) => (obj.caja || UNCATEGORIZED_ID) === specific,
+    const inCat = productos.filter(
+      (p) => (p.caja || UNCATEGORIZED_ID) === specific,
     );
-
-    if (productosEnCategoria.length > 0) {
-      const reorderedProducts = reorder(
-        productosEnCategoria,
-        startIndex,
-        endIndex,
-      );
-      productosOrdenados[specific] = reorderedProducts;
-    }
+    if (inCat.length > 0)
+      ordenados[specific] = reorder(inCat, startIndex, endIndex);
   }
-
-  // Productos que no pertenecen a ninguna categoría válida
-  const sin_category = productos.filter(
-    (prod) => !categorias.includes(prod.caja || UNCATEGORIZED_ID),
+  const sinCat = productos.filter(
+    (p) => !categorias.includes(p.caja || UNCATEGORIZED_ID),
   );
-
-  return [...asignarOrden(productosOrdenados), ...sin_category];
+  return [...asignarOrden(ordenados), ...sinCat];
 }
 
 const asignarOrden = (productos) => {
-  const resultadoFinal = [];
-
-  Object.keys(productos).forEach((categoria) => {
-    if (Array.isArray(productos[categoria])) {
-      resultadoFinal.push(
-        ...productos[categoria].map((prod, index) => ({
-          ...prod,
-          order: index,
-        })),
-      );
-    } else {
-      console.warn(
-        `La categoría ${categoria} no es un arreglo`,
-        productos[categoria],
-      );
+  const result = [];
+  Object.keys(productos).forEach((cat) => {
+    if (Array.isArray(productos[cat])) {
+      result.push(...productos[cat].map((p, i) => ({ ...p, order: i })));
     }
   });
-
-  return resultadoFinal;
+  return result;
 };
 
-const hasPendingChanges = (data, store) => {
-  return JSON.stringify(data) !== JSON.stringify(store);
-};
+const hasPendingChanges = (data, store) =>
+  JSON.stringify(data) !== JSON.stringify(store);
 
-const obtenerProductosModificados = (productosOriginales, productosNuevos) => {
-  if (!Array.isArray(productosOriginales) || !Array.isArray(productosNuevos)) {
-    console.error(
-      "obtenerProductosModificados: Los parámetros deben ser arrays",
-    );
-    return [];
-  }
-
-  const productosMap = Object.fromEntries(
-    productosOriginales.map((producto) => [producto.productId, producto]),
-  );
-
-  return productosNuevos.filter((productoNuevo) => {
-    const productoOriginal = productosMap[productoNuevo.productId];
+const obtenerProductosModificados = (originales, nuevos) => {
+  if (!Array.isArray(originales) || !Array.isArray(nuevos)) return [];
+  const map = Object.fromEntries(originales.map((p) => [p.productId, p]));
+  return nuevos.filter((n) => {
+    const o = map[n.productId];
     return (
-      productoOriginal &&
-      (productoOriginal.stock !== productoNuevo.stock ||
-        productoOriginal.order !== productoNuevo.order ||
-        productoOriginal.visible !== productoNuevo.visible ||
-        productoOriginal.caja !== productoNuevo.caja)
+      o &&
+      (o.stock !== n.stock ||
+        o.order !== n.order ||
+        o.visible !== n.visible ||
+        o.caja !== n.caja)
     );
   });
 };

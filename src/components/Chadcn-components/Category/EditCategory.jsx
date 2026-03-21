@@ -1,19 +1,18 @@
 "use client";
 import React, { useContext, useEffect, useState, useRef } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
 import { sileo } from "sileo";
 import axios from "axios";
 import { logoApp } from "@/utils/image";
+import { Loader2, ImageIcon, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function EditCategory({ ThemeContext, uid }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
-  const [category, setcategory] = useState({
+  const [category, setCategory] = useState({
     name: "",
     image: "",
     newImage: "",
@@ -23,12 +22,17 @@ export default function EditCategory({ ThemeContext, uid }) {
     id: 9999,
   });
   const form = useRef(null);
-  const [newImage, setNewImage] = useState();
+  const [newImage, setNewImage] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [focused, setFocused] = useState(null);
 
   useEffect(() => {
-    setcategory((webshop?.store?.categoria || []).find((obj) => obj.id == uid));
+    setCategory((webshop?.store?.categoria || []).find((obj) => obj.id == uid));
   }, [uid, webshop?.store?.categoria]);
+
+  useEffect(() => {
+    setCategory((prev) => ({ ...prev, newImage }));
+  }, [newImage]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -36,28 +40,19 @@ export default function EditCategory({ ThemeContext, uid }) {
     const formData = new FormData();
     Object.keys(category).forEach((key) => {
       const value = category[key];
-      if (value instanceof File || value instanceof Blob) {
-        // Si es un archivo, lo añadimos directamente sin convertirlo a string
+      if (value instanceof File || value instanceof Blob)
         formData.append(key, value);
-      } else if (typeof value === "object" && value !== null) {
-        // Si es un objeto, lo convertimos a JSON
+      else if (typeof value === "object" && value !== null)
         formData.append(key, JSON.stringify(value));
-      } else {
-        // Si es otro tipo de dato, lo convertimos a string
-        formData.append(key, String(value));
-      }
+      else formData.append(key, String(value));
     });
     try {
       const res = await axios.put(
         `/api/tienda/${webshop?.store?.sitioweb}/categoria/${category?.id}`,
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
+        { headers: { "Content-Type": "multipart/form-data" } },
       );
-      if (res.status == 200) {
+      if (res.status === 200) {
         sileo.success({
           title: "Categoría actualizada",
           description: "La categoría fue actualizada correctamente.",
@@ -67,111 +62,169 @@ export default function EditCategory({ ThemeContext, uid }) {
           store: {
             ...webshop?.store,
             categoria: webshop?.store?.categoria.map((obj) =>
-              obj.id == category?.id ? res.data : obj,
+              obj.id === category?.id ? res.data : obj,
             ),
           },
         });
-        form.current.reset();
+        form.current?.reset();
       }
     } catch (error) {
-      console.error("Error al enviar el comentario:", error);
+      console.error(error);
       sileo.error({
-        title: "Error al actualizar categoría",
+        title: "Error al actualizar",
         description: "No se pudo actualizar la categoría.",
       });
     } finally {
       setDownloading(false);
     }
   }
-  useEffect(() => {
-    setcategory((prev) => ({ ...prev, newImage: newImage }));
-  }, [newImage]);
+
+  const baseInput =
+    "w-full bg-secondary/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none border transition-all duration-200";
+  const focusClass = (id) =>
+    focused === id
+      ? "border-primary ring-2 ring-primary/10"
+      : "border-border hover:border-border/60";
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Editar Categoría</h1>
-      <form
-        className="gap-4 grid md:grid-cols-2"
-        onSubmit={handleSubmit}
-        ref={form}
-      >
-        <div className="border rounded-2x p-5">
-          <ImageUploadDrag setImageNew={setNewImage} imageNew={newImage} />{" "}
-        </div>
-        <div className="border rounded-2x p-5">
-          <div className="flex justify-center items-center">
-            <Image
-              src={
-                category?.newImage
-                  ? URL.createObjectURL(category?.newImage)
-                  : category?.image
-                    ? category?.image
-                    : logoApp
-              }
-              alt={category?.name || `Category`}
-              width={100}
-              style={{
-                aspectRatio: "200/300",
-                objectFit: "cover",
-              }}
-              height={150}
-              className="object-contain"
-            />
-          </div>
-        </div>
-        <div className="border rounded-2x p-5">
-          <Label htmlFor="name">Nombre</Label>
-          <Input
-            id="name"
-            name="name"
-            value={category?.name}
-            onChange={(e) => setcategory({ ...category, name: e.target.value })}
-            required
-          />
+    <div className="p-6 space-y-6 max-w-2xl mx-auto">
+      {/* Header */}
+      <div>
+        <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
+          Catálogo
+        </p>
+        <h1 className="text-2xl font-normal text-foreground italic">
+          Editar categoría
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {category?.name || "Cargando..."}
+        </p>
+      </div>
 
-          <Label htmlFor="description">Descripción</Label>
-          <Textarea
-            id="description"
-            name="description"
-            defaultValue={category?.description}
-            onChange={(e) =>
-              setcategory({ ...category, description: e.target.value })
-            }
+      <form onSubmit={handleSubmit} ref={form} className="space-y-5">
+        {/* Imagen */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Upload */}
+          <div className="bg-secondary/30 border border-border rounded-xl p-4">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-[0.1em] font-medium mb-3 flex items-center gap-1.5">
+              <ImageIcon size={11} /> Subir nueva imagen
+            </p>
+            <ImageUploadDrag setImageNew={setNewImage} imageNew={newImage} />
+          </div>
+
+          {/* Preview */}
+          <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-center">
+            <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-border">
+              <Image
+                src={
+                  newImage
+                    ? URL.createObjectURL(newImage)
+                    : category?.image || logoApp
+                }
+                alt={category?.name || "Categoría"}
+                fill
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Nombre */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="name"
+            className={`block text-[11px] uppercase tracking-[0.12em] font-medium transition-colors duration-200 ${focused === "name" ? "text-primary" : "text-muted-foreground"}`}
+          >
+            Nombre *
+          </label>
+          <input
+            id="name"
+            value={category?.name || ""}
+            onChange={(e) => setCategory({ ...category, name: e.target.value })}
+            onFocus={() => setFocused("name")}
+            onBlur={() => setFocused(null)}
+            placeholder="Nombre de la categoría"
+            required
+            className={`${baseInput} ${focusClass("name")}`}
           />
         </div>
-        <div className="border rounded-2x p-5 space-y-4">
-          <div className="flex items-center gap-2">
+
+        {/* Descripción */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="description"
+            className={`block text-[11px] uppercase tracking-[0.12em] font-medium transition-colors duration-200 ${focused === "desc" ? "text-primary" : "text-muted-foreground"}`}
+          >
+            Descripción
+          </label>
+          <textarea
+            id="description"
+            rows={3}
+            defaultValue={category?.description || ""}
+            onChange={(e) =>
+              setCategory({ ...category, description: e.target.value })
+            }
+            onFocus={() => setFocused("desc")}
+            onBlur={() => setFocused(null)}
+            placeholder="Describe brevemente esta categoría..."
+            className={`${baseInput} ${focusClass("desc")} resize-none`}
+          />
+        </div>
+
+        {/* Switches */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-secondary/30">
+            <div>
+              <p className="text-sm font-medium text-foreground">Subtienda</p>
+              <p className="text-xs text-muted-foreground">
+                Mostrar como tienda separada
+              </p>
+            </div>
             <Switch
-              id="isSubstore"
-              checked={category?.subtienda}
-              onCheckedChange={(value) =>
-                setcategory({ ...category, subtienda: value })
+              checked={!!category?.subtienda}
+              onCheckedChange={(v) =>
+                setCategory({ ...category, subtienda: v })
               }
             />
-            <Label htmlFor="isSubstore">Es una subtienda</Label>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-secondary/30">
+            <div>
+              <p className="text-sm font-medium text-foreground">Activa</p>
+              <p className="text-xs text-muted-foreground">
+                Visible en el catálogo
+              </p>
+            </div>
             <Switch
-              id="isActive"
-              checked={category?.active}
-              onCheckedChange={(value) =>
-                setcategory({ ...category, active: value })
-              }
+              checked={!!category?.active}
+              onCheckedChange={(v) => setCategory({ ...category, active: v })}
             />
-            <Label htmlFor="isActive">Está activa</Label>
           </div>
         </div>
-        <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">
-          <Button
-            className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${
-              downloading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={downloading}
+
+        {/* Submit */}
+        <div className="pt-2">
+          <motion.button
             type="submit"
+            disabled={downloading}
+            whileHover={{ scale: downloading ? 1 : 1.02 }}
+            whileTap={{ scale: downloading ? 1 : 0.98 }}
+            className={`w-full flex items-center justify-center gap-2 text-sm py-3.5 rounded-xl font-medium transition-all ${
+              downloading
+                ? "bg-muted text-muted-foreground cursor-not-allowed"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            }`}
           >
-            {downloading ? "Guardando..." : "Guardar"}
-          </Button>
-        </div>{" "}
+            {downloading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> Guardando...
+              </>
+            ) : (
+              <>
+                Guardar cambios <ArrowRight size={14} />
+              </>
+            )}
+          </motion.button>
+        </div>
       </form>
     </div>
   );

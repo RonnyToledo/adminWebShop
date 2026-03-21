@@ -1,20 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ArrowRight, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2, ImageIcon } from "lucide-react";
 import { sileo } from "sileo";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 export function PostBasicInfo({ initialData, onComplete }) {
   const [formData, setFormData] = useState({
@@ -25,7 +15,8 @@ export function PostBasicInfo({ initialData, onComplete }) {
     author: initialData.author,
     published: initialData.published,
   });
-  const [newImage, setNewImage] = useState(false);
+  const [newImage, setNewImage] = useState(null);
+  const [focused, setFocused] = useState(null);
 
   const handleTitleChange = (title) => {
     setFormData((prev) => ({
@@ -45,139 +36,160 @@ export function PostBasicInfo({ initialData, onComplete }) {
       sileo.error({ title: "Error", description: "El título es obligatorio" });
       return;
     }
-
     if (!formData.slug.trim()) {
       sileo.error({ title: "Error", description: "El slug es obligatorio" });
       return;
     }
-
     onComplete({ ...formData, imageUrl: newImage });
   };
 
+  const baseInput =
+    "w-full bg-secondary/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none border transition-all duration-200";
+  const focusClass = (id) =>
+    focused === id
+      ? "border-primary ring-2 ring-primary/10"
+      : "border-border hover:border-border/60";
+
   return (
-    <Card className="m-2">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Paso 1: Información Básica</CardTitle>
-            <CardDescription>
-              Completa los detalles principales de tu artículo
-            </CardDescription>
+    <div className="p-6 space-y-6 max-w-2xl mx-auto">
+      {/* Header con indicador de pasos */}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
+            Nuevo post
+          </p>
+          <h1 className="text-2xl font-normal text-foreground italic">
+            Información básica
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Completa los datos principales del artículo
+          </p>
+        </div>
+        {/* Stepper */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
+            1
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-              1
-            </div>
-            <div className="w-6 border-t-2 border-muted" />
-            <div className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold">
-              2
-            </div>
+          <div className="w-6 h-px bg-border" />
+          <div className="w-7 h-7 rounded-full bg-secondary border border-border text-muted-foreground flex items-center justify-center text-xs font-medium">
+            2
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Título */}
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="title">
-              Título del Post <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="title"
-              placeholder="Ej: Introducción a Next.js 16"
-              value={formData.title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-            />
-          </div>
+      </div>
 
-          {/* Slug */}
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="slug">
-              Slug (URL) <span className="text-destructive">*</span>
-            </Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                /blog/
-              </span>
-              <Input
-                id="slug"
-                placeholder="introduccion-nextjs-16"
-                value={formData.slug}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, slug: e.target.value }))
-                }
-                className="flex-1"
-              />
-            </div>
-          </div>
+      <div className="space-y-5">
+        {/* Título */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="title"
+            className={`block text-[11px] uppercase tracking-[0.12em] font-medium transition-colors duration-200 ${focused === "title" ? "text-primary" : "text-muted-foreground"}`}
+          >
+            Título del post *
+          </label>
+          <input
+            id="title"
+            placeholder="Ej: Introducción a Next.js 16"
+            value={formData.title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            onFocus={() => setFocused("title")}
+            onBlur={() => setFocused(null)}
+            className={`${baseInput} ${focusClass("title")}`}
+          />
+        </div>
 
-          {/* Extracto */}
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="excerpt">Extracto</Label>
-            <Textarea
-              id="excerpt"
-              placeholder="Breve descripción del artículo..."
-              value={formData.excerpt}
+        {/* Slug */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="slug"
+            className={`block text-[11px] uppercase tracking-[0.12em] font-medium transition-colors duration-200 ${focused === "slug" ? "text-primary" : "text-muted-foreground"}`}
+          >
+            Slug (URL) *
+          </label>
+          <div className="flex items-center gap-0">
+            <span className="shrink-0 text-xs text-muted-foreground bg-secondary border border-border border-r-0 rounded-l-xl px-3 py-3 h-[46px] flex items-center">
+              /blog/
+            </span>
+            <input
+              id="slug"
+              placeholder="introduccion-nextjs-16"
+              value={formData.slug}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, excerpt: e.target.value }))
+                setFormData((prev) => ({ ...prev, slug: e.target.value }))
               }
-              rows={3}
+              onFocus={() => setFocused("slug")}
+              onBlur={() => setFocused(null)}
+              className={`${baseInput} ${focusClass("slug")} rounded-l-none flex-1`}
             />
           </div>
-
-          {/* URL de Imagen */}
-          <div className="md:col-span-2">
-            {newImage ? (
-              <div className="relative">
-                <Image
-                  alt="Logo"
-                  className="rounded-xl  mx-auto my-1 aspect-square"
-                  height={300}
-                  width={300}
-                  src={
-                    newImage
-                      ? URL.createObjectURL(newImage)
-                      : webshop?.store?.urlPoster || logoApp
-                  }
-                  style={{
-                    objectFit: "cover",
-                  }}
-                />
-
-                <div className="absolute top-1 right-1 z-[1]">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="rounded-full p-2 h-8 w-8"
-                    size="icon"
-                    onClick={() => setNewImage(null)} // Borra la nueva imagen
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full">
-                <ImageUploadDrag
-                  setImageNew={setNewImage} // Permite subir nueva imagen
-                  imageNew={newImage}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Esta será la primera imagen que verán los clientes
-                </p>
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Botón continuar */}
-        <div className="flex justify-end pt-4 mt-4 border-t">
-          <Button onClick={handleContinue} size="lg" className="gap-2 ">
-            Continuar al Editor
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+        {/* Extracto */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="excerpt"
+            className={`block text-[11px] uppercase tracking-[0.12em] font-medium transition-colors duration-200 ${focused === "excerpt" ? "text-primary" : "text-muted-foreground"}`}
+          >
+            Extracto
+          </label>
+          <textarea
+            id="excerpt"
+            rows={3}
+            placeholder="Breve descripción del artículo..."
+            value={formData.excerpt}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, excerpt: e.target.value }))
+            }
+            onFocus={() => setFocused("excerpt")}
+            onBlur={() => setFocused(null)}
+            className={`${baseInput} ${focusClass("excerpt")} resize-none`}
+          />
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Imagen */}
+        <div className="space-y-2">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-[0.12em] font-medium flex items-center gap-1.5">
+            <ImageIcon size={11} /> Imagen de portada
+          </p>
+          {newImage ? (
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-border">
+              <Image
+                alt="Portada"
+                fill
+                src={URL.createObjectURL(newImage)}
+                className="object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setNewImage(null)}
+                className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-destructive/90 flex items-center justify-center text-white hover:bg-destructive transition-colors"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ) : (
+            <div>
+              <ImageUploadDrag setImageNew={setNewImage} imageNew={newImage} />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Esta será la primera imagen que verán los clientes
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Continuar */}
+      <div className="pt-4 border-t border-border flex justify-end">
+        <motion.button
+          type="button"
+          onClick={handleContinue}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-2 text-sm px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+        >
+          Continuar al editor
+          <ArrowRight size={14} />
+        </motion.button>
+      </div>
+    </div>
   );
 }

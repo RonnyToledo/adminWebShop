@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import { LogUser } from "@/lib/logUser";
+import { cookies } from "next/headers"; // Importar cookies desde headers
 import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
 
 export async function GET(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status }
-    );
-  }
+  await LogUser();
   const { tienda, specific } = await params;
   const { data } = await supabase
     .from(tienda)
@@ -23,13 +17,7 @@ export async function GET(request, { params }) {
   return NextResponse.json(...new Set(data));
 }
 export async function POST(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status }
-    );
-  }
+  await LogUser();
   const { specific } = await params;
 
   const data = await request.formData();
@@ -49,20 +37,14 @@ export async function POST(request, { params }) {
       { message: error },
       {
         status: 401,
-      }
+      },
     );
   }
   return NextResponse.json({ message: "Comentario realizado" });
 }
 
 export async function PUT(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status }
-    );
-  }
+  await LogUser();
   const data = await request.formData();
   // obtener metadata y archivos del formData
   const newImagesMeta = JSON.parse(data.get("NewImagesSecondaryMeta") || "[]"); // [{index, filename, previewUrl}, ...]
@@ -81,11 +63,11 @@ export async function PUT(request, { params }) {
         await DestroyImage(obj);
         console.info(`${obj} ================ eliminado`);
         return "ok";
-      })
+      }),
   );
   // Crear mapa filename -> blob
   const filesByName = new Map(
-    uploadedFiles.map((f) => [f.name || (f.filename ?? ""), f])
+    uploadedFiles.map((f) => [f.name || (f.filename ?? ""), f]),
   );
 
   // crear estructura que espera handleNewSecondaryImages
@@ -156,19 +138,13 @@ export async function PUT(request, { params }) {
       { message: error },
       {
         status: 402,
-      }
+      },
     );
   }
   return NextResponse.json(tienda);
 }
 export async function DELETE(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status }
-    );
-  }
+  await LogUser();
 
   const data = await request.formData();
   const imageOld = data.get("image");
@@ -187,12 +163,30 @@ export async function DELETE(request, { params }) {
       { message: error },
       {
         status: 401,
-      }
+      },
     );
   }
   console.info("Tarea completada");
   return NextResponse.json(tienda);
 }
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 },
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 
 async function handleNewSecondaryImages(newImageSecondary, SecondaryImage) {
   // si no hay nada que procesar devolvemos el original en forma de array
@@ -226,7 +220,7 @@ async function handleNewSecondaryImages(newImageSecondary, SecondaryImage) {
 
   // inicializamos con los valores existentes (o null si no existía)
   const updated = Array.from({ length: neededLength }, (_, i) =>
-    i < existing.length ? existing[i] : null
+    i < existing.length ? existing[i] : null,
   );
 
   // --- Procesar cada item ---

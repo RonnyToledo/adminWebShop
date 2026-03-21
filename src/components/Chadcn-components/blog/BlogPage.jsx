@@ -2,166 +2,155 @@
 import React, { useContext, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Plus, LoaderIcon } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Calendar, Plus, LoaderIcon, Trash2 } from "lucide-react";
 import { sileo } from "sileo";
-import { Button } from "@/components/ui/button";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 export default function BlogPage() {
   const { webshop, setWebshop } = useContext(ThemeContext);
-  const [loading, setloading] = useState("");
-  // En producción, esto vendría de Supabase
-  async function DeletePost(params, image) {
-    if (!params) {
-      return;
-    }
-    setloading(params);
+  const [loading, setLoading] = useState("");
 
+  async function DeletePost(slug, image) {
+    if (!slug) return;
+    setLoading(slug);
     const url = `/api/tienda/${webshop?.store?.sitioweb}/post`;
-
     const form = new FormData();
-    form.append("slug", params);
+    form.append("slug", slug);
     if (image) form.append("image", image);
     try {
-      const postPromise = fetch(url, {
-        method: "DELETE",
-        body: form, // NO headers Content-Type
-      });
+      const postPromise = fetch(url, { method: "DELETE", body: form });
       sileo.promise(postPromise, {
-        loading: {
-          title: "Eliminando Post",
-          description: "Por favor, espera mientras se elimina el post.",
-        },
+        loading: { title: "Eliminando post..." },
         success: () => {
-          // Actualiza el estado con la respuesta (usar updater para seguridad)
           setWebshop({
             ...webshop,
             store: {
               ...webshop?.store,
-              blogs: webshop?.store?.blogs.filter((p) => p.slug !== params),
+              blogs: webshop?.store?.blogs.filter((p) => p.slug !== slug),
             },
           });
           return {
-            title: "Tarea Ejecutada",
+            title: "Post eliminado",
             description: "Información actualizada",
           };
         },
         error: (err) => {
           console.error(err);
-          // Logging más detallado se hace en el catch
           return { title: "Error", description: "Error al eliminar el post" };
         },
       });
     } catch (error) {
       console.error(error);
     } finally {
-      setloading("");
+      setLoading("");
     }
   }
+
+  const posts = webshop?.store?.blogs || [];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Posts Grid */}
-      <section className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="relative h-48 w-full overflow-hidden bg-muted">
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
+            Contenido
+          </p>
+          <h1 className="text-2xl font-normal text-foreground italic">Blog</h1>
+        </div>
+        <Link
+          href="/blog/new"
+          className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+        >
+          <Plus size={14} />
+          Nuevo post
+        </Link>
+      </div>
+
+      {/* Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post, i) => (
+          <motion.div
+            key={post.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="bg-background border border-border rounded-xl overflow-hidden hover:border-primary/30 transition-colors group flex flex-col"
+          >
+            {/* Imagen */}
+            <div className="relative h-44 w-full bg-secondary overflow-hidden">
               <Image
-                src={logoApp}
-                alt={"Post New"}
+                src={post.image || logoApp}
+                alt={post.title}
                 fill
-                className="object-cover transition-transform hover:scale-105"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
 
-            <CardHeader>
-              <CardTitle className="text-xl text-balance">
-                <Link href={`/blog/new`} className="hover:underline">
-                  Agregar nuevo post
-                </Link>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1"></CardContent>
-            <CardFooter>
-              <Button variant="ghost" asChild className="w-full group">
-                <Link href={`/blog/new`}>
-                  Agregar
-                  <Plus className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-          {(webshop?.store?.blogs || []).map((post) => (
-            <Card
-              key={post.id}
-              className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="relative h-48 w-full overflow-hidden bg-muted">
-                <Image
-                  src={post.image || logoApp}
-                  alt={post.title}
-                  fill
-                  className="object-cover transition-transform hover:scale-105"
-                />
+            {/* Contenido */}
+            <div className="p-4 flex flex-col flex-1 gap-3">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-1">
+                  {post.title}
+                </h3>
+                {post.abstract && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {post.abstract}
+                  </p>
+                )}
               </div>
 
-              <CardHeader>
-                <CardTitle className="text-xl text-balance">
-                  {post.title}
-                </CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {post.abstract}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <time dateTime={post.created_at}>
-                      {new Date(post.created_at).toLocaleDateString("es-ES", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </time>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar size={11} />
+                  <time dateTime={post.created_at}>
+                    {new Date(post.created_at).toLocaleDateString("es-ES", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </time>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  variant="ghost"
+                <button
                   disabled={!!loading}
-                  className="w-full group"
                   onClick={() => DeletePost(post.slug, post.image)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 >
-                  {post.slug == loading ? (
-                    <LoaderIcon className="animate-spin" />
+                  {post.slug === loading ? (
+                    <LoaderIcon size={13} className="animate-spin" />
                   ) : (
-                    "Delete"
+                    <Trash2 size={13} />
                   )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
-        {(webshop?.store?.blogs || []).length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              No hay posts publicados todavía.
+      {/* Empty */}
+      {posts.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+            <Plus size={22} className="text-muted-foreground" />
+          </div>
+          <div className="text-center">
+            <p className="font-medium text-foreground">Sin posts publicados</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Crea tu primer artículo para empezar
             </p>
           </div>
-        )}
-      </section>
+          <Link
+            href="/blog/new"
+            className="text-xs text-primary hover:underline transition-colors"
+          >
+            Crear primer post →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

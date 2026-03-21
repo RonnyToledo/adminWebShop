@@ -2,16 +2,10 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
 import cloudinary from "@/lib/cloudinary";
 import { extractPublicId } from "cloudinary-build-url";
-import { LogUser } from "@/lib/logUser";
+import { cookies } from "next/headers"; // Importar cookies desde headers
 
 export async function GET(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
+  await LogUser();
   const { tienda, specific } = await params;
   const { data } = await supabase
     .from(tienda)
@@ -22,13 +16,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
+  await LogUser();
 
   const data = await request.formData();
   const object = formDataToObject(data);
@@ -111,13 +99,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
+  await LogUser();
 
   const data = await request.formData();
   const imageOld = data.get("image");
@@ -157,6 +139,24 @@ export async function DELETE(request, { params }) {
   console.info("Tarea ejecutada");
   return NextResponse.json(tienda);
 }
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 },
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
 function formDataToObject(formData) {
   const object = {};
 

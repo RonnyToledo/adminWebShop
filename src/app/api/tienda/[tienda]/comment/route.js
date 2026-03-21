@@ -20,7 +20,7 @@ export async function PUT(request, { params }) {
       { message: error },
       {
         status: 401,
-      }
+      },
     );
   }
   return NextResponse.json({ message: "Producto creado" });

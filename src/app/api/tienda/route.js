@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import { LogUser } from "@/lib/logUser";
+import { cookies } from "next/headers";
 
 const parseJSONOr = (value, fallback) => {
   if (value == null) return fallback;
@@ -18,6 +18,25 @@ const toIntegerOrNull = (v) => {
   const n =
     typeof v === "number" ? v : parseInt(String(v).replace(/\D/g, ""), 10);
   return Number.isNaN(n) ? null : n;
+};
+
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
+    return NextResponse.json(
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 },
+    );
+  }
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
+  // Establecer la sesión con los tokens de la cookie
+  await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
 };
 
 export async function GET() {
@@ -69,13 +88,7 @@ const datos = {
 };
 
 export async function POST(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
+  await LogUser();
 
   const data = await request.formData();
 

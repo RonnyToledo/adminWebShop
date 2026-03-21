@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supa";
-import { LogUser } from "@/lib/logUser";
+import { cookies } from "next/headers"; // Importar cookies desde headers
 
-export async function POST(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
+const LogUser = async () => {
+  const cookie = (await cookies()).get("sb-access-token");
+  if (!cookie) {
     return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
+      { message: "No se encontró la cookie de sesión" },
+      { status: 401 },
     );
   }
+  const parsedCookie = JSON.parse(cookie.value);
+  if (parsedCookie.access_token && parsedCookie.refresh_token)
+    console.info("Token recividos");
+  else console.error("Token no encontrado");
+  // Establecer la sesión con los tokens de la cookie
+  const { data: session, error: errorS } = await supabase.auth.setSession({
+    access_token: parsedCookie.access_token,
+    refresh_token: parsedCookie.refresh_token,
+  });
+};
+
+export async function POST(request, { params }) {
+  await LogUser();
 
   try {
     const body = await request.json(); // Obtener el cuerpo de la solicitud
@@ -51,13 +64,7 @@ export async function POST(request, { params }) {
   }
 }
 export async function PUT(request, { params }) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
+  await LogUser();
 
   try {
     const body = await request.json(); // la misma estructura que pasas ahora
@@ -108,13 +115,7 @@ export async function PUT(request, { params }) {
   }
 }
 export async function DELETE(request) {
-  const log = await LogUser();
-  if (!log.ok) {
-    return NextResponse.json(
-      { message: log.message, detail: log.detail || null },
-      { status: log.status },
-    );
-  }
+  await LogUser();
 
   try {
     const body = await request.text();
