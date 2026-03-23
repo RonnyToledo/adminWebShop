@@ -137,7 +137,6 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [dataPedido, setDataPedido] = useState(initialState);
   const router = useRouter();
-
   useEffect(() => {
     setDataPedido(
       (webshop?.events || []).find((obj) => obj.UID_Venta === specific),

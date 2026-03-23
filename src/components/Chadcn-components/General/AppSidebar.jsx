@@ -58,7 +58,6 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
   const { webshop } = useContext(ThemeContext);
   const pathname = usePathname();
   const router = useRouter();
-  console.log(navLinks);
   const handleSignOut = async () => {
     try {
       await authService.signOut();

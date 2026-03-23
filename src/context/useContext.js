@@ -12,7 +12,7 @@ import { deleteNotification } from "@/lib/supabaseApi";
 import HeaderAdmin from "@/components/Chadcn-components/General/HeaderAdmin";
 import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useToast } from "@/components/ui/use-toast";
+import { sileo } from "sileo";
 
 import { authService } from "@/lib/supabase";
 
@@ -52,7 +52,6 @@ export default function MyProvider({ children, user, data }) {
   const [OpenSidebar, setOpenSidebar] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
   // Refs para controlar la inicialización
   const isInitialized = useRef(false);
   const isLogin = useRef(false);
@@ -93,7 +92,7 @@ export default function MyProvider({ children, user, data }) {
         router.push("/login");
       } catch (error) {
         console.error("Error cerrando sesión:", error);
-        toast({
+        sileo.info({
           title: "Error",
           variant: "destructive",
           description: "Error cerrando sesión",
@@ -120,7 +119,7 @@ export default function MyProvider({ children, user, data }) {
         setWebshop((prev) => ({ ...prev, pathRedirect: null }));
       }
     }
-  }, [user, data, pathname, isPublicRoute, isProtectedRoute, router, toast]);
+  }, [user, data, pathname, isPublicRoute, isProtectedRoute, router]);
 
   // Detectar cambios de ruta para logs (opcional)
   useEffect(() => {
@@ -129,80 +128,6 @@ export default function MyProvider({ children, user, data }) {
       previousPathname.current = pathname;
     }
   }, [pathname]);
-
-  // Cargar notificaciones pendientes
-  useEffect(() => {
-    if (!user) return;
-
-    const loadNotifications = async () => {
-      try {
-        const { data: notifications } = await supabase
-          .from("Notification")
-          .select("*")
-          .eq("userID", user);
-
-        if (notifications?.length) {
-          const toastPromises = notifications.map(async (notification) => {
-            toast({
-              title: "Notificación",
-              description: notification.mensaje,
-              action: { label: "Cerrar", onClick: () => {} },
-            });
-            await deleteNotification(notification.id);
-          });
-          await Promise.all(toastPromises);
-        }
-      } catch (error) {
-        console.error("Error cargando notificaciones:", error);
-      }
-    };
-
-    loadNotifications();
-  }, [user, toast]);
-
-  // Suscribirse a notificaciones en tiempo real
-  useEffect(() => {
-    if (!user) return;
-
-    const handleNotification = async (payload) => {
-      const notification = payload.new;
-      if (notification.userID === user) {
-        await deleteNotification(notification.id);
-
-        try {
-          await fetch("/api/send-notification", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: "Nueva Notificación",
-              message: notification.mensaje,
-            }),
-          });
-        } catch (error) {
-          console.error("Error enviando notificación:", error);
-        }
-
-        toast({
-          title: "Notificación",
-          description: notification.mensaje,
-          action: { label: "Cerrar", onClick: () => {} },
-        });
-      }
-    };
-
-    const channel = supabase
-      .channel("notification-channel")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "Notification" },
-        handleNotification,
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, toast]);
 
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>

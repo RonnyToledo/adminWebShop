@@ -73,11 +73,7 @@ export async function initializeData(userId) {
       envios: JSON.parse(store?.Sitios?.envios),
     };
 
-    const eventsParsed =
-      tiendaParsed?.Events?.map((event) => ({
-        ...event,
-        desc: JSON.parse(event.desc),
-      })) || [];
+    const eventsParsed = tiendaParsed?.Events;
 
     const productosParsed = OrderProducts(
       store?.Sitios?.Products,

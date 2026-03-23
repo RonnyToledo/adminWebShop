@@ -1,8 +1,8 @@
 "use client";
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import dataCards from "@/components/json/card.json";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Breadcrumb,
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/card";
 import { Bell, HelpCircle, Pencil, Phone, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supa";
+import { sileo } from "sileo";
 
 const GuideCard = ({ title, description, steps, link, buttonText }) => {
   return (
@@ -64,14 +66,62 @@ export default function HeaderAdmin({
   onMenuClick,
 }) {
   const { webshop } = useContext(ThemeContext);
-  const pathname = usePathname();
+  const [notificaciones, setNotificaciones] = useState(false);
 
+  const pathname = usePathname();
+  const router = useRouter();
   const pathParts = pathname.split("/").filter((part) => part);
   const breadcrumbs = pathParts.map((part, index) => {
     const href = "/" + pathParts.slice(0, index + 1).join("/");
     return { href, label: part };
   });
-  console.log(webshop);
+
+  // Cargar notificaciones pendientes
+  useEffect(() => {
+    if (!webshop?.user?.id) return;
+
+    let channel;
+
+    const loadNotifications = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("Notification")
+          .select("id")
+          .eq("userID", webshop.user.id)
+          .eq("visto", false);
+
+        if (error) throw error;
+
+        setNotificaciones((data?.length ?? 0) > 0);
+      } catch (error) {
+        console.error("Error cargando notificaciones:", error);
+      }
+    };
+
+    loadNotifications();
+
+    channel = supabase
+      .channel(`notifications-${webshop.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "Notification",
+          filter: `userID=eq.${webshop.user.id}`,
+        },
+        async () => {
+          await loadNotifications();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [webshop?.user?.id]);
+
+  console.log(notificaciones);
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between p-2 md:px-4 lg:px-6 md:py-4 border-b border-border bg-card/90">
       <div className="flex items-center gap-1 sm:gap-3 lg:gap-6">
@@ -133,9 +183,16 @@ export default function HeaderAdmin({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={() => router.push("/notifications")}
+          >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+            {notificaciones ? (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+            ) : null}
           </Button>
 
           <Dialog>

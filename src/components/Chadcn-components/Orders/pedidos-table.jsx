@@ -1,5 +1,11 @@
 "use client";
-import React, { useContext, useState, useEffect } from "react";
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import axios from "axios";
 import {
   Loader2,
@@ -11,6 +17,7 @@ import {
   Printer,
   Package,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -25,8 +32,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { sileo } from "sileo";
+import { supabase } from "@/lib/supa";
+import { exportToPDF, sendToWhatsApp } from "./pedidos-utils";
+import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Botón de acción con tooltip ──────────────────────────────────────────────
+const PAGE_SIZE = 20;
+
+// ─── Botón de acción ──────────────────────────────────────────────────────────
 function ActionButton({ onClick, disabled, loading, icon: Icon, label }) {
   return (
     <button
@@ -48,33 +60,159 @@ function ActionButton({ onClick, disabled, loading, icon: Icon, label }) {
   );
 }
 
-// ─── Tabla de pedidos ─────────────────────────────────────────────────────────
-function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
-  const router = useRouter();
-  const { webshop, setWebshop } = useContext(ThemeContext);
-  const [downloading, setDownloading] = useState(false);
+// ─── Hook: carga paginada desde EventsSummary ─────────────────────────────────
+// Usa la VISTA ligera para la tabla (sin el pedido completo).
+// Solo carga el desc completo cuando el admin abre el detalle.
+function usePedidos(storeUID) {
+  const [pedidos, setPedidos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const confirmarUnico = async (uid) => {
-    sileo.promise(
-      ConfirmarPedidos([uid], setDownloading, webshop?.store?.sitioweb),
-      {
-        loading: { title: "Confirmando pedido..." },
-        success: () => ({ title: `Pedido confirmado` }),
-        error: (err) => ({
-          title: "Error",
-          description: err?.message ?? "Error al confirmar",
-        }),
-      },
-    );
-    setWebshop((prev) => ({
-      ...prev,
-      events: prev?.events.map((obj) =>
-        obj.UID_Venta === uid ? { ...obj, visto: true } : obj,
-      ),
-    }));
+  const refresh = useCallback(() => {
+    setPedidos([]);
+    setPage(0);
+    setHasMore(true);
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  // Carga paginada desde la vista summary (campos mínimos)
+  useEffect(() => {
+    if (!storeUID) return;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, error } = await supabase
+        .from("EventsSummary") // ← vista ligera, no la tabla completa
+        .select("*")
+        .eq("uid", storeUID)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (!cancelled && !error && data) {
+        setPedidos((prev) => (page === 0 ? data : [...prev, ...data]));
+        setHasMore(data.length === PAGE_SIZE);
+      }
+      if (!cancelled) setLoading(false);
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeUID, page, refreshKey]);
+
+  // Real-time: INSERT y UPDATE de visto llegan automáticamente
+  useEffect(() => {
+    if (!storeUID) return;
+
+    const channel = supabase
+      .channel(`pedidos-${storeUID}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "Events",
+          filter: `uid=eq.${storeUID}`,
+        },
+        (payload) => {
+          // Nuevo pedido: lo añadimos al tope sin recargar todo
+          const n = payload.new;
+          const nuevo = {
+            id: n.id,
+            UID_Venta: n.UID_Venta,
+            nombre: n.nombre,
+            phonenumber: n.phonenumber,
+            visto: n.visto,
+            created_at: n.created_at,
+            updated_at: n.updated_at,
+            descripcion: n.descripcion,
+            user: n.user,
+            // Extraemos campos del desc JSONB directo
+            total: n.desc?.total ?? 0,
+            moneda: n.desc?.moneda ?? "",
+            pago: n.desc?.pago ?? "",
+            lugar: n.desc?.lugar ?? "",
+            num_productos: n.desc?.pedido?.length ?? 0,
+            codigo_descuento: n.desc?.code?.name ?? "",
+            descuento_pct: n.desc?.code?.discount ?? 0,
+          };
+          setPedidos((prev) => [nuevo, ...prev]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "Events",
+          filter: `uid=eq.${storeUID}`,
+        },
+        (payload) => {
+          setPedidos((prev) =>
+            prev.map((p) =>
+              p.UID_Venta === payload.new.UID_Venta
+                ? {
+                    ...p,
+                    visto: payload.new.visto,
+                    updated_at: payload.new.updated_at,
+                  }
+                : p,
+            ),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "Events",
+          filter: `uid=eq.${storeUID}`,
+        },
+        (payload) => {
+          setPedidos((prev) =>
+            prev.filter((p) => p.UID_Venta !== payload.old.UID_Venta),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [storeUID]);
+
+  return {
+    pedidos,
+    setPedidos,
+    loading,
+    hasMore,
+    loadMore: () => setPage((p) => p + 1),
+    refresh,
   };
+}
 
-  if (pedidosState.length === 0) return null;
+// ─── Tabla de pedidos ─────────────────────────────────────────────────────────
+function TablesPedidosBody({
+  pedidos,
+  sitioweb,
+  storeCell,
+  storeName,
+  verified = false,
+  onConfirm,
+  onDelete,
+  downloading,
+}) {
+  const router = useRouter();
+
+  if (pedidos.length === 0) return null;
 
   return (
     <Card>
@@ -85,7 +223,7 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
           />
           {verified ? "Pendientes de confirmar" : "Pedidos confirmados"}
           <span className="ml-auto text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-            {pedidosState.length}
+            {pedidos.length}
           </span>
         </CardTitle>
       </CardHeader>
@@ -94,7 +232,14 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                {["Cliente", "ID pedido", "Fecha", "Productos", ""].map((h) => (
+                {[
+                  "Cliente",
+                  "ID pedido",
+                  "Fecha",
+                  "Total",
+                  "Productos",
+                  "",
+                ].map((h) => (
                   <th
                     key={h}
                     className="text-left px-4 py-3 text-[11px] text-muted-foreground uppercase tracking-[0.08em] font-medium"
@@ -105,126 +250,136 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
               </tr>
             </thead>
             <tbody>
-              {pedidosState.map((order, index) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-border/50 hover:bg-secondary/30 transition-colors last:border-0"
-                >
-                  {/* Cliente */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar className="w-7 h-7 shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                          {(order.desc?.people || "?").charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium text-foreground leading-tight">
-                          {order.desc?.people}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          #{index + 1}
-                        </p>
+              <AnimatePresence initial={false}>
+                {pedidos.map((order, index) => (
+                  <motion.tr
+                    key={order.UID_Venta}
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className="border-b border-border/50 hover:bg-secondary/30 transition-colors last:border-0"
+                  >
+                    {/* Cliente */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="w-7 h-7 shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                            {(order.nombre || "?").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium text-foreground leading-tight">
+                            {order.nombre}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            #{index + 1}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  {/* ID */}
-                  <td className="px-4 py-3">
-                    <code className="text-xs bg-secondary px-2 py-1 rounded font-mono text-muted-foreground">
-                      {order.UID_Venta.substring(0, 8)}…
-                    </code>
-                  </td>
-                  {/* Fecha */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Calendar
-                        size={12}
-                        className="text-primary/60 shrink-0"
-                      />
-                      {new Date(order.created_at).toLocaleDateString("es-ES")}
-                    </div>
-                  </td>
-                  {/* Productos */}
-                  <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-foreground">
-                      {order?.desc?.pedido.reduce(
-                        (sum, p) =>
-                          sum +
-                          p.Cant +
-                          p.agregados.reduce((s, ag) => s + ag.cant, 0),
-                        0,
-                      )}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      productos
-                    </span>
-                  </td>
-                  {/* Acciones */}
-                  <td className="px-4 py-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger disabled={downloading} asChild>
-                        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                          {downloading ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <MoreHorizontal size={14} />
+                    </td>
+
+                    {/* ID */}
+                    <td className="px-4 py-3">
+                      <code className="text-xs bg-secondary px-2 py-1 rounded font-mono text-muted-foreground">
+                        {order.UID_Venta?.substring(0, 8)}…
+                      </code>
+                    </td>
+
+                    {/* Fecha */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Calendar
+                          size={12}
+                          className="text-primary/60 shrink-0"
+                        />
+                        {new Date(order.created_at).toLocaleDateString("es-ES")}
+                      </div>
+                    </td>
+
+                    {/* Total — datos ya extraídos en la vista */}
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-foreground tabular-nums">
+                        {(order.total || 0).toLocaleString()}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground ml-1">
+                        {order.moneda}
+                      </span>
+                    </td>
+
+                    {/* Productos */}
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-foreground">
+                        {order.num_productos}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        producto{order.num_productos !== 1 ? "s" : ""}
+                      </span>
+                    </td>
+
+                    {/* Acciones */}
+                    <td className="px-4 py-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                            {downloading ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <MoreHorizontal size={14} />
+                            )}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!order.visto && (
+                            <DropdownMenuItem
+                              className="gap-2 text-sm"
+                              onClick={() => onConfirm([order.UID_Venta])}
+                            >
+                              <Verified size={14} /> Confirmar
+                            </DropdownMenuItem>
                           )}
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {!order.visto && (
                           <DropdownMenuItem
                             className="gap-2 text-sm"
-                            onClick={() => confirmarUnico(order.UID_Venta)}
-                          >
-                            <Verified size={14} /> Confirmar
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          className="gap-2 text-sm"
-                          onClick={() =>
-                            router.push(`/orders/${order.UID_Venta}`)
-                          }
-                        >
-                          <Eye size={14} /> Ver detalle
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-sm"
-                          onClick={() => {
-                            if (order.phonenumber && order.phonenumber !== 0) {
-                              window.open(
-                                `https://wa.me/${order.phonenumber}?text=${encodeURIComponent(`Hola, soy de ${webshop?.store?.name}`)}`,
-                                "_blank",
-                              );
-                            } else {
-                              sileo.error({
-                                title: "Sin teléfono",
-                                description:
-                                  "El cliente no proporcionó número de contacto",
-                              });
+                            onClick={() =>
+                              router.push(`/orders/${order.UID_Venta}`)
                             }
-                          }}
-                        >
-                          <MessageCircle size={14} /> Contactar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-sm text-destructive focus:text-destructive"
-                          onClick={() =>
-                            EliminateDesc(
-                              sitioweb,
-                              order.UID_Venta,
-                              setDownloading,
-                              setWebshop,
-                            )
-                          }
-                        >
-                          <Trash2 size={14} /> Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
+                          >
+                            <Eye size={14} /> Ver detalle
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-sm"
+                            onClick={() => {
+                              if (
+                                order.phonenumber &&
+                                order.phonenumber !== 0
+                              ) {
+                                window.open(
+                                  `https://wa.me/${order.phonenumber}?text=${encodeURIComponent(`Hola, soy de ${storeName}`)}`,
+                                  "_blank",
+                                );
+                              } else {
+                                sileo.error({
+                                  title: "Sin teléfono",
+                                  description:
+                                    "El cliente no proporcionó número",
+                                });
+                              }
+                            }}
+                          >
+                            <MessageCircle size={14} /> Contactar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-sm text-destructive focus:text-destructive"
+                            onClick={() => onDelete(order.UID_Venta)}
+                          >
+                            <Trash2 size={14} /> Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
@@ -236,72 +391,111 @@ function TablesPedidosBody({ pedidosState, sitioweb, verified = false }) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 export function PedidosTable() {
   const { webshop, setWebshop } = useContext(ThemeContext);
-  const [pedidosState, setPedidosState] = useState(webshop?.events || []);
+  const storeUID = webshop?.store?.UUID;
+  const sitioweb = webshop?.store?.sitioweb;
+  const storeCell = webshop?.store?.cell;
+  const storeName = webshop?.store?.name;
+
   const [WhatsApp, setWhatsApp] = useState(false);
   const [loadVerified, setLoadVerified] = useState(false);
   const [PDF, setPDF] = useState(false);
 
-  useEffect(() => {
-    setPedidosState(webshop?.events || []);
-  }, [webshop?.events]);
+  // Hook con paginación + real-time
+  const { pedidos, setPedidos, loading, hasMore, loadMore, refresh } =
+    usePedidos(storeUID);
 
-  const noVistos = pedidosState.filter((o) => !o.visto);
-  const vistos = pedidosState.filter((o) => o.visto);
-  const busy = pedidosState.length === 0 || WhatsApp || PDF || loadVerified;
+  const noVistos = pedidos.filter((o) => !o.visto);
+  const vistos = pedidos.filter((o) => o.visto);
+  const busy = loading || WhatsApp || PDF || loadVerified;
 
-  const handleExportToPDF = async () => {
-    sileo.promise(
-      ConfirmarPedidos(
-        noVistos.map((o) => o.UID_Venta),
-        setLoadVerified,
-        webshop?.store?.sitioweb,
-      ),
-      {
-        loading: { title: "Confirmando pedidos..." },
-        success: () => ({ title: "Pedidos confirmados" }),
-        error: (e) => ({ title: "Error", description: e?.message }),
-      },
-    );
-    sileo.promise(exportToPDF(pedidosState), {
-      loading: { title: "Generando PDF..." },
-      success: () => ({ title: "PDF generado" }),
-      error: (e) => ({
-        title: "Error al generar PDF",
-        description: e?.message,
-      }),
-    });
-    setWebshop((prev) => ({
-      ...prev,
-      events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
-    }));
-  };
+  // ── Confirmar pedidos ───────────────────────────────────────────────────
+  const confirmarPedidos = useCallback(
+    async (uids) => {
+      setLoadVerified(true);
+      try {
+        await axios.post(
+          `/api/tienda/${sitioweb}/checkOrders`,
+          { uids },
+          { headers: { "Content-Type": "application/json" } },
+        );
+        // Actualizar local — el real-time también lo hará, pero así es instantáneo
+        setPedidos((prev) =>
+          prev.map((p) =>
+            uids.includes(p.UID_Venta) ? { ...p, visto: true } : p,
+          ),
+        );
+      } catch (err) {
+        sileo.error({ title: "Error al confirmar", description: err?.message });
+      } finally {
+        setLoadVerified(false);
+      }
+    },
+    [sitioweb, setPedidos],
+  );
 
-  const handleSendToWhatsApp = async () => {
-    sileo.promise(
-      ConfirmarPedidos(
-        noVistos.map((o) => o.UID_Venta),
-        setLoadVerified,
-        webshop?.store?.sitioweb,
-      ),
-      {
-        loading: { title: "Confirmando pedidos..." },
-        success: () => ({ title: "Pedidos confirmados" }),
-        error: (e) => ({ title: "Error", description: e?.message }),
-      },
-    );
-    setWebshop((prev) => ({
-      ...prev,
-      events: prev?.events?.map((ev) => ({ ...ev, visto: true })),
-    }));
-    sileo.promise(
-      sendToWhatsApp(pedidosState, webshop?.store, setWebshop, setWhatsApp),
-      {
-        loading: { title: "Enviando a WhatsApp..." },
-        success: () => ({ title: "Enviado a WhatsApp" }),
-        error: (e) => ({ title: "Error", description: e?.message }),
-      },
-    );
-  };
+  // ── Eliminar ────────────────────────────────────────────────────────────
+  const eliminarPedido = useCallback(
+    async (uid) => {
+      try {
+        await axios.delete(`/api/tienda/${sitioweb}/checkOrders`, {
+          data: { uid },
+          headers: { "Content-Type": "application/json" },
+        });
+        setPedidos((prev) => prev.filter((p) => p.UID_Venta !== uid));
+      } catch (err) {
+        sileo.error({ title: "Error al eliminar", description: err?.message });
+      }
+    },
+    [sitioweb, setPedidos],
+  );
+
+  // ── Exportar PDF — necesita cargar los desc completos ──────────────────
+  const handleExportToPDF = useCallback(async () => {
+    setPDF(true);
+    try {
+      // Cargamos solo los no vistos con su desc completo para el PDF
+      const { data } = await supabase
+        .from("Events")
+        .select("id, UID_Venta, nombre, created_at, desc")
+        .eq("uid", storeUID)
+        .eq("visto", false);
+
+      if (data?.length) {
+        await confirmarPedidos(data.map((d) => d.UID_Venta));
+        await exportToPDF(data.map((d) => ({ ...d, desc: d.desc })));
+      }
+    } catch (err) {
+      sileo.error({ title: "Error al generar PDF", description: err?.message });
+    } finally {
+      setPDF(false);
+    }
+  }, [storeUID, confirmarPedidos]);
+
+  // ── WhatsApp — igual, necesita desc completo ───────────────────────────
+  const handleWhatsApp = useCallback(async () => {
+    setWhatsApp(true);
+    try {
+      const { data } = await supabase
+        .from("Events")
+        .select("id, UID_Venta, nombre, created_at, desc")
+        .eq("uid", storeUID)
+        .eq("visto", false);
+
+      if (data?.length) {
+        await confirmarPedidos(data.map((d) => d.UID_Venta));
+        await sendToWhatsApp(
+          data.map((d) => ({ ...d, desc: d.desc })),
+          webshop?.store,
+          () => {},
+          setWhatsApp,
+        );
+      }
+    } catch (err) {
+      sileo.error({ title: "Error WhatsApp", description: err?.message });
+    } finally {
+      setWhatsApp(false);
+    }
+  }, [storeUID, confirmarPedidos, webshop?.store]);
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
@@ -316,270 +510,105 @@ export function PedidosTable() {
           </h1>
         </div>
 
-        {noVistos.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground mr-1">
-              {noVistos.length} sin confirmar
-            </span>
-            <ActionButton
-              onClick={() =>
-                sileo.promise(
-                  ConfirmarPedidos(
-                    noVistos.map((o) => o.UID_Venta),
-                    setLoadVerified,
-                    webshop?.store?.sitioweb,
-                  ),
-                  {
-                    loading: { title: "Confirmando..." },
-                    success: () => ({ title: "Confirmados" }),
-                    error: (e) => ({ title: "Error", description: e?.message }),
-                  },
-                )
-              }
-              disabled={busy}
-              loading={loadVerified}
-              icon={Verified}
-              label="Confirmar todos"
-            />
-            <ActionButton
-              onClick={handleSendToWhatsApp}
-              disabled={busy}
-              loading={WhatsApp}
-              icon={MessageCircle}
-              label="Enviar a WhatsApp"
-            />
-            <ActionButton
-              onClick={handleExportToPDF}
-              disabled={busy}
-              loading={PDF}
-              icon={Printer}
-              label="Exportar PDF"
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Refrescar */}
+          <ActionButton
+            onClick={refresh}
+            disabled={loading}
+            loading={loading}
+            icon={RefreshCw}
+            label="Refrescar"
+          />
+
+          {noVistos.length > 0 && (
+            <>
+              <span className="text-xs text-muted-foreground">
+                {noVistos.length} sin confirmar
+              </span>
+              <ActionButton
+                onClick={() =>
+                  confirmarPedidos(noVistos.map((o) => o.UID_Venta))
+                }
+                disabled={busy}
+                loading={loadVerified}
+                icon={Verified}
+                label="Confirmar todos"
+              />
+              <ActionButton
+                onClick={handleWhatsApp}
+                disabled={busy}
+                loading={WhatsApp}
+                icon={MessageCircle}
+                label="Enviar a WhatsApp"
+              />
+              <ActionButton
+                onClick={handleExportToPDF}
+                disabled={busy}
+                loading={PDF}
+                icon={Printer}
+                label="Exportar PDF"
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Tablas */}
       <TablesPedidosBody
-        pedidosState={noVistos}
-        sitioweb={webshop?.store?.sitioweb}
+        pedidos={noVistos}
+        sitioweb={sitioweb}
+        storeCell={storeCell}
+        storeName={storeName}
         verified
+        onConfirm={confirmarPedidos}
+        onDelete={eliminarPedido}
+        downloading={loadVerified}
       />
       <TablesPedidosBody
-        pedidosState={vistos}
-        sitioweb={webshop?.store?.sitioweb}
+        pedidos={vistos}
+        sitioweb={sitioweb}
+        storeCell={storeCell}
+        storeName={storeName}
+        onConfirm={confirmarPedidos}
+        onDelete={eliminarPedido}
+        downloading={false}
       />
 
       {/* Empty state */}
-      {pedidosState.length === 0 && (
+      {!loading && pedidos.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
               <Package size={24} className="text-muted-foreground" />
             </div>
             <div className="text-center">
-              <p className="font-medium text-foreground">
-                Sin pedidos pendientes
-              </p>
+              <p className="font-medium text-foreground">Sin pedidos</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Los nuevos pedidos aparecerán aquí cuando los clientes realicen
-                compras.
+                Los nuevos pedidos aparecerán aquí en tiempo real.
               </p>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Cargar más */}
+      {hasMore && !loading && pedidos.length > 0 && (
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={loadMore}
+            className="text-sm text-primary hover:underline transition-colors"
+          >
+            Cargar más pedidos →
+          </button>
+        </div>
+      )}
+
+      {/* Spinner carga inicial */}
+      {loading && pedidos.length === 0 && (
+        <div className="flex justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-muted-foreground" />
+        </div>
+      )}
     </div>
   );
-}
-
-// ─── Helpers (sin cambios) ────────────────────────────────────────────────────
-async function ConfirmarPedidos(uids, setDownloading, sitioweb) {
-  setDownloading(true);
-  try {
-    await axios.post(
-      `/api/tienda/${sitioweb}/checkOrders`,
-      { uids },
-      { headers: { "Content-Type": "application/json" } },
-    );
-  } catch (error) {
-    console.error("Error al confirmar pedidos:", error);
-    throw error;
-  } finally {
-    setDownloading(false);
-  }
-}
-
-async function EliminateDesc(sitioweb, uid, setDownloading, setWebshop) {
-  setDownloading(true);
-  try {
-    await axios.delete(`/api/tienda/${sitioweb}/checkOrders`, {
-      data: { uid },
-      headers: { "Content-Type": "application/json" },
-    });
-    setWebshop((prev) => ({
-      ...prev,
-      events: prev.events.filter((o) => o.UID_Venta !== uid),
-    }));
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setDownloading(false);
-  }
-}
-
-export function TransformDate(dateString) {
-  const fecha = new Date(dateString);
-  return new Intl.DateTimeFormat("es-ES").format(fecha);
-}
-export async function exportToPDF(pedidos) {
-  const doc = new jsPDF();
-
-  doc.text("Pedidos en Espera", 14, 15);
-
-  let totalGlobal = 0; // Variable para el precio total global
-
-  // Recorrer los pedidos
-  pedidos.map((pedido, pedidoIndex) => {
-    // Agregar un encabezado con el nombre del cliente y el número de pedido
-    doc.text(
-      `Pedido #${pedidoIndex + 1} - Cliente: ${pedido.nombre}\n`,
-      14,
-      doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 28,
-    );
-
-    const productos = [];
-    let totalPedido = 0; // Variable para el precio total de cada pedido
-
-    // Recorrer los productos del pedido
-    pedido.desc.pedido.forEach((producto) => {
-      if (producto.Cant > 0) {
-        const totalProducto = producto.Cant * producto.price;
-        totalPedido += totalProducto; // Agregar al total del pedido
-
-        productos.push([
-          "No disponible", // Columna de imagen que se omite
-          producto.title,
-          `$${producto.price.toFixed(2)}`,
-          producto.Cant,
-          `$${totalProducto.toFixed(2)}`,
-        ]);
-      }
-      // Si el producto tiene agregados, agregarlos a la tabla
-      producto.agregados.forEach((agregado) => {
-        if (agregado.cantidad > 0) {
-          const totalAgregado =
-            agregado.cantidad * (producto.price + agregado.valor);
-          totalPedido += totalAgregado; // Agregar al total del pedido
-
-          productos.push([
-            "No disponible", // Columna de imagen que se omite
-            `${producto.title} - ${agregado.nombre} (agregado)`,
-            `$${(producto.price + agregado.valor).toFixed(2)}`,
-            agregado.cantidad,
-            `$${totalAgregado.toFixed(2)}`,
-          ]);
-        }
-      });
-    });
-
-    // Agregar el total de la venta al final de la tabla
-    productos.push([
-      "", // Columna de imagen que se omite
-      "Total del Pedido",
-      "",
-      "",
-      `$${totalPedido.toFixed(2)}`,
-    ]);
-
-    // Generar la tabla en el PDF
-    doc.autoTable({
-      head: [["Imagen", "Título", "Precio Unitario", "Cantidad", "Total"]],
-      body: productos,
-      startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 30,
-      columnStyles: {
-        0: { cellWidth: 20 }, // Deja espacio para la columna de imagen (sin usar)
-      },
-    });
-
-    // Agregar el precio total del pedido a la variable global
-    totalGlobal += totalPedido;
-  });
-
-  // Agregar el precio global al final del documento
-  doc.text(
-    `Total Global de Ventas: $${totalGlobal.toFixed(2)}`,
-    14,
-    doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 30,
-  );
-
-  // Guardar el archivo PDF generado con el nombre de los pedidos
-  const fileName = `pedidos-en-espera-${new Date().toISOString()}.pdf`;
-  doc.save(fileName);
-}
-
-export async function sendToWhatsApp(pedidos, store, setWebshop, setWhatsApp) {
-  await updateEvents(
-    store?.sitioweb,
-    pedidos.map((obj) => obj.UID_Venta),
-    setWebshop,
-    setWhatsApp,
-  );
-  let mensaje = "";
-  let totalPedido = 0; // Variable para el precio total de cada pedido
-
-  pedidos.map((compra, index) => {
-    mensaje += `Pedido #${index + 1} de ${compra.nombre}:\n
-    - Metodo de envio: ${
-      compra.desc.envio === "pickup" ? "Recoger en Tienda" : "Envío a Domicilio"
-    }\n
-    - Tipo de Pago: ${
-      compra.desc.pago === "cash" ? "Efectivo" : "Transferencia"
-    }\n
-    ${
-      compra.desc.envio !== "pickup"
-        ? `- Provincia: ${compra.desc.provincia}\n- Municipio: ${compra.desc.municipio}\n`
-        : ""
-    }
-    - ID de Venta: ${compra.UID_Venta}\n
-    - Productos:\n`;
-
-    compra.desc.pedido.forEach((producto, index) => {
-      if (producto.Cant > 0) {
-        mensaje += `   ${index + 1}. ${producto.title} x${
-          producto.Cant
-        }: ${Number(
-          producto.Cant * producto.price * (1 / store?.moneda_default.valor),
-        ).toFixed(2)}\n`;
-      }
-      producto.agregados.forEach((agregate) => {
-        if (agregate.cantidad > 0) {
-          mensaje += `   . ${producto.title}-${agregate.nombre} x${
-            agregate.cantidad
-          }: ${(
-            (producto.price + Number(agregate.valor)) *
-            agregate.cantidad *
-            (1 / store?.moneda_default.valor)
-          ).toFixed(2)}\n`;
-        }
-      });
-    });
-
-    mensaje += `- Total de la orden: ${Number(
-      compra.desc.total * (1 - compra.desc.code.discount / 100),
-    ).toFixed(2)} ${store?.moneda_default.moneda}\n`;
-    mensaje += `${
-      compra.desc.code.name != ""
-        ? `- Codigo de Descuento: ${compra.desc.code.name}`
-        : ""
-    }\n\n`;
-    totalPedido += compra.desc.total * (1 - compra.desc.code.discount / 100); // Variable para el precio total de cada pedido
-  });
-
-  mensaje += `- Total de la orden: ${totalPedido}`;
-  // Codificar el mensaje para la URL
-  const encodedMessage = encodeURIComponent(mensaje);
-
-  // Abrir WhatsApp Web con el mensaje
-  window.open(`https://wa.me/${store?.cell}?text=${encodedMessage}`, "_blank");
 }
