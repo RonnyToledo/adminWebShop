@@ -61,8 +61,9 @@ export async function initializeData(userId) {
 
   try {
     const { data: store, error } = await fetchStoreData(userId);
+    console.log(store);
 
-    if (error || !store?.login || !store?.Sitios?.sitioweb) {
+    if (error || !store?.Sitios?.sitioweb) {
       return { user: store };
     }
 

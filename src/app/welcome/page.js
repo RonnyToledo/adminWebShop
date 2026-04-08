@@ -14,8 +14,9 @@ export default async function page() {
   if (data?.user?.role == "manager" && data?.user?.login) {
     redirect("/");
   }
+  console.log(`${process.env.NEXT_PUBLIC_PATH}/api/filter/country`);
   const country = await fetch(
-    `${process.env.NEXT_PUBLIC_PATH}/api/filter/country`
+    `${process.env.NEXT_PUBLIC_PATH}/api/filter/country`,
   );
   const res = await country.json();
   return <CrearClienteComponent user={user} countries={res} />;

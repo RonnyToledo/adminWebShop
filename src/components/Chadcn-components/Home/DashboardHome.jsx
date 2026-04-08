@@ -20,9 +20,9 @@ import { ThemeContext } from "@/context/useContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatCUP(n) {
+function formatCUP(n, monedaDefault) {
   if (!n && n !== 0) return "—";
-  return n.toLocaleString("es-CU") + " CUP";
+  return n.toLocaleString("es-CU") + " " + monedaDefault;
 }
 
 function timeAgo(dateStr) {
@@ -65,7 +65,7 @@ function buildOnboardingSteps(store, products, events) {
 }
 
 // Construye la actividad reciente mezclando productos nuevos y pedidos
-function buildRecentActivity(products, events) {
+function buildRecentActivity(products, events, monedaDefault) {
   const items = [];
 
   // Últimos productos agregados
@@ -76,7 +76,7 @@ function buildRecentActivity(products, events) {
       icon: Package,
       title: `${p.title} agregado`,
       time: timeAgo(p.modified),
-      price: formatCUP(p.price),
+      price: formatCUP(p.price, monedaDefault),
     }));
 
   // Últimos pedidos
@@ -88,7 +88,7 @@ function buildRecentActivity(products, events) {
       icon: ShoppingCart,
       title: `Nuevo pedido · ${e.nombre}`,
       time: timeAgo(e.created_at),
-      price: formatCUP(e.desc?.total),
+      price: formatCUP(e.desc?.total, monedaDefault),
     }));
 
   return [...latestOrders, ...latestProducts].slice(0, 4);
@@ -98,13 +98,14 @@ function buildRecentActivity(products, events) {
 
 export default function DashboardHome() {
   const { webshop } = useContext(ThemeContext);
-
   // Desestructura el objeto webshop igual que tu JSON del log
   const store = webshop?.store ?? {};
   const ga = webshop?.ga ?? {};
   const products = webshop?.products ?? [];
   const events = webshop?.events ?? [];
   const code = webshop?.code ?? [];
+  const MonedaDefault =
+    webshop.store.monedas?.find((m) => m.default)?.name || "CUP";
 
   // ── Métricas derivadas ────────────────────────────────────────────────────
 
@@ -152,7 +153,7 @@ export default function DashboardHome() {
 
   // Actividad reciente dinámica
   const recentActivity = useMemo(
-    () => buildRecentActivity(products, events),
+    () => buildRecentActivity(products, events, MonedaDefault),
     [products, events],
   );
 
@@ -192,7 +193,7 @@ export default function DashboardHome() {
                 />
                 <StatsCard
                   title="Ingresos totales"
-                  value={formatCUP(totalIngresos)}
+                  value={formatCUP(totalIngresos, MonedaDefault)}
                   change={visitasCambio !== 0 ? visitasCambio : undefined}
                   changeLabel="vs. mes anterior"
                   icon={<TrendingUp className="w-5 h-5 text-primary" />}
@@ -214,7 +215,7 @@ export default function DashboardHome() {
                     }
                     description={
                       newestProduct
-                        ? `Precio: ${formatCUP(newestProduct.price)}. Puedes editarlo o agregar más productos.`
+                        ? `Precio: ${formatCUP(newestProduct.price, MonedaDefault)}. Puedes editarlo o agregar más productos.`
                         : "Tu producto ha sido agregado exitosamente."
                     }
                     actionLabel="Agregar más productos"
@@ -426,7 +427,7 @@ export default function DashboardHome() {
                         >
                           <span className="text-muted-foreground">{lugar}</span>
                           <span className="font-medium text-foreground">
-                            {formatCUP(precio)}
+                            {formatCUP(precio, MonedaDefault)}
                           </span>
                         </div>
                       ))}

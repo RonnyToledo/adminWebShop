@@ -199,7 +199,7 @@ export function CrearClienteComponent({
     }
     setLoadingStates(true);
     try {
-      const base = process.env.NEXT_PUBLIC_PATH ?? "";
+      const base = process.env.NEXT_PUBLIC_BASE_URL ?? "";
       const res = await fetch(
         `${base}/api/filter/state?country=${encodeURIComponent(iso)}`,
         { signal },
@@ -562,6 +562,7 @@ export function CrearClienteComponent({
                     </p>
                   </div>
                   <Switch
+                    disabled
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />

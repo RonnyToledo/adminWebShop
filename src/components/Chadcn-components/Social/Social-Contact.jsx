@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { FromData } from "@/components/globalFunction/fromData";
 import { sileo } from "sileo";
+import PlanGuard from "../Planes/PlanGuard";
 
 // ─── Mapas de iconos / etiquetas ─────────────────────────────────────────────
 
@@ -216,162 +217,164 @@ export default function SocialContactPage() {
   ].filter(Boolean);
 
   return (
-    <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8 space-y-6">
-      <FromData
-        store={{ ...webshop?.store, redes, contacto }}
-        ThemeContext={ThemeContext}
-      >
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Redes y contacto
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Hasta {MAX_ITEMS} redes sociales y {MAX_ITEMS} métodos de contacto
-            adicionales
-          </p>
-        </div>
+    <PlanGuard feature="theme">
+      <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8 space-y-6">
+        <FromData
+          store={{ ...webshop?.store, redes, contacto }}
+          ThemeContext={ThemeContext}
+        >
+          {/* Header */}
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Redes y contacto
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Hasta {MAX_ITEMS} redes sociales y {MAX_ITEMS} métodos de contacto
+              adicionales
+            </p>
+          </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* ── Redes sociales ─────────────────────────────────────────── */}
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-2">
-                <Share2 className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">Redes sociales</CardTitle>
-                <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {redes.length}/{MAX_ITEMS}
-                </span>
-              </div>
-              <CardDescription>
-                Perfiles que se mostrarán en tu tienda
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <AddForm
-                title="Agregar red social"
-                selectOptions={Object.entries(RED_META).map(([k, v]) => ({
-                  value: k,
-                  label: v.label,
-                }))}
-                fields={[
-                  {
-                    key: "user",
-                    label: "Usuario",
-                    placeholder:
-                      RED_META[newRed.tipo]?.placeholder ?? "@usuario",
-                  },
-                  {
-                    key: "url",
-                    label: "URL completa",
-                    placeholder: "https://...",
-                  },
-                ]}
-                formData={newRed}
-                setFormData={setNewRed}
-                onAdd={addRed}
-                limit={MAX_ITEMS}
-                currentCount={redes.length}
-              />
-
-              {/* Lista */}
-              <div className="space-y-2">
-                {redes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    Sin redes configuradas
-                  </p>
-                ) : (
-                  redes.map((red, i) => (
-                    <ItemRow
-                      key={i}
-                      meta={RED_META[red.tipo]}
-                      primaryText={RED_META[red.tipo]?.label ?? red.tipo}
-                      secondaryText={red.user}
-                      onRemove={() => removeRed(i)}
-                    />
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ── Contacto ───────────────────────────────────────────────── */}
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-2">
-                <BookUser className="h-4 w-4 text-primary" />
-                <CardTitle className="text-base">Contacto</CardTitle>
-                <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {contacto.length}/{MAX_ITEMS}
-                </span>
-              </div>
-              <CardDescription>
-                Métodos de contacto adicionales visibles en tu tienda
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Contactos por defecto del log */}
-              {defaultContacts.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Contactos del perfil (siempre activos)
-                  </p>
-                  {defaultContacts.map((c, i) => (
-                    <ItemRow
-                      key={i}
-                      meta={CONTACT_META[c.tipo]}
-                      primaryText={CONTACT_META[c.tipo]?.label ?? c.tipo}
-                      secondaryText={c.url}
-                      isDefault
-                    />
-                  ))}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* ── Redes sociales ─────────────────────────────────────────── */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <Share2 className="h-4 w-4 text-primary" />
+                  <CardTitle className="text-base">Redes sociales</CardTitle>
+                  <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {redes.length}/{MAX_ITEMS}
+                  </span>
                 </div>
-              )}
+                <CardDescription>
+                  Perfiles que se mostrarán en tu tienda
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <AddForm
+                  title="Agregar red social"
+                  selectOptions={Object.entries(RED_META).map(([k, v]) => ({
+                    value: k,
+                    label: v.label,
+                  }))}
+                  fields={[
+                    {
+                      key: "user",
+                      label: "Usuario",
+                      placeholder:
+                        RED_META[newRed.tipo]?.placeholder ?? "@usuario",
+                    },
+                    {
+                      key: "url",
+                      label: "URL completa",
+                      placeholder: "https://...",
+                    },
+                  ]}
+                  formData={newRed}
+                  setFormData={setNewRed}
+                  onAdd={addRed}
+                  limit={MAX_ITEMS}
+                  currentCount={redes.length}
+                />
 
-              <AddForm
-                title="Agregar contacto"
-                selectOptions={Object.entries(CONTACT_META).map(([k, v]) => ({
-                  value: k,
-                  label: v.label,
-                }))}
-                fields={[
-                  {
-                    key: "url",
-                    label: "URL / número / email",
-                    placeholder:
-                      CONTACT_META[newContact.tipo]?.placeholder ??
-                      "Valor de contacto",
-                  },
-                ]}
-                formData={newContact}
-                setFormData={setNewContact}
-                onAdd={addContact}
-                limit={MAX_ITEMS}
-                currentCount={contacto.length}
-              />
+                {/* Lista */}
+                <div className="space-y-2">
+                  {redes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      Sin redes configuradas
+                    </p>
+                  ) : (
+                    redes.map((red, i) => (
+                      <ItemRow
+                        key={i}
+                        meta={RED_META[red.tipo]}
+                        primaryText={RED_META[red.tipo]?.label ?? red.tipo}
+                        secondaryText={red.user}
+                        onRemove={() => removeRed(i)}
+                      />
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Lista */}
-              <div className="space-y-2">
-                {contacto.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    Sin contactos adicionales
-                  </p>
-                ) : (
-                  contacto.map((c, i) => (
-                    <ItemRow
-                      key={i}
-                      meta={CONTACT_META[c.tipo]}
-                      primaryText={CONTACT_META[c.tipo]?.label ?? c.tipo}
-                      secondaryText={c.url}
-                      onRemove={() => removeContact(i)}
-                    />
-                  ))
+            {/* ── Contacto ───────────────────────────────────────────────── */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <BookUser className="h-4 w-4 text-primary" />
+                  <CardTitle className="text-base">Contacto</CardTitle>
+                  <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {contacto.length}/{MAX_ITEMS}
+                  </span>
+                </div>
+                <CardDescription>
+                  Métodos de contacto adicionales visibles en tu tienda
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Contactos por defecto del log */}
+                {defaultContacts.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Contactos del perfil (siempre activos)
+                    </p>
+                    {defaultContacts.map((c, i) => (
+                      <ItemRow
+                        key={i}
+                        meta={CONTACT_META[c.tipo]}
+                        primaryText={CONTACT_META[c.tipo]?.label ?? c.tipo}
+                        secondaryText={c.url}
+                        isDefault
+                      />
+                    ))}
+                  </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </FromData>
-    </main>
+
+                <AddForm
+                  title="Agregar contacto"
+                  selectOptions={Object.entries(CONTACT_META).map(([k, v]) => ({
+                    value: k,
+                    label: v.label,
+                  }))}
+                  fields={[
+                    {
+                      key: "url",
+                      label: "URL / número / email",
+                      placeholder:
+                        CONTACT_META[newContact.tipo]?.placeholder ??
+                        "Valor de contacto",
+                    },
+                  ]}
+                  formData={newContact}
+                  setFormData={setNewContact}
+                  onAdd={addContact}
+                  limit={MAX_ITEMS}
+                  currentCount={contacto.length}
+                />
+
+                {/* Lista */}
+                <div className="space-y-2">
+                  {contacto.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      Sin contactos adicionales
+                    </p>
+                  ) : (
+                    contacto.map((c, i) => (
+                      <ItemRow
+                        key={i}
+                        meta={CONTACT_META[c.tipo]}
+                        primaryText={CONTACT_META[c.tipo]?.label ?? c.tipo}
+                        secondaryText={c.url}
+                        onRemove={() => removeContact(i)}
+                      />
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </FromData>
+      </main>
+    </PlanGuard>
   );
 }

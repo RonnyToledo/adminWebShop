@@ -1,401 +1,74 @@
-/*import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/serverSupabase";
-import { parseISO, differenceInDays, addDays } from "date-fns";
-
-// ============================================
-// CONSTANTES
-// ============================================
-const SESSION_COOKIE_NAME = "sb-access-token";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 días
-const GRACE_PERIOD_DAYS = 30;
-
-// ============================================
-// UTILIDADES DE COOKIES
-// ============================================
-function createSessionCookie(session) {
-  return {
-    name: SESSION_COOKIE_NAME,
-    value: JSON.stringify({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-    }),
-    options: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: COOKIE_MAX_AGE,
-      path: "/",
-      sameSite: "lax",
-    },
-  };
-}
-
-function clearSessionCookie() {
-  return {
-    name: SESSION_COOKIE_NAME,
-    value: "",
-    options: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: -1,
-      path: "/",
-      sameSite: "lax",
-    },
-  };
-}
-
-// ============================================
-// UTILIDADES DE VALIDACIÓN DE FECHAS
-// ============================================
-function isOlderThan30Days(dateString) {
-  const start = new Date(dateString);
-  const now = new Date();
-  const diffMs = now - start;
-  const THIRTY_DAYS_MS = GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
-  return diffMs > THIRTY_DAYS_MS;
-}
-
-function isDateInPast(dateString) {
-  const inputDate = new Date(dateString);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return inputDate < today;
-}
-
-function diasRestantesPara30(date) {
-  const fechaInicial = typeof date === "string" ? parseISO(date) : date;
-  const fechaObjetivo = addDays(fechaInicial, GRACE_PERIOD_DAYS);
-  const hoy = new Date();
-  const dias = differenceInDays(fechaObjetivo, hoy);
-  return dias > 0 ? dias : 0;
-}
-
-// ============================================
-// GESTIÓN DE TOKENS
-// ============================================
-async function refreshAccessTokenIfNeeded(cookieValue) {
-  try {
-    const supabase = createServerSupabase();
-    const parsedCookie = JSON.parse(cookieValue);
-    const { access_token, refresh_token } = parsedCookie;
-
-    // Verificar si el token es válido
-    const { data: user, error } = await supabase.auth.getUser(access_token);
-
-    if (error) {
-      console.info("Access token expirado, renovando...");
-
-      // Intentar renovar con refresh token
-      const { data, error: refreshError } = await supabase.auth.refreshSession({
-        refresh_token,
-      });
-
-      if (refreshError || !data.session) {
-        return {
-          error: refreshError?.message || "Sesión inválida",
-          needsReauth: true,
-        };
-      }
-
-      console.info("Access token renovado exitosamente");
-      return {
-        newAccessToken: data.session.access_token,
-        newCookie: createSessionCookie(data.session),
-        user: data.user,
-      };
-    }
-
-    return { newAccessToken: access_token, user: user.user };
-  } catch (err) {
-    console.error("Error al renovar token:", err);
-    return { error: "Error al procesar sesión", needsReauth: true };
-  }
-}
-
-// ============================================
-// VALIDACIONES DE USUARIO
-// ============================================
-async function validateUserAccess(userId) {
-  try {
-    const supabase = createServerSupabase();
-    // Consultas en paralelo para mejor rendimiento
-    const [sitiosResult, userResult] = await Promise.all([
-      supabase.from("Sitios").select("vence").eq("Editor", userId).single(),
-      supabase.from("user").select("role").eq("id", userId).single(),
-    ]);
-
-    // Validar role
-    if (userResult.error) {
-      return {
-        isValid: false,
-        error: "Error al verificar permisos de usuario",
-      };
-    }
-
-    if (userResult.data?.role === "user") {
-      return {
-        isValid: false,
-        error:
-          "No tiene acceso a este servicio. Contacte a los desarrolladores",
-        statusCode: 403,
-      };
-    }
-
-    // Validar fecha de vencimiento
-    if (sitiosResult.error) {
-      return {
-        isValid: false,
-        error: "Error al verificar estado del sitio",
-      };
-    }
-
-    if (sitiosResult.data?.vence && isDateInPast(sitiosResult.data.vence)) {
-      const diasRestantes = diasRestantesPara30(sitiosResult.data.vence);
-
-      if (isOlderThan30Days(sitiosResult.data.vence)) {
-        return {
-          isValid: false,
-          error: "Su catálogo y administrador están inactivos",
-          statusCode: 403,
-        };
-      } else {
-        return {
-          isValid: false,
-          error: `Administrador inactivo. Su catálogo funcionará por ${diasRestantes} días más`,
-          statusCode: 403,
-        };
-      }
-    }
-
-    return { isValid: true };
-  } catch (err) {
-    console.error("Error en validación de acceso:", err);
-    return {
-      isValid: false,
-      error: "Error al validar permisos",
-    };
-  }
-}
-
-// ============================================
-// MANEJADORES DE RESPUESTA
-// ============================================
-async function handleCookieUpdate(cookieStore, newCookie) {
-  if (newCookie) {
-    cookieStore.set(newCookie.name, newCookie.value, newCookie.options);
-  }
-}
-
-async function clearSessionAndSignOut(cookieStore) {
-  const supabase = createServerSupabase();
-  await supabase.auth.signOut();
-  const clearCookie = clearSessionCookie();
-  cookieStore.delete(clearCookie.name);
-}
-
-// ============================================
-// ENDPOINTS
-// ============================================
-
-// GET: Obtener la sesión activa
-export async function GET(req) {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(SESSION_COOKIE_NAME);
-
-  if (!cookie) {
-    return NextResponse.json(
-      { error: "No hay sesión activa" },
-      { status: 401 }
-    );
-  }
-
-  const { newAccessToken, newCookie, error, needsReauth, user } =
-    await refreshAccessTokenIfNeeded(cookie.value);
-
-  if (error) {
-    if (needsReauth) {
-      await clearSessionAndSignOut(cookieStore);
-    }
-    return NextResponse.json({ error }, { status: 401 });
-  }
-
-  const response = NextResponse.json({ user }, { status: 200 });
-
-  if (newCookie) {
-    await handleCookieUpdate(cookieStore, newCookie);
-  }
-
-  return response;
-}
-
-// DELETE: Cerrar sesión
-export async function DELETE(req) {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(SESSION_COOKIE_NAME);
-
-  if (!cookie) {
-    return NextResponse.json(
-      { error: "No hay sesión activa para cerrar" },
-      { status: 401 }
-    );
-  }
-
-  try {
-    await clearSessionAndSignOut(cookieStore);
-    return NextResponse.json({ message: "Sesión cerrada exitosamente" });
-  } catch (err) {
-    console.error("Error al cerrar sesión:", err);
-    return NextResponse.json(
-      { error: "Error al cerrar sesión" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST: Iniciar sesión
-export async function POST(req) {
-  let body;
-  try {
-    body = await req.json();
-  } catch (err) {
-    return NextResponse.json(
-      { error: "Datos de entrada inválidos" },
-      { status: 400 }
-    );
-  }
-
-  const { email, password } = body;
-
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: "Email y contraseña son requeridos" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const supabase = createServerSupabase();
-    // Autenticar usuario
-    const { data: session, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error || !session) {
-      return NextResponse.json(
-        { error: error?.message || "Autenticación fallida" },
-        { status: 401 }
-      );
-    }
-
-    // Validar acceso del usuario
-    const validation = await validateUserAccess(session.user.id);
-
-    if (!validation.isValid) {
-      await supabase.auth.signOut();
-      return NextResponse.json(
-        { error: validation.error },
-        { status: validation.statusCode || 403 }
-      );
-    }
-
-    // Crear y guardar cookie de sesión
-    const sessionCookie = createSessionCookie(session.session);
-    const cookieStore = await cookies();
-    cookieStore.set(
-      sessionCookie.name,
-      sessionCookie.value,
-      sessionCookie.options
-    );
-
-    return NextResponse.json(
-      {
-        message: "Autenticación exitosa",
-        user: session.user,
-      },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("Error en autenticación:", err);
-    return NextResponse.json(
-      { error: "Error en el proceso de autenticación" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT: Registrar nuevo usuario
-export async function PUT(req) {
-  let data;
-  try {
-    data = await req.formData();
-  } catch (e) {
-    console.error("Error al parsear FormData:", e);
-    return NextResponse.json(
-      { error: "Datos de formulario inválidos" },
-      { status: 400 }
-    );
-  }
-
-  const email = data.get("email");
-  const full_name = data.get("name");
-  const password = data.get("password");
-  const image = data.get("image");
-
-  // Validación de campos requeridos
-  if (!email || !password || !full_name) {
-    console.error("Campos faltantes:", { email, password, full_name });
-    return NextResponse.json(
-      { error: "Email, contraseña y nombre son requeridos" },
-      { status: 400 }
-    );
-  }
-
-  const payload = {
-    email,
-    password,
-    options: {
-      data: {
-        full_name,
-        ...(image ? { avatar_url: image, picture: image } : {}),
-      },
-    },
-  };
-
-  try {
-    const supabase = createServerSupabase();
-    const { data: signUpData, error } = await supabase.auth.signUp(payload);
-
-    if (error) {
-      console.error("Error en registro:", error);
-      return NextResponse.json(
-        { error: `Error al crear cuenta: ${error.message}` },
-        { status: 400 }
-      );
-    }
-
-    // Limpiar sesión automática creada por signUp
-    await supabase.auth.signOut();
-
-    return NextResponse.json(
-      { message: "Cuenta creada exitosamente" },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("Error de red con Supabase:", err);
-    return NextResponse.json(
-      { error: "No se pudo conectar con el servidor. Intente más tarde." },
-      { status: 502 }
-    );
-  }
-}
-*/
 // app/api/login/route.js
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-// GET - Obtener userId del usuario autenticado
+// ─── Respuestas de error tipadas ──────────────────────────────────────────────
+const ERRORS = {
+  NO_AUTH: { code: "NO_AUTH", message: "No autenticado", status: 401 },
+  BAD_CREDENTIALS: {
+    code: "BAD_CREDENTIALS",
+    message: "Email o contraseña incorrectos",
+    status: 401,
+  },
+  MISSING_FIELDS: {
+    code: "MISSING_FIELDS",
+    message: "Email y contraseña son requeridos",
+    status: 400,
+  },
+  NO_STORE: {
+    code: "NO_STORE",
+    message: "El usuario no tiene una tienda asociada",
+    status: 403,
+  },
+  STORE_INACTIVE: {
+    code: "STORE_INACTIVE",
+    message: "La tienda está desactivada",
+    status: 403,
+  },
+  PLAN_VENCIDO: {
+    code: "PLAN_VENCIDO",
+    message: "El plan ha vencido. Contacta al soporte para renovarlo.",
+    status: 403,
+  },
+  PLAN_TRIAL_END: {
+    code: "PLAN_TRIAL_END",
+    message:
+      "El período de prueba ha finalizado. Elige un plan para continuar.",
+    status: 403,
+  },
+  SERVER_ERROR: {
+    code: "SERVER_ERROR",
+    message: "Error interno del servidor",
+    status: 500,
+  },
+};
+
+function errorResponse(type, extra = {}) {
+  const { status, ...body } = ERRORS[type];
+  return NextResponse.json({ error: true, ...body, ...extra }, { status });
+}
+
+// ─── Helper: validar estado del plan ─────────────────────────────────────────
+// Devuelve null si todo está bien, o un string con el tipo de error
+function checkPlanStatus(sitio) {
+  if (!sitio) return "NO_STORE";
+  if (!sitio.active) return "STORE_INACTIVE";
+
+  const plan = sitio.plan ?? "trial";
+  const plan_vence = sitio.plan_vence ?? null;
+
+  // Sin fecha de vencimiento → no expira (plan asignado manualmente)
+  if (!plan_vence) return null;
+
+  const vencido = new Date(plan_vence) < new Date();
+  if (!vencido) return null;
+
+  // Vencido — diferenciar trial de plan de pago
+  return plan === "trial" ? "PLAN_TRIAL_END" : "PLAN_VENCIDO";
+}
+
+// ─── GET: usuario autenticado actual ─────────────────────────────────────────
 export async function GET(request) {
   try {
     const cookieStore = await cookies();
@@ -405,67 +78,80 @@ export async function GET(request) {
       data: { user },
       error,
     } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    if (error || !user) return errorResponse("NO_AUTH");
 
     return NextResponse.json({
       userId: user.id,
       email: user.email,
-      user: user,
+      user,
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    console.error("[GET /api/login]", err.message);
+    return errorResponse("SERVER_ERROR", { detail: err.message });
   }
 }
 
-// POST - SignIn (Iniciar sesión)
+// ─── POST: sign in ────────────────────────────────────────────────────────────
 export async function POST(request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body?.email || !body?.password) return errorResponse("MISSING_FIELDS");
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email y contraseña son requeridos" },
-        { status: 400 }
-      );
-    }
+    const { email, password } = body;
 
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // 1. Autenticar
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({ email, password });
+    if (authError || !authData.user) return errorResponse("BAD_CREDENTIALS");
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+    // 2. Consultar tienda asociada al usuario — incluye plan y plan_vence
+    const { data: sitio, error: sitioError } = await supabase
+      .from("Sitios")
+      .select("UUID, sitioweb, active, plan, plan_vence, name")
+      .eq("Editor", authData.user.id)
+      .maybeSingle();
+
+    // Si no tiene tienda dejamos pasar (puede ser un usuario nuevo sin tienda todavía)
+    // Solo bloqueamos si tiene tienda pero está en mal estado
+    if (!sitioError && sitio) {
+      const planError = checkPlanStatus(sitio);
+      if (planError) {
+        // Cerramos la sesión que acabamos de abrir para no dejar estado inconsistente
+        await supabase.auth.signOut();
+        return errorResponse(planError, {
+          plan: sitio.plan,
+          plan_vence: sitio.plan_vence,
+          sitioweb: sitio.sitioweb,
+        });
+      }
     }
 
     return NextResponse.json({
       message: "Inicio de sesión exitoso",
-      userId: data.user.id,
-      user: data.user,
-      session: data.session,
+      userId: authData.user.id,
+      user: authData.user,
+      session: authData.session,
+      // Incluimos estado del plan para que el frontend lo muestre sin otro fetch
+      plan: sitio?.plan ?? null,
+      plan_vence: sitio?.plan_vence ?? null,
+      sitioweb: sitio?.sitioweb ?? null,
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    console.error("[POST /api/login]", err.message);
+    return errorResponse("SERVER_ERROR", { detail: err.message });
   }
 }
 
-// PUT - SignUp (Registrarse)
+// ─── PUT: sign up ─────────────────────────────────────────────────────────────
 export async function PUT(request) {
   try {
-    const { email, password, metadata } = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body?.email || !body?.password) return errorResponse("MISSING_FIELDS");
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email y contraseña son requeridos" },
-        { status: 400 }
-      );
-    }
+    const { email, password, metadata } = body;
 
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
@@ -473,13 +159,14 @@ export async function PUT(request) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: metadata || {},
-      },
+      options: { data: metadata || {} },
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json(
+        { error: true, code: "SIGNUP_ERROR", message: error.message },
+        { status: 400 },
+      );
     }
 
     return NextResponse.json({
@@ -488,27 +175,24 @@ export async function PUT(request) {
       user: data.user,
       session: data.session,
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    console.error("[PUT /api/login]", err.message);
+    return errorResponse("SERVER_ERROR", { detail: err.message });
   }
 }
 
-// DELETE - SignOut (Cerrar sesión)
+// ─── DELETE: sign out ─────────────────────────────────────────────────────────
 export async function DELETE(request) {
   try {
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     const { error } = await supabase.auth.signOut();
+    if (error) return errorResponse("SERVER_ERROR", { detail: error.message });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      message: "Cierre de sesión exitoso",
-    });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Cierre de sesión exitoso" });
+  } catch (err) {
+    console.error("[DELETE /api/login]", err.message);
+    return errorResponse("SERVER_ERROR", { detail: err.message });
   }
 }

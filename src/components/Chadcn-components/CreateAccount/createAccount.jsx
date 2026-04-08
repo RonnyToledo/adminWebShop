@@ -226,14 +226,18 @@ export default function CreateAccount() {
           console.error("Signup error:", err);
           return {
             title: "Error al crear cuenta",
-            description: err?.message ?? "Error al crear la cuenta.",
+            description:
+              err.message + ": " + err.response.data.error ??
+              "Error al crear la cuenta.",
           };
         },
       });
     } catch (error) {
       sileo.error({
         title: "Error al crear cuenta",
-        description: error.message || "Error inesperado.",
+        description:
+          error.message + ": " + error.response.data.error ||
+          "Error inesperado.",
       });
     } finally {
       setLoading(false);

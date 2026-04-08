@@ -10,6 +10,7 @@ import { extractBlobFilesFromArray } from "@/components/globalFunction/extractBl
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import Image from "next/image";
+import PlanGuard from "../Planes/PlanGuard";
 
 const initialCase = {
   venta: true,
@@ -280,13 +281,16 @@ export default function NewProduct({ ThemeContext }) {
         newImage={newImage}
         setNewImage={setNewImage}
       />
+
       <div className="bg-white p-2 flex justify-center sticky bottom-0 w-full">
-        <Button
-          className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl`}
-          onClick={() => handleSubmit()}
-        >
-          {"Guardar"}
-        </Button>
+        <PlanGuard feature={"productos"}>
+          <Button
+            className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl`}
+            onClick={() => handleSubmit()}
+          >
+            {"Guardar"}
+          </Button>
+        </PlanGuard>
       </div>
     </main>
   );

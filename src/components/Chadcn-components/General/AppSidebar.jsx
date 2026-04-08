@@ -13,6 +13,7 @@ import ExtensionOffRoundedIcon from "@mui/icons-material/ExtensionOffRounded";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import ColorLensRoundedIcon from "@mui/icons-material/ColorLensRounded";
 import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import AppSettingsAltRoundedIcon from "@mui/icons-material/AppSettingsAltRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AlignHorizontalLeftRoundedIcon from "@mui/icons-material/AlignHorizontalLeftRounded";
@@ -30,6 +31,7 @@ import { authService } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const iconMap = {
+  ChecklistIcon,
   HomeRoundedIcon,
   PreviewRoundedIcon,
   EditIcon,

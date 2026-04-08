@@ -61,6 +61,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supa";
+import PlanGuard from "../Planes/PlanGuard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -599,135 +600,145 @@ export default function VentasDashboard({ ThemeContext }) {
   const graficoDatos = useMemo(() => comprasPorMes(compras), [compras]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <main className="flex flex-1 flex-col gap-6 p-4 md:p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Ventas</h1>
-            <p className="text-sm text-muted-foreground">
-              {webshop?.store?.name ?? "Tienda"} · {webshop?.store?.Provincia}
-            </p>
+    <PlanGuard feature="analitycs">
+      <div className="flex min-h-screen w-full flex-col">
+        <main className="flex flex-1 flex-col gap-6 p-4 md:p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Ventas</h1>
+              <p className="text-sm text-muted-foreground">
+                {webshop?.store?.name ?? "Tienda"} · {webshop?.store?.Provincia}
+              </p>
+            </div>
+            <BuscarPedidoDialog compras={compras} />
           </div>
-          <BuscarPedidoDialog compras={compras} />
-        </div>
 
-        {/* KPIs */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <StatCard
-            title="Ingresos totales"
-            value={formatCUP(totalVentas)}
-            description="acumulado"
-            trend={variacion}
-            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Pedidos"
-            value={totalPedidos}
-            description="realizados"
-            icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Productos vendidos"
-            value={totalProductos}
-            description="unidades totales"
-            icon={<Package className="h-4 w-4 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Ticket promedio"
-            value={formatCUP(Math.round(ticket))}
-            description="por pedido"
-            icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Últimas 24 h"
-            value={formatCUP(ventas24h)}
-            description="recaudado hoy"
-            icon={<Activity className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
+          {/* KPIs */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <StatCard
+              title="Ingresos totales"
+              value={formatCUP(totalVentas)}
+              description="acumulado"
+              trend={variacion}
+              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Pedidos"
+              value={totalPedidos}
+              description="realizados"
+              icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Productos vendidos"
+              value={totalProductos}
+              description="unidades totales"
+              icon={<Package className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Ticket promedio"
+              value={formatCUP(Math.round(ticket))}
+              description="por pedido"
+              icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
+            />
+            <StatCard
+              title="Últimas 24 h"
+              value={formatCUP(ventas24h)}
+              description="recaudado hoy"
+              icon={<Activity className="h-4 w-4 text-muted-foreground" />}
+            />
+          </div>
 
-        {/* Gráfico + Top productos */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Balance mensual</CardTitle>
-              <CardDescription>
-                Ingresos en CUP — últimos 7 meses
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig}>
-                <AreaChart data={graficoDatos} margin={{ left: 0, right: 8 }}>
-                  <defs>
-                    <linearGradient id="colorSuma" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor="var(--chart-1)"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--chart-1)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="mes"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v) =>
-                      v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
+          {/* Gráfico + Top productos */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Balance mensual</CardTitle>
+                <CardDescription>
+                  Ingresos en CUP — últimos 7 meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig}>
+                  <AreaChart data={graficoDatos} margin={{ left: 0, right: 8 }}>
+                    <defs>
+                      <linearGradient
+                        id="colorSuma"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="var(--chart-1)"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="var(--chart-1)"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="mes"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v) =>
+                        v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
+                      }
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="line" />}
+                    />
+                    <Area
+                      dataKey="suma"
+                      type="monotone"
+                      fill="url(#colorSuma)"
+                      stroke="var(--chart-1)"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: "var(--chart-1)" }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="text-xs text-muted-foreground">
+                {variacion != null ? (
+                  <span
+                    className={
+                      variacion >= 0 ? "text-green-500" : "text-red-500"
                     }
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="line" />}
-                  />
-                  <Area
-                    dataKey="suma"
-                    type="monotone"
-                    fill="url(#colorSuma)"
-                    stroke="var(--chart-1)"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "var(--chart-1)" }}
-                    activeDot={{ r: 5 }}
-                  />
-                </AreaChart>
-              </ChartContainer>
-            </CardContent>
-            <CardFooter className="text-xs text-muted-foreground">
-              {variacion != null ? (
-                <span
-                  className={variacion >= 0 ? "text-green-500" : "text-red-500"}
-                >
-                  {variacion >= 0 ? "▲" : "▼"} {Math.abs(variacion)}% vs mes
-                  anterior
-                </span>
-              ) : (
-                <span>Sin datos comparativos</span>
-              )}
-            </CardFooter>
-          </Card>
+                  >
+                    {variacion >= 0 ? "▲" : "▼"} {Math.abs(variacion)}% vs mes
+                    anterior
+                  </span>
+                ) : (
+                  <span>Sin datos comparativos</span>
+                )}
+              </CardFooter>
+            </Card>
 
-          <TopProductos compras={compras} />
-        </div>
+            <TopProductos compras={compras} />
+          </div>
 
-        {/* Tabla últimas ventas */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <TablaVentas compras={compras} />
-          <DesgloseCards compras={compras} />
-        </div>
-      </main>
-    </div>
+          {/* Tabla últimas ventas */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <TablaVentas compras={compras} />
+            <DesgloseCards compras={compras} />
+          </div>
+        </main>
+      </div>
+    </PlanGuard>
   );
 }

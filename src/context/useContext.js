@@ -75,48 +75,33 @@ export default function MyProvider({ children, user, data }) {
       console.info("Ruta protegida");
       return;
     }
+    console.log(user, data);
 
-    // Si no hay usuario y no es ruta protegida
+    // Cuando no hay sesión:
     if (!user && !isProtectedRoute) {
-      console.info("No existe sesión, redirigiendo a login");
-      setWebshop((prev) => ({ ...prev, pathRedirect: pathname }));
+      sessionStorage.setItem("pathRedirect", pathname); // ✅ persiste entre navegaciones
       router.push("/login");
       return;
     }
 
-    // Usuario con rol "user" no puede acceder
-    if (data?.user?.role === "user") {
-      console.error("Usuario denegado");
-      try {
-        await authService.signOut();
-        router.push("/login");
-      } catch (error) {
-        console.error("Error cerrando sesión:", error);
-        sileo.info({
-          title: "Error",
-          variant: "destructive",
-          description: "Error cerrando sesión",
-        });
-      }
-      return;
-    }
-
     // Nuevo manager: redirigir a bienvenida
-    if (data?.user?.role === "manager" && data?.user?.login === false) {
+    if (data?.user?.role === "user") {
       console.info("Nuevo Manager, redirigiendo a crear catálogo");
       router.push("/welcome");
       return;
     }
+    console.log(data);
 
     // Usuario válido: establecer datos SOLO en la primera carga
+    // Cuando el usuario se loguea exitosamente:
     if (user && data && !isInitialized.current) {
-      console.info("Inicializando datos del usuario");
-      setWebshop(data);
+      setWebshop((prev) => ({ ...prev, ...data })); // ✅ functional update
       isInitialized.current = true;
 
-      if (data.pathRedirect) {
-        router.push(data.pathRedirect);
-        setWebshop((prev) => ({ ...prev, pathRedirect: null }));
+      const redirect = sessionStorage.getItem("pathRedirect");
+      if (redirect) {
+        sessionStorage.removeItem("pathRedirect");
+        router.push(redirect);
       }
     }
   }, [user, data, pathname, isPublicRoute, isProtectedRoute, router]);
@@ -128,7 +113,7 @@ export default function MyProvider({ children, user, data }) {
       previousPathname.current = pathname;
     }
   }, [pathname]);
-
+  console.log(webshop);
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>

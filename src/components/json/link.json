@@ -65,7 +65,7 @@
   },
 
   {
-    "group": "Edit",
+    "group": "Configuracion",
 
     "links": [
       {
@@ -87,6 +87,11 @@
         "label": "Social",
         "href": "/social",
         "icon": "GroupIcon"
+      },
+      {
+        "label": "Planes",
+        "href": "/planes",
+        "icon": "ChecklistIcon"
       }
     ]
   }

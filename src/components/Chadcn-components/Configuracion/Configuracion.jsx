@@ -32,6 +32,7 @@ import { sileo } from "sileo";
 import axios from "axios";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { buildImprovementPrompt } from "./TextIAModel";
+import { usePlan } from "@/hooks/usePlan";
 
 export default function Configuracion({ ThemeContext, country }) {
   const { webshop } = useContext(ThemeContext);
@@ -43,6 +44,7 @@ export default function Configuracion({ ThemeContext, country }) {
     horario: [],
     envios: [],
   });
+  const { config } = usePlan();
 
   useEffect(() => {
     setStore(webshop?.store);
@@ -366,7 +368,7 @@ export default function Configuracion({ ThemeContext, country }) {
                   label: "Transferencias bancarias",
                   desc: "Aceptar transferencias como método de pago",
                 },
-                {
+                config.stocks && {
                   key: "stocks",
                   label: "Control de stock",
                   desc: "Manejar disponibilidad de productos desde la plataforma",
@@ -376,58 +378,62 @@ export default function Configuracion({ ThemeContext, country }) {
                   label: "Recogida en local",
                   desc: "Activar el local como punto de recogida",
                 },
-              ].map(({ key, label, desc }) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between rounded-lg border px-4 py-3 gap-4"
-                >
-                  <div className="space-y-0.5 flex-1 min-w-0">
-                    <Label className="text-sm font-medium">{label}</Label>
-                    <p className="text-xs text-muted-foreground">{desc}</p>
+              ]
+                .filter(Boolean)
+                .map(({ key, label, desc }) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between rounded-lg border px-4 py-3 gap-4"
+                  >
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <Label className="text-sm font-medium">{label}</Label>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                    </div>
+                    <SwitchStore
+                      name={store?.[key]}
+                      object={store}
+                      title={key}
+                      funcion={setStore}
+                    />
                   </div>
-                  <SwitchStore
-                    name={store?.[key]}
-                    object={store}
-                    title={key}
-                    funcion={setStore}
-                  />
-                </div>
-              ))}
+                ))}
 
               {/* Delivery con enlace condicional */}
-              <div className="rounded-lg border px-4 py-3 space-y-2">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-0.5 flex-1">
-                    <Label className="text-sm font-medium">
-                      Servicio de delivery
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Activar entregas a domicilio
-                      {store?.envios?.length > 0 && (
-                        <span className="ml-1 text-primary font-medium">
-                          · {store.envios.length} zona
-                          {store.envios.length !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </p>
+              {config.domicilio && (
+                <div className="rounded-lg border px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-0.5 flex-1">
+                      <Label className="text-sm font-medium">
+                        Servicio de delivery
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Activar entregas a domicilio
+                        {store?.envios?.length > 0 && (
+                          <span className="ml-1 text-primary font-medium">
+                            · {store.envios.length} zona
+                            {store.envios.length !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <SwitchStore
+                      name={store?.domicilio}
+                      object={store}
+                      title={"domicilio"}
+                      funcion={setStore}
+                    />
                   </div>
-                  <SwitchStore
-                    name={store?.domicilio}
-                    object={store}
-                    title={"domicilio"}
-                    funcion={setStore}
-                  />
+                  {store?.domicilio && (
+                    <div className="pt-1">
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <Link href="/configuracion/domicilios">
+                          Gestionar zonas de envío →
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                {store?.domicilio && (
-                  <div className="pt-1">
-                    <Button type="button" variant="outline" size="sm" asChild>
-                      <Link href="/configuracion/domicilios">
-                        Gestionar zonas de envío →
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
+              )}
             </CardContent>
           </Card>
 

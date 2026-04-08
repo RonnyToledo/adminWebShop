@@ -126,6 +126,25 @@ export async function POST(request, { params }) {
       { status: error.code === "PGRST400" ? 400 : 500 },
     );
   }
+  if (data?.error) {
+    if (data.code === "PLAN_EXPIRED") {
+      console.error("PLAN_EXPIRED");
+      return NextResponse.json(
+        { message: "PLAN_EXPIRED", details: "Su plan ha expirado" },
+        { status: 400 },
+      );
+    } else if (data.code === "PRODUCT_LIMIT_REACHED") {
+      console.error("PRODUCT_LIMIT_REACHED");
+      return NextResponse.json(
+        {
+          message: "PRODUCT_LIMIT_REACHED",
+          details: "Ha alcanzado el límite de productos para su plan",
+        },
+        { status: 400 },
+      );
+    }
+    return;
+  }
   return NextResponse.json(
     {
       ...newProduct,
