@@ -55,7 +55,7 @@ function NotificationItem({ notif, onMarkRead }) {
       </div>
 
       {/* Contenido */}
-      <div className="flex-1 min-w-0">
+      <a href={notif.link || "#"} className="flex-1 min-w-0">
         <p
           className={`text-sm leading-relaxed ${!notif.visto ? "text-foreground font-medium" : "text-muted-foreground"}`}
         >
@@ -64,7 +64,7 @@ function NotificationItem({ notif, onMarkRead }) {
         <p className="text-[11px] text-muted-foreground/60 mt-1">
           {notif.created_at ? format(new Date(notif.created_at), "full") : "—"}
         </p>
-      </div>
+      </a>
 
       {/* Acción marcar como leída */}
       {!notif.visto && (
@@ -94,7 +94,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-
+  console.log(notifications);
   // ── Fetch ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
