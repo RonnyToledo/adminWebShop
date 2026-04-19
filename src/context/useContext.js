@@ -77,7 +77,7 @@ export default function MyProvider({ children, user, data }) {
     // Cuando no hay sesión:
     if (!user && !isProtectedRoute) {
       sessionStorage.setItem("pathRedirect", pathname); // ✅ persiste entre navegaciones
-      router.push("/login");
+      router.refresh();
       return;
     }
 

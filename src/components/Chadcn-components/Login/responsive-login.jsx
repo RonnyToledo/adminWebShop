@@ -33,7 +33,7 @@ export function ResponsiveLogin({ user }) {
   const storeName = webshop?.store?.name ?? "Roumenu";
 
   useEffect(() => {
-    if (user && user !== undefined) router.push("/");
+    if (user && user !== undefined) router.refresh();
   }, [user, router]);
 
   const handleSubmit = async (e) => {

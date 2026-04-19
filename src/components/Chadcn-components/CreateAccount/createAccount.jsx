@@ -113,7 +113,7 @@ export default function CreateAccount() {
 
   useEffect(() => {
     fetchUserSession().then((id) => {
-      if (id) router.push("/");
+      if (id) router.refresh();
     });
   }, [router]);
 
@@ -216,7 +216,7 @@ export default function CreateAccount() {
       sileo.promise(promise, {
         loading: { title: "Creando cuenta..." },
         success: (res) => {
-          if (res?.userId) router.push("/");
+          if (res?.userId) router.refresh();
           return {
             title: "Cuenta creada",
             description: res?.message ?? "Cuenta creada correctamente.",

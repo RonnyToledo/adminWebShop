@@ -12,7 +12,7 @@ export default function LogoutPage() {
       router.refresh();
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      router.push("/login");
+      router.refresh();
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }

@@ -165,7 +165,7 @@ export function CrearClienteComponent({
   });
 
   useEffect(() => {
-    if (!user) router.push("/login");
+    if (!user) router.refresh();
   }, [user, router]);
 
   // ── Normalizers (sin cambios) ───────────────────────────────────────────────
