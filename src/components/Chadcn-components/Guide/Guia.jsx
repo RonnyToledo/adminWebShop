@@ -2,7 +2,7 @@
 import Link from "next/link";
 import React, { useContext } from "react";
 import { sileo } from "sileo";
-import QrCode from "@/components/Chadcn-components/Guia/QRcode";
+import QrCode from "@/components/Chadcn-components/Guide/QRcode";
 import { ThemeContext } from "@/context/useContext";
 import { Copy, ArrowRight, ExternalLink } from "lucide-react";
 import dataCards from "@/components/json/card.json";

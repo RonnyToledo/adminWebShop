@@ -41,9 +41,8 @@ export function ResponsiveLogin({ user }) {
     setLoading(true);
     try {
       await authService.signIn(email, password);
+      router.replace("/");
       router.refresh();
-      await new Promise((r) => setTimeout(r, 500));
-      window.location.replace("/");
     } catch (err) {
       console.error(err);
       sileo.error({

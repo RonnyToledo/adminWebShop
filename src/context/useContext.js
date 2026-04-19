@@ -7,14 +7,11 @@ import React, {
   useRef,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supa";
 import { deleteNotification } from "@/lib/supabaseApi";
 import HeaderAdmin from "@/components/Chadcn-components/General/HeaderAdmin";
 import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { sileo } from "sileo";
-
-import { authService } from "@/lib/supabase";
 
 export const ThemeContext = createContext();
 
@@ -48,6 +45,7 @@ const PROTECTED_ROUTES = [
 const PUBLIC_ROUTES = ["/configPage", "/login", "/resetPassword"];
 
 export default function MyProvider({ children, user, data }) {
+  console.log(data || initialState);
   const [webshop, setWebshop] = useState(data || initialState);
   const [OpenSidebar, setOpenSidebar] = useState(false);
   const router = useRouter();
@@ -75,7 +73,6 @@ export default function MyProvider({ children, user, data }) {
       console.info("Ruta protegida");
       return;
     }
-    console.log(user, data);
 
     // Cuando no hay sesión:
     if (!user && !isProtectedRoute) {
@@ -90,7 +87,6 @@ export default function MyProvider({ children, user, data }) {
       router.push("/welcome");
       return;
     }
-    console.log(data);
 
     // Usuario válido: establecer datos SOLO en la primera carga
     // Cuando el usuario se loguea exitosamente:
@@ -113,7 +109,6 @@ export default function MyProvider({ children, user, data }) {
       previousPathname.current = pathname;
     }
   }, [pathname]);
-  console.log(webshop);
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <SidebarProvider>

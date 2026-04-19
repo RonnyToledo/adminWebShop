@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
 import { sileo } from "sileo";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { logoApp } from "@/utils/image";
 import { Loader2, ImageIcon, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,7 +47,7 @@ export default function EditCategory({ ThemeContext, uid }) {
       else formData.append(key, String(value));
     });
     try {
-      const res = await axios.put(
+      const res = await apiClient.put(
         `/api/tienda/${webshop?.store?.sitioweb}/categoria/${category?.id}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } },

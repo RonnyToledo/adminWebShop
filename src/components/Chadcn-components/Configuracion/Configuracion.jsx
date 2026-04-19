@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useContext, useMemo } from "react";
-import ConfimationOut from "@/components/globalFunction/confimationOut";
+import ConfirmationOut from "@/components/globalFunction/confirmationOut";
 import { InputStore, SwitchStore } from "./Input-Store";
 import {
   Instagram,
@@ -582,7 +582,7 @@ export default function Configuracion({ ThemeContext, country }) {
           </Card>
         </div>
       </FromData>
-      <ConfimationOut action={hasPendingChanges(store, webshop?.store)} />
+      <ConfirmationOut action={hasPendingChanges(store, webshop?.store)} />
     </main>
   );
 }

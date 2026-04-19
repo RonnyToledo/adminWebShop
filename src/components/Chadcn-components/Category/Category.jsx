@@ -3,7 +3,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { sileo } from "sileo";
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import ConfimationOut from "../../globalFunction/confimationOut";
+import ConfirmationOut from "../../globalFunction/confirmationOut";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,7 +81,7 @@ export default function Category({ ThemeContext }) {
       setDeleting(false);
       return;
     }
-    const deletePromise = axios.delete(
+    const deletePromise = apiClient.delete(
       `/api/tienda/${webshop?.store?.sitioweb}/categoria`,
       { data: { UUID: categoryToDelete, image } },
     );
@@ -127,7 +127,7 @@ export default function Category({ ThemeContext }) {
     const formData = new FormData();
     formData.append("categoria", JSON.stringify(data?.category ?? []));
     formData.append("UUID", String(data?.UUID ?? ""));
-    const putPromise = axios.put(
+    const putPromise = apiClient.put(
       `/api/tienda/${webshop.store.sitioweb}/categoria`,
       formData,
     );
@@ -168,7 +168,7 @@ export default function Category({ ThemeContext }) {
       storeId: webshop.store.UUID,
       order: data?.category?.length ?? 0,
     };
-    const postPromise = axios.post(
+    const postPromise = apiClient.post(
       `/api/tienda/${webshop.store.sitioweb}/categoria`,
       payload,
       { headers: { "Content-Type": "application/json" } },
@@ -362,7 +362,7 @@ export default function Category({ ThemeContext }) {
         </form>
       </DragDropContext>
 
-      <ConfimationOut action={hasPending} />
+      <ConfirmationOut action={hasPending} />
     </main>
   );
 }

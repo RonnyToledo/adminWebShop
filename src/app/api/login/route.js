@@ -1,7 +1,16 @@
 // app/api/login/route.js
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+// ─── Auth Route Handler ───────────────────────────────────────────────────────
+// GET    → usuario actual
+// POST   → sign in
+// PUT    → sign up
+// DELETE → sign out
+
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // ─── Respuestas de error tipadas ──────────────────────────────────────────────
 const ERRORS = {
@@ -49,42 +58,54 @@ function errorResponse(type, extra = {}) {
   return NextResponse.json({ error: true, ...body, ...extra }, { status });
 }
 
+// ─── Helper: crear cliente con cookies ───────────────────────────────────────
+async function makeClient() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    },
+  );
+}
+
 // ─── Helper: validar estado del plan ─────────────────────────────────────────
-// Devuelve null si todo está bien, o un string con el tipo de error
 function checkPlanStatus(sitio) {
   if (!sitio) return "NO_STORE";
   if (!sitio.active) return "STORE_INACTIVE";
 
-  const plan = sitio.plan ?? "trial";
   const plan_vence = sitio.plan_vence ?? null;
-
-  // Sin fecha de vencimiento → no expira (plan asignado manualmente)
-  if (!plan_vence) return null;
+  if (!plan_vence) return null; // sin fecha → no expira
 
   const vencido = new Date(plan_vence) < new Date();
   if (!vencido) return null;
 
-  // Vencido — diferenciar trial de plan de pago
-  return plan === "trial" ? "PLAN_TRIAL_END" : "PLAN_VENCIDO";
+  return (sitio.plan ?? "trial") === "trial"
+    ? "PLAN_TRIAL_END"
+    : "PLAN_VENCIDO";
 }
 
 // ─── GET: usuario autenticado actual ─────────────────────────────────────────
-export async function GET(request) {
+export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
+    const supabase = await makeClient();
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser();
     if (error || !user) return errorResponse("NO_AUTH");
 
-    return NextResponse.json({
-      userId: user.id,
-      email: user.email,
-      user,
-    });
+    return NextResponse.json({ userId: user.id, email: user.email, user });
   } catch (err) {
     console.error("[GET /api/login]", err.message);
     return errorResponse("SERVER_ERROR", { detail: err.message });
@@ -98,28 +119,24 @@ export async function POST(request) {
     if (!body?.email || !body?.password) return errorResponse("MISSING_FIELDS");
 
     const { email, password } = body;
-
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = await makeClient();
 
     // 1. Autenticar
     const { data: authData, error: authError } =
       await supabase.auth.signInWithPassword({ email, password });
     if (authError || !authData.user) return errorResponse("BAD_CREDENTIALS");
 
-    // 2. Consultar tienda asociada al usuario — incluye plan y plan_vence
+    // 2. Consultar tienda asociada
     const { data: sitio, error: sitioError } = await supabase
       .from("Sitios")
       .select("UUID, sitioweb, active, plan, plan_vence, name")
       .eq("Editor", authData.user.id)
       .maybeSingle();
 
-    // Si no tiene tienda dejamos pasar (puede ser un usuario nuevo sin tienda todavía)
-    // Solo bloqueamos si tiene tienda pero está en mal estado
+    // Bloquear solo si tiene tienda pero está en mal estado
     if (!sitioError && sitio) {
       const planError = checkPlanStatus(sitio);
       if (planError) {
-        // Cerramos la sesión que acabamos de abrir para no dejar estado inconsistente
         await supabase.auth.signOut();
         return errorResponse(planError, {
           plan: sitio.plan,
@@ -134,7 +151,6 @@ export async function POST(request) {
       userId: authData.user.id,
       user: authData.user,
       session: authData.session,
-      // Incluimos estado del plan para que el frontend lo muestre sin otro fetch
       plan: sitio?.plan ?? null,
       plan_vence: sitio?.plan_vence ?? null,
       sitioweb: sitio?.sitioweb ?? null,
@@ -152,9 +168,7 @@ export async function PUT(request) {
     if (!body?.email || !body?.password) return errorResponse("MISSING_FIELDS");
 
     const { email, password, metadata } = body;
-
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = await makeClient();
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -182,17 +196,49 @@ export async function PUT(request) {
 }
 
 // ─── DELETE: sign out ─────────────────────────────────────────────────────────
-export async function DELETE(request) {
+export async function DELETE() {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
+    const supabase = await makeClient();
     const { error } = await supabase.auth.signOut();
-    if (error) return errorResponse("SERVER_ERROR", { detail: error.message });
 
-    return NextResponse.json({ message: "Cierre de sesión exitoso" });
+    if (error) {
+      // ❌ signOut falló, pero aún así intentamos limpiar cookies desde servidor
+      console.warn("[DELETE /api/login] signOut failed:", error.message);
+
+      const response = errorResponse("SERVER_ERROR", {
+        detail: "Logout incompleto: " + error.message,
+      });
+
+      // Limpiar cookies de todas formas (respuesta fallida pero con limpieza)
+      response.cookies.delete("sb-access-token");
+      response.cookies.delete("sb-refresh-token");
+
+      return response;
+    }
+
+    // ✅ Logout exitoso - Supabase automáticamente limpia cookies
+    // Pero aseguramos que estén limpias en la response también
+    const response = NextResponse.json({
+      message: "Cierre de sesión exitoso",
+      timestamp: new Date().toISOString(),
+    });
+
+    // Asegurar limpieza en caso de que Supabase no lo haga completamente
+    response.cookies.delete("sb-access-token");
+    response.cookies.delete("sb-refresh-token");
+
+    return response;
   } catch (err) {
-    console.error("[DELETE /api/login]", err.message);
-    return errorResponse("SERVER_ERROR", { detail: err.message });
+    console.error("[DELETE /api/login] Exception:", err.message);
+
+    // Incluso en excepción, intentar limpiar cookies
+    const response = errorResponse("SERVER_ERROR", {
+      detail: "Error durante logout: " + err.message,
+    });
+
+    response.cookies.delete("sb-access-token");
+    response.cookies.delete("sb-refresh-token");
+
+    return response;
   }
 }

@@ -26,7 +26,7 @@ import {
   Code2,
 } from "lucide-react";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { sileo } from "sileo";
 import { IA, newIA } from "./IA";
 import { HTMLEditor } from "./html-editor";
@@ -317,7 +317,7 @@ export function PostContentEditor({
     setIsGeminiLoading(true);
     const formData = new FormData();
     formData.append("text", content ? `${IA} ${content}` : newIA(slug));
-    const postPromise = axios.post("/api/gemini", formData, {
+    const postPromise = apiClient.post("/api/gemini", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     sileo.promise(postPromise, {

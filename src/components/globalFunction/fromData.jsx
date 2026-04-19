@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState, useContext } from "react";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { Button } from "../ui/button";
 import { sileo } from "sileo";
 
@@ -28,7 +28,7 @@ export function FromData({ children, store, ThemeContext }) {
     });
 
     // Promesa de la petición PUT (no forzamos Content-Type)
-    const putPromise = axios.put(`/api/tienda/${store.sitioweb}/`, formData);
+    const putPromise = apiClient.put(`/api/tienda/${store.sitioweb}/`, formData);
 
     try {
       const res = sileo.promise(putPromise, {

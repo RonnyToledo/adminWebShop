@@ -1,4 +1,4 @@
-import BlogPage from "@/components/Chadcn-components/blog/BlogPage";
+import BlogPage from "@/components/Chadcn-components/Blog/BlogPage";
 import React from "react";
 
 export default function page() {

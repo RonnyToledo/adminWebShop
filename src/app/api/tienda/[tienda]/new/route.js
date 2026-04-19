@@ -1,27 +1,41 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
+import { requireRouteUser } from "@/lib/route-handler-auth";
+
+async function getAuthenticatedSupabase() {
+  const { supabase } = await requireRouteUser();
+  return supabase;
+}
 
 export async function POST(request, { params }) {
-  const data = await request.formData();
-  const { data: tienda, error } = await supabase
-    .from("Sitios")
-    .update([
-      {
-        color: data.get("color"),
-      },
-    ])
-    .select()
-    .eq("sitioweb", params.tienda);
+  try {
+    const supabase = await getAuthenticatedSupabase();
 
-  if (error) {
-    console.error(error);
+    const data = await request.formData();
+    const { data: tienda, error } = await supabase
+      .from("Sitios")
+      .update([
+        {
+          color: data.get("color"),
+        },
+      ])
+      .select()
+      .eq("sitioweb", params.tienda);
+
+    if (error) {
+      console.error(error);
+      return NextResponse.json(
+        { message: error.message || error },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    return NextResponse.json({ message: "Producto creado" });
+  } catch (error) {
     return NextResponse.json(
-      { message: error },
-      {
-        status: 401,
-      },
+      { message: error.message || "Error" },
+      { status: 500 },
     );
   }
-
-  return NextResponse.json({ message: "Producto creado" });
 }

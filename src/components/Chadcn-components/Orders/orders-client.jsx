@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { logoApp } from "@/utils/image";
 import { sileo } from "sileo";
 import { useRouter } from "next/navigation";
@@ -420,7 +420,7 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
 const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
   setState(true);
   try {
-    const response = await axios.put(
+    const response = await apiClient.put(
       `/api/tienda/${sitioweb}/checkOrders`,
       Event,
       {

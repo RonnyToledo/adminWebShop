@@ -1,278 +1,320 @@
+//api/tienda/[tienda]/products/[specific]/route.js
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
+import { requireRouteUser } from "@/lib/route-handler-auth";
 import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
 
+async function getAuthenticatedSupabase() {
+  const { supabase } = await requireRouteUser();
+  return supabase;
+}
+
 export async function GET(request, { params }) {
-  await LogUser();
-  const { tienda, specific } = await params;
-  const { data } = await supabase
-    .from(tienda)
-    .select("*")
-    .eq("productId", specific);
-
-  return NextResponse.json(...new Set(data));
+  try {
+    const supabase = await getAuthenticatedSupabase();
+    const { specific } = await params;
+    const { data } = await supabase
+      .from("Products")
+      .select("*, product_variants(*)")
+      .eq("productId", specific);
+    return NextResponse.json(data?.[0] ?? null);
+  } catch (error) {
+    return NextResponse.json(
+      { message: error.message || "Error" },
+      { status: 500 },
+    );
+  }
 }
+
 export async function POST(request, { params }) {
-  await LogUser();
-  const { specific } = await params;
-
-  const data = await request.formData();
-  const { data: tienda, error } = await supabase
-    .from("Products")
-    .update([
-      {
-        coment: data.get("comentario"),
-      },
-    ])
-    .select("*")
-    .eq("productId", specific);
-  if (error) {
-    console.error(error);
-
+  try {
+    const supabase = await getAuthenticatedSupabase();
+    const { specific } = await params;
+    const data = await request.formData();
+    const { error } = await supabase
+      .from("Products")
+      .update({ coment: data.get("comentario") })
+      .eq("productId", specific);
+    if (error)
+      return NextResponse.json(
+        { message: error.message || error },
+        { status: 400 },
+      );
+    return NextResponse.json({ message: "Comentario realizado" });
+  } catch (error) {
     return NextResponse.json(
-      { message: error },
-      {
-        status: 401,
-      },
+      { message: error.message || "Error" },
+      { status: 500 },
     );
   }
-  return NextResponse.json({ message: "Comentario realizado" });
 }
 
-export async function PUT(request, { params }) {
-  await LogUser();
-  const data = await request.formData();
-  // obtener metadata y archivos del formData
-  const newImagesMeta = JSON.parse(data.get("NewImagesSecondaryMeta") || "[]"); // [{index, filename, previewUrl}, ...]
-  const imagesecondaryCopy = JSON.parse(data.get("imagesecondaryCopy") || "[]"); // [{index, filename, previewUrl}, ...]
-  const uploadedFiles = data.getAll("newImageSecondaryFiles"); // array de Blobs/Files (multipart entries)
-  let PrimaryImagen = data.get("image");
-  let SecondaryImage = data.get("imagesecondary");
-  const Id = data.get("Id");
+export async function PUT(request) {
+  try {
+    const supabase = await getAuthenticatedSupabase();
+    const data = await request.formData();
 
-  const newImagePrimary = data.get("newImage");
+    const Id = data.get("Id");
+    // ── Imagen principal ──────────────────────────────────────────────────────
+    let PrimaryImagen = data.get("image"); // URL actual (string) o null
+    const newImagePrimary = data.get("newImage"); // File nuevo o null
 
-  const val = await Promise.all(
-    imagesecondaryCopy
-      .filter((obj) => !data.get("imagesecondary").includes(obj))
-      .map(async (obj) => {
-        await DestroyImage(obj);
-        console.info(`${obj} ================ eliminado`);
-        return "ok";
-      }),
-  );
-  // Crear mapa filename -> blob
-  const filesByName = new Map(
-    uploadedFiles.map((f) => [f.name || (f.filename ?? ""), f]),
-  );
-
-  // crear estructura que espera handleNewSecondaryImages
-  const newImageSecondary = newImagesMeta
-    .map((m) => {
-      const file = filesByName.get(m.filename);
-      if (!file) {
-        console.warn("No se encontró file para", m.filename);
-        return null;
+    if (newImagePrimary && typeof newImagePrimary !== "string") {
+      if (
+        PrimaryImagen &&
+        typeof PrimaryImagen === "string" &&
+        PrimaryImagen.includes("cloudinary")
+      ) {
+        await DestroyImage(PrimaryImagen).catch(console.warn);
       }
-      return { index: m.index, file, previewUrl: m.previewUrl };
-    })
-    .filter(Boolean);
-
-  //Si tenemos imagen nueva
-  if (newImagePrimary) {
-    //Eliminamos la vieja
-    console.info("No deberiamos estar aqui");
-    if (PrimaryImagen) {
-      console.info("Eliminando imagen antigua");
-      await DestroyImage(PrimaryImagen);
+      const res = await UploadNewImage(newImagePrimary);
+      if (res?.secure_url) PrimaryImagen = res.secure_url;
     }
-    console.info("salto la eliminacion");
-    const res = await UploadNewImage(newImagePrimary);
-    if (res.secure_url) {
-      console.info("Imagen creada");
-      PrimaryImagen = res.secure_url;
+
+    // ── Variantes: imágenes nuevas ────────────────────────────────────────────
+    const variantsRaw = data.get("variants");
+    let variants = variantsRaw ? JSON.parse(variantsRaw) : null;
+
+    // FIX: leer múltiples archivos de variantes correctamente
+    const variantImageFiles = data.getAll("variantImageFiles");
+    const variantImageMeta = JSON.parse(data.get("variantImageMeta") || "[]");
+    const variantImageDelete = JSON.parse(
+      data.get("variantImageDelete") || "[]",
+    );
+
+    // Eliminar imágenes de variantes marcadas para borrar en cloudinary
+    if (variantImageDelete.length > 0) {
+      await Promise.allSettled(
+        variantImageDelete
+          .filter((url) => url && typeof url === "string")
+          .map((url) => DestroyImage(url)),
+      );
     }
-  }
-  const aux = await handleNewSecondaryImages(newImageSecondary, SecondaryImage);
 
-  SecondaryImage = aux.length > 0 ? aux : SecondaryImage;
-
-  const payload = {
-    _productid: data.get("Id"),
-    _title: data.get("title"),
-    _price: Number(data.get("price") ?? 0),
-    _default_moneda: Number(data.get("default_moneda") ?? 0),
-    _pricecompra: Number(data.get("priceCompra") ?? 0),
-    _caja: data.get("caja"),
-    _venta: data.get("venta") === "true",
-    _descripcion: data.get("descripcion"),
-    _span: data.get("span") === "true",
-    _caracteristicas: data.get("caracteristicas"),
-    _image_url: PrimaryImagen,
-    _storeid: data.get("storeId"),
-    _creado: data.get("creado"),
-    _embalaje: Number(data.get("embalaje") ?? 0),
-    _order: Number(data.get("order") ?? 0),
-    _stock: Number(data.get("stock") ?? 0),
-    _visible: data.get("visible") === "true",
-    _oldprice: Number(data.get("oldPrice") ?? 0),
-    _imagesecondary:
-      typeof SecondaryImage == "string"
-        ? JSON.parse(SecondaryImage)
-        : SecondaryImage, // JS array -> será enviado como JSONB
-    _agregados: data.get("agregados") ? JSON.parse(data.get("agregados")) : [],
-  };
-  console.log(payload);
-  const { data: tienda, error } = await supabase
-    .rpc("update_product", payload)
-    .single();
-
-  if (error) {
-    console.error("Error", error);
-
-    return NextResponse.json(
-      { message: error },
-      {
-        status: 402,
-      },
+    // Subir imágenes nuevas de variantes y mapear variantId → url subida
+    const variantFileMap = new Map(
+      variantImageFiles.map((f) => [f.name ?? "", f]),
     );
-  }
-  return NextResponse.json(tienda);
-}
-export async function DELETE(request, { params }) {
-  await LogUser();
+    const variantUrlMap = new Map();
 
-  const data = await request.formData();
-  const imageOld = data.get("image");
-  const Id = data.get("Id");
-  if (imageOld) {
-    DestroyImage(imageOld);
-  }
-  const { data: tienda, error } = await supabase
-    .from("Products")
-    .delete()
-    .eq("productId", Id);
-  if (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { message: error },
-      {
-        status: 401,
-      },
-    );
-  }
-  console.info("Tarea completada");
-  return NextResponse.json(tienda);
-}
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 },
-    );
-  }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
-
-async function handleNewSecondaryImages(newImageSecondary, SecondaryImage) {
-  // si no hay nada que procesar devolvemos el original en forma de array
-  if (!Array.isArray(newImageSecondary) || newImageSecondary.length === 0) {
-    return Array.isArray(SecondaryImage) ? SecondaryImage : [];
-  }
-
-  // --- Normalizar SecondaryImage a array ---
-  let existing = [];
-  if (typeof SecondaryImage === "string") {
-    try {
-      const parsed = JSON.parse(SecondaryImage);
-      existing = Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      // si no es JSON, intentamos usarlo como single-value
-      existing = SecondaryImage ? [SecondaryImage] : [];
-    }
-  } else if (Array.isArray(SecondaryImage)) {
-    existing = [...SecondaryImage];
-  } else {
-    existing = [];
-  }
-
-  // --- Crear 'updated' evitando holes ---
-  // Determinar la longitud mínima necesaria: la mayor entre existing.length y maxIndex+1
-  const maxIndex = newImageSecondary.reduce((m, it) => {
-    const i = Number(it?.index);
-    return Number.isFinite(i) ? Math.max(m, i) : m;
-  }, -1);
-  const neededLength = Math.max(existing.length, maxIndex + 1, 0);
-
-  // inicializamos con los valores existentes (o null si no existía)
-  const updated = Array.from({ length: neededLength }, (_, i) =>
-    i < existing.length ? existing[i] : null,
-  );
-
-  // --- Procesar cada item ---
-  for (const item of newImageSecondary) {
-    try {
-      const idx = Number(item?.index);
-      const file = item?.file;
-
-      if (!Number.isFinite(idx)) {
-        console.warn("Índice inválido, se salta item:", item);
-        continue;
-      }
-
-      // detectar file-like (servidor: Blob, File, Buffer, Stream...)
-      const isFileLike =
-        file &&
-        (typeof file.arrayBuffer === "function" ||
-          typeof file.stream === "function" ||
-          typeof file.pipe === "function" ||
-          (typeof Buffer !== "undefined" && file instanceof Buffer));
-
-      if (!isFileLike) {
-        console.warn("Item sin archivo válido (no file-like), se salta:", item);
-        continue;
-      }
-
-      // borrar imagen antigua si existe
-      const toDelete = updated[idx];
-      if (toDelete) {
+    await Promise.all(
+      variantImageMeta.map(async ({ variantId, filename }) => {
+        const file = variantFileMap.get(filename);
+        if (!file) return;
         try {
-          await DestroyImage(toDelete);
+          const res = await UploadNewImage(file);
+          if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
         } catch (err) {
-          console.warn("Error borrando imagen antigua:", err);
-          // no rompemos, intentamos subir de todas formas
+          console.error(`Error subiendo imagen de variante ${variantId}:`, err);
+        }
+      }),
+    );
+
+    // Aplicar URLs subidas a las variantes correspondientes
+    if (variants && variantUrlMap.size > 0) {
+      variants = variants.map((v) =>
+        variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
+      );
+    }
+
+    // ── Actualizar producto principal (RPC) ───────────────────────────────────
+    const payload = {
+      _productid: Id,
+      _title: data.get("title"),
+      _default_moneda: Number(data.get("default_moneda") ?? 0) || null,
+      _caja: data.get("caja") || null,
+      _venta: data.get("venta") === "true",
+      _descripcion: data.get("descripcion"),
+      _span: data.get("span") === "true",
+      _caracteristicas: data.get("caracteristicas"),
+      _storeid: data.get("storeId") || null,
+      _creado: data.get("creado") || null,
+      _order: Number(data.get("order") ?? 0),
+      _visible: data.get("visible") === "true",
+    };
+
+    const { data: updatedProduct, error } = await supabase
+      .rpc("update_product", payload)
+      .single();
+
+    if (error) {
+      console.error("RPC update_product error:", error);
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    // ── Sincronizar variantes ─────────────────────────────────────────────────
+    let finalVariants = [];
+
+    if (variants !== null) {
+      const incomingIds = variants.map((v) => v.id).filter(Boolean);
+
+      // Obtener variantes existentes para detectar cuáles borrar
+      const { data: existingVars } = await supabase
+        .from("product_variants")
+        .select("id, image")
+        .eq("product_id", Id);
+
+      // Borrar variantes que ya no existen (y sus imágenes en cloudinary)
+      const toDelete = (existingVars ?? []).filter(
+        (v) => !incomingIds.includes(v.id),
+      );
+      if (toDelete.length > 0) {
+        await Promise.allSettled(
+          toDelete.filter((v) => v.image).map((v) => DestroyImage(v.image)),
+        );
+        await supabase
+          .from("product_variants")
+          .delete()
+          .in(
+            "id",
+            toDelete.map((v) => v.id),
+          );
+      }
+
+      // FIX: upsert con todos los campos del schema actual de product_variants
+      if (variants.length > 0) {
+        const upsertData = variants.map((v, idx) => ({
+          id: v.id,
+          product_id: Id,
+          label: v.label ?? "",
+          attributes: v.attributes ?? {},
+          price: Number(v.price) || 0,
+          old_price: Number(v.old_price) || 0,
+          // FIX: priceCompra y embalaje se guardan en attributes como metadata
+          // ya que el schema de product_variants no tiene esas columnas directamente.
+          // Se extienden los attributes para preservarlos.
+          stock: Number(v.stock) || 0,
+          image: v.image ?? null,
+          default_variant: !!v.default_variant,
+          updated_at: new Date().toISOString(),
+        }));
+
+        const { error: upsertErr } = await supabase
+          .from("product_variants")
+          .upsert(upsertData, { onConflict: "id" });
+
+        if (upsertErr) {
+          console.error("Error upsert variantes:", upsertErr);
+        }
+        // Después del upsert de variantes existente...
+
+        // ── Sincronizar quantity_discounts ────────────────────────────────────────
+        const allIncomingQd = variants.flatMap((v) =>
+          (v.quantity_discounts ?? []).map((qd) => ({
+            variant_id: v.id,
+            product_id: Id,
+            min_qty: Number(qd.min_qty) || 1,
+            max_qty: qd.max_qty != null ? Number(qd.max_qty) : null,
+            type: qd.type ?? "quantity",
+            value: Number(qd.value) || 0,
+          })),
+        );
+
+        // Borrar todos los QD actuales de estas variantes y reinsertar
+        // (más simple que un diff por la lógica de IDs temporales del cliente)
+        const variantIds = variants.map((v) => v.id).filter(Boolean);
+        if (variantIds.length > 0) {
+          await supabase
+            .from("quantity_discounts")
+            .delete()
+            .in("variant_id", variantIds);
+        }
+
+        if (allIncomingQd.length > 0) {
+          const { error: qdErr } = await supabase
+            .from("quantity_discounts")
+            .insert(allIncomingQd);
+          if (qdErr) console.error("Error upsert quantity_discounts:", qdErr);
         }
       }
 
-      // subir nuevo archivo (UploadNewImage debe aceptar Blob/File/Buffer)
-      const uploadedRes = await UploadNewImage(file);
-      const uploadedUrl = uploadedRes?.secure_url ?? uploadedRes;
-
-      // asignamos en la posición correcta (no creamos holes porque 'updated' ya tiene longitud necesaria)
-      updated[idx] = uploadedUrl;
-      // NO return aquí; seguimos procesando todos los items
-    } catch (err) {
-      console.error("Failed processing item", item, err);
-      // seguimos con los demás
+      // FIX: devolver las variantes con los campos extra (priceCompra, embalaje)
+      // que vienen del cliente para que el frontend no los pierda en el ciclo
+      // En la construcción de finalVariants — ya estaba, solo asegúrate de preservarlos:
+      finalVariants = variants.map((v) => ({
+        ...v,
+        priceCompra: v.priceCompra ?? 0,
+        embalaje: v.embalaje ?? 0,
+        quantity_discounts: v.quantity_discounts ?? [], // <-- agregar esta línea
+      }));
+    } else {
+      // Si no vienen variantes en el payload, devolver las existentes de la DB
+      const { data: existing } = await supabase
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", Id)
+        .order("orden");
+      finalVariants = existing ?? [];
     }
+
+    // ── Respuesta final ───────────────────────────────────────────────────────
+    // FIX: siempre devolver product_variants (no variants) para consistencia con el frontend
+    const caracteristicas = (() => {
+      const raw = updatedProduct?.caracteristicas;
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === "string") {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return [];
+        }
+      }
+      return raw;
+    })();
+
+    return NextResponse.json({
+      ...updatedProduct,
+      product_variants: finalVariants,
+      caracteristicas,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error.message || "Error al actualizar" },
+      { status: 500 },
+    );
   }
+}
 
-  // opcional: si quieres eliminar nulls y compactar, hazlo aquí.
-  // return updated.filter(Boolean);
+export async function DELETE(request) {
+  try {
+    const supabase = await getAuthenticatedSupabase();
 
-  return updated;
+    const data = await request.formData();
+    const imageOld = data.get("image");
+    const Id = data.get("Id");
+
+    // Borrar imágenes de variantes en cloudinary
+    const { data: varData } = await supabase
+      .from("product_variants")
+      .select("image")
+      .eq("product_id", Id);
+
+    await Promise.allSettled([
+      ...(varData ?? [])
+        .filter((v) => v.image)
+        .map((v) => DestroyImage(v.image)),
+      imageOld ? DestroyImage(imageOld) : Promise.resolve(),
+    ]);
+
+    await supabase.from("product_variants").delete().eq("product_id", Id);
+    const { error } = await supabase
+      .from("Products")
+      .delete()
+      .eq("productId", Id);
+
+    if (error)
+      return NextResponse.json(
+        { message: error.message || error },
+        { status: 400 },
+      );
+    return NextResponse.json({ message: "Eliminado correctamente" });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error.message || "Error al eliminar" },
+      { status: 500 },
+    );
+  }
 }

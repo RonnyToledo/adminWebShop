@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 
-export default function ConfimationOut({ action }) {
+export default function ConfirmationOut({ action }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingRoute, setPendingRoute] = useState(null);

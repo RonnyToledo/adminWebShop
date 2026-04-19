@@ -49,10 +49,10 @@ import { logoApp } from "@/utils/image";
 import { useRouter } from "next/navigation";
 import { format } from "@formkit/tempo";
 import Image from "next/image";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { sileo } from "sileo";
 import Link from "next/link";
-import ConfimationOut from "@/components/globalFunction/confimationOut";
+import ConfirmationOut from "@/components/globalFunction/confirmationOut";
 
 // Constante para productos sin categoría
 const UNCATEGORIZED_ID = "uncategorized";
@@ -237,7 +237,7 @@ export function ProductManagementSystem() {
     const formData = new FormData();
     formData.append("values", JSON.stringify(value));
 
-    const deletePromise = axios.delete(
+    const deletePromise = apiClient.delete(
       `/api/tienda/${webshop?.store?.sitioweb}/products/`,
       {
         data: formData,
@@ -305,7 +305,7 @@ export function ProductManagementSystem() {
     const formData = new FormData();
     formData.append("products", JSON.stringify(modified));
 
-    const putPromise = axios.put(
+    const putPromise = apiClient.put(
       `/api/tienda/${webshop?.store?.sitioweb}/products`,
       formData,
     );
@@ -819,7 +819,7 @@ export function ProductManagementSystem() {
           Guardar
         </Button>
       </div>
-      <ConfimationOut
+      <ConfirmationOut
         action={hasPendingChanges(products, webshop?.products || [])}
       />
     </div>

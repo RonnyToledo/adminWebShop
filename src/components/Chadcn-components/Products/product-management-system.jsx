@@ -2,9 +2,10 @@
 
 import React, { useState, useContext, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
+  X,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,35 +43,90 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
-  X,
-  Loader2,
-  AlertTriangle,
-  GripVertical,
-  Package,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
 import { useRouter } from "next/navigation";
 import { format } from "@formkit/tempo";
 import Image from "next/image";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { sileo } from "sileo";
 import Link from "next/link";
-import ConfimationOut from "@/components/globalFunction/confimationOut";
-import { motion, AnimatePresence } from "framer-motion";
+import ConfirmationOut from "@/components/globalFunction/confirmationOut";
+// ↓ helpers del modelo normalizado
+import {
+  getDisplayPrice,
+  getMaxPrice,
+  getTotalStock,
+  isMultiVariant,
+  getVariantSummary,
+} from "@/utils/variants";
 
 const UNCATEGORIZED_ID = "uncategorized";
+
+// ─── Price display helper (con moneda) ────────────────────────────────────────
+function ProductPriceLabel({ product, webshop }) {
+  const moneda =
+    webshop?.store?.monedas?.find((c) => c.id === product?.default_moneda) ??
+    webshop?.store?.monedas?.find((c) => c.defecto);
+
+  const monedaNombre = moneda?.nombre ?? "";
+  const min = getDisplayPrice(product);
+  const max = getMaxPrice(product);
+  const multi = isMultiVariant(product) && min !== max;
+  const sinPrecio = min === 0 && max === 0; // ← nuevo
+
+  if (sinPrecio) {
+    return (
+      <p className="text-sm text-muted-foreground">Sin precio configurado</p>
+    );
+  }
+
+  return (
+    <p className="text-sm text-primary">
+      {multi ? `desde ` : ""}${min.toFixed(2)}
+      {multi && max > 0 && ` – $${max.toFixed(2)}`}
+      {monedaNombre && ` ${monedaNombre}`}
+    </p>
+  );
+}
+
+// ─── Stock badge ──────────────────────────────────────────────────────────────
+function StockBadge({ product, webshop }) {
+  const total = getTotalStock(product); // seguro ahora con el fix 1
+  const summary = getVariantSummary(product);
+
+  if (summary) {
+    return (
+      <Badge variant="outline" className="text-xs font-normal">
+        {summary}
+      </Badge>
+    );
+  }
+
+  if (total > 0) {
+    return webshop?.store?.stocks ? (
+      <Badge variant="outline" className="text-xs">
+        {total} unidades
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="text-xs">
+        En stock
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="destructive" className="text-xs">
+      Agotado
+    </Badge>
+  );
+}
 
 export function ProductManagementSystem() {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [products, setProducts] = useState([]);
+  const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]);
 
@@ -67,26 +134,120 @@ export function ProductManagementSystem() {
     setProducts(webshop?.products || []);
   }, [webshop?.products]);
 
-  // ── Datos derivados (lógica sin cambios) ──────────────────────────────────
-
   const uncategorizedProducts = React.useMemo(() => {
-    const validIds = webshop?.store?.categoria?.map((c) => c.id) || [];
+    const validCategoryIds =
+      webshop?.store?.categoria?.map((cat) => cat.id) || [];
     return products.filter(
-      (p) =>
-        !p.caja || p.caja === UNCATEGORIZED_ID || !validIds.includes(p.caja),
+      (product) =>
+        !product.caja ||
+        product.caja === UNCATEGORIZED_ID ||
+        !validCategoryIds.includes(product.caja),
     );
   }, [products, webshop?.store?.categoria]);
 
   const allCategories = React.useMemo(() => {
-    const cats = [...(webshop?.store?.categoria || [])];
-    if (uncategorizedProducts.length > 0)
-      cats.push({
+    const categories = [...(webshop?.store?.categoria || [])];
+    if (uncategorizedProducts.length > 0) {
+      categories.push({
         id: UNCATEGORIZED_ID,
         name: "Sin categoría",
         isVirtual: true,
       });
-    return cats;
+    }
+    return categories;
   }, [webshop?.store?.categoria, uncategorizedProducts]);
+
+  const DragAndDrop = (result) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+    const sourceCategory = source.droppableId;
+    const destCategory = destination.droppableId;
+    const sourceIndex = source.index;
+    const destIndex = destination.index;
+
+    if (sourceCategory === destCategory) {
+      setProducts((prev) =>
+        OrderProducts(
+          prev,
+          allCategories.map((o) => o.id),
+          sourceIndex,
+          destIndex,
+          sourceCategory,
+        ),
+      );
+    } else {
+      setProducts((prev) => {
+        const newPrev = prev.map((prod) =>
+          prod.productId === draggableId
+            ? {
+                ...prod,
+                caja: destCategory === UNCATEGORIZED_ID ? null : destCategory,
+                order: destIndex,
+              }
+            : prod,
+        );
+        const productToMove = newPrev.find(
+          (prod) => prod.productId === draggableId,
+        );
+        if (productToMove) {
+          return OrderProducts(
+            newPrev,
+            allCategories.map((o) => o.id),
+            sourceIndex,
+            destIndex,
+            destCategory,
+          );
+        }
+        return newPrev;
+      });
+    }
+  };
+
+  const toggleProductStatus = (productId, field) => {
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.productId === productId
+          ? { ...product, [field]: !product[field] }
+          : product,
+      ),
+    );
+  };
+
+  // Toggle stock en modo simple — afecta la variante default
+  const toggleSimpleStock = (productId) => {
+    setProducts((prev) =>
+      prev.map((prod) => {
+        if (prod.productId !== productId) return prod;
+        if (isMultiVariant(prod)) return prod; // ← guardia extra, aunque el JSX ya lo filtra
+        const currentStock = getTotalStock(prod);
+        const newStock = currentStock > 0 ? 0 : 1;
+        const updatedVariants = (prod.product_variants ?? []).map((v) =>
+          v.attributes?.es_default ? { ...v, stock: newStock } : v,
+        );
+        // Si no hay variantes (Enguatada), actualizar solo prod.stock
+        return {
+          ...prod,
+          stock: newStock,
+          product_variants:
+            updatedVariants.length > 0
+              ? updatedVariants
+              : prod.product_variants,
+        };
+      }),
+    );
+  };
+
+  const getSelectedProductIds = () => selectedProducts.map((s) => s.productId);
+  const isProductSelected = (productId) =>
+    selectedProducts.some((s) => s.productId === productId);
+  const toggleProductSelection = (productId, image) => {
+    setSelectedProducts((prev) => {
+      const isSelected = prev.some((s) => s.productId === productId);
+      return isSelected
+        ? prev.filter((s) => s.productId !== productId)
+        : [...prev, { productId, image }];
+    });
+  };
 
   const getCategoryProducts = React.useCallback(
     (categoryId) => {
@@ -96,90 +257,42 @@ export function ProductManagementSystem() {
     [products, uncategorizedProducts],
   );
 
-  // ── Lógica de selección (sin cambios) ────────────────────────────────────
-
-  const getSelectedProductIds = () => selectedProducts.map((s) => s.productId);
-  const isProductSelected = (id) =>
-    selectedProducts.some((s) => s.productId === id);
-  const clearSelection = () => setSelectedProducts([]);
-
-  const toggleProductSelection = (productId, image) => {
-    setSelectedProducts((prev) => {
-      const exists = prev.some((s) => s.productId === productId);
-      return exists
-        ? prev.filter((s) => s.productId !== productId)
-        : [...prev, { productId, image }];
-    });
-  };
-
   const toggleSelectAllInCategory = (categoryId) => {
-    const catProds = getCategoryProducts(categoryId).map((p) => ({
+    const categoryProducts = getCategoryProducts(categoryId).map((p) => ({
       productId: p.productId,
       image: p.image,
     }));
-    const catIds = catProds.map((p) => p.productId);
-    const selIds = getSelectedProductIds();
-    const allSel = catIds.every((id) => selIds.includes(id));
-    setSelectedProducts((prev) =>
-      allSel
-        ? prev.filter((s) => !catIds.includes(s.productId))
-        : [
-            ...prev,
-            ...catProds.filter(
-              (p) => !prev.some((s) => s.productId === p.productId),
-            ),
-          ],
+    const categoryProductIds = categoryProducts.map((p) => p.productId);
+    const selectedIds = getSelectedProductIds();
+    const allSelected = categoryProductIds.every((id) =>
+      selectedIds.includes(id),
     );
-  };
-
-  const toggleProductStatus = (productId, field) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.productId === productId ? { ...p, [field]: !p[field] } : p,
-      ),
-    );
-  };
-
-  // ── DnD ──────────────────────────────────────────────────────────────────
-
-  const DragAndDrop = (result) => {
-    const { source, destination, draggableId } = result;
-    if (!destination) return;
-    const { droppableId: srcCat, index: srcIdx } = source;
-    const { droppableId: dstCat, index: dstIdx } = destination;
-    if (srcCat === dstCat) {
-      setProducts((prev) =>
-        OrderProducts(
-          prev,
-          allCategories.map((c) => c.id),
-          srcIdx,
-          dstIdx,
-          srcCat,
-        ),
+    setSelectedProducts((prev) => {
+      if (allSelected)
+        return prev.filter((s) => !categoryProductIds.includes(s.productId));
+      const newSelections = categoryProducts.filter(
+        (p) => !prev.some((s) => s.productId === p.productId),
       );
-    } else {
-      setProducts((prev) => {
-        const updated = prev.map((p) =>
-          p.productId === draggableId
-            ? {
-                ...p,
-                caja: dstCat === UNCATEGORIZED_ID ? null : dstCat,
-                order: dstIdx,
-              }
-            : p,
-        );
-        return OrderProducts(
-          updated,
-          allCategories.map((c) => c.id),
-          srcIdx,
-          dstIdx,
-          dstCat,
-        );
-      });
-    }
+      return [...prev, ...newSelections];
+    });
   };
 
-  // ── API (sin cambios) ─────────────────────────────────────────────────────
+  // toggleVariantStock — toggle de una variante específica por su id
+  const toggleVariantStock = (productId, variantId) => {
+    setProducts((prev) =>
+      prev.map((prod) => {
+        if (prod.productId !== productId) return prod;
+        const updatedVariants = (prod.product_variants ?? []).map((v) => {
+          if (v.id !== variantId) return v;
+          const newStock = (Number(v.stock) || 0) > 0 ? 0 : 1;
+          return { ...v, stock: newStock };
+        });
+        return { ...prod, product_variants: updatedVariants };
+      }),
+    );
+  };
+
+  const clearSelection = () => setSelectedProducts([]);
 
   const deleteProduct = async (value) => {
     setDownloading(true);
@@ -193,7 +306,7 @@ export function ProductManagementSystem() {
     }
     const formData = new FormData();
     formData.append("values", JSON.stringify(value));
-    const deletePromise = axios.delete(
+    const deletePromise = apiClient.delete(
       `/api/tienda/${webshop?.store?.sitioweb}/products/`,
       { data: formData },
     );
@@ -201,10 +314,12 @@ export function ProductManagementSystem() {
       await sileo.promise(deletePromise, {
         loading: { title: "Eliminando productos..." },
         success: (response) => {
-          const ids = value.map((s) => s.productId);
+          const selectedIds = value.map((s) => s.productId);
           setWebshop((prev) => ({
             ...prev,
-            products: prev.products.filter((p) => !ids.includes(p.productId)),
+            products: prev.products.filter(
+              (p) => !selectedIds.includes(p.productId),
+            ),
           }));
           setSelectedProducts([]);
           return {
@@ -230,28 +345,25 @@ export function ProductManagementSystem() {
       webshop?.products || [],
       products,
     );
-    if (!modified || !modified.length) {
+    if (!modified || modified.length === 0) {
       setDownloading(false);
-      sileo.info({
-        title: "Sin cambios",
-        description: "No se detectaron modificaciones.",
-      });
+      sileo.info({ title: "No hay cambios para guardar" });
       return;
     }
     const formData = new FormData();
     formData.append("products", JSON.stringify(modified));
-    const putPromise = axios.put(
+    const putPromise = apiClient.put(
       `/api/tienda/${webshop?.store?.sitioweb}/products`,
       formData,
     );
     try {
       await sileo.promise(putPromise, {
         loading: { title: "Guardando cambios..." },
-        success: () => {
+        success: (response) => {
           setWebshop((prev) => ({ ...prev, products }));
-          const c = modified.length;
+          const count = modified.length;
           return {
-            title: `${c} producto${c !== 1 ? "s" : ""} actualizado${c !== 1 ? "s" : ""}`,
+            title: `${count} producto${count === 1 ? "" : "s"} actualizado${count === 1 ? "" : "s"}`,
           };
         },
         error: (err) => ({
@@ -267,488 +379,461 @@ export function ProductManagementSystem() {
   };
 
   const totalSelected = selectedProducts.length;
-  const hasPending = hasPendingChanges(products, webshop?.products || []);
-
-  // ── Render ────────────────────────────────────────────────────────────────
-
+  console.log(products);
   return (
-    <div className="space-y-4">
-      {/* Barra de selección masiva — sticky */}
-      <AnimatePresence>
-        {totalSelected > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="sticky top-4 z-20 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3 backdrop-blur-sm"
-          >
-            <span className="text-sm font-medium text-primary">
-              {totalSelected} producto{totalSelected !== 1 ? "s" : ""}{" "}
-              seleccionado{totalSelected !== 1 ? "s" : ""}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={clearSelection}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-secondary/60 transition-colors"
-              >
-                <X size={12} />
-                <span className="hidden sm:inline">Limpiar</span>
-              </button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-destructive text-white hover:bg-destructive/90 transition-colors">
-                    <Trash2 size={12} />
-                    <span className="hidden sm:inline">Eliminar</span>
-                    <span className="sm:hidden">{totalSelected}</span>
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      ¿Eliminar {totalSelected} producto
-                      {totalSelected !== 1 ? "s" : ""}?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta acción no se puede deshacer.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteProduct(selectedProducts)}
-                      className="bg-destructive text-white hover:bg-destructive/90"
-                    >
-                      Eliminar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+    <div className="space-y-3 md:space-y-6">
+      {totalSelected > 0 && (
+        <Card className="bg-primary/5 border-primary/20 sticky top-16 z-10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-primary">
+                {totalSelected} producto{totalSelected !== 1 ? "s" : ""}{" "}
+                seleccionado{totalSelected !== 1 ? "s" : ""}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={clearSelection}>
+                  <X className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Limpiar selección</span>
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="w-4 h-4 md:mr-2" />
+                      <span className="hidden md:inline">
+                        Eliminar seleccionados
+                      </span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción eliminará permanentemente {totalSelected}{" "}
+                        producto{totalSelected !== 1 ? "s" : ""}. No se puede
+                        deshacer.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteProduct(selectedProducts)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Categorías con drag & drop */}
       <DragDropContext onDragEnd={DragAndDrop}>
-        <div className="space-y-4">
+        <div className="grid gap-3 md:gap-6">
           {allCategories.map((category) => {
-            const catProds = getCategoryProducts(category.id);
-            const catIds = catProds.map((p) => p.productId);
-            const selIds = getSelectedProductIds();
-            const selInCat = catIds.filter((id) => selIds.includes(id)).length;
-            const allSelInCat = catIds.length > 0 && selInCat === catIds.length;
-            const someSelInCat = selInCat > 0 && selInCat < catIds.length;
+            const categoryProducts = getCategoryProducts(category.id);
+            const categoryProductIds = categoryProducts.map((p) => p.productId);
+            const selectedIds = getSelectedProductIds();
+            const selectedInCategory = categoryProductIds.filter((id) =>
+              selectedIds.includes(id),
+            ).length;
+            const allSelectedInCategory =
+              categoryProductIds.length > 0 &&
+              selectedInCategory === categoryProductIds.length;
+            const someSelectedInCategory =
+              selectedInCategory > 0 &&
+              selectedInCategory < categoryProductIds.length;
 
             return (
-              <div
+              <Card
                 key={category.id}
                 className={cn(
-                  "border rounded-xl overflow-hidden",
-                  category.isVirtual ? "border-amber-400/40" : "border-border",
+                  "bg-card",
+                  category.isVirtual &&
+                    "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20",
                 )}
               >
-                {/* Header de categoría */}
-                <div
-                  className={cn(
-                    "flex items-center justify-between px-4 py-3 border-b",
-                    category.isVirtual
-                      ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-400/30"
-                      : "bg-secondary/30 border-border",
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {catProds.length > 0 && (
-                      <Checkbox
-                        checked={allSelInCat}
-                        ref={(el) => {
-                          if (el) el.indeterminate = someSelInCat;
-                        }}
-                        onCheckedChange={() =>
-                          toggleSelectAllInCategory(category.id)
-                        }
-                      />
-                    )}
-                    {category.isVirtual && (
-                      <AlertTriangle
-                        size={14}
-                        className="text-amber-500 shrink-0"
-                      />
-                    )}
-                    <span className="text-sm font-medium text-foreground">
-                      {category.name}
-                    </span>
-                    {selInCat > 0 && (
-                      <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full">
-                        {selInCat} sel.
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs px-2 py-0.5 rounded-full font-medium",
-                      category.isVirtual
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
-                        : "bg-secondary text-muted-foreground",
-                    )}
-                  >
-                    {catProds.length} productos
-                  </span>
-                </div>
-
-                {/* Zona droppable */}
-                <Droppable droppableId={category.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={cn(
-                        "min-h-[80px] transition-colors p-2 space-y-1.5",
-                        snapshot.isDraggingOver
-                          ? "bg-primary/5"
-                          : "bg-background",
+                <CardHeader className="p-3 md:pb-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {categoryProducts.length > 0 && (
+                        <Checkbox
+                          checked={allSelectedInCategory}
+                          ref={(el) => {
+                            if (el) el.indeterminate = someSelectedInCategory;
+                          }}
+                          onCheckedChange={() =>
+                            toggleSelectAllInCategory(category.id)
+                          }
+                        />
                       )}
-                    >
-                      {catProds
-                        .sort((a, b) => (a.order || 0) - (b.order || 0))
-                        .map((product, index) => (
-                          <Draggable
-                            key={product.productId}
-                            draggableId={product.productId}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={cn(
-                                  "flex items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-xl border transition-all",
-                                  snapshot.isDragging
-                                    ? "shadow-lg border-primary/30 rotate-1 scale-[1.02] bg-background"
-                                    : "border-border bg-background hover:border-border/80",
-                                  isProductSelected(product.productId) &&
-                                    "border-primary/40 bg-primary/5",
-                                  !product.visible && "opacity-60",
-                                )}
-                              >
-                                {/* Drag handle */}
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-grab touch-none"
-                                >
-                                  <GripVertical size={14} />
-                                </div>
-
-                                {/* Checkbox */}
-                                <Checkbox
-                                  checked={isProductSelected(product.productId)}
-                                  onCheckedChange={() =>
-                                    toggleProductSelection(
-                                      product.productId,
-                                      product.image,
-                                    )
-                                  }
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="shrink-0"
-                                />
-
-                                {/* Número orden — solo sm+ */}
-                                <span className="hidden sm:block text-[11px] text-muted-foreground/60 w-5 text-right shrink-0 tabular-nums">
-                                  {(product.order ?? 0) < 9999
-                                    ? (product.order ?? 0) + 1
-                                    : ""}
-                                </span>
-
-                                {/* Imagen con preview en Dialog */}
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <div className="shrink-0 cursor-pointer">
-                                      <Image
-                                        width={56}
-                                        height={56}
-                                        src={product.image || logoApp}
-                                        alt={product.title || "Producto"}
-                                        className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg border border-border"
-                                        style={{
-                                          filter:
-                                            !product.stock || !product.visible
-                                              ? "grayscale(1)"
-                                              : "none",
-                                        }}
-                                      />
-                                    </div>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-sm flex flex-col items-center gap-0 bg-transparent border-none p-0">
-                                    <DialogHeader>
-                                      <DialogTitle />
-                                      <DialogDescription />
-                                    </DialogHeader>
-                                    <Image
-                                      width={400}
-                                      height={400}
-                                      src={product.image || logoApp}
-                                      alt={product.title || "Producto"}
-                                      className="w-full h-auto object-cover rounded-xl aspect-square"
-                                    />
-                                  </DialogContent>
-                                </Dialog>
-
-                                {/* Info del producto */}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-foreground truncate">
-                                    {product.title || "Sin título"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {product.creado
-                                      ? format(
-                                          new Date(product.creado),
-                                          "short",
-                                        )
-                                      : "N/A"}
-                                  </p>
-                                  <p className="text-xs font-medium text-primary tabular-nums">
-                                    {(product.price || 0).toFixed(2)}{" "}
-                                    {webshop?.store?.monedas?.find(
-                                      (c) => c.id === product?.default_moneda,
-                                    )?.nombre ??
-                                      webshop?.store?.monedas?.find(
-                                        (c) => c.defecto,
-                                      )?.nombre ??
-                                      ""}
-                                  </p>
-                                </div>
-
-                                {/* Badges estado — ocultos en mobile, visibles sm+ */}
-                                <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
-                                  {product.stock ? (
-                                    webshop?.store?.stocks ? (
-                                      <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full border border-border">
-                                        {product.stock} u.
-                                      </span>
-                                    ) : (
-                                      <span className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                                        En stock
-                                      </span>
-                                    )
-                                  ) : (
-                                    <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
-                                      Agotado
-                                    </span>
-                                  )}
-                                  {!product.visible ? (
-                                    <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                                      <EyeOff size={9} />
-                                      Oculto
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
-                                      <Eye size={9} />
-                                      Visible
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Switches — solo en md+ */}
-                                <div className="hidden md:flex items-center gap-3 shrink-0">
-                                  {!webshop?.store?.stocks && (
-                                    <div className="flex flex-col items-center gap-1">
-                                      <Switch
-                                        checked={!!product.stock}
-                                        onCheckedChange={() =>
-                                          setProducts((prev) =>
-                                            prev.map((p) =>
-                                              p.productId === product.productId
-                                                ? {
-                                                    ...product,
-                                                    stock: product.stock
-                                                      ? 0
-                                                      : 1,
-                                                  }
-                                                : p,
-                                            ),
-                                          )
-                                        }
-                                      />
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {product.stock ? "Stock" : "Agotado"}
-                                      </span>
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col items-center gap-1">
-                                    <Switch
-                                      checked={!!product.visible}
-                                      onCheckedChange={() =>
-                                        toggleProductStatus(
-                                          product.productId,
-                                          "visible",
-                                        )
-                                      }
-                                    />
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {product.visible ? "Visible" : "Oculto"}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Menú contextual */}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0">
-                                      <MoreVertical size={14} />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-48"
-                                  >
-                                    {/* Switches en mobile dentro del menú */}
-                                    {!webshop?.store?.stocks && (
-                                      <DropdownMenuItem
-                                        className="flex items-center justify-between gap-2 md:hidden"
-                                        onSelect={(e) => e.preventDefault()}
-                                      >
-                                        <span className="text-sm">
-                                          {product.stock
-                                            ? "En stock"
-                                            : "Agotado"}
-                                        </span>
-                                        <Switch
-                                          checked={!!product.stock}
-                                          onCheckedChange={() =>
-                                            setProducts((prev) =>
-                                              prev.map((p) =>
-                                                p.productId ===
-                                                product.productId
-                                                  ? {
-                                                      ...product,
-                                                      stock: product.stock
-                                                        ? 0
-                                                        : 1,
-                                                    }
-                                                  : p,
-                                              ),
-                                            )
-                                          }
-                                        />
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem
-                                      className="flex items-center justify-between gap-2 md:hidden"
-                                      onSelect={(e) => e.preventDefault()}
-                                    >
-                                      <span className="text-sm">
-                                        {product.visible ? "Visible" : "Oculto"}
-                                      </span>
-                                      <Switch
-                                        checked={!!product.visible}
-                                        onCheckedChange={() =>
-                                          toggleProductStatus(
-                                            product.productId,
-                                            "visible",
-                                          )
-                                        }
-                                      />
-                                    </DropdownMenuItem>
-
-                                    <DropdownMenuSeparator className="md:hidden" />
-                                    <DropdownMenuItem asChild>
-                                      <Link
-                                        href={`/products/${product.productId}`}
-                                        className="gap-2"
-                                      >
-                                        <Edit size={13} /> Editar
-                                      </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                      <Link
-                                        href={`/products/${product.productId}`}
-                                        className="gap-2"
-                                      >
-                                        <Eye size={13} /> Ver en tienda
-                                      </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive gap-2 focus:text-destructive"
-                                      onClick={() =>
-                                        deleteProduct([
-                                          {
-                                            productId: product.productId,
-                                            image: product.image,
-                                          },
-                                        ])
-                                      }
-                                    >
-                                      {downloading ? (
-                                        <>
-                                          <Loader2
-                                            size={13}
-                                            className="animate-spin"
-                                          />{" "}
-                                          Eliminando
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Trash2 size={13} /> Eliminar
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-
-                      {provided.placeholder}
-
-                      {catProds.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
-                          <Package size={20} className="opacity-40" />
-                          <p className="text-xs">
-                            {category.isVirtual
-                              ? "Sin productos sin categoría"
-                              : "Arrastra productos aquí"}
-                          </p>
-                        </div>
+                      <span className="text-xl font-bold text-card-foreground flex items-center gap-2">
+                        {category.isVirtual && (
+                          <AlertTriangle className="w-5 h-5 text-amber-500" />
+                        )}
+                        {category.name}
+                      </span>
+                      {selectedInCategory > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary/10 text-primary"
+                        >
+                          {selectedInCategory} seleccionado
+                          {selectedInCategory !== 1 ? "s" : ""}
+                        </Badge>
                       )}
                     </div>
-                  )}
-                </Droppable>
-              </div>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "bg-secondary text-secondary-foreground",
+                        category.isVirtual &&
+                          "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+                      )}
+                    >
+                      {categoryProducts.length} productos
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-1 pt-0 md:p-6 md:pt-0">
+                  <Droppable droppableId={category.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={cn(
+                          "min-h-[100px] rounded-lg border-2 border-dashed transition-colors",
+                          snapshot.isDraggingOver
+                            ? "border-primary bg-primary/5"
+                            : category.isVirtual
+                              ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10"
+                              : "border-border bg-muted/20",
+                        )}
+                      >
+                        <div className="grid gap-1 md:gap-4 p-1 md:p-4">
+                          {categoryProducts
+                            .sort((a, b) => (a.order || 0) - (b.order || 0))
+                            .map((product, index) => {
+                              const totalStock = getTotalStock(product);
+                              const multiVariant = isMultiVariant(product);
+
+                              return (
+                                <Draggable
+                                  key={product.productId}
+                                  draggableId={product.productId}
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className={cn(
+                                        `bg-gradient-to-br from-background border border-border rounded-lg p-2 md:p-4 transition-all ${
+                                          !product.visible
+                                            ? "from-red-600/10 to-red-900/10"
+                                            : totalStock > 0
+                                              ? "to-background"
+                                              : "from-slate-400/10 to-slate-600/10"
+                                        }`,
+                                        snapshot.isDragging &&
+                                          "shadow-lg rotate-2 scale-105",
+                                        isProductSelected(product.productId) &&
+                                          "border border-slate-300 bg-primary/5",
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-1 md:gap-4">
+                                        <Checkbox
+                                          checked={isProductSelected(
+                                            product.productId,
+                                          )}
+                                          onCheckedChange={() =>
+                                            toggleProductSelection(
+                                              product.productId,
+                                              product.image,
+                                            )
+                                          }
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <h4 className="text-slate-700 hidden md:flex">
+                                          {(product.order ?? 0) < 9999
+                                            ? (product.order ?? 0) + 1
+                                            : ""}
+                                          .
+                                        </h4>
+
+                                        <div className="cursor-pointer hover:opacity-80 transition-opacity">
+                                          <Image
+                                            width={300}
+                                            height={200}
+                                            src={
+                                              product.product_variants.find(
+                                                (v) => v.image,
+                                              )?.image || logoApp
+                                            }
+                                            alt={product.title || "Producto"}
+                                            className="w-16 h-16 object-cover rounded-md border border-border aspect-square"
+                                            style={{
+                                              filter:
+                                                !product.visible ||
+                                                totalStock === 0
+                                                  ? "grayscale(1)"
+                                                  : "initial",
+                                            }}
+                                          />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                          <Dialog>
+                                            <DialogTrigger asChild>
+                                              <h3 className="font-semibold text-foreground line-clamp-1 max-w-[40dvw] md:w-auto cursor-pointer">
+                                                {product.title || "Sin título"}
+                                              </h3>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-2xl flex flex-col gap-0 justify-center items-center bg-transparent w-fit p-0 border-none">
+                                              <DialogHeader>
+                                                <DialogTitle />
+                                                <DialogDescription />
+                                              </DialogHeader>
+                                              <Image
+                                                width={300}
+                                                height={200}
+                                                src={
+                                                  product.product_variants.find(
+                                                    (v) => v.image,
+                                                  )?.image || logoApp
+                                                }
+                                                alt={
+                                                  product.title || "Producto"
+                                                }
+                                                className="w-[300dvw/4] md:w-[100dvw/2] h-auto object-cover rounded-lg aspect-square"
+                                              />
+                                            </DialogContent>
+                                          </Dialog>
+
+                                          <p className="text-sm text-muted-foreground">
+                                            {product.creado
+                                              ? format(
+                                                  new Date(product.creado),
+                                                  "short",
+                                                )
+                                              : "N/A"}
+                                          </p>
+
+                                          {/* PRECIO desde variantes */}
+                                          <ProductPriceLabel
+                                            product={product}
+                                            webshop={webshop}
+                                          />
+
+                                          {/* Badge variantes en móvil */}
+                                          {multiVariant && (
+                                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                                              {getVariantSummary(product)}
+                                            </p>
+                                          )}
+                                        </div>
+
+                                        {/* Controls desktop */}
+                                        <div className="gap-3 hidden md:flex items-start">
+                                          {!webshop?.store?.stocks && (
+                                            <>
+                                              {!multiVariant ? (
+                                                // Simple: un solo switch
+                                                <div className="flex flex-col items-center gap-2">
+                                                  <Switch
+                                                    checked={totalStock > 0}
+                                                    onCheckedChange={() =>
+                                                      toggleSimpleStock(
+                                                        product.productId,
+                                                      )
+                                                    }
+                                                  />
+                                                  <span className="text-sm text-muted-foreground">
+                                                    {totalStock > 0
+                                                      ? "En Stock"
+                                                      : "Agotado"}
+                                                  </span>
+                                                </div>
+                                              ) : null}
+                                            </>
+                                          )}
+                                          {/* Visible toggle — siempre */}
+                                          <div className="flex flex-col-reverse items-center gap-2">
+                                            <Switch
+                                              className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
+                                              checked={!!product.visible}
+                                              onCheckedChange={() =>
+                                                toggleProductStatus(
+                                                  product.productId,
+                                                  "visible",
+                                                )
+                                              }
+                                            />
+                                            <span className="text-sm text-muted-foreground">
+                                              {product.visible
+                                                ? "Visible"
+                                                : "Oculto"}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Badges desktop */}
+                                        <div className="hidden md:flex flex-col-reverse gap-1">
+                                          <StockBadge
+                                            product={product}
+                                            webshop={webshop}
+                                          />
+                                          {!product.visible ? (
+                                            <Badge
+                                              variant="default"
+                                              className="text-xs"
+                                            >
+                                              <EyeOff className="w-3 h-3 mr-1" />{" "}
+                                              Oculto
+                                            </Badge>
+                                          ) : (
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs"
+                                            >
+                                              <Eye className="w-3 h-3 mr-1" />{" "}
+                                              Visible
+                                            </Badge>
+                                          )}
+                                        </div>
+
+                                        {/* Dropdown */}
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="size-8 px-2"
+                                            >
+                                              <MoreVertical className="w-4 h-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            {/* Stock mobile — solo simple */}
+                                            {!webshop?.store?.stocks &&
+                                              !multiVariant && (
+                                                <DropdownMenuItem className="flex items-center justify-between gap-2 md:hidden">
+                                                  <span className="text-sm">
+                                                    {totalStock > 0
+                                                      ? "En Stock"
+                                                      : "Agotado"}
+                                                  </span>
+                                                  <Switch
+                                                    checked={totalStock > 0}
+                                                    onCheckedChange={() =>
+                                                      toggleSimpleStock(
+                                                        product.productId,
+                                                      )
+                                                    }
+                                                  />
+                                                </DropdownMenuItem>
+                                              )}
+                                            <DropdownMenuItem className="flex items-center justify-between gap-2 md:hidden">
+                                              <span className="text-sm">
+                                                {product.visible
+                                                  ? "Visible"
+                                                  : "Oculto"}
+                                              </span>
+                                              <Switch
+                                                className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
+                                                checked={!!product.visible}
+                                                onCheckedChange={() =>
+                                                  toggleProductStatus(
+                                                    product.productId,
+                                                    "visible",
+                                                  )
+                                                }
+                                              />
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem asChild>
+                                              <Link
+                                                href={`/products/${product.productId}`}
+                                              >
+                                                <Edit className="size-4 mr-2" />{" "}
+                                                Editar producto
+                                              </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                              <Link
+                                                href={`/products/${product.productId}`}
+                                              >
+                                                <Eye className="size-4 mr-2" />{" "}
+                                                Ver en tienda
+                                              </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              className="text-destructive gap-2"
+                                              onClick={async () =>
+                                                await deleteProduct([
+                                                  {
+                                                    productId:
+                                                      product.productId,
+                                                    image: product.image,
+                                                  },
+                                                ])
+                                              }
+                                            >
+                                              {downloading ? (
+                                                <Loader2 className="size-4 animate-spin" />
+                                              ) : (
+                                                <Trash2 className="size-4" />
+                                              )}
+                                              Eliminar
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                          {provided.placeholder}
+                          {categoryProducts.length === 0 && (
+                            <div className="text-center py-8 text-muted-foreground">
+                              {category.isVirtual
+                                ? "No hay productos sin categoría"
+                                : "Arrastra productos aquí o agrega nuevos"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Droppable>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
       </DragDropContext>
 
-      {/* Botón guardar sticky */}
-      {hasPending && (
-        <div className="sticky bottom-4 flex justify-center">
-          <motion.button
-            onClick={SaveData}
-            disabled={downloading}
-            whileHover={{ scale: downloading ? 1 : 1.02 }}
-            whileTap={{ scale: downloading ? 1 : 0.98 }}
-            className={cn(
-              "flex items-center gap-2 text-sm px-10 py-3 rounded-xl font-medium shadow-lg transition-all",
-              downloading
-                ? "bg-muted text-muted-foreground cursor-not-allowed"
-                : "bg-primary text-primary-foreground hover:bg-primary/90",
-            )}
-          >
-            {downloading && <Loader2 size={14} className="animate-spin" />}
-            {downloading ? "Guardando..." : "Guardar cambios"}
-          </motion.button>
-        </div>
-      )}
-
-      <ConfimationOut
+      <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
+        <Button
+          onClick={SaveData}
+          disabled={downloading}
+          className={`bg-black hover:bg-indigo-700 text-white w-1/2 font-medium py-2 px-4 rounded-3xl ${downloading ? "opacity-50 cursor-not-allowed" : ""}`}
+        >
+          Guardar
+        </Button>
+      </div>
+      <ConfirmationOut
         action={hasPendingChanges(products, webshop?.products || [])}
       />
     </div>
   );
 }
 
-// ─── Helpers (sin cambios) ────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const reorder = (list, startIndex, endIndex) => {
   const result = [...list];
@@ -758,31 +843,35 @@ const reorder = (list, startIndex, endIndex) => {
 };
 
 function OrderProducts(productos, categorias, startIndex, endIndex, specific) {
-  if (!Array.isArray(productos) || !Array.isArray(categorias))
-    return productos || [];
-  const ordenados = {};
+  const productosOrdenados = {};
   categorias.forEach((cat) => {
-    ordenados[cat] = [];
+    productosOrdenados[cat] = [];
   });
-  productos.forEach((prod) => {
-    const catId = prod.caja || UNCATEGORIZED_ID;
-    if (ordenados[catId]) ordenados[catId].push(prod);
-    else {
-      if (!ordenados[UNCATEGORIZED_ID]) ordenados[UNCATEGORIZED_ID] = [];
-      ordenados[UNCATEGORIZED_ID].push(prod);
+
+  productos.forEach((producto) => {
+    const cat = producto.caja || UNCATEGORIZED_ID;
+    if (productosOrdenados[cat]) {
+      productosOrdenados[cat].push(producto);
+    } else {
+      if (!productosOrdenados[UNCATEGORIZED_ID])
+        productosOrdenados[UNCATEGORIZED_ID] = [];
+      productosOrdenados[UNCATEGORIZED_ID].push(producto);
     }
   });
+
   if (specific && specific !== "none") {
-    const inCat = productos.filter(
+    const enCategoria = productos.filter(
       (p) => (p.caja || UNCATEGORIZED_ID) === specific,
     );
-    if (inCat.length > 0)
-      ordenados[specific] = reorder(inCat, startIndex, endIndex);
+    if (enCategoria.length > 0) {
+      productosOrdenados[specific] = reorder(enCategoria, startIndex, endIndex);
+    }
   }
-  const sinCat = productos.filter(
+
+  const sin_category = productos.filter(
     (p) => !categorias.includes(p.caja || UNCATEGORIZED_ID),
   );
-  return [...asignarOrden(ordenados), ...sinCat];
+  return [...asignarOrden(productosOrdenados), ...sin_category];
 }
 
 const asignarOrden = (productos) => {
@@ -798,17 +887,62 @@ const asignarOrden = (productos) => {
 const hasPendingChanges = (data, store) =>
   JSON.stringify(data) !== JSON.stringify(store);
 
+// obtenerProductosModificados — comparar también product_variants
 const obtenerProductosModificados = (originales, nuevos) => {
-  if (!Array.isArray(originales) || !Array.isArray(nuevos)) return [];
   const map = Object.fromEntries(originales.map((p) => [p.productId, p]));
-  return nuevos.filter((n) => {
-    const o = map[n.productId];
+  return nuevos.filter((nuevo) => {
+    const orig = map[nuevo.productId];
+    if (!orig) return false;
+
+    const stockCambio = orig.stock !== nuevo.stock;
+    const ordenCambio = orig.order !== nuevo.order;
+    const visibleCambio = orig.visible !== nuevo.visible;
+    const cajaCambio = orig.caja !== nuevo.caja;
+
+    // Comparar stocks de cada variante
+    const variantStockCambio = (nuevo.product_variants ?? []).some((nv) => {
+      const ov = (orig.product_variants ?? []).find((v) => v.id === nv.id);
+      return ov && Number(ov.stock) !== Number(nv.stock);
+    });
+
     return (
-      o &&
-      (o.stock !== n.stock ||
-        o.order !== n.order ||
-        o.visible !== n.visible ||
-        o.caja !== n.caja)
+      stockCambio ||
+      ordenCambio ||
+      visibleCambio ||
+      cajaCambio ||
+      variantStockCambio
     );
   });
 };
+// ─── Switch de stock por variante (multi-variante, modo sin stocks) ────────────
+function VariantStockSwitches({ product, onToggle }) {
+  const real = product?.product_variants;
+  // Si por alguna razón no hay variantes reales, no renderizar
+  if (real.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[80px]">
+      {real.map((v) => {
+        const enStock = (Number(v.stock) || 0) > 0;
+        const label =
+          v.attributes?.color ??
+          v.attributes?.peso ??
+          v.attributes?.talla ??
+          v.label ??
+          v.id.slice(0, 6);
+        return (
+          <div key={v.id} className="flex items-center gap-1.5">
+            <Switch
+              checked={enStock}
+              onCheckedChange={() => onToggle(product.productId, v.id)}
+              className="scale-75 origin-left"
+            />
+            <span className="text-[11px] text-muted-foreground truncate max-w-[56px]">
+              {label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

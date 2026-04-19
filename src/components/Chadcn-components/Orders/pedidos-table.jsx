@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import {
   Loader2,
   Trash2,
@@ -413,7 +413,7 @@ export function PedidosTable() {
     async (uids) => {
       setLoadVerified(true);
       try {
-        await axios.post(
+        await apiClient.post(
           `/api/tienda/${sitioweb}/checkOrders`,
           { uids },
           { headers: { "Content-Type": "application/json" } },
@@ -437,7 +437,7 @@ export function PedidosTable() {
   const eliminarPedido = useCallback(
     async (uid) => {
       try {
-        await axios.delete(`/api/tienda/${sitioweb}/checkOrders`, {
+        await apiClient.delete(`/api/tienda/${sitioweb}/checkOrders`, {
           data: { uid },
           headers: { "Content-Type": "application/json" },
         });

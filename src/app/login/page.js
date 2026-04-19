@@ -1,9 +1,10 @@
 import React from "react";
 import { ResponsiveLogin } from "@/components/Chadcn-components/Login/responsive-login";
-import { checkUser } from "../layout";
+import { getServerUser } from "@/lib/server-auth";
 
 export default async function usePage() {
-  const { userId } = await checkUser();
+  const userData = await getServerUser();
+  const userId = userData?.userId ?? null;
   if (userId) {
     console.info("Usuario recibido:", userId);
   } else {

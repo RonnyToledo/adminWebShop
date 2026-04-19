@@ -5,7 +5,7 @@ import Configuracion from "@/components/Chadcn-components/Configuracion/Configur
 export default async function page() {
   console.log(process.env.NEXT_PUBLIC_PATH);
   const country = await fetch(
-    `${process.env.NEXT_PUBLIC_PATH}/api/filter/country`
+    `${process.env.NEXT_PUBLIC_PATH}/api/filter/country`,
   );
   const res = await country.json();
   return <Configuracion ThemeContext={ThemeContext} country={res} />;

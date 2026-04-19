@@ -1,34 +1,16 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
+import {
+  createRouteSupabase,
+  requireRouteUser,
+} from "@/lib/route-handler-auth";
 import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
-import { cookies } from "next/headers"; // Importar cookies desde headers
 import { diffArrays } from "@/components/globalFunction/diferenciasDeArray";
-import { restoreSessionFromCookie } from "@/lib/logUser";
-
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 },
-    );
-  }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
 
 export async function GET(request, { params }) {
-  const supabase = createClient();
+  const supabase = await createRouteSupabase();
   const { data: tienda } = await supabase
     .from("Sitios")
     .select()
@@ -47,7 +29,13 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  await restoreSessionFromCookie();
+  let supabase;
+  try {
+    ({ supabase } = await requireRouteUser());
+  } catch {
+    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+  }
+
   const data = await request.formData();
   const urlPosterNew = data.get("urlPosterNew");
   const bannerNew = data.get("bannerNew");
@@ -80,7 +68,11 @@ export async function PUT(request, { params }) {
     NewBanner = data.get("banner");
   }
 
-  await syncMonedasForStore(data.get("UUID"), JSON.parse(data.get("monedas")));
+  await syncMonedasForStore(
+    supabase,
+    data.get("UUID"),
+    JSON.parse(data.get("monedas")),
+  );
 
   const payload = {
     name: data.get("name"),
@@ -119,20 +111,15 @@ export async function PUT(request, { params }) {
     console.error(error);
 
     return NextResponse.json(
-      { message: error },
+      { message: error.message || error },
       {
-        status: 401,
+        status: 500,
       },
     );
   }
   return NextResponse.json({ message: "Actualizacion exitosa", data: tienda });
 }
-// supabase: instancia ya creada
-// ui_store: UUID del sitio (string)
-// monedasActuales: array que tienes en el cliente,
-//   p.ej. [{ id: 1, nombre: 'USD', valor: 100, defecto: true }, { nombre: 'EUR', valor: 90 }]
-
-export async function syncMonedasForStore(ui_store, monedasActuales) {
+export async function syncMonedasForStore(supabase, ui_store, monedasActuales) {
   if (!ui_store) throw new Error("ui_store es requerido");
 
   // Normalizar entradas (evitar undefined)

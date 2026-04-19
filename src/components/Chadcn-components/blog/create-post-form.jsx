@@ -6,7 +6,7 @@ import { PostBasicInfo } from "./post-basic-info";
 import { PostContentEditor } from "./post-content-editor";
 import { ThemeContext } from "@/context/useContext";
 import { sileo } from "sileo";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 
 export function CreatePostForm() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export function CreatePostForm() {
         form.append("image", formData.imageUrl);
       }
 
-      const postPromise = axios.post(
+      const postPromise = apiClient.post(
         `/api/tienda/${webshop?.store?.sitioweb}/post`,
         form,
         {

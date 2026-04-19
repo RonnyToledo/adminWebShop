@@ -121,7 +121,6 @@ export default function HeaderAdmin({
     };
   }, [webshop?.user?.id]);
 
-  console.log(notificaciones);
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between p-2 md:px-4 lg:px-6 md:py-4 border-b border-border bg-card/90">
       <div className="flex items-center gap-1 sm:gap-3 lg:gap-6">

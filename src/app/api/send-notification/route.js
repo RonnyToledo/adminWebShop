@@ -1,6 +1,6 @@
 // @/app/api/send-notification
-import { supabase } from "@/lib/supa";
 import { NextResponse } from "next/server";
+import { createRouteSupabase } from "@/lib/route-handler-auth";
 import webpush from "web-push";
 
 // Configura las claves VAPID
@@ -13,6 +13,8 @@ webpush.setVapidDetails(
 // Manejo del método POST
 export async function POST(req) {
   try {
+    const supabase = await createRouteSupabase();
+    
     // Extrae los datos del cuerpo de la solicitud
     const { title, message } = await req.json();
     // Recupera las suscripciones de la tabla `subscriptions`

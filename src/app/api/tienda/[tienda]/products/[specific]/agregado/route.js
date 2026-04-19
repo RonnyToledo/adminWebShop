@@ -1,36 +1,21 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
+import { requireRouteUser } from "@/lib/route-handler-auth";
 
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 },
-    );
-  }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
+async function getAuthenticatedSupabase() {
+  const { supabase } = await requireRouteUser();
+  return supabase;
+}
 
 export async function POST(request, { params }) {
-  await LogUser();
-  const { tienda, specific } = await params;
-
-  const data = await request.formData();
-  const nombre = data.get("nombre");
-  const valor = data.get("valor");
-  const cantidad = data.get("cantidad");
-
   try {
+    const supabase = await getAuthenticatedSupabase();
+    const { tienda, specific } = await params;
+
+    const data = await request.formData();
+    const nombre = data.get("nombre");
+    const valor = data.get("valor");
+    const cantidad = data.get("cantidad");
+
     // Actualiza la categoría de la tienda
     const { data: agg, error: tiendaError } = await supabase
       .from("agregados")
@@ -53,16 +38,17 @@ export async function POST(request, { params }) {
     );
   }
 }
+
 export async function DELETE(request, { params }) {
-  await LogUser();
-  const { tienda, specific } = await params;
-
-  const data = await request.formData();
-  const nombre = data.get("nombre");
-  const valor = data.get("valor");
-  const cantidad = data.get("cantidad");
-
   try {
+    const supabase = await getAuthenticatedSupabase();
+    const { specific } = await params;
+
+    const data = await request.formData();
+    const nombre = data.get("nombre");
+    const valor = data.get("valor");
+    const cantidad = data.get("cantidad");
+
     // Actualiza la categoría de la tienda
     const { data: tienda, error: tiendaError } = await supabase
       .from("Products")

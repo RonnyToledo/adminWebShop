@@ -1,35 +1,20 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
+import { requireRouteUser } from "@/lib/route-handler-auth";
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "@/lib/cloudinary";
 
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 },
-    );
-  }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
+async function getAuthenticatedSupabase() {
+  const { supabase } = await requireRouteUser();
+  return supabase;
+}
 
 export async function POST(request, { params }) {
   // Obtenemos el cuerpo enviado desde el cliente
   const data = await request.json();
   if (data) console.info(data);
   try {
-    // Actualiza la categoría de la tienda
-    await LogUser();
+    // Obtener cliente autenticado
+    const supabase = await getAuthenticatedSupabase();
 
     const { data: newData, error: tiendaError } = await supabase
       .from("categorias")
@@ -64,8 +49,8 @@ export async function PUT(request, { params }) {
   const UUID = data.get("UUID");
   if (categoria) console.info("Categoria recivida");
   try {
-    // Actualiza la categoría de la tienda
-    await LogUser();
+    // Obtener cliente autenticado
+    const supabase = await getAuthenticatedSupabase();
 
     await Promise.all(
       categoria.map(async (cat) => {
@@ -124,24 +109,28 @@ export async function DELETE(request, { params }) {
   // Obtenemos el cuerpo enviado desde el cliente
   const { UUID, image } = await request.json();
   try {
-    // Actualiza la categoría de la tienda
-    await LogUser();
+    // Obtener cliente autenticado
+    const supabase = await getAuthenticatedSupabase();
+
     if (image) {
       const publicId = extractPublicId(image);
-      cloudinary.uploader.destroy(publicId, (error, result) => {
-        if (error) {
-          console.error("Error eliminando imagen:", error);
-
-          return NextResponse.json(
-            { message: error },
-            {
-              status: 402,
-            },
-          );
-        } else {
-          console.info("Imagen eliminada:", result);
-        }
-      });
+      try {
+        await new Promise((resolve, reject) => {
+          cloudinary.uploader.destroy(publicId, (error, result) => {
+            if (error) reject(error);
+            else {
+              console.info("Imagen eliminada:", result);
+              resolve(result);
+            }
+          });
+        });
+      } catch (error) {
+        console.error("Error eliminando imagen:", error);
+        return NextResponse.json(
+          { message: error.message || error },
+          { status: 400 },
+        );
+      }
     }
     const { error: tiendaError } = await supabase
       .from("categorias")

@@ -177,7 +177,6 @@ function styledHTML(html) {
 
 export function HTMLPreviewWithLinkPreviews({ html }) {
   const segments = splitHTMLByLinks(html);
-  console.log(segments);
   return (
     <div>
       {segments.map((segment, i) => (

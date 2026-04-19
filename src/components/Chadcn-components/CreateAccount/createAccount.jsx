@@ -205,7 +205,7 @@ export default function CreateAccount() {
     });
 
     if (!res?.data) throw new Error("No se recibió respuesta del servidor.");
-    if (res.status === 200 || res.status === 201) router.push("/login");
+    if (res.status === 200 || res.status === 201) router.refresh();
   };
 
   const handleSignup = async (e) => {

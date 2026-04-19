@@ -1,35 +1,20 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supa";
-import { cookies } from "next/headers"; // Importar cookies desde headers
-
-const LogUser = async () => {
-  const cookie = (await cookies()).get("sb-access-token");
-  if (!cookie) {
-    return NextResponse.json(
-      { message: "No se encontró la cookie de sesión" },
-      { status: 401 },
-    );
-  }
-  const parsedCookie = JSON.parse(cookie.value);
-  if (parsedCookie.access_token && parsedCookie.refresh_token)
-    console.info("Token recividos");
-  else console.error("Token no encontrado");
-  // Establecer la sesión con los tokens de la cookie
-  const { data: session, error: errorS } = await supabase.auth.setSession({
-    access_token: parsedCookie.access_token,
-    refresh_token: parsedCookie.refresh_token,
-  });
-};
+import { requireRouteUser } from "@/lib/route-handler-auth";
 
 export async function POST(request, { params }) {
-  await LogUser();
+  let supabase;
+  try {
+    ({ supabase } = await requireRouteUser());
+  } catch {
+    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+  }
 
   const { data: codeDiscount, error1 } = await supabase
     .from("codeDiscount")
     .select("*");
   if (error1) {
     console.error(error1);
-    return NextResponse.json({ message: error1.message }, { status: 401 });
+    return NextResponse.json({ message: error1.message }, { status: 500 });
   }
   if (!codeDiscount || !Array.isArray(codeDiscount)) {
     console.error("No data returned from Supabase");
@@ -53,23 +38,28 @@ export async function POST(request, { params }) {
     console.error(error);
 
     return NextResponse.json(
-      { message: error },
+      { message: error.message || error },
       {
-        status: 401,
+        status: 500,
       },
     );
   }
   return NextResponse.json(tienda);
 }
 export async function DELETE(request, { params }) {
-  await LogUser();
+  let supabase;
+  try {
+    ({ supabase } = await requireRouteUser());
+  } catch {
+    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+  }
 
   const url = new URL(request.url);
   const id = url.searchParams.get("id"); // Obtener el ID desde los parámetros de consulta
   const { error } = await supabase.from("codeDiscount").delete().eq("id", id); // Asegúrate de especificar el campo correcto
   if (error) {
     console.error(error);
-    return NextResponse.json({ message: error.message }, { status: 401 });
+    return NextResponse.json({ message: error.message || error }, { status: 500 });
   }
   return NextResponse.json({ message: "Código eliminado" });
 }

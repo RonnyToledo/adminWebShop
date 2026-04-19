@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supa";
+import { requireRouteUser } from "@/lib/route-handler-auth";
 
 export async function PUT(request, { params }) {
-  const supabase = createClient();
+  let supabase;
+  try {
+    ({ supabase } = await requireRouteUser());
+  } catch {
+    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+  }
+
   const data = await request.formData();
   const { data: tienda, error } = await supabase
     .from("Sitios")
@@ -17,9 +23,9 @@ export async function PUT(request, { params }) {
     console.error(error);
 
     return NextResponse.json(
-      { message: error },
+      { message: error.message || error },
       {
-        status: 401,
+        status: 500,
       },
     );
   }

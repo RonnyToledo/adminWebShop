@@ -1,32 +1,31 @@
 // app/api/admin/planes/route.js
 // ─── Activa un plan para una tienda (uso interno del admin) ──────────────────
-// POST /api/admin/planes  { sitio_uuid, plan, notas? }
 // GET  /api/admin/planes  → lista de todas las tiendas con su plan
+// POST /api/admin/planes  { sitio_uuid, plan, notas? }
 
-import { supabase } from "@/lib/supa";
-import { serverAuthService } from "@/lib/server-auth";
+import { getServerUser } from "@/lib/server-auth"; // ← ya no importamos supa.js
 import { NextResponse } from "next/server";
+import { createRouteSupabase } from "@/lib/route-handler-auth";
 
-// Solo tú (el admin) puedes llamar esto — verificamos por email o role
 const ADMIN_EMAILS = [process.env.ADMIN_EMAIL].filter(Boolean);
+const PLANES_VALIDOS = ["trial", "basico", "pro"];
 
-async function checkIsAdmin(user) {
-  if (!user) return false;
-  if (ADMIN_EMAILS.includes(user.email)) return true;
-  // O por metadata si usas Supabase roles:
-  // return user.app_metadata?.role === "superadmin";
-  return false;
+async function checkIsAdmin(userData) {
+  if (!userData) return false;
+  return ADMIN_EMAILS.includes(userData.email);
+  // O por metadata: userData.user?.app_metadata?.role === "superadmin"
 }
 
 // ── GET: dashboard de planes ──────────────────────────────────────────────────
-export async function GET(request) {
-  const user = await serverAuthService.getCurrentUser();
-  if (!(await checkIsAdmin(user))) {
+export async function GET() {
+  const userData = await getServerUser();
+  if (!(await checkIsAdmin(userData))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
+  const supabase = await createRouteSupabase();
   const { data, error } = await supabase
-    .from("plan_status") // vista que creamos en la migración
+    .from("plan_status")
     .select("*")
     .order("dias_restantes", { ascending: true, nullsFirst: false });
 
@@ -38,8 +37,8 @@ export async function GET(request) {
 
 // ── POST: activar plan para una tienda ────────────────────────────────────────
 export async function POST(request) {
-  const user = await serverAuthService.getCurrentUser();
-  if (!(await checkIsAdmin(user))) {
+  const userData = await getServerUser();
+  if (!(await checkIsAdmin(userData))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
@@ -51,7 +50,6 @@ export async function POST(request) {
     );
   }
 
-  const PLANES_VALIDOS = ["trial", "basico", "pro"];
   if (!PLANES_VALIDOS.includes(body.plan)) {
     return NextResponse.json(
       { error: `Plan inválido. Debe ser: ${PLANES_VALIDOS.join(", ")}` },
@@ -59,10 +57,11 @@ export async function POST(request) {
     );
   }
 
+  const supabase = await createRouteSupabase();
   const { data, error } = await supabase.rpc("activar_plan", {
     p_sitio_uuid: body.sitio_uuid,
     p_plan: body.plan,
-    p_admin_id: user.userId,
+    p_admin_id: userData.userId,
     p_notas: body.notas || null,
   });
 

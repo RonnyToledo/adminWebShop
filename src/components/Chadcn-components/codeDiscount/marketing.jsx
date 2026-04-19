@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import "@github/relative-time-element";
-import axios from "axios";
+import apiClient from "@/lib/apiClient";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supa";
 import {
@@ -81,7 +81,7 @@ export function Marketing({ ThemeContext }) {
       formData.append("discount", newDiscount.discount || 0);
       formData.append("expiresAt", newDiscount.expiresAt);
       formData.append("uid", webshop?.store?.UUID);
-      const postPromise = axios.post(
+      const postPromise = apiClient.post(
         `/api/tienda/${webshop?.store?.sitioweb}/discountCode`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } },
@@ -104,7 +104,7 @@ export function Marketing({ ThemeContext }) {
   };
 
   const handleRemoveDiscount = async (id) => {
-    const deletePromise = axios.delete(
+    const deletePromise = apiClient.delete(
       `/api/tienda/${webshop?.store?.sitioweb}/discountCode?id=${id}`,
     );
     sileo.promise(deletePromise, {
