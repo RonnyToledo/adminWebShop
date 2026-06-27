@@ -1,15 +1,29 @@
 import React from "react";
-import { ResponsiveLogin } from "@/components/Chadcn-components/Login/responsive-login";
+import ResponsiveLogin from "@/components/Chadcn-components/Login/responsive-login";
 import { getServerUser } from "@/lib/server-auth";
+import { redirect } from "next/navigation";
 
-export default async function usePage() {
+// Next.js App Router pasa searchParams como prop al page —
+// no hace falta headers() ni middleware para leer ?add=true.
+export default async function LoginPage({ searchParams }) {
+  const params = await searchParams;
+  const isAddMode = params?.add === "true";
+
   const userData = await getServerUser();
   const userId = userData?.userId ?? null;
-  if (userId) {
-    console.info("Usuario recibido:", userId);
-  } else {
-    console.warn("No hay usuario, redirigiendo a login");
+
+  if (userId && !isAddMode) {
+    console.info("[login/page] ✅ Usuario ya autenticado, redirigiendo a /");
+    redirect("/");
   }
-  if (userId) console.info("Usuario recivido");
+
+  if (userId && isAddMode) {
+    console.info("[login/page] ➕ Modo añadir cuenta, mostrando formulario");
+  } else {
+    console.info(
+      "[login/page] ℹ️ Usuario no autenticado, mostrando formulario",
+    );
+  }
+
   return <ResponsiveLogin user={userId} />;
 }

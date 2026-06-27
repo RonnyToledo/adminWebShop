@@ -1,7 +1,7 @@
 import React from "react";
-import Dashboard from "@/components/Chadcn-components/Ventas/Compras";
+import VentasDashboard from "@/components/Chadcn-components/Ventas/VentasDashboard";
 import { ThemeContext } from "@/context/useContext";
 
 export default function page() {
-  return <Dashboard ThemeContext={ThemeContext} />;
+  return <VentasDashboard ThemeContext={ThemeContext} />;
 }

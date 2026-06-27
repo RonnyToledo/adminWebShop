@@ -12,7 +12,7 @@ import {
 import { Button } from "../ui/button";
 
 export default function ConfirmationOut({ action }) {
-  const { webshop, setWebshop } = useContext(ThemeContext);
+  useContext(ThemeContext);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingRoute, setPendingRoute] = useState(null);
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function ConfirmationOut({ action }) {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       router.push = originalPush; // Restaurar el push original al desmontar el componente
     };
-  }, [webshop, action]);
+  }, [action, pathname, router]);
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);

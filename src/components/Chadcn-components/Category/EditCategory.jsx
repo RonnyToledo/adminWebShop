@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import apiClient from "@/lib/apiClient";
 import { logoApp } from "@/utils/image";
 import { Loader2, ImageIcon, ArrowRight } from "lucide-react";
@@ -53,8 +53,7 @@ export default function EditCategory({ ThemeContext, uid }) {
         { headers: { "Content-Type": "multipart/form-data" } },
       );
       if (res.status === 200) {
-        sileo.success({
-          title: "Categoría actualizada",
+        toast.success("Categoría actualizada", {
           description: "La categoría fue actualizada correctamente.",
         });
         setWebshop({
@@ -70,8 +69,7 @@ export default function EditCategory({ ThemeContext, uid }) {
       }
     } catch (error) {
       console.error(error);
-      sileo.error({
-        title: "Error al actualizar",
+      toast.error("Error al actualizar", {
         description: "No se pudo actualizar la categoría.",
       });
     } finally {

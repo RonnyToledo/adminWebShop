@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import apiClient from "@/lib/apiClient";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import { IA, newIA } from "./IA";
 import { HTMLEditor } from "./html-editor";
 import { HTMLPreviewWithLinkPreviews } from "./link-preview";
@@ -99,26 +99,6 @@ const HTML_BUTTONS = [
   { label: "Code", icon: Code, insert: "<code></code>", cursorOffset: -7 },
   { label: "HR", icon: Minus, insert: "<hr />", cursorOffset: 0 },
 ];
-const COMMON_TAGS = [
-  "h2",
-  "h3",
-  "h4",
-  "p",
-  "strong",
-  "em",
-  "ul",
-  "ol",
-  "li",
-  "a",
-  "img",
-  "blockquote",
-  "code",
-  "pre",
-  "div",
-  "span",
-  "br",
-  "hr",
-];
 const VOID_TAGS = ["br", "hr", "img"];
 
 // ─── Helpers (sin cambios) ────────────────────────────────────────────────────
@@ -172,22 +152,6 @@ function validateHTML(html) {
   return { isValid: errors.length === 0, errors };
 }
 
-function buildCompletion(tagName) {
-  if (tagName === "img")
-    return {
-      completion: `<img src="/placeholder.svg" alt="" />`,
-      cursorOffset: 10,
-    };
-  if (VOID_TAGS.includes(tagName)) {
-    const c = `<${tagName} />`;
-    return { completion: c, cursorOffset: c.length };
-  }
-  return {
-    completion: `<${tagName}></${tagName}>`,
-    cursorOffset: tagName.length + 2,
-  };
-}
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 export function PostContentEditor({
   initialContent,
@@ -203,9 +167,6 @@ export function PostContentEditor({
     isValid: true,
     errors: [],
   });
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [selectedSugg, setSelectedSugg] = useState(0);
 
   const iaUsesRef = useRef(0);
   const [iaUsesDisplay, setIaUsesDisplay] = useState(0);
@@ -234,84 +195,6 @@ export function PostContentEditor({
     [content],
   );
 
-  const handleKeyDown = useCallback(
-    (e) => {
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const beforeCursor = content.substring(0, start);
-      const lastOpenBracket = beforeCursor.lastIndexOf("<");
-      const lastCloseBracket = beforeCursor.lastIndexOf(">");
-      const inOpenTag = lastOpenBracket > lastCloseBracket;
-      if (showSuggestions) {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setSelectedSugg((p) => (p + 1) % suggestions.length);
-          return;
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setSelectedSugg(
-            (p) => (p - 1 + suggestions.length) % suggestions.length,
-          );
-          return;
-        }
-        if (e.key === "Escape") {
-          setShowSuggestions(false);
-          return;
-        }
-      }
-      if (!inOpenTag) {
-        setShowSuggestions(false);
-        return;
-      }
-      const partialTag = beforeCursor
-        .substring(lastOpenBracket + 1)
-        .toLowerCase();
-      const matches = COMMON_TAGS.filter((t) => t.startsWith(partialTag));
-      if (e.key === "Tab" && matches.length > 0) {
-        e.preventDefault();
-        applyCompletion(matches[0], content, lastOpenBracket, start);
-        setShowSuggestions(false);
-        return;
-      }
-      if (e.key === "Enter" && showSuggestions && suggestions.length > 0) {
-        e.preventDefault();
-        applyCompletion(
-          suggestions[selectedSugg],
-          content,
-          lastOpenBracket,
-          start,
-        );
-        setShowSuggestions(false);
-        return;
-      }
-      if (matches.length > 0 && partialTag.length > 0) {
-        setSuggestions(matches);
-        setShowSuggestions(true);
-        setSelectedSugg(0);
-      } else {
-        setShowSuggestions(false);
-      }
-    },
-    [content, showSuggestions, suggestions, selectedSugg],
-  );
-
-  function applyCompletion(tagName, text, lastOpenBracket, start) {
-    const { completion, cursorOffset } = buildCompletion(tagName);
-    const newContent =
-      text.substring(0, lastOpenBracket) + completion + text.substring(start);
-    setContent(newContent);
-    setTimeout(() => {
-      const ta = textareaRef.current;
-      if (!ta) return;
-      ta.focus();
-      ta.setSelectionRange(
-        text.substring(0, lastOpenBracket).length + cursorOffset,
-        text.substring(0, lastOpenBracket).length + cursorOffset,
-      );
-    }, 0);
-  }
-
   const GeminiQuestions = useCallback(async () => {
     if (iaUsesRef.current >= MAX_IA_USES) return;
     setIsGeminiLoading(true);
@@ -320,17 +203,17 @@ export function PostContentEditor({
     const postPromise = apiClient.post("/api/gemini", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    sileo.promise(postPromise, {
-      loading: { title: "Optimizando post..." },
+    toast.promise(postPromise, {
+      loading: "Optimizando post...",
       success: (response) => {
         setContent(response.data.result);
         iaUsesRef.current += 1;
         setIaUsesDisplay(iaUsesRef.current);
-        return { title: "Contenido actualizado" };
+        return "Contenido actualizado";
       },
       error: (err) => {
         console.error("[Gemini]", err);
-        return { title: "Error", description: "Error al procesar con IA" };
+        return "Error al procesar con IA";
       },
     });
     postPromise.finally(() => setIsGeminiLoading(false));

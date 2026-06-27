@@ -32,7 +32,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Calendar, Percent, Trash2 } from "lucide-react";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import PlanGuard from "../Planes/PlanGuard";
 
@@ -68,8 +68,7 @@ export function Marketing({ ThemeContext }) {
 
   const handleAddDiscount = async () => {
     if (!newDiscount.code || !newDiscount.expiresAt) {
-      sileo.error({
-        title: "Faltan campos",
+      toast.error("Faltan campos", {
         description: "Código y fecha de expiración son requeridos",
       });
       return;
@@ -86,13 +85,13 @@ export function Marketing({ ThemeContext }) {
         formData,
         { headers: { "Content-Type": "multipart/form-data" } },
       );
-      sileo.promise(postPromise, {
-        loading: { title: "Guardando código..." },
+      toast.promise(postPromise, {
+        loading: "Guardando código...",
         success: (response) => {
           setDiscounts((prev) => [...prev, ...response.data]);
-          return { title: "Código creado" };
+          return "Código creado";
         },
-        error: () => ({ title: "Error al guardar" }),
+        error: () => "Error al guardar",
       });
     } catch (error) {
       console.error(error);
@@ -107,13 +106,13 @@ export function Marketing({ ThemeContext }) {
     const deletePromise = apiClient.delete(
       `/api/tienda/${webshop?.store?.sitioweb}/discountCode?id=${id}`,
     );
-    sileo.promise(deletePromise, {
-      loading: { title: "Eliminando..." },
+    toast.promise(deletePromise, {
+      loading: "Eliminando...",
       success: () => {
         setDiscounts((prev) => prev.filter((d) => d.id !== id));
-        return { title: "Código eliminado" };
+        return "Código eliminado";
       },
-      error: (err) => ({ title: "Error", description: err?.message }),
+      error: (err) => ("Error", { description: err?.message }),
     });
   };
 
@@ -130,16 +129,16 @@ export function Marketing({ ThemeContext }) {
         reject(err);
       }
     });
-    sileo.promise(supaPromise, {
-      loading: { title: value ? "Activando marketing..." : "Desactivando..." },
+    toast.promise(supaPromise, {
+      loading: value ? "Activando marketing..." : "Desactivando...",
       success: () => {
         setWebshop((prev) => ({
           ...prev,
           store: { ...prev.store, marketing: value },
         }));
-        return { title: "Actualizado" };
+        return "Actualizado";
       },
-      error: (err) => ({ title: "Error", description: err?.message }),
+      error: (err) => ("Error", { description: err?.message }),
     });
   };
 

@@ -100,10 +100,6 @@ export function useSessionSyncOnVisibility() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        // Usuario regresó a la página
-        console.log(
-          "[useSessionSyncOnVisibility] Página visible, validando sesión...",
-        );
         validateSession();
       }
     };
@@ -131,8 +127,6 @@ export function useSessionCleanup() {
     } catch (e) {
       // localStorage puede no estar disponible
     }
-
-    console.log("[useSessionCleanup] Cookies de sesión limpiadas");
   }, []);
 
   return { clearSessionCookies };

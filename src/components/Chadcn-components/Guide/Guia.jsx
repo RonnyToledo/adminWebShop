@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import React, { useContext } from "react";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import QrCode from "@/components/Chadcn-components/Guide/QRcode";
 import { ThemeContext } from "@/context/useContext";
 import { Copy, ArrowRight, ExternalLink } from "lucide-react";
@@ -59,9 +59,11 @@ export default function Guia() {
     if (navigator?.clipboard) {
       navigator.clipboard
         .writeText(text)
-        .then(() => sileo.info({ title: "URL copiada al portapapeles" }))
+        .then(() => toast.info("URL copiada al portapapeles"))
         .catch((err) =>
-          sileo.error({ title: "Error al copiar", description: err.message }),
+          toast.error("Error al copiar", {
+            description: err.message,
+          }),
         );
     }
   };

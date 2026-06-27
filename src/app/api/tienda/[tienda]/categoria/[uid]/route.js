@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request) {
   try {
     const supabase = await getAuthenticatedSupabase();
 
@@ -121,7 +121,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request) {
   try {
     const supabase = await getAuthenticatedSupabase();
 

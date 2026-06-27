@@ -10,7 +10,7 @@ export async function PUT(request, { params }) {
   }
 
   const data = await request.formData();
-  const { data: tienda, error } = await supabase
+  const { error } = await supabase
     .from("Sitios")
     .update([
       {

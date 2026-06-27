@@ -1,10 +1,10 @@
 "use client";
+
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import apiClient from "@/lib/apiClient";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import ConfirmationOut from "../../globalFunction/confirmationOut";
 import {
   DropdownMenu,
@@ -36,9 +49,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 
 export default function Category({ ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -51,6 +63,10 @@ export default function Category({ ThemeContext }) {
   const form = useRef(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [filteredCategories, setFilteredCategories] = useState([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
 
   useEffect(() => {
     if (webshop?.store?.categoria.length > 0) {
@@ -74,10 +90,7 @@ export default function Category({ ThemeContext }) {
   const handleDelete = async (categoryToDelete, image) => {
     setDeleting(true);
     if (!categoryToDelete) {
-      sileo.error({
-        title: "Error",
-        description: "No se recibió el UUID de la categoría.",
-      });
+      toast.error("No se recibió el UUID de la categoría.");
       setDeleting(false);
       return;
     }
@@ -86,8 +99,8 @@ export default function Category({ ThemeContext }) {
       { data: { UUID: categoryToDelete, image } },
     );
     try {
-      sileo.promise(deletePromise, {
-        loading: { title: "Eliminando categoría..." },
+      await toast.promise(deletePromise, {
+        loading: "Eliminando categoría...",
         success: (response) => {
           setWebshop((prev) => ({
             ...prev,
@@ -98,16 +111,10 @@ export default function Category({ ThemeContext }) {
               ),
             },
           }));
-          return {
-            title: "Categoría eliminada",
-            description: response?.data?.message ?? "Eliminada correctamente",
-          };
+          return response?.data?.message ?? "Categoría eliminada correctamente";
         },
-        error: (err) => ({
-          title: "Error",
-          description:
-            err?.response?.data?.message ?? err?.message ?? "Error al eliminar",
-        }),
+        error: (err) =>
+          err?.response?.data?.message ?? err?.message ?? "Error al eliminar",
       });
     } catch (err) {
       console.error(err);
@@ -120,7 +127,7 @@ export default function Category({ ThemeContext }) {
     e?.preventDefault();
     setDownloading(true);
     if (!webshop?.store?.sitioweb) {
-      sileo.error({ title: "Error", description: "Faltó 'sitioweb'." });
+      toast.error("Faltó 'sitioweb'.");
       setDownloading(false);
       return;
     }
@@ -132,8 +139,8 @@ export default function Category({ ThemeContext }) {
       formData,
     );
     try {
-      sileo.promise(putPromise, {
-        loading: { title: "Guardando categorías..." },
+      await toast.promise(putPromise, {
+        loading: "Guardando categorías...",
         success: (response) => {
           const returned =
             response?.data?.data ?? response?.data ?? data.category;
@@ -141,12 +148,10 @@ export default function Category({ ThemeContext }) {
             ...prev,
             store: { ...prev.store, categoria: returned },
           }));
-          return { title: "Categorías actualizadas" };
+          return "Categorías actualizadas";
         },
-        error: (err) => ({
-          title: "Error",
-          description: err?.response?.data?.message ?? err?.message,
-        }),
+        error: (err) =>
+          err?.response?.data?.message ?? err?.message ?? "Error al guardar",
       });
     } catch (err) {
       console.error(err);
@@ -158,7 +163,7 @@ export default function Category({ ThemeContext }) {
   const addCategory = async () => {
     setAdd(true);
     if (!newCat?.name?.trim()) {
-      sileo.error({ title: "Error", description: "Debes indicar el nombre." });
+      toast.error("Debes indicar el nombre.");
       form.current?.reset();
       setAdd(false);
       return;
@@ -174,8 +179,8 @@ export default function Category({ ThemeContext }) {
       { headers: { "Content-Type": "application/json" } },
     );
     try {
-      sileo.promise(postPromise, {
-        loading: { title: "Creando categoría..." },
+      await toast.promise(postPromise, {
+        loading: "Creando categoría...",
         success: (response) => {
           const created = response?.data?.data ?? response?.data ?? null;
           const cat = created || { ...payload, id: `temp-${Date.now()}` };
@@ -188,26 +193,31 @@ export default function Category({ ThemeContext }) {
           }));
           setNewCat({});
           form.current?.reset();
-          return { title: "Categoría creada" };
+          return "Categoría creada";
         },
-        error: (err) => ({
-          title: "Error",
-          description: err?.response?.data?.message ?? err?.message,
-        }),
+        error: (err) =>
+          err?.response?.data?.message ?? err?.message ?? "Error al crear",
       });
     } catch (err) {
       console.error(err);
     } finally {
       setAdd(false);
       setNewCat({});
+      setIsAddDialogOpen(false);
     }
   };
 
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination || source.index === destination.index) return;
-    const reordered = reorder(data.category, source.index, destination.index);
-    setData((prev) => ({ ...prev, category: reordered }));
+  const onDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    setData((prev) => {
+      const oldIndex = prev.category.findIndex((c) => c.id === active.id);
+      const newIndex = prev.category.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const reordered = arrayMove(prev.category, oldIndex, newIndex).map(
+        (obj, ind) => ({ ...obj, order: ind }),
+      );
+      return { ...prev, category: reordered };
+    });
   };
 
   const hasPending =
@@ -313,36 +323,37 @@ export default function Category({ ThemeContext }) {
       </div>
 
       {/* Lista arrastrable */}
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
         <form onSubmit={handleSubmit} className="space-y-2">
-          <Droppable droppableId={webshop?.store?.sitioweb || "unique"}>
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="space-y-2"
-              >
-                <AnimatePresence>
-                  {filteredCategories
-                    .sort((a, b) => a.order - b.order)
-                    .map((category, index) => (
-                      <CategoryItem
-                        key={category.id || index}
-                        index={index}
-                        category={category}
-                        products={webshop?.products}
-                        onDelete={handleDelete}
-                        deleting={deleting}
-                        setData={setData}
-                      />
-                    ))}
-                </AnimatePresence>
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
+          <SortableContext
+            items={filteredCategories
+              .sort((a, b) => a.order - b.order)
+              .map((c) => c.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              <AnimatePresence>
+                {filteredCategories
+                  .sort((a, b) => a.order - b.order)
+                  .map((category, index) => (
+                    <CategoryItem
+                      key={category.id || index}
+                      index={index}
+                      category={category}
+                      products={webshop?.products}
+                      onDelete={handleDelete}
+                      deleting={deleting}
+                      setData={setData}
+                    />
+                  ))}
+              </AnimatePresence>
+            </div>
+          </SortableContext>
 
-          {/* Botón guardar sticky */}
           {hasPending && (
             <div className="sticky bottom-4 flex justify-center pt-4">
               <button
@@ -360,7 +371,7 @@ export default function Category({ ThemeContext }) {
             </div>
           )}
         </form>
-      </DragDropContext>
+      </DndContext>
 
       <ConfirmationOut action={hasPending} />
     </main>
@@ -380,99 +391,100 @@ const CategoryItem = ({
     (p) => p.caja === category.id,
   ).length;
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   return (
-    <Draggable draggableId={`draggable-${category.id || index}`} index={index}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          className={`bg-background border border-border rounded-xl px-4 py-3 flex items-center gap-3 transition-colors ${
-            snapshot.isDragging
-              ? "shadow-md border-primary/30"
-              : "hover:border-border/80"
-          }`}
-        >
-          {/* Drag handle */}
-          <div
-            {...provided.dragHandleProps}
-            className="text-muted-foreground/50 hover:text-muted-foreground cursor-grab shrink-0"
-          >
-            <GripVertical size={14} />
-          </div>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-background border border-border rounded-xl px-4 py-3 flex items-center gap-3 transition-colors ${
+        isDragging ? "shadow-md border-primary/30" : "hover:border-border/80"
+      }`}
+    >
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="text-muted-foreground/50 hover:text-muted-foreground cursor-grab shrink-0"
+      >
+        <GripVertical size={14} />
+      </div>
 
-          {/* Icono */}
-          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Package size={15} className="text-primary" />
-          </div>
+      {/* Icono */}
+      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+        <Package size={15} className="text-primary" />
+      </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground truncate">
-                {category.name}
-              </span>
-              {category.subtienda && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  Subtienda
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {productCount} producto{productCount !== 1 ? "s" : ""}
-              {category.description && ` · ${category.description}`}
-            </p>
-          </div>
-
-          {/* Switch subtienda */}
-          <Switch
-            checked={!!category.subtienda}
-            onCheckedChange={(v) =>
-              setData((prev) => ({
-                ...prev,
-                category: prev.category.map((obj) =>
-                  obj.id === category.id ? { ...obj, subtienda: v } : obj,
-                ),
-              }))
-            }
-          />
-
-          {/* Menú */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                <MoreHorizontal size={14} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`/category/${category.id}`} className="gap-2">
-                  <Edit size={13} /> Editar
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => onDelete(category.id, category.image)}
-                className="gap-2 text-destructive focus:text-destructive"
-              >
-                {deleting ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Trash2 size={13} />
-                )}
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground truncate">
+            {category.name}
+          </span>
+          {category.subtienda && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              Subtienda
+            </Badge>
+          )}
         </div>
-      )}
-    </Draggable>
-  );
-};
+        <p className="text-xs text-muted-foreground">
+          {productCount} producto{productCount !== 1 ? "s" : ""}
+          {category.description && ` · ${category.description}`}
+        </p>
+      </div>
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const reorder = (list, startIndex, endIndex) => {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-  return result.map((obj, ind) => ({ ...obj, order: ind }));
+      {/* Switch subtienda */}
+      <Switch
+        checked={!!category.subtienda}
+        onCheckedChange={(v) =>
+          setData((prev) => ({
+            ...prev,
+            category: prev.category.map((obj) =>
+              obj.id === category.id ? { ...obj, subtienda: v } : obj,
+            ),
+          }))
+        }
+      />
+
+      {/* Menú */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+            <MoreHorizontal size={14} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/category/${category.id}`} className="gap-2">
+              <Edit size={13} /> Editar
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => onDelete(category.id, category.image)}
+            className="gap-2 text-destructive focus:text-destructive"
+          >
+            {deleting ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Trash2 size={13} />
+            )}
+            Eliminar
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 };

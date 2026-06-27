@@ -112,7 +112,6 @@ export function getPriceLabel(product, monedaNombre = "") {
 export function getVariantSummary(product) {
   const real = getRealVariants(product);
   if (real.length === 0) return null;
-  // console.log(real);  ← ELIMINAR
   const totalStock = real.reduce((s, v) => s + (Number(v.stock) || 0), 0);
   return `${real.length} variante${real.length !== 1 ? "s" : ""} · ${totalStock} unidades`;
 }

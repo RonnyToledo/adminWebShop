@@ -3,10 +3,9 @@ import React, { useContext, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, Plus, LoaderIcon, Trash2 } from "lucide-react";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import { ThemeContext } from "@/context/useContext";
 import { logoApp } from "@/utils/image";
-import axios from "axios";
 import { motion } from "framer-motion";
 
 export default function BlogPage() {
@@ -22,8 +21,8 @@ export default function BlogPage() {
     if (image) form.append("image", image);
     try {
       const postPromise = fetch(url, { method: "DELETE", body: form });
-      sileo.promise(postPromise, {
-        loading: { title: "Eliminando post..." },
+      toast.promise(postPromise, {
+        loading: "Eliminando post...",
         success: () => {
           setWebshop({
             ...webshop,
@@ -32,14 +31,11 @@ export default function BlogPage() {
               blogs: webshop?.store?.blogs.filter((p) => p.slug !== slug),
             },
           });
-          return {
-            title: "Post eliminado",
-            description: "Información actualizada",
-          };
+          return "Post eliminado";
         },
         error: (err) => {
           console.error(err);
-          return { title: "Error", description: "Error al eliminar el post" };
+          return "Error al eliminar el post";
         },
       });
     } catch (error) {

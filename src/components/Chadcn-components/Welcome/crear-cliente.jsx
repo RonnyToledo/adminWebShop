@@ -4,14 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormField } from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -20,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import {
   Building2,
   Mail,
@@ -39,6 +32,7 @@ import axios from "axios";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import Loading from "../../component/loading";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCallback } from "react";
 import style from "./style.module.css";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -105,7 +99,7 @@ const PARTICLES = Array.from({ length: 6 }, (_, i) => ({
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
-function FieldInput({ id, label, focused, setFocused, error, children }) {
+function FieldInput({ id, label, focused, error, children }) {
   return (
     <div className="space-y-2">
       <label
@@ -130,6 +124,12 @@ export function CrearClienteComponent({
 }) {
   const router = useRouter();
 
+  // Validación defensiva: si countries es null, usar default
+  const validCountries =
+    countries && countries.length > 0
+      ? countries
+      : [{ name: "Cuba", isoCode: "CU" }];
+
   const [states, setStates] = useState([]);
   const [municipios, setMunicipios] = useState([]);
   const [loadingStates, setLoadingStates] = useState(false);
@@ -142,13 +142,15 @@ export function CrearClienteComponent({
 
   const defaultCountryIso =
     process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
-    countries[0]?.isoCode ||
+    validCountries[0]?.isoCode ||
     "CU";
   const [selectedCountryIso, setSelectedCountryIso] =
     useState(defaultCountryIso);
   const defaultCountryName =
-    (countries.find((c) => c.isoCode === defaultCountryIso) || countries[0])
-      ?.name || "";
+    (
+      validCountries.find((c) => c.isoCode === defaultCountryIso) ||
+      validCountries[0]
+    )?.name || "";
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -192,61 +194,68 @@ export function CrearClienteComponent({
 
   // ── Fetchers ────────────────────────────────────────────────────────────────
 
-  const fetchStates = async (iso, signal) => {
-    if (!iso) {
-      setStates([]);
-      return;
-    }
-    setLoadingStates(true);
-    try {
-      const base = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-      const res = await fetch(
-        `${base}/api/filter/state?country=${encodeURIComponent(iso)}`,
-        { signal },
-      );
-      if (!res.ok) {
+  const fetchStates = useCallback(
+    async (iso, signal) => {
+      if (!iso) {
         setStates([]);
         return;
       }
-      const norm = normalizeStates(await res.json());
-      setStates(norm);
-      if (!form.getValues("Provincia") && norm.length > 0)
-        form.setValue("Provincia", norm[0].name);
-    } catch (e) {
-      if (e.name !== "AbortError") setStates([]);
-    } finally {
-      setLoadingStates(false);
-    }
-  };
+      setLoadingStates(true);
+      try {
+        const base = process.env.NEXT_PUBLIC_BASE_URL ?? "";
 
-  const fetchCities = async (iso, prov, signal) => {
-    if (!iso || !prov) {
-      setMunicipios([]);
-      return;
-    }
-    setLoadingCities(true);
-    try {
-      const base = process.env.NEXT_PUBLIC_PATH ?? "";
-      const provObj = states.find((s) => s.name === prov);
-      const stateParam = provObj?.isoCode ?? prov;
-      const res = await fetch(
-        `${base}/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(stateParam)}`,
-        { signal },
-      );
-      if (!res.ok) {
+        const res = await fetch(
+          `${base}/api/filter/state?country=${encodeURIComponent(iso)}`,
+          { signal },
+        );
+        if (!res.ok) {
+          setStates([]);
+          return;
+        }
+        const norm = normalizeStates(await res.json());
+        setStates(norm);
+        if (!form.getValues("Provincia") && norm.length > 0)
+          form.setValue("Provincia", norm[0].name);
+      } catch (e) {
+        if (e.name !== "AbortError") setStates([]);
+      } finally {
+        setLoadingStates(false);
+      }
+    },
+    [form],
+  );
+
+  const fetchCities = useCallback(
+    async (iso, prov, signal) => {
+      if (!iso || !prov) {
         setMunicipios([]);
         return;
       }
-      const names = normalizeCities(await res.json());
-      setMunicipios(names);
-      if (!form.getValues("municipio") && names.length > 0)
-        form.setValue("municipio", names[0]);
-    } catch (e) {
-      if (e.name !== "AbortError") setMunicipios([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
+      setLoadingCities(true);
+      try {
+        const base = process.env.NEXT_PUBLIC_PATH ?? "";
+        const provObj = states.find((s) => s.name === prov);
+        const stateParam = provObj?.isoCode ?? prov;
+        const res = await fetch(
+          `${base}/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(stateParam)}`,
+          { signal },
+        );
+        if (!res.ok) {
+          setMunicipios([]);
+          return;
+        }
+        const names = normalizeCities(await res.json());
+        setMunicipios(names);
+        if (!form.getValues("municipio") && names.length > 0)
+          form.setValue("municipio", names[0]);
+      } catch (e) {
+        if (e.name !== "AbortError") setMunicipios([]);
+      } finally {
+        setLoadingCities(false);
+      }
+    },
+    [form, states],
+  );
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -256,14 +265,14 @@ export function CrearClienteComponent({
     setMunicipios([]);
     setStates([]);
     return () => ctrl.abort();
-  }, [selectedCountryIso]);
+  }, [selectedCountryIso, fetchStates, form]);
 
   const watchedProvincia = form.watch("Provincia");
   useEffect(() => {
     const ctrl = new AbortController();
     fetchCities(selectedCountryIso, watchedProvincia, ctrl.signal);
     return () => ctrl.abort();
-  }, [selectedCountryIso, watchedProvincia]);
+  }, [selectedCountryIso, watchedProvincia, fetchCities]);
 
   // ── Submit / navegación ─────────────────────────────────────────────────────
 
@@ -279,8 +288,7 @@ export function CrearClienteComponent({
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (res.status === 200 || res.status === 201) {
-        sileo.success({
-          title: "Tienda creada",
+        toast.success("Tienda creada", {
           description: `Ya puedes empezar a trabajar ${res?.data?.success || ""}`,
         });
         window.location.replace("/");
@@ -289,8 +297,7 @@ export function CrearClienteComponent({
         setCurrentStep(0);
       }
     } catch (err) {
-      sileo.error({
-        title: "Error al crear tienda",
+      toast.error("Error al crear tienda", {
         description: err?.message || "Ocurrió un error",
       });
     } finally {
@@ -380,7 +387,7 @@ export function CrearClienteComponent({
                 >
                   <Select
                     onValueChange={(iso) => {
-                      const c = countries.find((x) => x.isoCode === iso);
+                      const c = validCountries.find((x) => x.isoCode === iso);
                       field.onChange(c ? c.name : iso);
                       setSelectedCountryIso(iso);
                       form.setValue("Provincia", "");
@@ -400,7 +407,7 @@ export function CrearClienteComponent({
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {countries.map((c) => (
+                      {validCountries.map((c) => (
                         <SelectItem key={c.isoCode} value={c.isoCode}>
                           {c.name}
                         </SelectItem>

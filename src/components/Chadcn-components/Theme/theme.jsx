@@ -206,15 +206,15 @@ export default function Theme({ ThemeContext }) {
               {/* Grid */}
               <ThemeSection
                 icon={<Grid3X3 />}
-                iconBg="bg-emerald-100"
-                iconColor="text-emerald-600"
+                iconBg="bg-amber-100"
+                iconColor="text-amber-600"
                 title="Columnas de productos"
                 description="Cuántos productos se muestran por fila"
               >
                 <RadioPair
                   value={store?.grid}
                   onChange={(v) => setStore({ ...store, grid: v })}
-                  accentHover="bg-emerald-50 text-emerald-700 border-emerald-400"
+                  accentHover="bg-amber-50 text-amber-700 border-amber-400"
                   options={[
                     {
                       id: "grid-1",

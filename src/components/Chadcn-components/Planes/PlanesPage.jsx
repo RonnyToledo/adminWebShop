@@ -12,7 +12,7 @@ import {
   Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import axios from "axios";
 
 // ─── Icono por plan ───────────────────────────────────────────────────────────
@@ -274,18 +274,20 @@ function VistaAdmin({ sitioUUID, planActual }) {
       plan: planId,
       notas: notas || undefined,
     });
-    sileo.promise(promise, {
-      loading: { title: `Activando plan ${PLAN_CONFIG[planId]?.nombre}...` },
+    toast.promise(promise, {
+      loading: `Activando plan ${PLAN_CONFIG[planId]?.nombre}...`,
       success: () => {
         setLoading(false);
-        return { title: "Plan activado correctamente" };
+        return "Plan activado correctamente";
       },
       error: (err) => {
         setLoading(false);
-        return {
-          title: "Error",
-          description: err?.response?.data?.error ?? err?.message,
-        };
+        return (
+          "Error",
+          {
+            description: err?.response?.data?.error ?? err?.message,
+          }
+        );
       },
     });
   };

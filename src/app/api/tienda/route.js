@@ -1,3 +1,4 @@
+//api/tienda/route.js
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
 
@@ -35,7 +36,6 @@ export async function GET() {
       return {
         ...obj,
         categoria: parseJSONOr(obj.categoria, null),
-        horario: parseJSONOr(obj.horario, null),
         comentario: parseJSONOr(obj.comentario, null),
         envios: parseJSONOr(obj.envios, null),
       };
@@ -57,8 +57,6 @@ const datos = {
   sitioweb: "",
   urlPoster: "",
   parrrafo: "",
-  horario:
-    '[{"dia":"Domingo","cierre":23,"apertura":1},{"dia":"Lunes","cierre":0,"apertura":0},{"dia":"Martes","cierre":0,"apertura":0},{"dia":"Miercoles","cierre":2,"apertura":12},{"dia":"Jueves","cierre":2,"apertura":12},{"dia":"Viernes","cierre":2,"apertura":12},{"dia":"Sabado","cierre":2,"apertura":12}]',
   Editor: "",
   act_tf: true,
   insta: "https://www.instagram.com/",
@@ -73,7 +71,7 @@ const datos = {
   active: true,
 };
 
-export async function POST(request, { params }) {
+export async function POST(request) {
   try {
     const supabase = await getAuthenticatedSupabase();
 
@@ -92,7 +90,6 @@ export async function POST(request, { params }) {
     const cell = toIntegerOrNull(rawCell);
 
     // preparar JSON como objetos (no strings). Si vienen del form, intentar parsear; si no, usar datos por defecto.
-    const horarioInput = data.get("horario") || datos.horario;
     const enviosInput = data.get("envios") || datos.envios;
 
     const payload = {
@@ -106,7 +103,6 @@ export async function POST(request, { params }) {
       _cell: cell, // number o null -> evita ambigüedad bigint/text
       _urlposter: datos.urlPoster,
       _parrrafo: data.get("parrrafo") || datos.parrrafo,
-      _horario: parseJSONOr(horarioInput, parseJSONOr(datos.horario, [])),
       _act_tf: datos.act_tf,
       _insta: data.get("insta") || datos.insta,
       _domicilio: datos.domicilio,
@@ -119,6 +115,7 @@ export async function POST(request, { params }) {
     const { data: tienda, error } = await supabase
       .rpc("create_sitio", payload)
       .single();
+
     if (error) {
       console.error("RPC create_sitio error:", error);
       return NextResponse.json(
@@ -126,14 +123,12 @@ export async function POST(request, { params }) {
         { status: 400 },
       );
     }
-    const { data: monedas, error: errorMoneda } = await supabase
-      .from("monedas")
-      .insert({
-        nombre: data.get("moneda_default"),
-        valor: 1,
-        defecto: false,
-        ui_store: tienda.UUID,
-      });
+    const { error: errorMoneda } = await supabase.from("monedas").insert({
+      nombre: data.get("moneda_default"),
+      valor: 1,
+      defecto: true,
+      ui_store: tienda.UUID,
+    });
     if (errorMoneda) {
       console.error("Error al crear la moneda:", errorMoneda);
       return NextResponse.json(

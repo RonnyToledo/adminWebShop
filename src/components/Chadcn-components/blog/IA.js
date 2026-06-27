@@ -154,7 +154,7 @@ Eres un redactor SEO experimentado. Genera un post de blog detallado a partir de
 
 
 Reglas que debes seguir al generar el HTML:
-1. Devuelve **solo** el fragmento HTML, sin <html>, <head> ni <body>.El codigo no puede estar envuelto en ninguna etiqueta.
+1. Devuelve **solo** el fragmento HTML, sin <html>, <head> ni <body>.El codigo no puede estar envuelto en ninguna etiqueta y sin ningun tipo de formato de texto que lo envuelva en etiquetas, solo texto limpio.
 2. Soporta estas etiquetas: h2, h3, h4, p, ul, ol, li, strong, em, a, blockquote, hr, code (inline), pre+code (bloque), img. No uses tags adicionales.
 3. Para enlaces externos añade: rel="noopener noreferrer" target="_blank". Para enlaces internos solo href.
 4. Para imágenes usa: <img src="..." alt="...">. Si no hay alt en el texto coloca alt="" (vacío). Añade loading="lazy".

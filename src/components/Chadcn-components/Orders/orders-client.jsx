@@ -1,5 +1,5 @@
 "use client";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import {
   Trash2,
@@ -8,6 +8,8 @@ import {
   CreditCard,
   Tag,
   Package,
+  MessageCircle,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -26,54 +28,14 @@ import {
 } from "@/components/ui/table";
 import apiClient from "@/lib/apiClient";
 import { logoApp } from "@/utils/image";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { supabase } from "@/lib/supa";
 
-const initialState = {
-  id: 1742,
-  uid: "ad65c9e9-292f-48d2-a64b-941782270896",
-  desc: {
-    envio: "delivery",
-    pago: "transfer",
-    pedido: [
-      {
-        id: 601,
-        Cant: 1,
-        caja: "d050e6dd-a417-4000-9059-43aad254f0bc",
-        span: false,
-        image: logoApp,
-        order: 6,
-        price: 1200,
-        priceCompra: 0,
-        title: "",
-        coment: { promedio: 0, total: 0 },
-        creado: "2025-03-01T14:12:15",
-        stock: 1,
-        storeId: "ad65c9e9-292f-48d2-a64b-941782270896",
-        visible: true,
-        visitas: 0,
-        favorito: false,
-        oldPrice: 0,
-        agregados: [],
-        productId: "412109d3-6b1a-4277-a748-dac7720e33ac",
-        descripcion: "",
-      },
-    ],
-    total: 1420,
-    provincia: "Ciego de Ávila",
-    municipio: "Morón",
-    code: { discount: 0, name: "" },
-    people: "Yily",
-  },
-  visto: false,
-  events: "compra",
-  nombre: "Yily",
-  UID_Venta: "0f7993ee-c95f-42a8-8935-a10d44dd2b88",
-  created_at: "2025-07-12T10:14:38-04:00",
-};
+// ─── Helper defensivo para agregados ─────────────────────────────────────────
+const safeAgregados = (o) => o?.agregados ?? [];
 
-// ─── Resumen metric ───────────────────────────────────────────────────────────
+// ─── Tarjeta de métrica ───────────────────────────────────────────────────────
 function SummaryCard({ label, value, color = "text-foreground" }) {
   return (
     <div className="bg-secondary/40 rounded-xl border border-border px-4 py-3">
@@ -85,8 +47,22 @@ function SummaryCard({ label, value, color = "text-foreground" }) {
   );
 }
 
+// ─── Chip de info ─────────────────────────────────────────────────────────────
+function InfoChip({ icon: Icon, label }) {
+  if (!label) return null;
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border rounded-full px-3 py-1">
+      <Icon size={11} className="text-primary shrink-0" />
+      {label}
+    </div>
+  );
+}
+
 // ─── Fila de producto ─────────────────────────────────────────────────────────
 function PlantillaRows({ order, handleAgregadoUpdate }) {
+  const subtotalRow =
+    (order?.Cant || 0) * ((order?.price || 0) + (order?.embalaje || 0));
+
   return (
     <TableRow className="hover:bg-secondary/30 transition-colors">
       <TableCell>
@@ -94,7 +70,7 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
           <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-border shrink-0 bg-secondary">
             <Image
               src={order?.image || logoApp}
-              alt={order?.title || ""}
+              alt={order?.title || "producto"}
               fill
               className="object-cover"
             />
@@ -104,21 +80,18 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
           </span>
         </div>
       </TableCell>
-      <TableCell className="text-sm tabular-nums">{order?.Cant || 0}</TableCell>
+      <TableCell className="text-sm tabular-nums">{order?.Cant ?? 0}</TableCell>
       <TableCell className="text-sm tabular-nums text-muted-foreground">
-        {(order?.price || 0).toLocaleString()}
+        {(order?.price ?? 0).toLocaleString()}
       </TableCell>
       <TableCell className="text-sm tabular-nums text-muted-foreground">
-        {order?.embalaje || 0}
+        {(order?.embalaje ?? 0).toLocaleString()}
       </TableCell>
       <TableCell className="text-sm tabular-nums text-muted-foreground">
-        {(order?.priceCompra || 0).toLocaleString()}
+        {(order?.priceCompra ?? 0).toLocaleString()}
       </TableCell>
       <TableCell className="text-sm tabular-nums font-medium">
-        {(
-          (order.Cant || 0) *
-          ((order.price || 0) + (order.embalaje || 0))
-        ).toLocaleString()}
+        {subtotalRow.toLocaleString()}
       </TableCell>
       <TableCell>
         <button
@@ -132,81 +105,130 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
   );
 }
 
+// ─── Hook: carga el pedido completo desde Supabase ───────────────────────────
+//
+// PedidosTable usa la vista ligera `EventsSummary` (sin el campo `desc`),
+// por lo que el contexto nunca tiene los productos del pedido.
+// Este hook va directo a la tabla `Events` para obtener el desc completo.
+//
+function usePedidoDetalle(specific) {
+  const [dataPedido, setDataPedido] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchPedido = useCallback(async () => {
+    if (!specific) return;
+    setLoading(true);
+    setError(null);
+
+    const { data, error: sbError } = await supabase
+      .from("Events")
+      .select("*")
+      .eq("UID_Venta", specific)
+      .single();
+    console.log(data);
+
+    if (sbError || !data) {
+      setError(sbError?.message ?? "Pedido no encontrado");
+      setLoading(false);
+      return;
+    }
+
+    setDataPedido(data);
+    setLoading(false);
+  }, [specific]);
+
+  useEffect(() => {
+    fetchPedido();
+  }, [fetchPedido]);
+  return { dataPedido, setDataPedido, loading, error, refetch: fetchPedido };
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function PedidoDetalle({ ThemeContext, specific }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
-  const [dataPedido, setDataPedido] = useState(initialState);
   const router = useRouter();
-  useEffect(() => {
-    setDataPedido(
-      (webshop?.events || []).find((obj) => obj.UID_Venta === specific),
-    );
-  }, [specific, webshop?.events]);
 
+  // Siempre cargamos desde Supabase para tener el desc completo con los productos.
+  // No usamos webshop.events porque PedidosTable solo guarda la vista ligera.
+  const { dataPedido, setDataPedido, loading, error } =
+    usePedidoDetalle(specific);
+
+  // ── Redirigir si el pedido queda sin items ────────────────────────────────
   useEffect(() => {
-    const total = (dataPedido?.desc?.pedido ?? []).reduce(
-      (sum, order) =>
-        sum +
-        (order?.Cant || 0) +
-        (order?.agregados ?? []).reduce((s, ag) => s + (ag?.cant || 0), 0),
-      0,
-    );
+    if (!dataPedido?.UID_Venta) return;
+    const total = dataPedido?.desc?.total;
     if (total === 0) {
-      setWebshop((prev) => ({
-        ...prev,
-        events: prev.events.filter((obj) => obj.UID_Venta !== specific),
-      }));
       router.push("/orders");
     }
-  }, [dataPedido?.desc?.pedido, router]);
+  }, [dataPedido?.desc?.pedido, dataPedido?.UID_Venta, router]);
 
+  // ── Actualizar en servidor ────────────────────────────────────────────────
   async function Update(value) {
-    sileo.promise(
-      updateDesc(webshop?.store.sitioweb, value, setWebshop, () => {}),
+    // Actualización optimista local
+    setDataPedido(value);
+
+    toast.promise(
+      updateDesc(webshop?.store?.sitioweb, value, setWebshop, () => {}),
       {
-        loading: { title: "Actualizando pedido..." },
-        success: () => ({ title: "Pedido actualizado correctamente" }),
-        error: (err) => ({
-          title: "Error",
-          description: err?.message ?? "Error al actualizar",
-        }),
+        loading: "Actualizando pedido...",
+        success: () => "Pedido actualizado correctamente",
+        error: (err) => (
+          "Error",
+          {
+            description: err?.message ?? "Error al actualizar",
+          }
+        ),
       },
     );
   }
 
+  // ── Reducir cantidad de un producto / agregado ────────────────────────────
   const handleAgregadoUpdate = (pedido, name) => {
     const valueAux = {
       ...dataPedido,
       desc: {
         ...dataPedido?.desc,
-        pedido: dataPedido?.desc?.pedido.map((obj) => {
+        pedido: (dataPedido?.desc?.pedido ?? []).map((obj) => {
           if (pedido.productId !== obj.productId) return obj;
           if (name) {
             return {
               ...obj,
-              agregados: obj.agregados.map((ag) =>
-                ag.name === name ? { ...ag, cant: ag.cant - 1 } : ag,
+              agregados: safeAgregados(obj).map((ag) =>
+                ag.name === name ? { ...ag, cant: (ag.cant || 0) - 1 } : ag,
               ),
             };
           }
-          return { ...obj, Cant: obj.Cant - 1 };
+          return { ...obj, Cant: (obj.Cant || 0) - 1 };
         }),
       },
     };
     Update(valueAux);
   };
 
-  // Loading / not found
-  if (!webshop?.events) {
+  // ── WhatsApp ──────────────────────────────────────────────────────────────
+  const handleWhatsApp = () => {
+    const phone = dataPedido?.phonenumber;
+    if (phone && phone !== 0) {
+      window.open(
+        `https://wa.me/${phone}?text=${encodeURIComponent(
+          `Hola, soy de ${webshop?.store?.name ?? "la tienda"}`,
+        )}`,
+        "_blank",
+      );
+    } else {
+      toast.error("Sin teléfono", {
+        description: "El cliente no proporcionó número",
+      });
+    }
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex items-center gap-3">
-          <motion.span
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-            className="inline-block w-4 h-4 rounded-full border-2 border-border border-t-primary"
-            style={{ display: "block" }}
-          />
+          <Loader2 size={18} className="animate-spin text-muted-foreground" />
           <span className="text-sm text-muted-foreground italic">
             Cargando pedido...
           </span>
@@ -215,13 +237,14 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
     );
   }
 
-  if (!dataPedido) {
+  // ── Error / Not found ─────────────────────────────────────────────────────
+  if (error || !dataPedido) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center space-y-2">
           <Package size={32} className="text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">
-            No se encontró el pedido
+            {error ?? "No se encontró el pedido"}
           </p>
           <button
             onClick={() => router.push("/orders")}
@@ -234,59 +257,64 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
     );
   }
 
-  // Cálculos de resumen
-  const totalItems = dataPedido?.desc?.pedido.reduce(
-    (sum, o) =>
-      sum +
-      (o.Cant || 0) +
-      o.agregados.reduce((s, ag) => s + (ag.cant || 0), 0),
-    0,
-  );
-  const discount = dataPedido?.desc?.code?.discount || 0;
-  const subtotal = dataPedido?.desc?.pedido.reduce(
-    (sum, o) =>
-      sum +
-      o.Cant * ((o.embalaje || 0) + o.price || 0) +
-      o.agregados.reduce(
-        (s, ag) =>
-          s + ((ag.cant || 0) * (ag.price || 0 + (o.embalaje || 0)) || 0),
-        0,
-      ),
-    0,
-  );
-  const totalFinal = (subtotal * (100 - discount)) / 100;
-  const inversion = dataPedido?.desc?.pedido.reduce(
-    (sum, o) =>
-      sum +
-      (o.Cant * (o.priceCompra || 0) || 0) +
-      o.agregados.reduce(
-        (s, ag) => s + ((ag.cant || 0) * (o.priceCompra || 0) || 0),
-        0,
-      ),
-    0,
-  );
-  const ganancia =
-    (dataPedido?.desc?.pedido.reduce(
-      (sum, o) =>
-        sum +
-        o.Cant * (o.price - ((o.embalaje || 0) + o.priceCompra || 0) || 0) +
-        o.agregados.reduce(
-          (s, ag) =>
-            s +
-            ((ag.cant || 0) *
-              (ag.price - ((o.priceCompra || 0) + (o.embalaje || 0)) || 0) ||
-              0),
-          0,
-        ),
-      0,
-    ) *
-      (100 - discount)) /
-    100;
+  // ── Cálculos de resumen ───────────────────────────────────────────────────
+  const pedido = dataPedido?.desc?.pedido ?? [];
+  const discount = dataPedido?.desc?.code?.discount ?? 0;
 
+  const totalItems = pedido.reduce(
+    (sum, o) =>
+      sum +
+      (o?.Cant || 0) +
+      safeAgregados(o).reduce((s, ag) => s + (ag?.cant || 0), 0),
+    0,
+  );
+
+  const subtotal = pedido.reduce(
+    (sum, o) =>
+      sum +
+      (o?.Cant || 0) * ((o?.price || 0) + (o?.embalaje || 0)) +
+      safeAgregados(o).reduce(
+        (s, ag) =>
+          s + (ag?.cant || 0) * ((ag?.price || 0) + (o?.embalaje || 0)),
+        0,
+      ),
+    0,
+  );
+
+  const totalFinal = (subtotal * (100 - discount)) / 100;
+
+  const inversion = pedido.reduce(
+    (sum, o) =>
+      sum +
+      (o?.Cant || 0) * (o?.priceCompra || 0) +
+      safeAgregados(o).reduce(
+        (s, ag) => s + (ag?.cant || 0) * (o?.priceCompra || 0),
+        0,
+      ),
+    0,
+  );
+
+  const gananciaBase = pedido.reduce(
+    (sum, o) =>
+      sum +
+      (o?.Cant || 0) *
+        ((o?.price || 0) - (o?.priceCompra || 0) - (o?.embalaje || 0)) +
+      safeAgregados(o).reduce(
+        (s, ag) =>
+          s +
+          (ag?.cant || 0) *
+            ((ag?.price || 0) - (o?.priceCompra || 0) - (o?.embalaje || 0)),
+        0,
+      ),
+    0,
+  );
+  const ganancia = (gananciaBase * (100 - discount)) / 100;
+
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background p-6 space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <button
             onClick={() => router.push("/orders")}
@@ -301,46 +329,51 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
             Pedido de {dataPedido?.nombre || "—"}
           </h1>
         </div>
-        <code className="text-xs font-mono bg-secondary px-3 py-1.5 rounded-lg text-muted-foreground border border-border shrink-0">
-          {dataPedido?.UID_Venta?.substring(0, 12)}...
-        </code>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleWhatsApp}
+            title="Contactar por WhatsApp"
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-border hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200"
+          >
+            <MessageCircle size={14} className="text-foreground" />
+          </button>
+          <code className="text-xs font-mono bg-secondary px-3 py-1.5 rounded-lg text-muted-foreground border border-border shrink-0">
+            {dataPedido?.UID_Venta?.substring(0, 12)}...
+          </code>
+        </div>
       </div>
 
       {/* Info chips */}
       <div className="flex flex-wrap gap-2">
-        {dataPedido?.desc?.lugar && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border rounded-full px-3 py-1">
-            <MapPin size={11} className="text-primary" />
-            {dataPedido.desc.lugar}
-          </div>
-        )}
-        {dataPedido?.desc?.pago && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border rounded-full px-3 py-1">
-            <CreditCard size={11} className="text-primary" />
-            {dataPedido.desc.pago === "cash" ? "Efectivo" : "Transferencia"}
-          </div>
-        )}
+        <InfoChip icon={MapPin} label={dataPedido?.desc?.lugar} />
+        <InfoChip
+          icon={CreditCard}
+          label={
+            dataPedido?.desc?.pago === "cash"
+              ? "Efectivo"
+              : dataPedido?.desc?.pago === "transfer"
+                ? "Transferencia"
+                : dataPedido?.desc?.pago
+          }
+        />
         {dataPedido?.desc?.code?.name && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border rounded-full px-3 py-1">
-            <Tag size={11} className="text-primary" />
-            {dataPedido.desc.code.name} · {dataPedido.desc.code.discount}%
-          </div>
+          <InfoChip
+            icon={Tag}
+            label={`${dataPedido.desc.code.name} · ${dataPedido.desc.code.discount}%`}
+          />
         )}
-        {dataPedido?.desc?.direccion && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border rounded-full px-3 py-1">
-            <MapPin size={11} /> {dataPedido.desc.direccion}
-          </div>
-        )}
+        <InfoChip icon={MapPin} label={dataPedido?.desc?.direccion} />
       </div>
 
-      {/* Tabla */}
+      {/* Tabla de productos */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">
             Productos del pedido
           </CardTitle>
-          {dataPedido?.desc?.descripcion && (
-            <CardDescription>{dataPedido.desc.descripcion}</CardDescription>
+          {dataPedido?.descripcion && (
+            <CardDescription>{dataPedido.descripcion}</CardDescription>
           )}
         </CardHeader>
         <CardContent className="p-0">
@@ -353,13 +386,13 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
                 <TableHead className="text-xs">Embalaje</TableHead>
                 <TableHead className="text-xs">Inv.</TableHead>
                 <TableHead className="text-xs">Total</TableHead>
-                <TableHead className="text-xs w-10"></TableHead>
+                <TableHead className="text-xs w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(dataPedido?.desc?.pedido || []).map((order) => (
-                <React.Fragment key={order.id}>
-                  {order.Cant > 0 && (
+              {pedido.map((order) => (
+                <React.Fragment key={order.id ?? order.productId}>
+                  {(order?.Cant || 0) > 0 && (
                     <PlantillaRows
                       order={order}
                       handleAgregadoUpdate={() =>
@@ -367,18 +400,19 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
                       }
                     />
                   )}
-                  {order.agregados?.map((agregado, idx) =>
-                    agregado.cant > 0 ? (
+                  {safeAgregados(order).map((agregado, idx) =>
+                    (agregado?.cant || 0) > 0 ? (
                       <PlantillaRows
-                        key={`${order.id}-ag-${idx}`}
+                        key={`${order.id ?? order.productId}-ag-${idx}`}
                         order={{
                           ...agregado,
                           title: `${order.title} + ${agregado.name}`,
-                          price: agregado.price || 0,
-                          priceCompra: agregado.priceCompra || 0,
+                          price: agregado.price ?? 0,
+                          priceCompra: agregado.priceCompra ?? 0,
                           Cant: agregado.cant ?? 0,
+                          embalaje: order.embalaje ?? 0,
                           image: agregado.image || order.image || logoApp,
-                          id: `${order.id}-agregado-${idx}`,
+                          id: `${order.id ?? order.productId}-agregado-${idx}`,
                         }}
                         handleAgregadoUpdate={() =>
                           handleAgregadoUpdate(order, agregado.name)
@@ -388,12 +422,23 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
                   )}
                 </React.Fragment>
               ))}
+
+              {pedido.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-10 text-muted-foreground text-sm"
+                  >
+                    No hay productos en este pedido
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Resumen */}
+      {/* Métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCard label="Productos" value={totalItems} />
         <SummaryCard
@@ -404,7 +449,7 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
         <SummaryCard
           label="Inversión"
           value={inversion.toLocaleString()}
-          color="text-amber-500"
+          color="text-green-500"
         />
         <SummaryCard
           label="Ganancia"
@@ -416,21 +461,19 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
   );
 }
 
-// ─── updateDesc sin cambios ───────────────────────────────────────────────────
+// ─── updateDesc ───────────────────────────────────────────────────────────────
 const updateDesc = async (sitioweb, Event, setWebshop, setState) => {
   setState(true);
   try {
     const response = await apiClient.put(
       `/api/tienda/${sitioweb}/checkOrders`,
       Event,
-      {
-        headers: { "Content-Type": "application/json" },
-      },
+      { headers: { "Content-Type": "application/json" } },
     );
     if (response.status === 200) {
       setWebshop((prev) => ({
         ...prev,
-        events: prev.events.map((obj) =>
+        events: (prev.events ?? []).map((obj) =>
           obj.UID_Venta === Event.UID_Venta ? Event : obj,
         ),
       }));

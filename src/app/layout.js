@@ -1,20 +1,26 @@
-// app/layout.js
-import { Toaster as SileoToaster } from "sileo";
-import { Toaster as UiToaster } from "@/components/ui/toaster";
+import { headers } from "next/headers";
 import MyProvider from "@/context/useContext";
 import { fetchStoreData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
 import { fetchGAData } from "@/lib/ga-utils";
-import { redirect } from "next/navigation";
-import "./globals.css";
 import { getServerUser } from "@/lib/server-auth";
+import "./globals.css";
 
-// Rutas públicas que NO requieren autenticación
+export const dynamic = "force-dynamic";
+
 const PUBLIC_ROUTES = [
   "/login",
   "/createAccount",
   "/configPage",
   "/resetPassword",
+];
+
+const LIGHT_ROUTES = [
+  ...PUBLIC_ROUTES,
+  "/welcome",
+  "/updatePassword",
+  "/conditions-of-service",
+  "/teams-of-service",
 ];
 
 export const metadata = {
@@ -30,100 +36,132 @@ export const metadata = {
 };
 
 export default async function AdminLayout({ children }) {
-  // getServerUser() usa cookies() internamente — el middleware ya refrescó el token
-  const userData = await getServerUser();
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "/";
 
-  // ✅ Nueva estructura: { userId, user, error, errorType }
+  // ── NUEVO: detectar ?add=true para el flujo de multi-cuenta ──────────────
+  // El middleware debe reenviar el header "x-search" con la query string,
+  // o podemos leerlo directamente desde "x-url" si lo configuras.
+  // Como alternativa segura, leemos el referer o x-invoke-path completo.
+  // La forma más simple es que el middleware copie la query en un header propio.
+  // Si no tienes ese header aún, usamos la URL completa que Next expone.
+  const xUrl = headersList.get("x-url") ?? ""; // puedes configurar esto en middleware
+  const xSearch = headersList.get("x-search") ?? ""; // alternativa: solo la query string
+  const isAddMode = xSearch.includes("add=true") || xUrl.includes("add=true");
+
+  const userData = await getServerUser();
   const userId = userData?.userId ?? null;
   const errorType = userData?.errorType ?? null;
 
-  // 📊 Logging diferenciado según tipo de error
-  if (userId) {
-    console.info("✅ Usuario autenticado:", userId);
-  } else if (errorType) {
-    console.warn(`⚠️ Sin sesión: ${errorType}`, userData?.error);
+  if (errorType) {
+    console.warn(
+      `[AdminLayout] ⚠️ Sesión inválida - Tipo: ${errorType}`,
+      userData?.error,
+    );
+  } else if (userId) {
+    console.info(`[AdminLayout] ✅ Usuario autenticado: ${userData?.email}`);
   } else {
-    console.warn("⚠️ Sin sesión activa (razón desconocida)");
+    console.info("[AdminLayout] ℹ️ Usuario no autenticado - Ruta pública");
   }
 
-  // ============================================================================
-  // 📦 CARGAR DATOS DEL USUARIO (si existe)
-  // ============================================================================
-
   let data = null;
-  if (userId) {
-    // Solo cargar datos si hay usuario
-    data = await initializeData(userId);
+  if (userId && shouldLoadLayoutData(pathname)) {
+    data = await initializeData(userId, {
+      includeGA: shouldLoadAnalytics(pathname),
+    });
   }
 
   return (
     <html lang="en">
       <body>
-        {/* Pasa userId y datos al Provider */}
-        <MyProvider user={userId} data={data || {}} sessionError={errorType}>
+        <MyProvider
+          key={userId ?? "guest"}
+          user={userId}
+          data={data || {}}
+          sessionError={errorType}
+          isAddMode={isAddMode} // ← NUEVO: prop que controla el guard de redirección
+        >
           <main>{children}</main>
-          <SileoToaster position="top-center" />
-          <UiToaster />
         </MyProvider>
       </body>
     </html>
   );
 }
 
-// ─── initializeData ───────────────────────────────────────────────────────────
-export async function initializeData(userId) {
+const safeJsonParse = (value, fallback = []) => {
+  try {
+    if (value == null || value === "") return fallback;
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+function matchesRoute(pathname, route) {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
+function shouldLoadLayoutData(pathname) {
+  return !LIGHT_ROUTES.some((route) => matchesRoute(pathname, route));
+}
+
+function shouldLoadAnalytics(pathname) {
+  return pathname === "/" || matchesRoute(pathname, "/analytics");
+}
+
+export async function initializeData(userId, options = {}) {
   if (!userId) return null;
 
+  const { includeGA = true } = options;
+
   try {
-    const { data: store, error } = await fetchStoreData(userId);
-    console.log("Datos crudos del store:", { store, error });
-    if (error || !store?.Sitios?.sitioweb) {
+    const { data, error } = await fetchStoreData(userId);
+
+    if (error || !data?.store?.sitioweb) {
       console.error("Error fetching store data:", error);
-      return { user: store };
+      return { user: data?.user ?? null };
     }
 
+    const store = data.store;
+    const user = data.user;
+
+    const categoriasOrdenadas = [...(store.categorias ?? [])].sort(
+      (a, b) => (a.order ?? 0) - (b.order ?? 0),
+    );
+
+    const productosOrdenados = [...(store.Products ?? [])].sort(
+      (a, b) => (a.order ?? 0) - (b.order ?? 0),
+    );
+
     const tiendaParsed = {
-      ...store.Sitios,
-      horario: JSON.parse(store.Sitios.horario),
-      categoria: store.Sitios.categorias.sort((a, b) => a.order - b.order),
-      envios: JSON.parse(store.Sitios.envios),
+      ...store,
+      categoria: categoriasOrdenadas,
+      envios: safeJsonParse(store.envios, []),
     };
 
-    const eventsParsed = tiendaParsed.Events;
+    const eventsParsed = [...(store.Events ?? [])];
     const productosParsed = OrderProducts(
-      store.Sitios.Products,
-      tiendaParsed.categoria,
+      productosOrdenados,
+      categoriasOrdenadas,
     );
-    const gaData = await fetchGAData(tiendaParsed.sitioweb);
 
-    delete tiendaParsed.Products;
-    delete tiendaParsed.categorias;
-    delete tiendaParsed.Events;
-    delete store.Sitios;
-    console.log({
-      store: tiendaParsed,
-      ga: gaData,
-      products: (productosParsed || []).map((obj) => ({
-        ...obj,
-        visitas: obj.visitas ?? 0,
-        caracteristicas: JSON.parse(obj?.caracteristicas || "[]"),
-      })),
-      events: eventsParsed,
-      code: tiendaParsed.codeDiscount,
-      user: store,
-    });
+    const gaData =
+      includeGA && tiendaParsed.sitioweb
+        ? await fetchGAData(tiendaParsed.sitioweb)
+        : null;
 
     return {
+      user,
       store: tiendaParsed,
       ga: gaData,
       products: (productosParsed || []).map((obj) => ({
         ...obj,
         visitas: obj.visitas ?? 0,
-        caracteristicas: JSON.parse(obj?.caracteristicas || "[]"),
+        caracteristicas: safeJsonParse(obj?.caracteristicas, []),
       })),
       events: eventsParsed,
-      code: tiendaParsed.codeDiscount,
-      user: store,
+      code: store.codeDiscount ?? [],
+      store_role: data.store_role ?? "owner",
     };
   } catch (error) {
     console.error("Error inicializando datos:", error);

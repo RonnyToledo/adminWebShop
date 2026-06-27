@@ -1,4 +1,3 @@
-import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { GoogleAuth } from "google-auth-library";
 import { unstable_cache } from "next/cache";
 
@@ -23,35 +22,33 @@ const auth = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
 });
 
-const analyticsDataClient = new BetaAnalyticsDataClient({ auth });
+async function runReport(token, body) {
+  const res = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`GA API error ${res.status}: ${err}`);
+  }
+  return res.json();
+}
 
 export async function fetchGAData(tienda) {
   return unstable_cache(
     async () => {
       try {
-        console.info(`Fetching GA data for tienda: ${tienda}`);
-        const [response] = await analyticsDataClient.runReport({
-          property: `properties/${propertyId}`,
-          dimensions: [
-            { name: "pagePath" },
-            { name: "hour" },
-            { name: "date" },
-          ],
-          metrics: [{ name: "sessions" }],
-          dateRanges: [{ startDate: "90daysAgo", endDate: "today" }],
-          dimensionFilter: {
-            filter: {
-              fieldName: "pagePath",
-              stringFilter: {
-                matchType: "BEGINS_WITH",
-                value: `/t/${tienda}`,
-              },
-            },
-          },
-        });
+        const client = await auth.getClient();
+        const { token } = await client.getAccessToken();
 
-        const [response1] = await analyticsDataClient.runReport({
-          property: `properties/${propertyId}`,
+        const reportBody = {
           dimensions: [
             { name: "pagePath" },
             { name: "hour" },
@@ -59,25 +56,40 @@ export async function fetchGAData(tienda) {
           ],
           metrics: [{ name: "sessions" }],
           dateRanges: [{ startDate: "90daysAgo", endDate: "today" }],
-          dimensionFilter: {
-            filter: {
-              fieldName: "pagePath",
-              stringFilter: {
-                matchType: "BEGINS_WITH",
-                value: `/t/${tienda}/products/`,
+        };
+
+        const [response, response1] = await Promise.all([
+          runReport(token, {
+            ...reportBody,
+            dimensionFilter: {
+              filter: {
+                fieldName: "pagePath",
+                stringFilter: {
+                  matchType: "BEGINS_WITH",
+                  value: `/t/${tienda}`,
+                },
               },
             },
-          },
-        });
+          }),
+          runReport(token, {
+            ...reportBody,
+            dimensionFilter: {
+              filter: {
+                fieldName: "pagePath",
+                stringFilter: {
+                  matchType: "BEGINS_WITH",
+                  value: `/t/${tienda}/products/`,
+                },
+              },
+            },
+          }),
+        ]);
 
         const rows = response.rows || [];
         const tiendaPath = `/t/${tienda}`;
-
-        // Filtrar rows para la tienda principal (exacta)
         const mainRows = rows.filter(
           (row) => row.dimensionValues[0].value === tiendaPath,
         );
-
         const totalSessions = mainRows.reduce(
           (acc, row) => acc + parseInt(row.metricValues[0].value, 10),
           0,
@@ -101,12 +113,8 @@ export async function fetchGAData(tienda) {
           visitasProductos: getProductVisitsOptimizado(response1),
         };
       } catch (error) {
-        console.error("Error al ejecutar el reporte GA:", error);
-        return {
-          error: error.message,
-          cant: 0,
-          visitasProductos: {},
-        };
+        console.error("Error:", error.message);
+        return { error: error.message, cant: 0, visitasProductos: {} };
       }
     },
     [`ga-data-${tienda}`],

@@ -8,7 +8,7 @@ async function getAuthenticatedSupabase() {
   return supabase;
 }
 
-export async function POST(request, { params }) {
+export async function POST(request) {
   // Obtenemos el cuerpo enviado desde el cliente
   const data = await request.json();
   if (data) console.info(data);
@@ -43,7 +43,7 @@ export async function POST(request, { params }) {
     );
   }
 }
-export async function PUT(request, { params }) {
+export async function PUT(request) {
   const data = await request.formData();
   const categoria = JSON.parse(data.get("categoria"));
   const UUID = data.get("UUID");
@@ -105,7 +105,7 @@ function handleError(error) {
   );
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request) {
   // Obtenemos el cuerpo enviado desde el cliente
   const { UUID, image } = await request.json();
   try {

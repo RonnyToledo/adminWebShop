@@ -1,12 +1,11 @@
 "use client";
 import React, { useState, useContext, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import axios from "axios";
 import ConfirmationOut from "@/components/globalFunction/confirmationOut";
 import { logoApp } from "@/utils/image";
 import { extractBlobFilesFromArray } from "@/components/globalFunction/extractBlobFilesFromArray";
 import ProductEditForm from "../Products/product-edit-form";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import Image from "next/image";
 
 const defaultProduct = {
@@ -25,8 +24,8 @@ const defaultProduct = {
   caracteristicas: [],
   oldPrice: "",
   priceCompra: 0,
+  combos: [],
   default_moneda: "",
-  // FIX: usar product_variants como campo canónico (coincide con ProductEditForm y la DB)
   product_variants: [],
 };
 
@@ -44,11 +43,10 @@ export default function Specific({ specific, ThemeContext }) {
       return;
     }
 
-    // FIX: normalizar el campo de variantes al nombre canónico `product_variants`
-    // La API puede devolver `variants` o `product_variants` según la query
     setProducts({
       ...found,
       product_variants: found.product_variants ?? found.variants ?? [],
+      combos: found.combos ?? [],
     });
   }, [webshop?.products, specific]);
 
@@ -56,17 +54,22 @@ export default function Specific({ specific, ThemeContext }) {
     setDownloading(true);
 
     if (!webshop?.store?.sitioweb || !products?.productId) {
-      sileo.error({ title: "Error", description: "Información incompleta." });
+      toast.error("Error", {
+        description: "Información incompleta.",
+      });
       setDownloading(false);
       return;
     }
 
     try {
       const price = Number(products.price) || 0;
-      const oldPriceNum = Number(products.oldPrice) || 0;
       const priceCompra = Number(products.priceCompra) || 0;
-      const oldPriceVal =
-        price < oldPriceNum && oldPriceNum > 0 ? oldPriceNum : 0;
+
+      // ── FIX: leer old_price desde la variante default, no del producto raíz
+      const defaultVariantCurrent = (products.product_variants ?? []).find(
+        (v) => v.attributes?.es_default === true || v.default_variant === true,
+      );
+      const oldPriceVal = Number(defaultVariantCurrent?.old_price) || 0;
 
       const imagesecondary = (products?.imagesecondary ?? []).filter(
         (o) => o !== logoApp,
@@ -85,6 +88,11 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("venta", String(!!products.venta));
       formData.append("order", String(products.order));
       formData.append("caja", String(products.caja ?? ""));
+      formData.append("combos", JSON.stringify(products.combos ?? []));
+      formData.append(
+        "info_sections",
+        JSON.stringify(products.info_sections ?? []),
+      );
       formData.append(
         "caracteristicas",
         JSON.stringify(products?.caracteristicas ?? []),
@@ -100,23 +108,27 @@ export default function Specific({ specific, ThemeContext }) {
       formData.append("visible", String(!!products.visible));
       formData.append("Id", String(products.productId ?? ""));
       formData.append("span", String(!!products.span));
+      formData.append(
+        "modified_extract",
+        products.info_sections !==
+          webshop?.products?.find((p) => p.productId === specific)
+            ?.info_sections,
+      );
+
       formData.append("imagesecondary", JSON.stringify(imagesecondary));
       formData.append(
         "imagesecondaryCopy",
         JSON.stringify(imagesecondaryWebshop),
       );
 
-      // Imagen principal actual (string url) o null
       if (products.image && !(products.image instanceof File)) {
         formData.append("image", String(products.image));
       }
 
-      // Imagen principal nueva (File)
       if (newImage instanceof File) {
         formData.append("newImage", newImage, newImage.name);
       }
 
-      // Imágenes secundarias nuevas (blob)
       if (
         JSON.stringify(imagesecondaryWebshop) !== JSON.stringify(imagesecondary)
       ) {
@@ -141,24 +153,19 @@ export default function Specific({ specific, ThemeContext }) {
         }
       }
 
-      // FIX: usar product_variants como campo canónico
       const productVariants = products.product_variants ?? [];
 
-      // Limpiar campos internos de UI antes de serializar
       const cleanVariants = productVariants.map(
         // eslint-disable-next-line no-unused-vars
         ({ _localPreview, _deleteImage, ...rest }) => rest,
       );
       formData.append("variants", JSON.stringify(cleanVariants));
 
-      // URLs de imágenes de variantes a borrar en cloudinary
       const toDelete = productVariants
         .filter((v) => v._deleteImage)
         .map((v) => v._deleteImage);
       formData.append("variantImageDelete", JSON.stringify(toDelete));
 
-      // FIX: imágenes nuevas de variantes desde el Map de blobs
-      // El Map usa el UUID de la variante como clave
       const variantMeta = [];
       for (const [variantId, file] of variantImageBlobs.entries()) {
         const filename = `variant_${variantId}_${file.name}`;
@@ -173,17 +180,12 @@ export default function Specific({ specific, ThemeContext }) {
         { withCredentials: true },
       );
 
-      sileo.promise(putPromise, {
-        loading: { title: "Actualizando producto..." },
+      toast.promise(putPromise, {
+        loading: "Actualizando producto...",
         success: (response) => {
           const updated = response?.data?.data ?? response?.data ?? null;
-          if (!updated)
-            return {
-              title: "Actualizado",
-              description: "Sin datos devueltos.",
-            };
+          if (!updated) return "Actualizado";
 
-          // FIX: normalizar product_variants en la respuesta antes de actualizar el store
           const normalizedUpdated = {
             ...updated,
             product_variants:
@@ -201,32 +203,14 @@ export default function Specific({ specific, ThemeContext }) {
           setNewImage(null);
           setVariantImageBlobs(new Map());
 
-          return {
-            title: "Producto actualizado",
-            description: (
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/50 p-2.5">
-                <Image
-                  src={products.image || logoApp}
-                  alt={products.title}
-                  height={50}
-                  width={50}
-                  className="rounded-md object-cover"
-                />
-                <div>
-                  <p className="text-sm font-medium">{products.title}</p>
-                </div>
-              </div>
-            ),
-          };
+          return "Producto actualizado";
         },
-        error: (err) => ({
-          title: "Error al actualizar",
-          description: err?.response?.data?.message ?? err?.message,
-        }),
+        error: (err) =>
+          err?.response?.data?.message ?? err?.message ?? "Error al actualizar",
       });
     } catch (err) {
       console.error("SaveData error:", err);
-      sileo.error({ title: "Error", description: err?.message });
+      toast.error("Error", { description: err?.message });
     } finally {
       setDownloading(false);
     }
@@ -236,7 +220,6 @@ export default function Specific({ specific, ThemeContext }) {
     (p) => p.productId === specific,
   );
 
-  // FIX: comparar con product_variants normalizado para detectar cambios correctamente
   const hasChanges = (() => {
     if (!originalProduct) return false;
     const orig = JSON.stringify({
@@ -247,18 +230,18 @@ export default function Specific({ specific, ThemeContext }) {
     const curr = JSON.stringify(products);
     return orig !== curr;
   })();
-  console.log(products);
+
   return (
     <main className="grid min-h-screen w-full">
       <div className="flex flex-col p-3 w-full">
         <ProductEditForm
           product={products}
           onProductChange={setProducts}
-          changes={hasChanges}
+          hasChanges={hasChanges}
+          saving={downloading}
           variantImageBlobs={variantImageBlobs}
           setVariantImageBlobs={setVariantImageBlobs}
-          SaveData={SaveData}
-          downloading={downloading}
+          onSave={SaveData}
         />
       </div>
       <ConfirmationOut action={hasChanges} />

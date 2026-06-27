@@ -22,7 +22,8 @@ import {
   getTotalStock,
   isMultiVariant,
 } from "@/utils/variants";
-
+import { calcularGranosClientes } from "@/utils/granos";
+import { GranosClientesCard } from "./GranosClientesCard";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCUP(n, monedaDefault) {
@@ -41,7 +42,7 @@ function timeAgo(dateStr) {
   });
 }
 
-function buildOnboardingSteps(store, products, events) {
+function buildOnboardingSteps(store, products) {
   return [
     { id: "1", title: "Agregar productos", completed: products.length > 0 },
     {
@@ -88,11 +89,11 @@ function buildRecentActivity(products, events, monedaDefault) {
 
 export default function DashboardHome() {
   const { webshop } = useContext(ThemeContext);
-  const store = webshop?.store ?? {};
-  const ga = webshop?.ga ?? {};
-  const products = webshop?.products ?? [];
-  const events = webshop?.events ?? [];
-  const code = webshop?.code ?? [];
+  const store = useMemo(() => webshop?.store ?? {}, [webshop?.store]);
+  const ga = useMemo(() => webshop?.ga ?? {}, [webshop?.ga]);
+  const products = useMemo(() => webshop?.products ?? [], [webshop?.products]);
+  const events = useMemo(() => webshop?.events ?? [], [webshop?.events]);
+  const code = useMemo(() => webshop?.code ?? [], [webshop?.code]);
 
   const MonedaDefault =
     webshop?.store?.monedas?.find((m) => m.defecto)?.nombre ||
@@ -140,13 +141,18 @@ export default function DashboardHome() {
   );
 
   const onboardingSteps = useMemo(
-    () => buildOnboardingSteps(store, products, events),
-    [store, products, events],
+    () => buildOnboardingSteps(store, products),
+    [store, products],
   );
 
   const recentActivity = useMemo(
     () => buildRecentActivity(products, events, MonedaDefault),
-    [products, events],
+    [products, events, MonedaDefault],
+  );
+  // Dentro del componente, justo después de donde calculas `recentActivity`:
+  const clientesGranos = useMemo(
+    () => calcularGranosClientes(events),
+    [events],
   );
 
   const storeUrl = store.sitioweb
@@ -375,42 +381,46 @@ export default function DashboardHome() {
                     )}
                   </div>
 
-                  {store.horario &&
+                  {store.horarios?.length > 0 &&
                     (() => {
-                      const dias = [
-                        "Domingo",
-                        "Lunes",
-                        "Martes",
-                        "Miercoles",
-                        "Jueves",
-                        "Viernes",
-                        "Sabado",
-                      ];
-                      const hoy = store.horario.find(
-                        (h) => h.dia === dias[new Date().getDay()],
+                      const dowHoy = new Date().getDay(); // 0-6
+                      // store.horario son HorarioRow[] — buscamos filas del día de hoy con open=true
+                      const turnosHoy = store.horarios
+                        .filter((h) => h.dia === dowHoy && h.open)
+                        .sort((a, b) => a.apertura.localeCompare(b.apertura));
+
+                      const cerrado = turnosHoy.length === 0;
+                      const es24h = turnosHoy.some(
+                        (h) =>
+                          h.apertura === "00:00:00" && h.cierre === "23:59:59",
                       );
-                      const abierto =
-                        hoy && (hoy.apertura !== 0 || hoy.cierre !== 0);
-                      return hoy ? (
+
+                      const formatHora = (t) => t.slice(0, 5); // "HH:MM:SS" → "HH:MM"
+
+                      return (
                         <p className="text-xs text-muted-foreground mt-2">
                           Hoy:{" "}
                           <span
                             className={
-                              abierto
-                                ? "text-success font-medium"
-                                : "text-destructive font-medium"
+                              cerrado
+                                ? "text-destructive font-medium"
+                                : "text-amber-600 font-medium"
                             }
                           >
-                            {abierto
-                              ? hoy.cierre === 24
+                            {cerrado
+                              ? "Cerrado"
+                              : es24h
                                 ? "Abierto 24h"
-                                : `${hoy.apertura}:00 – ${hoy.cierre}:00`
-                              : "Cerrado"}
+                                : turnosHoy
+                                    .map(
+                                      (h) =>
+                                        `${formatHora(h.apertura)} – ${formatHora(h.cierre)}`,
+                                    )
+                                    .join("  ·  ")}
                           </span>
                         </p>
-                      ) : null;
+                      );
                     })()}
-
                   <button className="w-full mt-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
                     Ver tienda
                   </button>
@@ -436,7 +446,7 @@ export default function DashboardHome() {
                     </div>
                   </div>
                 )}
-
+                <GranosClientesCard clientes={clientesGranos} />
                 <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20 p-5">
                   <h3 className="font-semibold text-foreground mb-2">
                     ¿Necesitas ayuda?

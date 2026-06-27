@@ -2,74 +2,73 @@
 import React, { useRef, useState, useContext } from "react";
 import apiClient from "@/lib/apiClient";
 import { Button } from "../ui/button";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 
 export function FromData({ children, store, ThemeContext }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const form = useRef(null);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setDownloading(true);
-    // Construir FormData
+
     const formData = new FormData();
 
     Object.entries(store).forEach(([key, value]) => {
       if (value instanceof File || value instanceof Blob) {
-        // Archivos: añadir tal cual
         formData.append(key, value);
+      } else if (key === "horarios" && Array.isArray(value)) {
+        // Siempre enviar como "horario" sin importar cómo se llame en el store
+        formData.append("horarios", JSON.stringify(value));
       } else if (value && typeof value === "object") {
-        // Objetos: stringify
         formData.append(key, JSON.stringify(value));
       } else {
-        // Primitivos: asegurar string (evitar undefined/null)
         formData.append(key, String(value ?? ""));
       }
     });
 
-    // Promesa de la petición PUT (no forzamos Content-Type)
-    const putPromise = apiClient.put(`/api/tienda/${store.sitioweb}/`, formData);
+    const putPromise = apiClient.put(
+      `/api/tienda/${store.sitioweb}/`,
+      formData,
+    );
 
     try {
-      const res = sileo.promise(putPromise, {
-        loading: { title: "Actualizando configuración..." },
+      const res = toast.promise(putPromise, {
+        loading: "Actualizando configuración...",
         success: (response) => {
-          // Actualizamos el estado local con el store nuevo
+          const [updatedSitio] = response.data.data;
+
           setWebshop((prev) => ({
             ...prev,
-            store: { ...store, monedas: response.data.data[0].monedas },
+            store: {
+              ...store,
+              monedas: updatedSitio.monedas,
+              // horarios raw actualizados; buildHorarioCompleto ya aplicado en actions
+              horarios: updatedSitio.horarios,
+            },
           }));
 
-          // Reseteamos el formulario si existe la referencia
-          if (
-            form &&
-            form.current &&
-            typeof form.current.reset === "function"
-          ) {
-            form.current.reset();
-          }
+          if (form.current?.reset) form.current.reset();
 
-          // Mensaje de éxito (puedes usar response.data para mensajes del backend)
-          return {
-            title: "Éxito",
-            description:
-              response?.data?.message ??
-              "Configuración actualizada correctamente",
-          };
+          return (
+            "Éxito",
+            {
+              description:
+                response?.data?.message ??
+                "Configuración actualizada correctamente",
+            }
+          );
         },
         error: (err) => {
           const msg =
             err?.response?.data?.message ??
             err?.message ??
             "No se pudo actualizar la configuración";
-          return {
-            title: "Error",
-            description: `Error: ${msg}`,
-          };
+          return ("Error", { description: `Error: ${msg}` });
         },
       });
 
-      // opcional: devolver la respuesta para quien llame a handleSubmit
       return res;
     } catch (err) {
       console.error("handleSubmit error:", err);

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { ArrowRight, Trash2, ImageIcon } from "lucide-react";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -33,11 +33,15 @@ export function PostBasicInfo({ initialData, onComplete }) {
 
   const handleContinue = () => {
     if (!formData.title.trim()) {
-      sileo.error({ title: "Error", description: "El título es obligatorio" });
+      toast.error("Error", {
+        description: "El título es obligatorio",
+      });
       return;
     }
     if (!formData.slug.trim()) {
-      sileo.error({ title: "Error", description: "El slug es obligatorio" });
+      toast.error("Error", {
+        description: "El slug es obligatorio",
+      });
       return;
     }
     onComplete({ ...formData, imageUrl: newImage });

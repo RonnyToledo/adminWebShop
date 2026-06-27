@@ -21,10 +21,17 @@ async function createServerClient() {
 export async function getServerUser() {
   try {
     const supabase = await createServerClient();
+
+    // Usar un timeout más largo para getUser() — 8 segundos
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser();
+    } = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("getUser timeout")), 8000),
+      ),
+    ]);
 
     if (error) {
       // Diferenciar tipo de error
@@ -35,14 +42,18 @@ export async function getServerUser() {
         errorType = "TIMEOUT";
       } else if (error.message?.includes("jwt")) {
         errorType = "JWT_ERROR";
+      } else if (error.message?.includes("unable to parse")) {
+        errorType = "PARSE_ERROR";
       }
 
-      console.warn(`[getServerUser] Error: ${errorType}`, error.message);
+      console.warn(`[getServerUser] ⚠️ Error: ${errorType} - ${error.message}`);
       return { userId: null, user: null, error: error.message, errorType };
     }
 
     if (!user) {
-      console.warn("[getServerUser] No user found");
+      console.warn(
+        "[getServerUser] ℹ️ No user found - session expired or invalid",
+      );
       return {
         userId: null,
         user: null,
@@ -51,6 +62,7 @@ export async function getServerUser() {
       };
     }
 
+    console.info("[getServerUser] ✅ Usuario autenticado:", user.email);
     return {
       userId: user.id,
       email: user.email,
@@ -62,7 +74,9 @@ export async function getServerUser() {
     const errorType = err.message?.includes("timeout")
       ? "TIMEOUT"
       : "EXCEPTION";
-    console.error(`[getServerUser] Exception (${errorType}):`, err.message);
+    console.error(
+      `[getServerUser] ❌ Exception (${errorType}): ${err.message}`,
+    );
     return { userId: null, user: null, error: err.message, errorType };
   }
 }

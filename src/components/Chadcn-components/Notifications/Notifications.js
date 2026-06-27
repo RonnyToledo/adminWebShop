@@ -94,7 +94,6 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-  console.log(notifications);
   // ── Fetch ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;

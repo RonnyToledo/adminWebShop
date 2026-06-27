@@ -32,7 +32,7 @@ import {
   BookUser,
 } from "lucide-react";
 import { FromData } from "@/components/globalFunction/fromData";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import PlanGuard from "../Planes/PlanGuard";
 
 // ─── Mapas de iconos / etiquetas ─────────────────────────────────────────────
@@ -176,12 +176,13 @@ export default function SocialContactPage() {
 
   function addRed() {
     if (!newRed.tipo || !newRed.url || !newRed.user) {
-      sileo.error({ title: "Error", description: "Completa todos los campos" });
+      toast.error("Error", {
+        description: "Completa todos los campos",
+      });
       return;
     }
     if (redes.length >= MAX_ITEMS) {
-      sileo.error({
-        title: "Límite alcanzado",
+      toast.error("Error", {
         description: `Máximo ${MAX_ITEMS} redes sociales`,
       });
       return;
@@ -192,12 +193,13 @@ export default function SocialContactPage() {
 
   function addContact() {
     if (!newContact.tipo || !newContact.url) {
-      sileo.error({ title: "Error", description: "Completa todos los campos" });
+      toast.error("Error", {
+        description: "Completa todos los campos",
+      });
       return;
     }
     if (contacto.length >= MAX_ITEMS) {
-      sileo.error({
-        title: "Límite alcanzado",
+      toast.error("Error", {
         description: `Máximo ${MAX_ITEMS} contactos`,
       });
       return;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
 
-export async function POST(request, { params }) {
+export async function POST(request) {
   let supabase;
   try {
     ({ supabase } = await requireRouteUser());
@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
   }
   return NextResponse.json(tienda);
 }
-export async function DELETE(request, { params }) {
+export async function DELETE(request) {
   let supabase;
   try {
     ({ supabase } = await requireRouteUser());

@@ -1,99 +1,40 @@
-//api/tienda/[tienda]/products/[specific]/route.js
+// api/tienda/[tienda]/products/route.js
+// FIX: combosRaw declarado antes del bloque if(variants) para evitar ReferenceError
 import { NextResponse } from "next/server";
-import { requireRouteUser } from "@/lib/route-handler-auth";
+import {
+  createRouteSupabase,
+  requireRouteUser,
+} from "@/lib/route-handler-auth";
 import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
+import { GeminiAsk } from "@/hooks/gemini";
 
-async function getAuthenticatedSupabase() {
-  const { supabase } = await requireRouteUser();
-  return supabase;
+export async function GET() {
+  const supabase = await createRouteSupabase();
+  const { data } = await supabase.from("Products").select("*");
+  return NextResponse.json(data);
 }
 
-export async function GET(request, { params }) {
+export async function POST(request) {
   try {
-    const supabase = await getAuthenticatedSupabase();
-    const { specific } = await params;
-    const { data } = await supabase
-      .from("Products")
-      .select("*, product_variants(*)")
-      .eq("productId", specific);
-    return NextResponse.json(data?.[0] ?? null);
-  } catch (error) {
-    return NextResponse.json(
-      { message: error.message || "Error" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function POST(request, { params }) {
-  try {
-    const supabase = await getAuthenticatedSupabase();
-    const { specific } = await params;
-    const data = await request.formData();
-    const { error } = await supabase
-      .from("Products")
-      .update({ coment: data.get("comentario") })
-      .eq("productId", specific);
-    if (error)
-      return NextResponse.json(
-        { message: error.message || error },
-        { status: 400 },
-      );
-    return NextResponse.json({ message: "Comentario realizado" });
-  } catch (error) {
-    return NextResponse.json(
-      { message: error.message || "Error" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function PUT(request) {
-  try {
-    const supabase = await getAuthenticatedSupabase();
-    const data = await request.formData();
-
-    const Id = data.get("Id");
-    // ── Imagen principal ──────────────────────────────────────────────────────
-    let PrimaryImagen = data.get("image"); // URL actual (string) o null
-    const newImagePrimary = data.get("newImage"); // File nuevo o null
-
-    if (newImagePrimary && typeof newImagePrimary !== "string") {
-      if (
-        PrimaryImagen &&
-        typeof PrimaryImagen === "string" &&
-        PrimaryImagen.includes("cloudinary")
-      ) {
-        await DestroyImage(PrimaryImagen).catch(console.warn);
-      }
-      const res = await UploadNewImage(newImagePrimary);
-      if (res?.secure_url) PrimaryImagen = res.secure_url;
+    let supabase;
+    try {
+      ({ supabase } = await requireRouteUser());
+    } catch {
+      return NextResponse.json({ message: "No autenticado" }, { status: 401 });
     }
 
-    // ── Variantes: imágenes nuevas ────────────────────────────────────────────
-    const variantsRaw = data.get("variants");
-    let variants = variantsRaw ? JSON.parse(variantsRaw) : null;
+    const data = await request.formData();
 
-    // FIX: leer múltiples archivos de variantes correctamente
+    // ── Variantes con sus imágenes ────────────────────────────────────────────
+    const variantsRaw = data.get("variants");
+    let variants = variantsRaw ? JSON.parse(variantsRaw) : [];
     const variantImageFiles = data.getAll("variantImageFiles");
     const variantImageMeta = JSON.parse(data.get("variantImageMeta") || "[]");
-    const variantImageDelete = JSON.parse(
-      data.get("variantImageDelete") || "[]",
-    );
 
-    // Eliminar imágenes de variantes marcadas para borrar en cloudinary
-    if (variantImageDelete.length > 0) {
-      await Promise.allSettled(
-        variantImageDelete
-          .filter((url) => url && typeof url === "string")
-          .map((url) => DestroyImage(url)),
-      );
-    }
-
-    // Subir imágenes nuevas de variantes y mapear variantId → url subida
+    // subir imágenes de variantes
     const variantFileMap = new Map(
       variantImageFiles.map((f) => [f.name ?? "", f]),
     );
@@ -103,218 +44,462 @@ export async function PUT(request) {
       variantImageMeta.map(async ({ variantId, filename }) => {
         const file = variantFileMap.get(filename);
         if (!file) return;
-        try {
-          const res = await UploadNewImage(file);
-          if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
-        } catch (err) {
-          console.error(`Error subiendo imagen de variante ${variantId}:`, err);
-        }
+        const res = await UploadNewImage(file);
+        if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
       }),
     );
 
-    // Aplicar URLs subidas a las variantes correspondientes
-    if (variants && variantUrlMap.size > 0) {
-      variants = variants.map((v) =>
-        variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
-      );
-    }
+    variants = variants.map((v) =>
+      variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
+    );
+    // ── FIX: leer combosRaw ANTES de usarlo (estaba dentro del if y luego se referenciaba fuera) ──
+    const combosRaw = data.get("combos");
 
-    // ── Actualizar producto principal (RPC) ───────────────────────────────────
+    // ── Crear producto ────────────────────────────────────────────────────────
     const payload = {
-      _productid: Id,
-      _title: data.get("title"),
-      _default_moneda: Number(data.get("default_moneda") ?? 0) || null,
-      _caja: data.get("caja") || null,
+      _title: data.get("title") ?? "",
+      _default_moneda: Number(data.get("default_moneda") ?? 0),
+      _caja: data.get("caja"),
       _venta: data.get("venta") === "true",
-      _descripcion: data.get("descripcion"),
+      _descripcion: data.get("descripcion") ?? "",
       _span: data.get("span") === "true",
       _caracteristicas: data.get("caracteristicas"),
-      _storeid: data.get("storeId") || null,
-      _creado: data.get("creado") || null,
-      _order: Number(data.get("order") ?? 0),
+      _storeid: data.get("UID"),
+      _creado: data.get("creado")
+        ? new Date(data.get("creado")).toISOString()
+        : null,
+      _order: Number(data.get("order") ?? 10000),
       _visible: data.get("visible") === "true",
     };
 
-    const { data: updatedProduct, error } = await supabase
-      .rpc("update_product", payload)
+    const { data: newProduct, error } = await supabase
+      .rpc("create_product", payload)
       .single();
 
     if (error) {
-      console.error("RPC update_product error:", error);
+      console.error("RPC create_product error:", error);
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
-
-    // ── Sincronizar variantes ─────────────────────────────────────────────────
-    let finalVariants = [];
-
-    if (variants !== null) {
-      const incomingIds = variants.map((v) => v.id).filter(Boolean);
-
-      // Obtener variantes existentes para detectar cuáles borrar
-      const { data: existingVars } = await supabase
-        .from("product_variants")
-        .select("id, image")
-        .eq("product_id", Id);
-
-      // Borrar variantes que ya no existen (y sus imágenes en cloudinary)
-      const toDelete = (existingVars ?? []).filter(
-        (v) => !incomingIds.includes(v.id),
+    if (newProduct?.error) {
+      return NextResponse.json(
+        { message: newProduct.error, code: newProduct.code },
+        { status: 400 },
       );
-      if (toDelete.length > 0) {
-        await Promise.allSettled(
-          toDelete.filter((v) => v.image).map((v) => DestroyImage(v.image)),
+    }
+
+    // ── Insertar variantes ────────────────────────────────────────────────────
+    if (variants.length > 0) {
+      const productId = newProduct.productId;
+      const upsertData = variants.map((v) => ({
+        product_id: productId,
+        label: v.label ?? "",
+        attributes: v.attributes ?? {},
+        price: Number(v.price) || 0,
+        old_price: Number(v.old_price) || 0,
+        stock: Number(v.stock) || 0,
+        image: v.image ?? null,
+        default_variant: !!v.default_variant,
+      }));
+
+      const { data: insertedVariants, error: varErr } = await supabase
+        .from("product_variants")
+        .insert(upsertData)
+        .select("id, label, attributes");
+
+      if (varErr) {
+        console.error("Error insertando variantes:", varErr);
+      } else {
+        const labelToId = new Map(
+          (insertedVariants ?? []).map((iv) => [iv.label, iv.id]),
         );
-        await supabase
-          .from("product_variants")
-          .delete()
-          .in(
-            "id",
-            toDelete.map((v) => v.id),
-          );
-      }
 
-      // FIX: upsert con todos los campos del schema actual de product_variants
-      if (variants.length > 0) {
-        const upsertData = variants.map((v, idx) => ({
-          id: v.id,
-          product_id: Id,
-          label: v.label ?? "",
-          attributes: v.attributes ?? {},
-          price: Number(v.price) || 0,
-          old_price: Number(v.old_price) || 0,
-          // FIX: priceCompra y embalaje se guardan en attributes como metadata
-          // ya que el schema de product_variants no tiene esas columnas directamente.
-          // Se extienden los attributes para preservarlos.
-          stock: Number(v.stock) || 0,
-          image: v.image ?? null,
-          default_variant: !!v.default_variant,
-          updated_at: new Date().toISOString(),
-        }));
-
-        const { error: upsertErr } = await supabase
-          .from("product_variants")
-          .upsert(upsertData, { onConflict: "id" });
-
-        if (upsertErr) {
-          console.error("Error upsert variantes:", upsertErr);
-        }
-        // Después del upsert de variantes existente...
-
-        // ── Sincronizar quantity_discounts ────────────────────────────────────────
-        const allIncomingQd = variants.flatMap((v) =>
-          (v.quantity_discounts ?? []).map((qd) => ({
-            variant_id: v.id,
-            product_id: Id,
+        const allDiscounts = variants.flatMap((v) => {
+          const realId = labelToId.get(v.label) ?? v.id;
+          return (v.quantity_discounts ?? []).map((qd) => ({
+            variant_id: realId,
+            product_id: productId,
             min_qty: Number(qd.min_qty) || 1,
             max_qty: qd.max_qty != null ? Number(qd.max_qty) : null,
             type: qd.type ?? "quantity",
             value: Number(qd.value) || 0,
-          })),
-        );
+          }));
+        });
 
-        // Borrar todos los QD actuales de estas variantes y reinsertar
-        // (más simple que un diff por la lógica de IDs temporales del cliente)
-        const variantIds = variants.map((v) => v.id).filter(Boolean);
-        if (variantIds.length > 0) {
-          await supabase
-            .from("quantity_discounts")
-            .delete()
-            .in("variant_id", variantIds);
-        }
-
-        if (allIncomingQd.length > 0) {
+        if (allDiscounts.length > 0) {
           const { error: qdErr } = await supabase
             .from("quantity_discounts")
-            .insert(allIncomingQd);
-          if (qdErr) console.error("Error upsert quantity_discounts:", qdErr);
+            .insert(allDiscounts);
+          if (qdErr)
+            console.error("Error insertando quantity_discounts:", qdErr);
         }
       }
-
-      // FIX: devolver las variantes con los campos extra (priceCompra, embalaje)
-      // que vienen del cliente para que el frontend no los pierda en el ciclo
-      // En la construcción de finalVariants — ya estaba, solo asegúrate de preservarlos:
-      finalVariants = variants.map((v) => ({
-        ...v,
-        priceCompra: v.priceCompra ?? 0,
-        embalaje: v.embalaje ?? 0,
-        quantity_discounts: v.quantity_discounts ?? [], // <-- agregar esta línea
-      }));
-    } else {
-      // Si no vienen variantes en el payload, devolver las existentes de la DB
-      const { data: existing } = await supabase
-        .from("product_variants")
-        .select("*")
-        .eq("product_id", Id)
-        .order("orden");
-      finalVariants = existing ?? [];
     }
 
-    // ── Respuesta final ───────────────────────────────────────────────────────
-    // FIX: siempre devolver product_variants (no variants) para consistencia con el frontend
-    const caracteristicas = (() => {
-      const raw = updatedProduct?.caracteristicas;
-      if (!raw) return [];
-      if (Array.isArray(raw)) return raw;
-      if (typeof raw === "string") {
-        try {
-          return JSON.parse(raw);
-        } catch {
-          return [];
-        }
-      }
-      return raw;
-    })();
+    // ── Insertar combos ───────────────────────────────────────────────────────
+    // FIX: combosRaw ya está definido arriba, así que no hay ReferenceError
+    if (combosRaw) {
+      const incomingCombos = JSON.parse(combosRaw);
 
-    return NextResponse.json({
-      ...updatedProduct,
-      product_variants: finalVariants,
-      caracteristicas,
-    });
+      const comboRows = incomingCombos
+        .filter((rid) => rid && rid !== newProduct.productId)
+        .map((rid) => ({
+          product_id: newProduct.productId,
+          related_id: rid,
+        }));
+
+      if (comboRows.length > 0) {
+        const { error: comboErr } = await supabase
+          .from("product_combos")
+          .insert(comboRows);
+        if (comboErr) console.error("Error insertando combos:", comboErr);
+      }
+    }
+
+    const result = {
+      ...newProduct,
+      variants,
+      combos: combosRaw ? JSON.parse(combosRaw) : [],
+      caracteristicas:
+        typeof newProduct.caracteristicas === "string"
+          ? JSON.parse(newProduct.caracteristicas)
+          : newProduct.caracteristicas,
+    };
+
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    console.error("Error en POST /products:", error);
     return NextResponse.json(
-      { message: error.message || "Error al actualizar" },
+      { message: error.message || "Error al crear producto" },
       { status: 500 },
     );
+  }
+}
+export async function PUT(request) {
+  try {
+    let supabase;
+    try {
+      ({ supabase } = await requireRouteUser());
+    } catch {
+      return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+    }
+
+    const data = await request.formData();
+    const productId = data.get("Id");
+
+    if (!productId) {
+      return NextResponse.json(
+        { message: "Falta el Id del producto" },
+        { status: 400 },
+      );
+    }
+
+    // ── Imagen principal ──────────────────────────────────────────────────────
+    let imageUrl = data.get("image") ?? null;
+    const newImageFile = data.get("newImage");
+    if (newImageFile instanceof File) {
+      const uploaded = await UploadNewImage(newImageFile);
+      if (uploaded?.secure_url) {
+        // Borrar imagen vieja si existe
+        if (imageUrl) await DestroyImage(imageUrl).catch(() => {});
+        imageUrl = uploaded.secure_url;
+      }
+    }
+
+    // ── Imágenes secundarias ──────────────────────────────────────────────────
+    let imagesecondary = JSON.parse(data.get("imagesecondary") ?? "[]");
+    const newSecondaryFiles = data.getAll("newImageSecondaryFiles");
+    const newSecondaryMeta = JSON.parse(
+      data.get("NewImagesSecondaryMeta") ?? "[]",
+    );
+
+    if (newSecondaryFiles.length > 0 && newSecondaryMeta.length > 0) {
+      const fileMap = new Map(newSecondaryFiles.map((f) => [f.name, f]));
+      await Promise.all(
+        newSecondaryMeta.map(async ({ index, filename }) => {
+          const file = fileMap.get(filename);
+          if (!file) return;
+          const res = await UploadNewImage(file);
+          if (res?.secure_url) imagesecondary[index] = res.secure_url;
+        }),
+      );
+    }
+
+    // ── Variantes ─────────────────────────────────────────────────────────────
+    let variants = JSON.parse(data.get("variants") ?? "[]");
+    const variantImageFiles = data.getAll("variantImageFiles");
+    const variantImageMeta = JSON.parse(data.get("variantImageMeta") ?? "[]");
+    const variantImageDelete = JSON.parse(
+      data.get("variantImageDelete") ?? "[]",
+    );
+
+    // Borrar imágenes de variantes marcadas para eliminar
+    await Promise.allSettled(
+      variantImageDelete.map((url) => DestroyImage(url)),
+    );
+
+    // Subir imágenes nuevas de variantes
+    const variantFileMap = new Map(variantImageFiles.map((f) => [f.name, f]));
+    const variantUrlMap = new Map();
+    await Promise.all(
+      variantImageMeta.map(async ({ variantId, filename }) => {
+        const file = variantFileMap.get(filename);
+        if (!file) return;
+        const res = await UploadNewImage(file);
+        if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
+      }),
+    );
+    variants = variants.map((v) =>
+      variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
+    );
+
+    // ── Combos ────────────────────────────────────────────────────────────────
+    const combosRaw = data.get("combos");
+    if (combosRaw) {
+      const incomingCombos = JSON.parse(combosRaw);
+      await supabase
+        .from("product_combos")
+        .delete()
+        .eq("product_id", productId);
+      const comboRows = incomingCombos
+        .filter((rid) => rid && rid !== productId)
+        .map((rid) => ({ product_id: productId, related_id: rid }));
+      if (comboRows.length > 0) {
+        await supabase.from("product_combos").insert(comboRows);
+      }
+    }
+    let descripcion = data.get("descripcion") ?? "";
+
+    if (data.get("modified_extract") === "true") {
+      try {
+        const infoSections = JSON.parse(data.get("info_sections") ?? "[]");
+
+        if (infoSections.length > 0) {
+          const result = await GeminiAsk(
+            `Creame de este json con las diferentes informaciones del producto ${data.get("title") ?? ""}, un resumen de descripción de producto para que sea más atractivo, claro , profesional y corto, manteniendo la intención original. Hazlo más legible, corrige errores y alarga ligeramente si ayuda a la claridad:\n\n${JSON.stringify(infoSections)}\n\nEntrega solo el texto, sin explicaciones ni formato adicional, de no mas de 20 palabras.`,
+          );
+
+          if (result && typeof result === "string") {
+            descripcion = result;
+          }
+        } else {
+          descripcion = "";
+        }
+      } catch (err) {
+        console.error("⚠️ Gemini falló, usando descripción base:", err);
+        // NO haces throw → continúa flujo normal
+      }
+    }
+    // ── Update producto ───────────────────────────────────────────────────────
+    const { error: productError } = await supabase
+      .from("Products")
+      .update({
+        title: data.get("title") ?? "",
+        descripcion: descripcion,
+        favorito: data.get("favorito") === "true",
+        order: Number(data.get("order") ?? 0),
+        caja: data.get("caja") ?? null,
+        visible: data.get("visible") === "true",
+        span: data.get("span") === "true",
+        venta: data.get("venta") === "true",
+        default_moneda: Number(data.get("default_moneda") ?? 0),
+        caracteristicas: JSON.parse(data.get("caracteristicas") ?? "[]"),
+        info_sections: JSON.parse(data.get("info_sections") ?? "[]"),
+      })
+      .eq("productId", productId);
+
+    if (productError) {
+      console.error("Error actualizando producto:", productError);
+      return NextResponse.json(
+        { message: productError.message },
+        { status: 500 },
+      );
+    }
+    // ── Upsert variantes ──────────────────────────────────────────────────────
+    if (variants.length > 0) {
+      const variantsPayload = variants.map((v) => ({
+        id: v.id,
+        product_id: productId,
+        label: v.label ?? null,
+        price: Number(v.price) || 0,
+        old_price: Number(v.old_price) || 0,
+        stock: Number(v.stock) || 0,
+        image: v.image ?? null,
+        default_variant: !!v.default_variant,
+        attributes: v.attributes ?? {},
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error: variantError } = await supabase
+        .from("product_variants")
+        .upsert(variantsPayload, { onConflict: "id" });
+
+      if (variantError) {
+        console.error("Error en variantes:", variantError);
+        return NextResponse.json(
+          { message: variantError.message },
+          { status: 500 },
+        );
+      }
+    }
+
+    // ── Devolver producto actualizado ─────────────────────────────────────────
+    const { data: updated, error: fetchError } = await supabase
+      .from("Products")
+      .select("*, product_variants(*)")
+      .eq("productId", productId)
+      .single();
+    if (fetchError) {
+      return NextResponse.json(
+        { message: fetchError.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        data: {
+          ...updated,
+          caracteristicas: JSON.parse(updated.caracteristicas),
+        },
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("PUT /products/[productId] error:", error);
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
 export async function DELETE(request) {
   try {
-    const supabase = await getAuthenticatedSupabase();
+    let supabase;
+    try {
+      ({ supabase } = await requireRouteUser());
+    } catch {
+      return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+    }
 
     const data = await request.formData();
-    const imageOld = data.get("image");
-    const Id = data.get("Id");
+    const valuesRaw = data.get("values");
+    if (!valuesRaw)
+      return NextResponse.json({ message: "No values" }, { status: 400 });
 
-    // Borrar imágenes de variantes en cloudinary
-    const { data: varData } = await supabase
-      .from("product_variants")
-      .select("image")
-      .eq("product_id", Id);
+    const values = JSON.parse(valuesRaw);
+    if (!Array.isArray(values) || values.length === 0)
+      return NextResponse.json({ message: "Array vacío" }, { status: 400 });
 
-    await Promise.allSettled([
-      ...(varData ?? [])
-        .filter((v) => v.image)
-        .map((v) => DestroyImage(v.image)),
-      imageOld ? DestroyImage(imageOld) : Promise.resolve(),
-    ]);
+    await Promise.allSettled(
+      values.flatMap((v) => {
+        const jobs = [];
+        if (v.imageOld) jobs.push(DestroyImage(v.imageOld));
+        (v.imagesecondary ?? []).forEach(
+          (url) => url && jobs.push(DestroyImage(url)),
+        );
+        (v.variants ?? []).forEach(
+          (vr) => vr.image && jobs.push(DestroyImage(vr.image)),
+        );
+        return jobs;
+      }),
+    );
 
-    await supabase.from("product_variants").delete().eq("product_id", Id);
+    const ids = values.map((v) => v.productId).filter(Boolean);
+    await supabase.from("product_variants").delete().in("product_id", ids);
     const { error } = await supabase
       .from("Products")
       .delete()
-      .eq("productId", Id);
-
+      .in("productId", ids);
     if (error)
-      return NextResponse.json(
-        { message: error.message || error },
-        { status: 400 },
-      );
-    return NextResponse.json({ message: "Eliminado correctamente" });
-  } catch (error) {
-    return NextResponse.json(
-      { message: error.message || "Error al eliminar" },
-      { status: 500 },
+      return NextResponse.json({ message: error.message }, { status: 500 });
+
+    return NextResponse.json({ message: "Eliminados correctamente" });
+  } catch (err) {
+    return NextResponse.json({ message: err.message }, { status: 500 });
+  }
+}
+
+// Conservado temporalmente para futura edición masiva desde este endpoint.
+// eslint-disable-next-line no-unused-vars
+async function updateProductsInBatches(supabase, products, batchSize = 10) {
+  for (let i = 0; i < products.length; i += batchSize) {
+    const batch = products.slice(i, i + batchSize);
+
+    const results = await Promise.allSettled(
+      batch.map(async (item) => {
+        const {
+          productId,
+          order,
+          caja,
+          visible,
+          title,
+          descripcion,
+          favorito,
+          span,
+          venta,
+          default_moneda,
+          product_variants = [],
+        } = item;
+
+        const { error: productError } = await supabase
+          .from("Products")
+          .update({
+            title,
+            descripcion,
+            favorito,
+            order,
+            caja,
+            visible,
+            span,
+            venta,
+            default_moneda,
+          })
+          .eq("productId", productId);
+
+        if (productError) {
+          console.error(
+            "❌ Error actualizando producto:",
+            productId,
+            productError,
+          );
+          throw new Error(`Producto ${productId}: ${productError.message}`);
+        }
+
+        if (Array.isArray(product_variants) && product_variants.length > 0) {
+          const variantsPayload = product_variants.map((v) => ({
+            id: v.id,
+            product_id: productId,
+            label: v.label ?? null,
+            price: v.price ?? null,
+            old_price: v.old_price ?? null,
+            stock: v.stock ?? 0,
+            image: v.image ?? null,
+            default_variant: !!v.default_variant,
+            attributes: v.attributes ?? {},
+            updated_at: new Date().toISOString(),
+          }));
+
+          const { error: variantError } = await supabase
+            .from("product_variants")
+            .upsert(variantsPayload, { onConflict: "id" });
+
+          if (variantError) {
+            console.error("❌ Error en variantes:", productId, variantError);
+            throw new Error(
+              `Variantes de ${productId}: ${variantError.message}`,
+            );
+          }
+        }
+      }),
     );
+
+    // Loguear todos los resultados
+    results.forEach((r, idx) => {
+      if (r.status === "rejected") {
+        console.error(`❌ Batch item ${i + idx} falló:`, r.reason);
+      }
+    });
+
+    // Si alguno falló, lanzar el primer error
+    const failed = results.find((r) => r.status === "rejected");
+    if (failed) throw failed.reason;
   }
 }

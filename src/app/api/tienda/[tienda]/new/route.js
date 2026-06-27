@@ -11,7 +11,7 @@ export async function POST(request, { params }) {
     const supabase = await getAuthenticatedSupabase();
 
     const data = await request.formData();
-    const { data: tienda, error } = await supabase
+    const { error } = await supabase
       .from("Sitios")
       .update([
         {

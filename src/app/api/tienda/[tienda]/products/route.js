@@ -1,6 +1,5 @@
 //api/tienda/[tienda]/products/route.js
 import { NextResponse } from "next/server";
-import cloudinary from "@/lib/cloudinary";
 import {
   createRouteSupabase,
   requireRouteUser,
@@ -9,8 +8,9 @@ import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
+import { GeminiAsk } from "@/hooks/gemini";
 
-export async function GET(request) {
+export async function GET() {
   const supabase = await createRouteSupabase();
   const { data } = await supabase.from("Products").select("*");
   return NextResponse.json(data);
@@ -25,20 +25,20 @@ export async function POST(request) {
       return NextResponse.json({ message: "No autenticado" }, { status: 401 });
     }
 
-    console.log("POST /products called");
     const data = await request.formData();
+    const combosRaw = data.get("combos");
 
     // ── Variantes con sus imágenes ────────────────────────────────────────────
     const variantsRaw = data.get("variants");
     let variants = variantsRaw ? JSON.parse(variantsRaw) : [];
-    const variantImageFiles = data.getAll("variantImageFiles"); // File[]
-    const variantImageMeta = JSON.parse(data.get("variantImageMeta") || "[]"); // [{variantId, filename}]
+    const variantImageFiles = data.getAll("variantImageFiles");
+    const variantImageMeta = JSON.parse(data.get("variantImageMeta") || "[]");
 
     // subir imágenes de variantes
     const variantFileMap = new Map(
       variantImageFiles.map((f) => [f.name ?? "", f]),
     );
-    const variantUrlMap = new Map(); // variantId -> url
+    const variantUrlMap = new Map();
 
     await Promise.all(
       variantImageMeta.map(async ({ variantId, filename }) => {
@@ -53,13 +53,33 @@ export async function POST(request) {
       variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
     );
 
+    let descripcion = data.get("descripcion") ?? "";
+
+    try {
+      const infoSections = JSON.parse(data.get("info_sections") ?? "[]");
+
+      if (infoSections.length > 0) {
+        const result = await GeminiAsk(
+          `Creame de este json con las diferentes informaciones del producto ${data.get("title") ?? ""}, un resumen de descripción de producto para que sea más atractivo, claro , profesional y corto, manteniendo la intención original. Hazlo más legible, corrige errores y alarga ligeramente si ayuda a la claridad:\n\n${JSON.stringify(infoSections)}\n\nEntrega solo el texto, sin explicaciones ni formato adicional, de no mas de 20 palabras.`,
+        );
+
+        if (result && typeof result === "string") {
+          descripcion = result;
+        }
+      } else {
+        descripcion = "";
+      }
+    } catch (err) {
+      console.error("⚠️ Gemini falló, usando descripción base:", err);
+    }
+
     // ── Crear producto ────────────────────────────────────────────────────────
     const payload = {
       _title: data.get("title") ?? "",
       _default_moneda: Number(data.get("default_moneda") ?? 0),
       _caja: data.get("caja"),
       _venta: data.get("venta") === "true",
-      _descripcion: data.get("descripcion") ?? "",
+      _descripcion: descripcion,
       _span: data.get("span") === "true",
       _caracteristicas: data.get("caracteristicas"),
       _storeid: data.get("UID"),
@@ -68,6 +88,7 @@ export async function POST(request) {
         : null,
       _order: Number(data.get("order") ?? 10000),
       _visible: data.get("visible") === "true",
+      _info_sections: JSON.parse(data.get("info_sections") ?? "[]"),
     };
 
     const { data: newProduct, error } = await supabase
@@ -85,7 +106,9 @@ export async function POST(request) {
       );
     }
 
-    // ── Insertar variantes ────────────────────────────────────────────────────────
+    // ── Insertar variantes ────────────────────────────────────────────────────
+    let insertedVariantsWithDiscounts = null; // ← IDs reales de BD
+
     if (variants.length > 0) {
       const productId = newProduct.productId;
       const upsertData = variants.map((v) => ({
@@ -102,13 +125,14 @@ export async function POST(request) {
       const { data: insertedVariants, error: varErr } = await supabase
         .from("product_variants")
         .insert(upsertData)
-        .select("id, label, attributes"); // <-- necesitamos los IDs reales
+        .select(
+          "id, label, attributes, price, old_price, stock, image, default_variant",
+        ); // ← todos los campos
 
       if (varErr) {
         console.error("Error insertando variantes:", varErr);
       } else {
-        // ── Insertar quantity_discounts ─────────────────────────────────────
-        // Mapear label+attributes del cliente → id real de la BD
+        // ── Insertar quantity_discounts ───────────────────────────────────────
         const labelToId = new Map(
           (insertedVariants ?? []).map((iv) => [iv.label, iv.id]),
         );
@@ -125,19 +149,52 @@ export async function POST(request) {
           }));
         });
 
+        let insertedDiscounts = [];
         if (allDiscounts.length > 0) {
-          const { error: qdErr } = await supabase
+          const { data: qdData, error: qdErr } = await supabase
             .from("quantity_discounts")
-            .insert(allDiscounts);
+            .insert(allDiscounts)
+            .select("*"); // ← obtener IDs reales de discounts
           if (qdErr)
             console.error("Error insertando quantity_discounts:", qdErr);
+          else insertedDiscounts = qdData ?? [];
+        }
+
+        // ── Combinar variantes reales + discounts reales ──────────────────────
+        insertedVariantsWithDiscounts = (insertedVariants ?? []).map((iv) => ({
+          ...iv,
+          quantity_discounts: insertedDiscounts.filter(
+            (qd) => qd.variant_id === iv.id,
+          ),
+        }));
+      }
+
+      // ── Insertar combos ───────────────────────────────────────────────────────
+      if (combosRaw) {
+        const incomingCombos = JSON.parse(combosRaw);
+
+        const comboRows = incomingCombos
+          .filter((rid) => rid && rid !== newProduct.productId)
+          .map((rid) => ({
+            product_id: newProduct.productId,
+            related_id: rid,
+          }));
+
+        if (comboRows.length > 0) {
+          const { error: comboErr } = await supabase
+            .from("product_combos")
+            .insert(comboRows);
+          if (comboErr) console.error("Error insertando combos:", comboErr);
         }
       }
     }
 
+    // ── Respuesta final con IDs reales de BD ──────────────────────────────────
     const result = {
       ...newProduct,
-      variants,
+      variants: insertedVariantsWithDiscounts ?? variants,
+      product_variants: insertedVariantsWithDiscounts ?? variants, // ← fix principal
+      combos: JSON.parse(combosRaw ?? "[]"),
       caracteristicas:
         typeof newProduct.caracteristicas === "string"
           ? JSON.parse(newProduct.caracteristicas)
@@ -293,43 +350,4 @@ async function updateProductsInBatches(supabase, products, batchSize = 10) {
       }),
     );
   }
-}
-
-async function handleNewSecondaryImages(newImageSecondary, SecondaryImage) {
-  if (!Array.isArray(newImageSecondary) || newImageSecondary.length === 0)
-    return Array.isArray(SecondaryImage) ? SecondaryImage : [];
-
-  let existing = [];
-  if (typeof SecondaryImage === "string") {
-    try {
-      existing = JSON.parse(SecondaryImage);
-    } catch {
-      existing = [];
-    }
-  } else if (Array.isArray(SecondaryImage)) {
-    existing = [...SecondaryImage];
-  }
-
-  const maxIndex = newImageSecondary.reduce(
-    (m, it) => Math.max(m, Number(it?.index) || 0),
-    -1,
-  );
-  const updated = Array.from(
-    { length: Math.max(existing.length, maxIndex + 1) },
-    (_, i) => existing[i] ?? null,
-  );
-
-  for (const item of newImageSecondary) {
-    const idx = Number(item?.index);
-    const file = item?.file;
-    if (!Number.isFinite(idx) || !file) continue;
-
-    const toDelete = updated[idx];
-    if (toDelete) await DestroyImage(toDelete).catch(console.warn);
-
-    const res = await UploadNewImage(file);
-    updated[idx] = res?.secure_url ?? null;
-  }
-
-  return updated;
 }

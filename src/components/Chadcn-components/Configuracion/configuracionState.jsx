@@ -85,25 +85,25 @@ export default function ConfiguracionState({ store, setStore, country }) {
         setLoadingCities(true);
         const countryObj = country.find((c) => c?.name === store.country);
         const stateObj = states.find((s) => s?.name === store.Provincia);
+
         if (!countryObj?.isoCode || !stateObj?.isoCode) {
+          console.warn("Falta isoCode", { countryObj, stateObj });
           setCities([]);
           setStore((prev) => ({ ...prev, municipio: "" }));
           return;
         }
+
         const base = process.env.NEXT_PUBLIC_PATH ?? "";
-        const resp = await fetch(
-          `${base}/api/filter/city?country=${encodeURIComponent(countryObj.isoCode)}&state=${encodeURIComponent(stateObj.isoCode)}`,
-          { signal: controller.signal },
-        );
-        if (!resp.ok) {
-          setCities([]);
-          return;
-        }
+        const url = `${base}/api/filter/city?country=${encodeURIComponent(countryObj.isoCode)}&state=${encodeURIComponent(stateObj.isoCode)}`;
+
+        const resp = await fetch(url, { signal: controller.signal });
+
         const data = await resp.json();
+
         setCities(Array.isArray(data) ? data : []);
         setStore((prev) => ({
           ...prev,
-          municipio: prev.municipio || (Array.isArray(data) && data[0]) || "",
+          municipio: prev.municipio || data[0]?.name || "", // ← fix aquí
         }));
       } catch (err) {
         if (err.name !== "AbortError")
@@ -120,7 +120,6 @@ export default function ConfiguracionState({ store, setStore, country }) {
   const ubicacionActual = [store?.municipio, store?.Provincia, store?.country]
     .filter(Boolean)
     .join(", ");
-
   return (
     <Card>
       <CardHeader>

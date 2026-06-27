@@ -6,10 +6,6 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
 } from "recharts";
 import {
   Activity,
@@ -21,7 +17,6 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
-  Tag,
   Clock,
   User,
 } from "lucide-react";
@@ -29,8 +24,8 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
   CardFooter,
+  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
@@ -51,7 +46,6 @@ import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -62,7 +56,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supa";
 import PlanGuard from "../Planes/PlanGuard";
-
+// Imports nuevos al inicio:
+import {
+  calcularGranosClientes,
+} from "@/utils/granos";
+import { TablaGranos } from "./TablaGranos";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCUP(n = 0) {
@@ -263,8 +261,8 @@ function TablaVentas({ compras }) {
                   </TableCell>
                 </TableRow>
               )}
-              {rows.map((c, i) => (
-                <TableRow key={i}>
+              {rows.map((c) => (
+                <TableRow key={c.UID_Venta ?? c.created_at ?? c.people}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
@@ -320,7 +318,7 @@ function TopProductos({ compras }) {
         {top.length === 0 && (
           <p className="text-sm text-muted-foreground">Sin datos</p>
         )}
-        {top.map((p, i) => (
+        {top.map((p) => (
           <div key={p.title} className="space-y-1">
             <div className="flex justify-between text-sm">
               <span className="font-medium truncate flex-1">{p.title}</span>
@@ -577,7 +575,7 @@ const chartConfig = {
 
 export default function VentasDashboard({ ThemeContext }) {
   const { webshop } = useContext(ThemeContext);
-
+  const [clientes, setClientes] = useState([]);
   const [compras, setCompras] = useState([]);
 
   useEffect(() => {
@@ -589,6 +587,8 @@ export default function VentasDashboard({ ThemeContext }) {
         UID_Venta: e.UID_Venta,
       }));
     setCompras(raw);
+    const clientesData = calcularGranosClientes(webshop?.events ?? []);
+    setClientes(clientesData);
   }, [webshop]);
 
   const totalVentas = sumTotal(compras);
@@ -736,6 +736,7 @@ export default function VentasDashboard({ ThemeContext }) {
           <div className="grid gap-4 lg:grid-cols-3">
             <TablaVentas compras={compras} />
             <DesgloseCards compras={compras} />
+            <TablaGranos clientes={clientes} />
           </div>
         </main>
       </div>

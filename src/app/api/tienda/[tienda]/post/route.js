@@ -1,4 +1,3 @@
-// app/api/gemini/route.ts
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
 import {
@@ -6,32 +5,34 @@ import {
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
 
-async function getAuthenticatedSupabase() {
-  const { supabase } = await requireRouteUser();
-  return supabase;
-}
-
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204 });
 }
 
 export async function POST(req) {
   try {
-    const supabase = await getAuthenticatedSupabase();
+    const { supabase } = await requireRouteUser();
 
     const formData = await req.formData();
     const ui_store = formData.get("ui_store");
-    const slug = await generateUniqueSlug("blogs", formData.get("slug"));
     const title = formData.get("title");
     const description = formData.get("description");
     const abstract = formData.get("abstract");
     const img = formData.get("image");
-    let image = null;
 
+    // Generar slug único pasando supabase como argumento
+    const slug = await generateUniqueSlug(
+      supabase,
+      "blogs",
+      formData.get("slug"),
+    );
+
+    let image = null;
     if (img) {
       const uploadedRes = await UploadNewImage(img);
       image = uploadedRes?.secure_url ?? uploadedRes;
     }
+
     const datos = { image, abstract, description, slug, title, ui_store };
 
     const { data, error } = await supabase
@@ -41,14 +42,16 @@ export async function POST(req) {
       .single();
 
     if (error) {
-      NextResponse.json(
+      return NextResponse.json(
+        // ← return
         { error: error?.message ?? String(error) },
         { status: 500 },
       );
     }
+
     return NextResponse.json({ data }, { status: 200 });
   } catch (err) {
-    console.error("error:", err);
+    console.error("POST /post error:", err);
     return NextResponse.json(
       { error: err?.message ?? String(err) },
       { status: 500 },
@@ -58,7 +61,7 @@ export async function POST(req) {
 
 export async function DELETE(req) {
   try {
-    const supabase = await getAuthenticatedSupabase();
+    const { supabase } = await requireRouteUser();
 
     const formData = await req.formData();
     const slug = formData.get("slug");
@@ -74,26 +77,29 @@ export async function DELETE(req) {
       .eq("slug", slug);
 
     if (error) {
-      NextResponse.json(
+      return NextResponse.json(
+        // ← return
         { error: error?.message ?? String(error) },
         { status: 500 },
       );
     }
+
     return NextResponse.json({ data }, { status: 200 });
   } catch (err) {
-    console.error("error:", err);
+    console.error("DELETE /post error:", err);
     return NextResponse.json(
       { error: err?.message ?? String(err) },
       { status: 500 },
     );
   }
 }
-async function generateUniqueSlug(table, slugBase) {
+
+// Recibe supabase como parámetro — no llama a requireRouteUser internamente
+async function generateUniqueSlug(supabase, table, slugBase) {
   let slug = slugBase;
   let counter = 1;
 
   while (true) {
-    // Consultar si ya existe este slug
     const { data, error } = await supabase
       .from(table)
       .select("id")
@@ -105,13 +111,11 @@ async function generateUniqueSlug(table, slugBase) {
       break;
     }
 
-    if (!data) {
-      // ✅ Slug disponible
-      return slug;
-    }
+    if (!data) return slug;
 
-    // ❌ Ya existe → Generar siguiente intento
     slug = `${slugBase}_${counter}`;
     counter++;
   }
+
+  return slug; // fallback si el while rompe por error
 }

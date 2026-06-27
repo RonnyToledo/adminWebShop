@@ -25,10 +25,10 @@ import {
 } from "@/components/ui/card";
 import { FromData } from "@/components/globalFunction/fromData";
 import ProfileHeader from "./profile-header";
-import WeeklyAvailability from "@/components/Chadcn-components/Configuracion/WeeklyAvailability";
+import WeeklySchedule from "./WeeklySchedule";
 import { Textarea } from "@/components/ui/textarea";
 import ConfiguracionState from "./configuracionState";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import axios from "axios";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { buildImprovementPrompt } from "./TextIAModel";
@@ -36,12 +36,12 @@ import { usePlan } from "@/hooks/usePlan";
 
 export default function Configuracion({ ThemeContext, country }) {
   const { webshop } = useContext(ThemeContext);
-  const [newAgregados, setNewAgregados] = useState({ moneda: "", valor: 0 });
+  const [newAgregados] = useState({ moneda: "", valor: 0 });
   const [store, setStore] = useState({
     comentario: [],
     categoria: [],
     monedas: [],
-    horario: [],
+    horarios: [],
     envios: [],
   });
   const { config } = usePlan();
@@ -84,15 +84,13 @@ export default function Configuracion({ ThemeContext, country }) {
   function deleteMoneda(id) {
     const filtered = (store?.monedas || []).filter((m) => m.id !== id);
     if ((store?.monedas || []).find((m) => m.id == id)?.defecto) {
-      sileo.error({
-        title: "Error al eliminar moneda",
+      toast.error("Error al eliminar moneda", {
         description: "No puedes eliminar la moneda por defecto",
       });
       return;
     }
     if (filtered.length === 0) {
-      sileo.error({
-        title: "Error al eliminar moneda",
+      toast.error("Error al eliminar moneda", {
         description: "No te puedes quedar sin monedas",
       });
       return;
@@ -100,8 +98,7 @@ export default function Configuracion({ ThemeContext, country }) {
     if (
       webshop?.products.filter((prod) => prod.default_moneda == id).length > 0
     ) {
-      sileo.error({
-        title: "Error al eliminar moneda",
+      toast.error("Error al eliminar moneda", {
         description: "Estás vendiendo productos en esta moneda",
       });
       return;
@@ -124,15 +121,13 @@ export default function Configuracion({ ThemeContext, country }) {
     const nombre = (localNew.nombre || "").trim();
     const valor = Number(localNew.valor || 0);
     if (!nombre || !isFinite(valor) || valor <= 0) {
-      sileo.error({
-        title: "Error al agregar moneda",
+      toast.error("Error al agregar moneda", {
         description: "Faltan datos o valor inválido",
       });
       return;
     }
     if (store?.monedas.some((obj) => obj.nombre == nombre)) {
-      sileo.error({
-        title: "Error al agregar moneda",
+      toast.error("Error al agregar moneda", {
         description: "Ya existe dicha moneda",
       });
       return;
@@ -175,7 +170,7 @@ export default function Configuracion({ ThemeContext, country }) {
               {store?.name ?? "Mi tienda"} ·{" "}
               <span
                 className={
-                  store?.active ? "text-green-600" : "text-destructive"
+                  store?.active ? "text-amber-600" : "text-destructive"
                 }
               >
                 {store?.active ? "Activa" : "Inactiva"}
@@ -252,10 +247,10 @@ export default function Configuracion({ ThemeContext, country }) {
 
             <div>
               <Label className="mb-2 block">Horario semanal</Label>
-              <WeeklyAvailability
-                horario={store?.horario || []}
-                onHorarioChange={(horario) =>
-                  setStore((prev) => ({ ...prev, horario }))
+              <WeeklySchedule
+                horario={store?.horarios || []}
+                onHorarioChange={(horarios) =>
+                  setStore((prev) => ({ ...prev, horarios }))
                 }
               />
             </div>
@@ -620,29 +615,32 @@ const TextAreaInput = ({ label, value, onChange, keyWords }) => {
       const postPromise = axios.post(`/api/gemini`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      sileo.promise(postPromise, {
-        loading: { title: "Optimizando texto con IA..." },
+      toast.promise(postPromise, {
+        loading: "Optimizando texto con IA...",
         success: (response) => {
           onChange(response.data.result);
-          return {
-            title: "Texto actualizado",
-            description: "El contenido fue mejorado con IA",
-          };
+          return (
+            "Texto actualizado",
+            {
+              description: "El contenido fue mejorado con IA",
+            }
+          );
         },
         error: (err) => {
           console.error(err);
-          return {
-            title: "Error al optimizar",
-            description: "No se pudo optimizar el contenido.",
-          };
+          return (
+            "Error al optimizar",
+            {
+              description: "No se pudo optimizar el contenido.",
+            }
+          );
         },
       });
     } catch (error) {
       console.error(error);
     } finally {
       setStatus("time");
-      sileo.info({
-        title: "Servicio de IA",
+      toast.info("Servicio de IA", {
         description: "Podrás volver a usar la IA en 1 minuto",
       });
     }

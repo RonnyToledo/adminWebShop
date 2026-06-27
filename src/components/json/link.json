@@ -1,97 +1,116 @@
 [
   {
     "group": "Home",
-
     "links": [
       {
         "label": "Hogar",
         "href": "/",
-        "icon": "HomeRoundIcon"
+        "icon": "HomeRoundedIcon",
+        "requiredAction": "read"
       }
     ]
   },
   {
     "group": "Productos",
-
     "links": [
       {
         "label": "Editar Categoria",
         "href": "/category",
-        "icon": "CategoryRoundedIcon"
+        "icon": "CategoryRoundedIcon",
+        "requiredAction": "write"
       },
       {
         "label": "Nuevo Producto",
         "href": "/newProduct",
-        "icon": "AddCircleRoundedIcon"
+        "icon": "AddCircleRoundedIcon",
+        "requiredAction": "write"
       },
       {
         "label": "Editar Productos",
         "href": "/products",
-        "icon": "AppRegistrationRoundedIcon"
+        "icon": "AppRegistrationRoundedIcon",
+        "requiredAction": "write"
       },
       {
         "label": "Blog",
         "href": "/blog",
-        "icon": "BookIcon"
+        "icon": "BookIcon",
+        "requiredAction": "write"
       }
     ]
   },
-
   {
     "group": "Finanzas",
-
     "links": [
       {
         "label": "Marketing",
         "href": "/codeDiscount",
-        "icon": "AttachMoneyRoundedIcon"
+        "icon": "AttachMoneyRoundedIcon",
+        "requiredAction": "write"
       },
       {
         "label": "Pedidos",
         "href": "/orders",
-        "icon": "ListIcon"
+        "icon": "ListIcon",
+        "requiredAction": "read"
       },
       {
         "label": "Analitycs",
         "href": "/analytics",
-        "icon": "BarChartIcon"
+        "icon": "BarChartIcon",
+        "requiredAction": "analytics"
       },
       {
         "label": "Ventas",
         "href": "/ventas",
-        "icon": "AddCardIcon"
+        "icon": "AddCardIcon",
+        "requiredAction": "analytics"
       }
     ]
   },
-
   {
     "group": "Configuracion",
-
     "links": [
       {
         "label": "Configuracion",
         "href": "/configuracion",
-        "icon": "Settings"
+        "icon": "Settings",
+        "requiredAction": "settings"
       },
       {
         "label": "Guia",
         "href": "/guia",
-        "icon": "Eye"
+        "icon": "Eye",
+        "requiredAction": "read"
       },
       {
         "label": "Theme",
         "href": "/theme",
-        "icon": "EditIcon"
+        "icon": "EditIcon",
+        "requiredAction": "settings"
       },
       {
         "label": "Social",
         "href": "/social",
-        "icon": "GroupIcon"
+        "icon": "GroupIcon",
+        "requiredAction": "settings"
       },
       {
         "label": "Planes",
         "href": "/planes",
-        "icon": "ChecklistIcon"
+        "icon": "ChecklistIcon",
+        "requiredAction": "billing"
+      }
+    ]
+  },
+  {
+    "group": "Equipo",
+    "links": [
+      {
+        "label": "Miembros",
+        "href": "/team",
+        "icon": "GroupIcon",
+        "requiredAction": "members"
       }
     ]
   }

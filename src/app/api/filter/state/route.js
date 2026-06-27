@@ -1,71 +1,38 @@
-// app/api/filter/route.js
+// app/api/filter/state/route.js
 import { NextResponse } from "next/server";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
-import { chain } from "stream-chain";
-import { parser } from "stream-json";
-import { streamArray } from "stream-json/streamers/StreamArray";
+
+export const runtime = "nodejs";
+
+let stateCache = null; // cache en memoria entre requests
 
 export async function GET(req) {
   try {
     const url = new URL(req.url);
-    const countryParam = url.searchParams.get("country") || "";
-    const country = countryParam.toUpperCase();
+    const country = (url.searchParams.get("country") || "").toUpperCase();
 
     if (!country) {
       return NextResponse.json(
         { error: "Falta query param 'country'." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const filePath = path.join(process.cwd(), "public", "state.json");
+    // Cargar y cachear el archivo solo una vez
+    if (!stateCache) {
+      const filePath = path.join(process.cwd(), "public", "state.json");
+      const raw = await fs.readFile(filePath, "utf8");
+      stateCache = JSON.parse(raw);
+    }
 
-    // Si necesitas un límite (p. ej. ?limit=100) puedes recogerlo así:
-    // const limit = parseInt(url.searchParams.get("limit") || "0", 10) || 0;
+    const results = stateCache
+      .filter((s) => (s.countryCode || "").toUpperCase() === country)
+      .map((s) => ({ isoCode: s.isoCode, name: s.name }));
 
-    return new Promise((resolve) => {
-      const resultados = [];
-      const pipeline = chain([
-        fs.createReadStream(filePath, { encoding: "utf8" }),
-        parser(),
-        streamArray(),
-      ]);
-
-      pipeline.on("data", (chunk) => {
-        const item = chunk.value;
-        if (item && typeof item === "object") {
-          const cc = (item.countryCode || "").toUpperCase();
-          if (cc === country) {
-            resultados.push(item);
-            // Si usas limit, puedes destruir el stream cuando ya tengas suficientes:
-            // if (limit && resultados.length >= limit) {
-            //   pipeline.destroy(); // esto disparará 'end' o 'close'
-            // }
-          }
-        }
-      });
-
-      pipeline.on("end", () => {
-        resolve(
-          NextResponse.json(
-            resultados.map((r) => ({ isoCode: r.isoCode, name: r.name }))
-          )
-        );
-      });
-
-      pipeline.on("error", (err) => {
-        console.error("Error parseando JSON:", err);
-        resolve(
-          NextResponse.json(
-            { error: "Error leyendo el archivo" },
-            { status: 500 }
-          )
-        );
-      });
-    });
+    return NextResponse.json(results);
   } catch (err) {
-    console.error("Error en handler GET:", err);
+    console.error("Error en GET /api/filter/state:", err);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

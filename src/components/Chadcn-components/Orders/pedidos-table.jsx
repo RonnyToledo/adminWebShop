@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import apiClient from "@/lib/apiClient";
 import {
   Loader2,
@@ -19,7 +13,6 @@ import {
   Calendar,
   RefreshCw,
 } from "lucide-react";
-import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { ThemeContext } from "@/context/useContext";
 import { useRouter } from "next/navigation";
@@ -31,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { sileo } from "sileo";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supa";
 import { exportToPDF, sendToWhatsApp } from "./pedidos-utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -202,8 +195,6 @@ function usePedidos(storeUID) {
 // ─── Tabla de pedidos ─────────────────────────────────────────────────────────
 function TablesPedidosBody({
   pedidos,
-  sitioweb,
-  storeCell,
   storeName,
   verified = false,
   onConfirm,
@@ -213,13 +204,13 @@ function TablesPedidosBody({
   const router = useRouter();
 
   if (pedidos.length === 0) return null;
-
+  console.log(pedidos);
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <div
-            className={`w-2 h-2 rounded-full shrink-0 ${verified ? "bg-amber-400" : "bg-emerald-500"}`}
+            className={`w-2 h-2 rounded-full shrink-0 ${verified ? "bg-green-400" : "bg-emerald-500"}`}
           />
           {verified ? "Pendientes de confirmar" : "Pedidos confirmados"}
           <span className="ml-auto text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
@@ -358,8 +349,7 @@ function TablesPedidosBody({
                                   "_blank",
                                 );
                               } else {
-                                sileo.error({
-                                  title: "Sin teléfono",
+                                toast.error("Sin teléfono", {
                                   description:
                                     "El cliente no proporcionó número",
                                 });
@@ -390,10 +380,9 @@ function TablesPedidosBody({
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export function PedidosTable() {
-  const { webshop, setWebshop } = useContext(ThemeContext);
+  const { webshop } = useContext(ThemeContext);
   const storeUID = webshop?.store?.UUID;
   const sitioweb = webshop?.store?.sitioweb;
-  const storeCell = webshop?.store?.cell;
   const storeName = webshop?.store?.name;
 
   const [WhatsApp, setWhatsApp] = useState(false);
@@ -425,7 +414,9 @@ export function PedidosTable() {
           ),
         );
       } catch (err) {
-        sileo.error({ title: "Error al confirmar", description: err?.message });
+        toast.error("Error al confirmar", {
+          description: err?.message,
+        });
       } finally {
         setLoadVerified(false);
       }
@@ -443,7 +434,9 @@ export function PedidosTable() {
         });
         setPedidos((prev) => prev.filter((p) => p.UID_Venta !== uid));
       } catch (err) {
-        sileo.error({ title: "Error al eliminar", description: err?.message });
+        toast.error("Error al eliminar", {
+          description: err?.message,
+        });
       }
     },
     [sitioweb, setPedidos],
@@ -465,7 +458,9 @@ export function PedidosTable() {
         await exportToPDF(data.map((d) => ({ ...d, desc: d.desc })));
       }
     } catch (err) {
-      sileo.error({ title: "Error al generar PDF", description: err?.message });
+      toast.error("Error al generar PDF", {
+        description: err?.message,
+      });
     } finally {
       setPDF(false);
     }
@@ -491,7 +486,9 @@ export function PedidosTable() {
         );
       }
     } catch (err) {
-      sileo.error({ title: "Error WhatsApp", description: err?.message });
+      toast.error("Error WhatsApp", {
+        description: err?.message,
+      });
     } finally {
       setWhatsApp(false);
     }
@@ -556,8 +553,6 @@ export function PedidosTable() {
       {/* Tablas */}
       <TablesPedidosBody
         pedidos={noVistos}
-        sitioweb={sitioweb}
-        storeCell={storeCell}
         storeName={storeName}
         verified
         onConfirm={confirmarPedidos}
@@ -566,8 +561,6 @@ export function PedidosTable() {
       />
       <TablesPedidosBody
         pedidos={vistos}
-        sitioweb={sitioweb}
-        storeCell={storeCell}
         storeName={storeName}
         onConfirm={confirmarPedidos}
         onDelete={eliminarPedido}

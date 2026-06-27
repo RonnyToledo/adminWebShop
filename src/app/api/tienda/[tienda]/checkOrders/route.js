@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
 
 async function getAuthenticatedSupabase() {
@@ -6,7 +5,7 @@ async function getAuthenticatedSupabase() {
   return supabase;
 }
 
-export async function POST(request, { params }) {
+export async function POST(request) {
   try {
     const supabase = await getAuthenticatedSupabase();
 
@@ -48,7 +47,7 @@ export async function POST(request, { params }) {
     });
   }
 }
-export async function PUT(request, { params }) {
+export async function PUT(request) {
   try {
     const supabase = await getAuthenticatedSupabase();
 
@@ -101,7 +100,7 @@ export async function PUT(request, { params }) {
 }
 export async function DELETE(request) {
   try {
-    const sessionData = await getAuthenticatedSupabase();
+    const supabase = await getAuthenticatedSupabase(); // ✅ guardar resultado
 
     const body = await request.text();
     console.info("Cuerpo recibido (DELETE):", body);
@@ -111,13 +110,13 @@ export async function DELETE(request) {
     }
 
     const parsedBody = JSON.parse(body);
-    const { uid } = parsedBody; // uid = UID_Venta
+    const { uid } = parsedBody;
 
     if (!uid) {
       throw new Error("No se proporcionó uid (UID_Venta).");
     }
 
-    const supabase = createClient();
+    // ← ya no hay createClient() aquí
 
     const { data, error } = await supabase.rpc("rollback_order_and_restock", {
       p_uid_venta: uid,
@@ -128,14 +127,11 @@ export async function DELETE(request) {
       throw error;
     }
 
-    // data es JSON: aseguramos obtener los campos
     const result = data;
     const restockPerformed = result?.restock_performed === true;
     const message = restockPerformed
       ? "Pedido eliminado y stock restaurado."
-      : `Pedido eliminado. No se realizó restock: ${
-          result?.message || "motivo desconocido"
-        }`;
+      : `Pedido eliminado. No se realizó restock: ${result?.message || "motivo desconocido"}`;
 
     return new Response(JSON.stringify({ message, result }), {
       status: 200,

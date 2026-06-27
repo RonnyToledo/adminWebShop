@@ -7,24 +7,17 @@ export async function GET(request, { params }) {
   headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
   headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   const tienda = (await params).tienda;
-
   try {
     const finishData = await fetchGAData(tienda);
-    return NextResponse.json(finishData, {
+    return NextResponse.json(JSON.parse(JSON.stringify(finishData)), {
       status: 200,
       headers,
     });
   } catch (error) {
-    console.error("Error al ejecutar el reporte:", error);
+    console.error("Error al ejecutar el reporte:", String(error));
     return NextResponse.json(
-      {
-        message: "Error al ejecutar el reporte de Analytics",
-        error: error.message,
-      },
-      {
-        status: 500,
-        headers,
-      },
+      { message: "Error al ejecutar el reporte", error: String(error) },
+      { status: 500, headers },
     );
   }
 }
