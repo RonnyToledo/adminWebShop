@@ -13,6 +13,7 @@ import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "sonner";
 import { authService } from "@/lib/supabase";
+import { supabase } from "@/lib/supa";
 
 export const ThemeContext = createContext();
 
@@ -220,6 +221,44 @@ export default function MyProvider({
     return unsubscribe;
   }, [user, pathname, router]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel(`realtime-user-${user}`);
+
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "store_members",
+          filter: `user_id=eq.${user}`,
+        },
+        (payload) => {
+          router.refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user",
+          filter: `id=eq.${user}`,
+        },
+        (payload) => {
+          router.refresh();
+        },
+      )
+      .subscribe((status, err) => {
+        console.info("Realtime status:", status, err);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, router]);
   return (
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <Toaster position="top-center" />

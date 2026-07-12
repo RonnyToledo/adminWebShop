@@ -126,7 +126,6 @@ function usePedidoDetalle(specific) {
       .select("*")
       .eq("UID_Venta", specific)
       .single();
-    console.log(data);
 
     if (sbError || !data) {
       setError(sbError?.message ?? "Pedido no encontrado");

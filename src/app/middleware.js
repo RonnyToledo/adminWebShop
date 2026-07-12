@@ -87,7 +87,7 @@ export async function middleware(req) {
       "[Middleware] ⏱️ Timeout obteniendo sesión, cookies sin cambios",
     );
   } else {
-    console.log(`[Middleware] ✅ Sesión activa: ${session.user?.email}`);
+    console.info(`[Middleware] ✅ Sesión activa: ${session.user?.email}`);
   }
 
   return res;

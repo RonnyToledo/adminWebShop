@@ -204,7 +204,6 @@ function TablesPedidosBody({
   const router = useRouter();
 
   if (pedidos.length === 0) return null;
-  console.log(pedidos);
   return (
     <Card>
       <CardHeader className="pb-3">

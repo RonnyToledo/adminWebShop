@@ -223,7 +223,6 @@ export async function PUT(request) {
         }),
       );
     }
-
     // ── Variantes ─────────────────────────────────────────────────────────────
     let variants = JSON.parse(data.get("variants") ?? "[]");
     const variantImageFiles = data.getAll("variantImageFiles");
@@ -314,7 +313,53 @@ export async function PUT(request) {
         { status: 500 },
       );
     }
-    // ── Upsert variantes ──────────────────────────────────────────────────────
+    // ── Eliminar variantes que ya no existen y hacer upsert ────────────────
+    // Primero: obtener IDs de variantes existentes
+    const { data: existingVariants } = await supabase
+      .from("product_variants")
+      .select("id, image")
+      .eq("product_id", productId);
+
+    const existingIds = (existingVariants ?? []).map((v) => v.id);
+    const incomingIds = variants.map((v) => v.id).filter(Boolean);
+    const idsToDelete = existingIds.filter((id) => !incomingIds.includes(id));
+
+    // Eliminar variantes que fueron removidas (y sus descuentos + imágenes asociados)
+    if (idsToDelete.length > 0) {
+      // Obtener las imágenes de las variantes a eliminar
+      const imagesToDelete = (existingVariants ?? [])
+        .filter((v) => idsToDelete.includes(v.id))
+        .map((v) => v.image)
+        .filter(Boolean);
+
+      // Eliminar imágenes de Cloudinary
+      await Promise.allSettled(imagesToDelete.map((url) => DestroyImage(url)));
+
+      // Eliminar descuentos por cantidad de esas variantes
+      const { error: deleteQdError } = await supabase
+        .from("quantity_discounts")
+        .delete()
+        .in("variant_id", idsToDelete);
+
+      if (deleteQdError) {
+        console.error(
+          "Error eliminando descuentos por cantidad:",
+          deleteQdError,
+        );
+      }
+
+      // Eliminar las variantes
+      const { error: deleteError } = await supabase
+        .from("product_variants")
+        .delete()
+        .in("id", idsToDelete);
+
+      if (deleteError) {
+        console.error("Error eliminando variantes:", deleteError);
+      }
+    }
+
+    // Upsert de variantes actuales
     if (variants.length > 0) {
       const variantsPayload = variants.map((v) => ({
         id: v.id,

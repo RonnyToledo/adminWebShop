@@ -62,7 +62,7 @@ export async function POST(request) {
         const result = await GeminiAsk(
           `Creame de este json con las diferentes informaciones del producto ${data.get("title") ?? ""}, un resumen de descripción de producto para que sea más atractivo, claro , profesional y corto, manteniendo la intención original. Hazlo más legible, corrige errores y alarga ligeramente si ayuda a la claridad:\n\n${JSON.stringify(infoSections)}\n\nEntrega solo el texto, sin explicaciones ni formato adicional, de no mas de 20 palabras.`,
         );
-
+        console.info("GeminiAsk result:", result);
         if (result && typeof result === "string") {
           descripcion = result;
         }
