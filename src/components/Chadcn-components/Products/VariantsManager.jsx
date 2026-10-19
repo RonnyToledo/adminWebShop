@@ -8,13 +8,13 @@ import React, {
   useState,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
-import Image from "next/image";
 import {
   BarChart2,
   Camera,
   Check,
   ChevronDown,
   ChevronUp,
+  Coins,
   ImageIcon,
   Info,
   Layers,
@@ -32,6 +32,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ThemeContext } from "@/context/useContext";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { ProductImage, useObjectUrl, validateImageFile } from "./image-utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -142,6 +144,7 @@ export function makeDefaultVariant(
     default_variant: true,
     orden: 0,
     quantity_discounts: [],
+    force_price: {},
   };
 }
 
@@ -304,41 +307,26 @@ function AddPill({ onClick }) {
 
 function ImageUploader({ currentImage, localBlob, onFileSelect, onRemove }) {
   const fileRef = useRef(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const previewUrl = useObjectUrl(localBlob);
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    if (!localBlob) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(localBlob);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [localBlob]);
-
   const displaySrc = previewUrl ?? normalizeImage(currentImage) ?? null;
+
+  const pickFile = (file) => {
+    if (file && validateImageFile(file)) onFileSelect(file);
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = Array.from(e.dataTransfer.files).find((f) =>
-      f.type.startsWith("image/"),
-    );
-    if (file) onFileSelect(file);
+    pickFile(e.dataTransfer.files?.[0]);
   };
 
   return (
     <div>
       {displaySrc ? (
         <div className="relative aspect-square rounded-2xl overflow-hidden border border-border bg-secondary group">
-          <Image
-            src={displaySrc || "/placeholder.svg"}
-            alt="Variante"
-            fill
-            sizes="180px"
-            className="object-cover"
-          />
+          <ProductImage src={displaySrc} alt="Variante" sizes="180px" />
           <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-end justify-between gap-1 p-2">
             <button
               type="button"
@@ -409,8 +397,7 @@ function ImageUploader({ currentImage, localBlob, onFileSelect, onRemove }) {
         accept="image/*"
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onFileSelect(f);
+          pickFile(e.target.files?.[0]);
           e.target.value = "";
         }}
       />
@@ -680,6 +667,154 @@ function QuantityDiscounts({ variantId, productId, discounts = [], onChange }) {
   );
 }
 
+// ─── ForcePriceSection ──────────────────────────────────────────────────────
+// force_price: { [monedaId]: { mode: "default" | "fixed" | "disabled", value? } }
+// default  → usa la tasa general de la moneda (monedas.valor)
+// fixed    → ignora la tasa general y usa "value" como precio final directo
+// disabled → esta variante no se vende en esa moneda
+
+function ForcePriceRow({ moneda, config, onChange }) {
+  const mode = config?.mode ?? "default";
+  const invalid = mode === "fixed" && !(Number(config?.value) > 0);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-foreground w-16 shrink-0 truncate">
+          {moneda.nombre}
+        </span>
+        <select
+          className="h-8 text-xs border border-border rounded-lg px-2 bg-background text-foreground flex-1 min-w-0"
+          value={mode}
+          onChange={(e) => {
+            const next = e.target.value;
+            if (next === "fixed") {
+              onChange({
+                mode: "fixed",
+                value: Number(config?.value) || Number(moneda.valor) || 0,
+              });
+            } else if (next === "disabled") {
+              onChange({ mode: "disabled" });
+            } else {
+              onChange(undefined); // sin override → tasa general
+            }
+          }}
+        >
+          <option value="default">Tasa general ({moneda.valor ?? "—"})</option>
+          <option value="fixed">Precio final en {moneda.nombre}</option>
+          <option value="disabled">No disponible en esta moneda</option>
+        </select>
+        {mode === "fixed" && (
+          <Input
+            type="number"
+            inputMode="decimal"
+            className={cn(
+              "h-8 w-20 text-xs px-2 shrink-0 tabular-nums",
+              invalid && "border-destructive/60",
+            )}
+            value={config?.value ?? ""}
+            placeholder="0"
+            onChange={(e) =>
+              onChange({
+                mode: "fixed",
+                value: parseFloat(e.target.value) || 0,
+              })
+            }
+          />
+        )}
+      </div>
+      {invalid && (
+        <p className="text-[10px] text-destructive pl-[72px]">
+          Ingresá un precio mayor que 0
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ForcePriceSection({
+  forcePrice = {},
+  currencies = [],
+  excludeId,
+  onChange,
+}) {
+  const safeForcePrice = forcePrice ?? {};
+  const applicable = currencies.filter(
+    (m) => excludeId == null || String(m.id) !== String(excludeId),
+  );
+
+  const [open, setOpen] = useState(
+    Object.values(safeForcePrice).some((c) => c?.mode && c.mode !== "default"),
+  );
+
+  if (applicable.length === 0) return null;
+
+  const activeOverrides = Object.entries(safeForcePrice).filter(
+    ([id, c]) =>
+      applicable.some((m) => String(m.id) === String(id)) &&
+      c?.mode &&
+      c.mode !== "default",
+  ).length;
+
+  const setMoneda = (monedaId, value) => {
+    const next = { ...safeForcePrice };
+    if (value === undefined) {
+      delete next[monedaId];
+    } else {
+      next[monedaId] = value;
+    }
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-0">
+      <button
+        type="button"
+        onClick={() => setOpen((x) => !x)}
+        className="w-full flex items-center justify-between py-2 text-left group"
+      >
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+          <Coins size={11} />
+          Precio por moneda
+          {activeOverrides > 0 && (
+            <span className="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-medium">
+              {activeOverrides}
+            </span>
+          )}
+          {activeOverrides === 0 && (
+            <span className="text-[10px] text-muted-foreground/60">
+              (opcional)
+            </span>
+          )}
+        </span>
+        {open ? (
+          <ChevronUp size={11} className="text-muted-foreground" />
+        ) : (
+          <ChevronDown size={11} className="text-muted-foreground" />
+        )}
+      </button>
+
+      {open && (
+        <div className="pt-1 space-y-2 border-t border-border/60">
+          <p className="text-[11px] text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
+            Por defecto, cada moneda se calcula con su tasa general. Podés fijar
+            el precio final de esta variante en una moneda o desactivar la
+            venta.
+          </p>
+          {applicable.map((m) => (
+            <ForcePriceRow
+              key={m.id}
+              moneda={m}
+              config={safeForcePrice[m.id]}
+              onChange={(val) => setMoneda(m.id, val)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── VariantRow (secundaria) — layout igual a QuickEssentials ─────────────────
 // imagen a la izquierda, campos a la derecha; sin old_price
 
@@ -689,6 +824,8 @@ function VariantRow({
   onRemove,
   variantImageBlobs,
   setVariantImageBlobs,
+  currencies,
+  defaultMonedaId,
 }) {
   const { webshop } = useContext(ThemeContext);
   const [expanded, setExpanded] = useState(false);
@@ -697,16 +834,7 @@ function VariantRow({
   const localBlob = variantImageBlobs.get(v.id) ?? null;
   const stockMode = webshop?.store?.stocks ? "number" : "switch";
 
-  const [thumbUrl, setThumbUrl] = useState(null);
-  useEffect(() => {
-    if (!localBlob) {
-      setThumbUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(localBlob);
-    setThumbUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [localBlob]);
+  const thumbUrl = useObjectUrl(localBlob);
 
   const normalizedImage = normalizeImage(v.image);
   const thumbnailSrc = thumbUrl ?? normalizedImage ?? null;
@@ -719,12 +847,16 @@ function VariantRow({
       ? { label: "sin stock", cls: "bg-amber-100 text-amber-700" }
       : { label: "activa", cls: "bg-primary/10 text-primary" };
 
-  const handleFileSelect = (file) =>
+  const handleFileSelect = (file) => {
     setVariantImageBlobs((m) => {
       const next = new Map(m);
       next.set(v.id, file);
       return next;
     });
+    toast.success("Imagen seleccionada", {
+      description: "Se subirá cuando guardes el producto.",
+    });
+  };
 
   const handleRemoveImage = () => {
     setVariantImageBlobs((m) => {
@@ -733,6 +865,7 @@ function VariantRow({
       return next;
     });
     onUpdate(v.id, { image: null, _deleteImage: normalizedImage });
+    toast.info("Imagen quitada");
   };
 
   return (
@@ -837,6 +970,16 @@ function VariantRow({
               productId={v.product_id}
               discounts={v.quantity_discounts ?? []}
               onChange={(qd) => onUpdate(v.id, { quantity_discounts: qd })}
+            />
+          </div>
+
+          {/* Precio por moneda */}
+          <div className="border-t border-border/60 pt-2">
+            <ForcePriceSection
+              forcePrice={v.force_price}
+              currencies={currencies}
+              excludeId={defaultMonedaId}
+              onChange={(fp) => onUpdate(v.id, { force_price: fp })}
             />
           </div>
 
@@ -1095,6 +1238,8 @@ export default function VariantsManager({
   onChange,
   variantImageBlobs,
   setVariantImageBlobs,
+  currencies = [],
+  defaultMonedaId,
 }) {
   const { webshop } = useContext(ThemeContext);
 
@@ -1220,6 +1365,7 @@ export default function VariantsManager({
         default_variant: false,
         orden: index,
         quantity_discounts: inh?.quantity_discounts ?? [],
+        force_price: inh?.force_price ?? {},
       };
     });
 
@@ -1349,6 +1495,30 @@ export default function VariantsManager({
               discounts={defaultVariant.quantity_discounts ?? []}
               onChange={(qd) => {
                 const patch = { quantity_discounts: qd };
+                onChange(
+                  ensureDefault(
+                    variants.map((v) =>
+                      v.attributes?.es_default === true ||
+                      v.default_variant === true
+                        ? { ...v, ...patch }
+                        : v,
+                    ),
+                  ),
+                );
+              }}
+            />
+          </div>
+        )}
+
+        {/* Precio por moneda de la variante principal */}
+        {defaultVariant && (
+          <div className="border border-border rounded-xl px-3 py-2 bg-background">
+            <ForcePriceSection
+              forcePrice={defaultVariant.force_price}
+              currencies={currencies}
+              excludeId={defaultMonedaId}
+              onChange={(fp) => {
+                const patch = { force_price: fp };
                 onChange(
                   ensureDefault(
                     variants.map((v) =>
@@ -1585,6 +1755,8 @@ export default function VariantsManager({
                 onRemove={removeVariant}
                 variantImageBlobs={variantImageBlobs}
                 setVariantImageBlobs={setVariantImageBlobs}
+                currencies={currencies}
+                defaultMonedaId={defaultMonedaId}
               />
             ))}
 
@@ -1610,6 +1782,7 @@ export default function VariantsManager({
                     default_variant: false,
                     orden: realVariants.length,
                     quantity_discounts: [],
+                    force_price: {},
                   },
                 ])
               }

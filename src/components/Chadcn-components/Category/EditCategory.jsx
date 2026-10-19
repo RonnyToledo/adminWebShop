@@ -6,12 +6,14 @@ import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
 import { toast } from "sonner";
 import apiClient from "@/lib/apiClient";
-import { logoApp } from "@/utils/image";
-import { Loader2, ImageIcon, ArrowRight } from "lucide-react";
+import { logoAdmin } from "@/utils/image";
+import { Loader2, ImageIcon, ArrowRight, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 
-export default function EditCategory({ ThemeContext, uid }) {
+export default function EditCategory({ ThemeContext, uid, initialData }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
+  const router = useRouter();
   const [category, setCategory] = useState({
     name: "",
     image: "",
@@ -19,12 +21,22 @@ export default function EditCategory({ ThemeContext, uid }) {
     description: "",
     subtienda: false,
     active: true,
+    premium: false,
     id: 9999,
   });
   const form = useRef(null);
   const [newImage, setNewImage] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [focused, setFocused] = useState(null);
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   useEffect(() => {
     setCategory((webshop?.store?.categoria || []).find((obj) => obj.id == uid));
@@ -65,6 +77,7 @@ export default function EditCategory({ ThemeContext, uid }) {
             ),
           },
         });
+        router.refresh();
         form.current?.reset();
       }
     } catch (error) {
@@ -117,7 +130,7 @@ export default function EditCategory({ ThemeContext, uid }) {
                 src={
                   newImage
                     ? URL.createObjectURL(newImage)
-                    : category?.image || logoApp
+                    : category?.image || logoAdmin
                 }
                 alt={category?.name || "Categoría"}
                 fill
@@ -170,7 +183,7 @@ export default function EditCategory({ ThemeContext, uid }) {
         </div>
 
         {/* Switches */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-secondary/30">
             <div>
               <p className="text-sm font-medium text-foreground">Subtienda</p>
@@ -195,6 +208,20 @@ export default function EditCategory({ ThemeContext, uid }) {
             <Switch
               checked={!!category?.active}
               onCheckedChange={(v) => setCategory({ ...category, active: v })}
+            />
+          </div>
+          <div className="flex items-center justify-between p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+            <div>
+              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Crown size={13} className="text-amber-500" /> Premium
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Solo para clientes Premium
+              </p>
+            </div>
+            <Switch
+              checked={!!category?.premium}
+              onCheckedChange={(v) => setCategory({ ...category, premium: v })}
             />
           </div>
         </div>

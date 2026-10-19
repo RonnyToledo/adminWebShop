@@ -1,7 +1,28 @@
+//.\app\api\tienda\[tienda]\categoria\[uid]\route.js
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { extractPublicId } from "cloudinary-build-url";
 import { requireRouteUser } from "@/lib/route-handler-auth";
+import {
+  DestroyImage,
+  UploadNewImage,
+} from "@/components/globalFunction/imagesMove";
+
+function formDataToObject(formData) {
+  return Object.fromEntries(
+    Array.from(formData.entries(), ([key, value]) => {
+      if (value instanceof File || value instanceof Blob) {
+        return [key, value];
+      }
+
+      try {
+        return [key, JSON.parse(value)];
+      } catch {
+        return [key, value];
+      }
+    }),
+  );
+}
 
 async function getAuthenticatedSupabase() {
   const { supabase } = await requireRouteUser();
@@ -27,6 +48,8 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request) {
+  const uploadedImages = [];
+
   try {
     const supabase = await getAuthenticatedSupabase();
 
@@ -37,39 +60,10 @@ export async function PUT(request) {
     if (object.newImage && object.newImage !== "undefined") {
       // Verificar si newImage es un archivo válido
       if (object.newImage instanceof File || object.newImage instanceof Blob) {
-        // Eliminar imagen vieja si existe
-        if (object.image) {
-          console.info("Destruyendo imagen antigua");
-
-          const publicId = extractPublicId(object.image);
-          // Usar Promise para manejar cloudinary correctamente
-          await new Promise((resolve, reject) => {
-            cloudinary.uploader.destroy(publicId, (error, result) => {
-              if (error) {
-                console.error("Error eliminando imagen:", error);
-                reject(error);
-              } else {
-                console.info("Imagen eliminada:", result);
-                resolve(result);
-              }
-            });
-          });
-        }
-        console.info("No hay imagen a eliminar");
-
         // Subimos la nueva
-        const byte = await object.newImage.arrayBuffer();
-        const buffer = Buffer.from(byte);
-        const res = await new Promise((resolve, reject) => {
-          cloudinary.uploader
-            .upload_stream({ resource_type: "image" }, (err, result) => {
-              if (err) {
-                reject(err);
-              }
-              resolve(result);
-            })
-            .end(buffer);
-        });
+        const res = await UploadNewImage(object.newImage);
+        if (!res?.secure_url) throw new Error("No se pudo subir la imagen");
+        uploadedImages.push(res.secure_url);
 
         console.info("Nueva iamgen: ", res.secure_url);
         delete object.newImage;
@@ -84,8 +78,9 @@ export async function PUT(request) {
 
         if (error) {
           console.error("Error", error);
-          return NextResponse.json({ message: error.message || error }, { status: 400 });
+          throw error;
         }
+        if (object.image) await DestroyImage(object.image).catch(() => {});
         return NextResponse.json(tienda);
       } else {
         console.error("newImage no es un archivo válido.");
@@ -107,12 +102,16 @@ export async function PUT(request) {
 
       if (error) {
         console.error(error);
-        return NextResponse.json({ message: error.message || error }, { status: 400 });
+        return NextResponse.json(
+          { message: error.message || error },
+          { status: 400 },
+        );
       }
       console.info("Tarea ejecutada");
       return NextResponse.json(tienda);
     }
   } catch (error) {
+    await Promise.allSettled(uploadedImages.map((url) => DestroyImage(url)));
     console.error("Error en la actualización:", error);
     return NextResponse.json(
       { message: error.message || "Error desconocido" },
@@ -129,7 +128,7 @@ export async function DELETE(request) {
     const imageOld = data.get("image");
     const Id = data.get("Id");
     console.info("Id: ", Id);
-    
+
     if (imageOld) {
       const publicId = extractPublicId(imageOld);
       // Usar Promise para manejar cloudinary correctamente
@@ -145,7 +144,7 @@ export async function DELETE(request) {
         });
       });
     }
-    
+
     const { data: tienda, error } = await supabase
       .from("Products")
       .delete()

@@ -1,32 +1,15 @@
 [
   {
-    "group": "Home",
+    "group": "Inicio",
     "links": [
       {
-        "label": "Hogar",
+        "label": "Inicio",
         "href": "/",
         "icon": "HomeRoundedIcon",
         "requiredAction": "read"
-      }
-    ]
-  },
-  {
-    "group": "Productos",
-    "links": [
-      {
-        "label": "Editar Categoria",
-        "href": "/category",
-        "icon": "CategoryRoundedIcon",
-        "requiredAction": "write"
       },
       {
-        "label": "Nuevo Producto",
-        "href": "/newProduct",
-        "icon": "AddCircleRoundedIcon",
-        "requiredAction": "write"
-      },
-      {
-        "label": "Editar Productos",
+        "label": "Productos",
         "href": "/products",
         "icon": "AppRegistrationRoundedIcon",
         "requiredAction": "write"
@@ -40,7 +23,7 @@
     ]
   },
   {
-    "group": "Finanzas",
+    "group": "Ventas y análisis",
     "links": [
       {
         "label": "Marketing",
@@ -48,14 +31,9 @@
         "icon": "AttachMoneyRoundedIcon",
         "requiredAction": "write"
       },
+
       {
-        "label": "Pedidos",
-        "href": "/orders",
-        "icon": "ListIcon",
-        "requiredAction": "read"
-      },
-      {
-        "label": "Analitycs",
+        "label": "Analytics",
         "href": "/analytics",
         "icon": "BarChartIcon",
         "requiredAction": "analytics"
@@ -69,28 +47,23 @@
     ]
   },
   {
-    "group": "Configuracion",
+    "group": "Configuración",
     "links": [
       {
-        "label": "Configuracion",
+        "label": "Configuración",
         "href": "/configuracion",
         "icon": "Settings",
         "requiredAction": "settings"
       },
+
       {
-        "label": "Guia",
-        "href": "/guia",
-        "icon": "Eye",
-        "requiredAction": "read"
-      },
-      {
-        "label": "Theme",
+        "label": "Tema",
         "href": "/theme",
         "icon": "EditIcon",
         "requiredAction": "settings"
       },
       {
-        "label": "Social",
+        "label": "Contacto",
         "href": "/social",
         "icon": "GroupIcon",
         "requiredAction": "settings"

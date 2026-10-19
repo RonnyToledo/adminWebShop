@@ -12,8 +12,11 @@ import {
   X,
   Loader2,
   Store,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { authService } from "@/lib/supabase";
 
 const STATUS_CONFIG = {
   pending: {
@@ -54,6 +57,7 @@ export default function WelcomeComponent({ user }) {
   const [submitting, setSubmitting] = useState(false);
   const [actioningInvite, setActioningInvite] = useState(null); // id del invite en acción
   const [error, setError] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // ─── carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -97,6 +101,19 @@ export default function WelcomeComponent({ user }) {
     );
   }
 
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await authService.signOut();
+      window.location.replace("/login");
+    } catch (e) {
+      setLoggingOut(false);
+      toast.error("No se pudo cerrar sesión", {
+        description: e.message || "Intenta nuevamente.",
+      });
+    }
+  }
+
   // ─── cancelar solicitud de tienda ─────────────────────────────────────────
   async function handleCancelRequest() {
     if (!ownerRequest?.id) return;
@@ -136,15 +153,17 @@ export default function WelcomeComponent({ user }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-5">
         {/* Header */}
-        <div className="text-center space-y-1">
-          <h1 className="text-3xl font-bold text-white">
-            Bienvenido{user?.name ? `, ${user.name}` : ""}
-          </h1>
-          <p className="text-slate-400 text-sm">
-            {pendingInvites.length > 0
-              ? "Tenés invitaciones pendientes para unirte a un equipo"
-              : "Elegí cómo querés comenzar"}
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="text-center flex-1 space-y-1">
+            <h1 className="text-3xl font-bold text-white">
+              Bienvenido{user?.name ? `, ${user.name}` : ""}
+            </h1>
+            <p className="text-slate-400 text-sm">
+              {pendingInvites.length > 0
+                ? "Tenés invitaciones pendientes para unirte a un equipo"
+                : "Elegí cómo querés comenzar"}
+            </p>
+          </div>
         </div>
 
         {/* Error global */}
@@ -353,6 +372,23 @@ export default function WelcomeComponent({ user }) {
             Contactar soporte
           </Link>
         </p>
+        <div className="flex items-center justify-center mt-6">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loggingOut ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <LogOut size={14} />
+            )}
+            <span className="hidden sm:inline">Cerrar sesión</span>
+          </button>
+        </div>
       </div>
     </div>
   );

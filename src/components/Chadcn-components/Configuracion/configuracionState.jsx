@@ -1,212 +1,337 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import React, { useState, useEffect, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { CARD_CLASS, CardHeading } from "./section-primitives";
 import { Label } from "@/components/ui/label";
 import { SelectStore, InputStore } from "./Input-Store";
 import { MapPinned, MapPin } from "lucide-react";
+import { resolveByCodeOrName } from "@/utils/resolveLocation";
+import LocationPicker from "@/components/map/LocationPicker";
 
-/**
- * ConfiguracionState — selección de país / provincia / municipio + dirección
- * Props:
- *  - store:    objeto con la configuración actual
- *  - setStore: setter para actualizar store
- *  - country:  array de países [{ name, isoCode, ... }, ...]
- */
+const getCountryIso = (c) => c?.isoCode ?? c?.countryCode ?? c?.code ?? "";
+const getRegionIso = (s) => s?.isoCode ?? s?.code ?? "";
+const getLabel = (obj) => obj?.name ?? obj?.label ?? "";
+
+const canonicalize = (value) => {
+  const raw = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return String(Number(raw));
+  return raw;
+};
+
+const matchesLocationValue = (actual, expected) => {
+  const left = canonicalize(actual);
+  const right = canonicalize(expected);
+  return !!left && !!right && left === right;
+};
+
 export default function ConfiguracionState({ store, setStore, country }) {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
 
-  // Fetch provincias cuando cambia el país
+  const selectedCountry = useMemo(() => {
+    return (
+      resolveByCodeOrName(country, store?.regions?.country_code, {
+        getCode: getCountryIso,
+        getName: getLabel,
+      }) ??
+      resolveByCodeOrName(country, store?.country, {
+        getCode: getCountryIso,
+        getName: getLabel,
+      })
+    );
+  }, [country, store?.regions?.country_code, store?.country]);
+
+  const selectedCountryIso = getCountryIso(selectedCountry); // ya no hardcodees "CU"
+  const selectedCountryLabel = selectedCountry?.name || store?.country || "";
+
+  const regionCode = store?.regions?.region_code ?? store?.region ?? "";
+  const selectedState = useMemo(() => {
+    return (
+      resolveByCodeOrName(states, store?.regions?.region_code, {
+        getCode: getRegionIso,
+        getName: getLabel,
+      }) ??
+      resolveByCodeOrName(states, store?.region, {
+        getCode: getRegionIso,
+        getName: getLabel,
+      })
+    );
+  }, [states, store?.regions?.region_code, store?.region]);
+
+  const provinciaLabel = selectedState?.name || store?.region || "";
+
+  // ── NUEVO: auto-sanar el shape viejo (country/region como nombre) ──────────
   useEffect(() => {
-    if (!store?.country || !Array.isArray(country) || country.length === 0) {
+    if (!selectedCountry || store?.regions?.country_code) return;
+    setStore((prev) => ({
+      ...prev,
+      regions: {
+        ...(prev.regions || {}),
+        country_code: getCountryIso(selectedCountry),
+        // FIX: heredar el region_code legacy (prev.region) cuando regions.region_code
+        // todavía no existe. Antes esto quedaba en "" y rompía el fetch de estados
+        // en el primer render tras un reload (donde solo llega prev.region).
+        region_code: prev.regions?.region_code ?? prev.region ?? "",
+      },
+    }));
+  }, [selectedCountry, store?.regions?.country_code, setStore]);
+
+  // Provincias / estados cuando cambia el país
+  useEffect(() => {
+    if (
+      !selectedCountryIso ||
+      !Array.isArray(country) ||
+      country.length === 0
+    ) {
       setStates([]);
+      setCities([]);
       return;
     }
+
     const controller = new AbortController();
+
     async function fetchStates() {
       try {
         setLoadingStates(true);
-        const countryObj = country.find((c) => c?.name === store.country);
-        if (!countryObj?.isoCode) {
-          setStates([]);
-          setCities([]);
-          setStore((prev) => ({ ...prev, Provincia: "", municipio: "" }));
-          return;
-        }
+
         const base = process.env.NEXT_PUBLIC_PATH ?? "";
         const resp = await fetch(
-          `${base}/api/filter/state?country=${encodeURIComponent(countryObj.isoCode)}`,
+          `${base}/api/filter/state?country=${encodeURIComponent(selectedCountryIso)}`,
           { signal: controller.signal },
         );
+
         if (!resp.ok) {
           setStates([]);
           return;
         }
+
         const data = await resp.json();
-        setStates(Array.isArray(data) ? data : []);
-        setStore((prev) => ({
-          ...prev,
-          Provincia:
-            prev.Provincia || (Array.isArray(data) && data[0]?.name) || "",
-        }));
+        const list = Array.isArray(data) ? data : [];
+
+        setStates(list);
+
+        setStore((prev) => {
+          const savedRegionCode =
+            prev.regions?.region_code ?? prev.region ?? "";
+          const match = resolveByCodeOrName(list, savedRegionCode, {
+            getCode: getRegionIso,
+            getName: getLabel,
+          });
+
+          const resolvedCode = match
+            ? getRegionIso(match)
+            : savedRegionCode || "";
+
+          return {
+            ...prev,
+            country: selectedCountry?.name ?? prev.country ?? "",
+            region: resolvedCode,
+            regions: {
+              ...(prev.regions || {}),
+              country_code: selectedCountryIso,
+              region_code: resolvedCode,
+            },
+            municipio: prev.municipio,
+          };
+        });
       } catch (err) {
-        if (err.name !== "AbortError")
+        if (err?.name !== "AbortError") {
           console.error("Error fetching states:", err);
+        }
       } finally {
         setLoadingStates(false);
       }
     }
+
     fetchStates();
     return () => controller.abort();
-  }, [store?.country, country, setStore]);
+  }, [selectedCountry?.name, selectedCountryIso, country, setStore]);
 
-  // Fetch ciudades cuando cambia la provincia
+  // Municipios / ciudades cuando cambia la provincia
   useEffect(() => {
     if (
-      !store?.country ||
-      !store?.Provincia ||
+      !selectedCountryIso ||
+      !regionCode ||
       !Array.isArray(states) ||
       states.length === 0
     ) {
       setCities([]);
       return;
     }
+
     const controller = new AbortController();
+
     async function fetchCities() {
       try {
         setLoadingCities(true);
-        const countryObj = country.find((c) => c?.name === store.country);
-        const stateObj = states.find((s) => s?.name === store.Provincia);
 
-        if (!countryObj?.isoCode || !stateObj?.isoCode) {
-          console.warn("Falta isoCode", { countryObj, stateObj });
+        const stateObj = states.find((s) =>
+          matchesLocationValue(getRegionIso(s), regionCode),
+        );
+        if (!stateObj) {
           setCities([]);
           setStore((prev) => ({ ...prev, municipio: "" }));
           return;
         }
 
         const base = process.env.NEXT_PUBLIC_PATH ?? "";
-        const url = `${base}/api/filter/city?country=${encodeURIComponent(countryObj.isoCode)}&state=${encodeURIComponent(stateObj.isoCode)}`;
+        const url = `${base}/api/filter/city?country=${encodeURIComponent(
+          selectedCountryIso,
+        )}&state=${encodeURIComponent(getRegionIso(stateObj))}`;
 
         const resp = await fetch(url, { signal: controller.signal });
+        if (!resp.ok) {
+          setCities([]);
+          return;
+        }
 
         const data = await resp.json();
+        const list = Array.isArray(data) ? data : [];
 
-        setCities(Array.isArray(data) ? data : []);
+        setCities(list);
         setStore((prev) => ({
           ...prev,
-          municipio: prev.municipio || data[0]?.name || "", // ← fix aquí
+          municipio: prev.municipio || list[0]?.name || "",
         }));
       } catch (err) {
-        if (err.name !== "AbortError")
+        if (err?.name !== "AbortError") {
           console.error("Error fetching cities:", err);
+        }
       } finally {
         setLoadingCities(false);
       }
     }
+
     fetchCities();
     return () => controller.abort();
-  }, [store?.country, store?.Provincia, country, states, setStore]);
+  }, [selectedCountryIso, regionCode, states, setStore]);
 
-  // Resumen de ubicación actual (del log)
-  const ubicacionActual = [store?.municipio, store?.Provincia, store?.country]
+  const ubicacionActual = [
+    store?.municipio,
+    selectedState?.name,
+    selectedCountry?.name,
+  ]
     .filter(Boolean)
     .join(", ");
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-primary" />
-          <CardTitle>Ubicación</CardTitle>
-        </div>
-        <CardDescription>
-          País, provincia y municipio del negocio
-        </CardDescription>
-        {/* Muestra la ubicación guardada actualmente */}
+    <Card className={CARD_CLASS}>
+      <CardHeading
+        icon={MapPin}
+        title="Ubicación"
+        description="País, provincia y municipio del negocio"
+      >
         {ubicacionActual && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5 mt-1 w-fit">
-            <MapPinned className="w-3 h-3 shrink-0" />
+          <div className="mt-1 flex w-fit items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground">
+            <MapPinned className="h-3 w-3 shrink-0" />
             {ubicacionActual}
           </div>
         )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="country">País</Label>
-          <SelectStore
-            array={country}
-            onSelectChange={(value) =>
-              setStore((prev) => ({
-                ...prev,
-                country: value,
-                Provincia: "",
-                municipio: "",
-              }))
-            }
-            placeholder="Seleccione su país"
-            status={store?.country}
-            value="name"
-          />
-        </div>
+      </CardHeading>
 
-        <div className="space-y-2">
-          <Label htmlFor="province">Provincia / Estado</Label>
-          <SelectStore
-            array={states}
-            onSelectChange={(value) =>
-              setStore((prev) => ({ ...prev, Provincia: value, municipio: "" }))
-            }
-            placeholder="Seleccione su provincia"
-            status={store?.Provincia}
-            value="name"
-            loading={loadingStates}
-            disabled={!store?.country || states.length === 0}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="city">Municipio / Ciudad</Label>
-          <SelectStore
-            array={cities}
-            onSelectChange={(value) =>
-              setStore((prev) => ({ ...prev, municipio: value }))
-            }
-            placeholder="Seleccione su municipio"
-            status={store?.municipio}
-            value="name"
-            loading={loadingCities}
-            disabled={
-              !store?.country || !store?.Provincia || cities.length === 0
-            }
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="address">Dirección</Label>
-          <div className="flex items-center gap-2">
-            <MapPinned className="w-4 h-4 text-muted-foreground shrink-0" />
-            <InputStore
-              name="Dirección"
-              object={store}
-              value={store?.direccion}
-              action={setStore}
-              type="text"
+      <CardContent className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="country">País</Label>
+            <SelectStore
+              array={country}
+              onSelectChange={(value) =>
+                setStore((prev) => ({
+                  ...prev,
+                  regions: {
+                    ...(prev.regions || {}),
+                    country_code: value,
+                    region_code: "",
+                  },
+                  country:
+                    country.find((item) => getCountryIso(item) === value)
+                      ?.name ?? "",
+                  region: "",
+                  municipio: "",
+                }))
+              }
+              placeholder="Seleccione su país"
+              status={selectedCountryLabel}
+              value="isoCode"
+              show="name"
             />
           </div>
-          {store?.ubicacion?.latitude && (
-            <p className="text-xs text-muted-foreground">
-              GPS: {store.ubicacion.latitude.toFixed(5)},{" "}
-              {store.ubicacion.longitude.toFixed(5)}
-            </p>
-          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="province">Provincia / Estado</Label>
+            <SelectStore
+              array={states}
+              onSelectChange={(value) =>
+                setStore((prev) => ({
+                  ...prev,
+                  regions: {
+                    ...(prev.regions || {}),
+
+                    region_code: value,
+                  },
+                  region: value,
+                  municipio: "",
+                }))
+              }
+              placeholder="Seleccione su provincia"
+              status={provinciaLabel}
+              value="isoCode"
+              show="name"
+              loading={loadingStates}
+              disabled={!selectedCountryIso || states.length === 0}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="city">Municipio / Ciudad</Label>
+            <SelectStore
+              array={cities}
+              onSelectChange={(value) =>
+                setStore((prev) => ({ ...prev, municipio: value }))
+              }
+              placeholder="Seleccione su municipio"
+              status={store?.municipio}
+              value="name"
+              show="name"
+              loading={loadingCities}
+              disabled={
+                !selectedCountryIso || !regionCode || cities.length === 0
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Dirección</Label>
+            <div className="flex items-center gap-2">
+              <MapPinned className="w-4 h-4 text-muted-foreground shrink-0" />
+              <InputStore
+                name="address"
+                object={store}
+                value="direccion"
+                action={setStore}
+                type="text"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="block">Ubicación en el mapa</Label>
+          <LocationPicker
+            value={store?.ubicacion ?? null}
+            onChange={(ubicacion) =>
+              setStore((prev) => ({ ...prev, ubicacion }))
+            }
+          />
         </div>
       </CardContent>
     </Card>

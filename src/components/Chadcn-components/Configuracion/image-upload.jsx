@@ -27,7 +27,7 @@ export function ImageUpload({ onImageSelect, variant = "avatar" }) {
         size="icon"
         className={`
         group relative overflow-hidden rounded-full
-        ${variant === "cover" ? "w-8 h-8" : "w-full h-full"}
+        ${variant === "cover" ? "w-8 h-8 text-white hover:bg-white/20 hover:text-white" : "w-full h-full"}
       `}
         onClick={() => inputRef.current?.click()}
       >

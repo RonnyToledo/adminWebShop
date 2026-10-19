@@ -12,125 +12,227 @@ import { diffArrays } from "@/components/globalFunction/diferenciasDeArray";
 import { uiToDB, DIA_NOMBRES } from "@/types/horario";
 
 export async function GET(request, { params }) {
-  const supabase = await createRouteSupabase();
-
-  const { data: tiendas } = await supabase
-    .from("Sitios")
-    .select("*, horarios(*), monedas(*)")
-    .eq("sitioweb", params.tienda);
-
-  const [a] = tiendas;
-
-  // horarios viene como array de rows; el cliente los normaliza con buildHorarioCompleto
-  // si necesitas devolverlos ya convertidos, importa buildHorarioCompleto aquí también
-  const b = {
-    ...a,
-    moneda: JSON.parse(a.moneda ?? "null"),
-    moneda_default: JSON.parse(a.moneda_default ?? "null"),
-    comentario: JSON.parse(a.comentario ?? "null"),
-    envios: JSON.parse(a.envios ?? "null"),
-    // horario ya NO viene como text; viene como a.horarios (array de rows)
-  };
-
-  return NextResponse.json(b);
-}
-
-export async function PUT(request, { params }) {
-  let supabase;
+  const tienda = (await params).tienda;
   try {
-    ({ supabase } = await requireRouteUser());
-  } catch {
-    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-  }
+    const supabase = await createRouteSupabase();
 
-  const data = await request.formData();
-  const sitioweb = (await params).tienda;
-  const storeUUID = data.get("UUID");
+    const { data: tiendas, error } = await supabase
+      .from("Sitios")
+      .select("*, horarios(*), monedas(*)")
+      .eq("sitioweb", tienda);
 
-  // ── Imágenes ────────────────────────────────────────────────────────────────
-  let NewPoster, NewBanner;
+    if (error) throw error;
 
-  const urlPosterNew = data.get("urlPosterNew");
-  if (urlPosterNew) {
-    const imageOld = data.get("urlPoster");
-    if (imageOld) await DestroyImage(imageOld);
-    const res = await UploadNewImage(urlPosterNew);
-    NewPoster = res.secure_url;
-  } else {
-    NewPoster = data.get("urlPoster");
-  }
+    const [a] = tiendas;
 
-  const bannerNew = data.get("bannerNew");
-  if (bannerNew) {
-    const imageOld = data.get("banner");
-    if (imageOld) await DestroyImage(imageOld);
-    const res = await UploadNewImage(bannerNew);
-    NewBanner = res.secure_url;
-  } else {
-    NewBanner = data.get("banner");
-  }
-  // ── Monedas ─────────────────────────────────────────────────────────────────
-  await syncMonedasForStore(
-    supabase,
-    storeUUID,
-    JSON.parse(data.get("monedas") ?? "[]"),
-  );
+    if (!a) {
+      return NextResponse.json(
+        { message: "Tienda no encontrada" },
+        { status: 404 },
+      );
+    }
 
-  // ── Horarios ─────────────────────────────────────────────────────────────────
-  // El cliente envía el array UI de 7 días; lo convertimos a rows de la tabla
-  const horarioUI = JSON.parse(data.get("horarios") ?? "[]");
-  await syncHorariosForStore(supabase, storeUUID, horarioUI);
+    const b = {
+      ...a,
+      moneda: JSON.parse(a.moneda ?? "null"),
+      moneda_default: JSON.parse(a.moneda_default ?? "null"),
+      comentario: JSON.parse(a.comentario ?? "null"),
+      envios: JSON.parse(a.envios ?? "null"),
+    };
 
-  // ── Payload principal de Sitios ──────────────────────────────────────────────
-  const payload = {
-    name: data.get("name"),
-    parrrafo: data.get("parrrafo"),
-    urlPoster: NewPoster,
-    banner: NewBanner,
-    act_tf: data.get("act_tf") === "true",
-    stocks: data.get("stocks") === "true",
-    local: data.get("local"),
-    cell: data.get("cell"),
-    email: data.get("email"),
-    insta: data.get("insta"),
-    country: data.get("country"),
-    Provincia: data.get("Provincia"),
-    municipio: data.get("municipio"),
-    domicilio: data.get("domicilio") === "true",
-    history: data.get("history"),
-    envios: data.get("envios"),
-    grid: data.get("grid"),
-    horizontal: data.get("horizontal"),
-    square: data.get("square"),
-    minimalista: data.get("minimalista"),
-    color: data.get("color"),
-    redes: JSON.parse(data.get("redes") ?? "[]"),
-    contacto: JSON.parse(data.get("contacto") ?? "[]"),
-    // horario (text) ya no se actualiza aquí — ahora vive en tabla horarios
-  };
-
-  const { data: tienda, error } = await supabase
-    .from("Sitios")
-    .update([payload])
-    .eq("sitioweb", sitioweb)
-    .select("*, monedas(*), horarios(*)");
-
-  if (error) {
-    console.error(error);
+    return NextResponse.json(b);
+  } catch (error) {
+    console.error("[GET /api/tienda/:tienda] Error:", error);
     return NextResponse.json(
-      { message: error.message || error },
+      { message: error?.message || "Error interno del servidor" },
       { status: 500 },
     );
   }
-
-  return NextResponse.json({ message: "Actualizacion exitosa", data: tienda });
 }
 
-// ── syncHorariosForStore ──────────────────────────────────────────────────────
-/**
- * Recibe el array UI de 7 días y hace upsert completo en la tabla horarios.
- * Usa ON CONFLICT (sitio_id, dia) para actualizar filas existentes.
- */
+export async function PUT(request, { params }) {
+  const uploadedImages = [];
+
+  try {
+    let supabase;
+    try {
+      ({ supabase } = await requireRouteUser());
+    } catch {
+      return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+    }
+
+    const contentType = request.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().startsWith("multipart/form-data")) {
+      return NextResponse.json(
+        { message: "La solicitud debe enviarse como multipart/form-data" },
+        { status: 415 },
+      );
+    }
+
+    let data;
+    try {
+      data = await request.formData();
+    } catch (error) {
+      console.error("[PUT /api/tienda/:tienda] FormData inválido:", error);
+      return NextResponse.json(
+        { message: "No se pudo leer el formulario enviado. Inténtalo de nuevo." },
+        { status: 400 },
+      );
+    }
+    const sitioweb = (await params).tienda;
+    const storeUUID = data.get("UUID");
+
+    // ── Imágenes + Monedas + Horarios: todo en paralelo ──────────────────
+    // Ninguno depende del resultado de otro, así que dejamos que corran
+    // simultáneamente en vez de esperar uno tras otro.
+    let posterResult, bannerResult;
+
+    try {
+      const results = await Promise.all([
+        processImage(
+          data.get("urlPosterNew"),
+          data.get("urlPoster"),
+          uploadedImages,
+        ),
+        processImage(data.get("bannerNew"), data.get("banner"), uploadedImages),
+        syncMonedasForStore(
+          supabase,
+          storeUUID,
+          JSON.parse(data.get("monedas") ?? "[]"),
+        ),
+        syncHorariosForStore(
+          supabase,
+          storeUUID,
+          JSON.parse(data.get("horarios") ?? "[]"),
+        ),
+      ]);
+
+      posterResult = results[0];
+      bannerResult = results[1];
+      // results[2] = monedas (no necesitamos el valor de retorno)
+      // results[3] = horarios (no necesitamos el valor de retorno)
+    } catch (parallelError) {
+      console.error(
+        "[PUT /api/tienda/:tienda] Error en tareas paralelas (imágenes/monedas/horarios):",
+        parallelError,
+      );
+      return NextResponse.json(
+        {
+          message:
+            parallelError?.message || "Error al guardar los datos de la tienda",
+        },
+        { status: 500 },
+      );
+    }
+
+    // ── Región ────────────────────────────────────────────────────────────
+    const region_code = data.get("region") ?? null;
+
+    // ── Payload principal de Sitios ──────────────────────────────────────
+    const payload = {
+      name: data.get("name"),
+      parrrafo: data.get("parrrafo"),
+      urlPoster: posterResult,
+      banner: bannerResult,
+      stocks: data.get("stocks") === "true",
+      local: data.get("local"),
+      cell: data.get("cell"),
+      email: data.get("email"),
+      direccion: data.get("direccion"),
+      ...(data.has("ubicacion")
+        ? { ubicacion: parseLocation(data.get("ubicacion")) }
+        : {}),
+      municipio: data.get("municipio"),
+      domicilio: data.get("domicilio") === "true",
+      view_news: data.get("view_news") === "true",
+      category_hidden: data.get("category_hidden") === "true",
+      history: data.get("history"),
+      envios: data.get("envios"),
+      colorAutomatic: data.get("colorAutomatic") === "true",
+      region: region_code,
+      minimalista: data.get("minimalista") === "true",
+      catalogLayout: data.get("catalogLayout"),
+      color: data.get("color"),
+      redes: JSON.parse(data.get("redes") ?? "[]"),
+      contacto: JSON.parse(data.get("contacto") ?? "[]"),
+    };
+
+    // FIX: el update ahora ocurre ANTES de validar `error`.
+    // Antes, `if (error)` se evaluaba con una variable `error` que aún
+    // no existía en este scope (se declaraba más abajo con
+    // `const { data: tienda, error } = ...`), así que la validación
+    // nunca revisaba el resultado real del update.
+    const { data: tienda, error } = await supabase
+      .from("Sitios")
+      .update([payload])
+      .eq("sitioweb", sitioweb)
+      .select("*, monedas(*), horarios(*)");
+
+    if (error) {
+      console.error(
+        "[PUT /api/tienda/:tienda] Error actualizando Sitios:",
+        error,
+      );
+      return NextResponse.json(
+        { message: error.message || "Error actualizando la tienda" },
+        { status: 500 },
+      );
+    }
+
+    await Promise.allSettled(
+      [
+        data.get("urlPosterNew") ? data.get("urlPoster") : null,
+        data.get("bannerNew") ? data.get("banner") : null,
+      ]
+        .filter(Boolean)
+        .map((url) => DestroyImage(url)),
+    );
+
+    return NextResponse.json({
+      message: "Actualizacion exitosa",
+      data: tienda,
+    });
+  } catch (error) {
+    await Promise.allSettled(uploadedImages.map((url) => DestroyImage(url)));
+    console.error("[PUT /api/tienda/:tienda] Error no manejado:", error);
+    return NextResponse.json(
+      { message: error?.message || "Error interno del servidor" },
+      { status: 500 },
+    );
+  }
+}
+
+// ── Helper: procesa una imagen (destroy old + upload new, o mantiene la actual) ──
+async function processImage(newFile, oldUrl, uploadedImages) {
+  if (!newFile) return oldUrl;
+  const uploadResult = await UploadNewImage(newFile);
+  if (!uploadResult?.secure_url) throw new Error("No se pudo subir la imagen");
+  uploadedImages.push(uploadResult.secure_url);
+  return uploadResult.secure_url;
+}
+
+function parseLocation(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  const parsed = JSON.parse(value);
+  const latitude = Number(parsed?.latitude);
+  const longitude = Number(parsed?.longitude);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    throw new Error("Las coordenadas de ubicación no son válidas");
+  }
+
+  return { latitude, longitude };
+}
+
+// ── syncHorariosForStore ────────────────────────────────────────────────────
 export async function syncHorariosForStore(supabase, sitio_id, horarioRows) {
   if (!sitio_id) throw new Error("sitio_id es requerido");
   if (!Array.isArray(horarioRows) || horarioRows.length === 0) return;
@@ -154,21 +256,42 @@ export async function syncHorariosForStore(supabase, sitio_id, horarioRows) {
     cierre: r.cierre,
   }));
 
-  // ← Cambiar insert por upsert con select para obtener los IDs nuevos
   const { data, error: errIns } = await supabase
     .from("horarios")
     .upsert(rows)
-    .select(); // ← esto devuelve las filas con sus nuevos IDs
+    .select();
 
   if (errIns) throw errIns;
 
-  return data; // ← retornar los rows frescos con IDs correctos
+  return data;
 }
-// ── syncMonedasForStore (sin cambios) ────────────────────────────────────────
+
+// ── syncMonedasForStore ──────────────────────────────────────────────────────
+function normalizeMonedaForDb(moneda) {
+  if (!moneda || typeof moneda !== "object") return moneda;
+
+  const normalizedValor = Number.parseFloat(
+    String(moneda.valor ?? 1).replace(",", "."),
+  );
+
+  return {
+    ...moneda,
+    nombre: String(moneda.nombre ?? "").trim() || "Moneda",
+    valor:
+      Number.isFinite(normalizedValor) && normalizedValor > 0
+        ? Number(normalizedValor.toFixed(6))
+        : 1,
+    defecto: Boolean(moneda.defecto),
+    ui_store: moneda.ui_store ?? undefined,
+  };
+}
+
 export async function syncMonedasForStore(supabase, ui_store, monedasActuales) {
   if (!ui_store) throw new Error("ui_store es requerido");
 
-  monedasActuales = Array.isArray(monedasActuales) ? monedasActuales : [];
+  monedasActuales = Array.isArray(monedasActuales)
+    ? monedasActuales.map(normalizeMonedaForDb)
+    : [];
 
   const { data: existing, error: errExisting } = await supabase
     .from("monedas")
@@ -180,21 +303,29 @@ export async function syncMonedasForStore(supabase, ui_store, monedasActuales) {
   const result = diffArrays(existing, monedasActuales, "id");
 
   if (result.added.length > 0) {
+    // FIX: nunca enviar `id` en un insert. `monedas.id` tiene un
+    // constraint único GLOBAL (monedas_id_key), y el `id` que trae el
+    // objeto "added" puede pertenecer a una fila de otra tienda (por
+    // ejemplo si el frontend genera ids locales tipo 1,2,3). Al insertar
+    // con ese id explícito, Postgres choca contra la fila existente.
+    // Dejamos que la DB autogenere el id (serial/identity).
     const { error: errInsert } = await supabase.from("monedas").insert(
-      result.added.map((obj) => ({
-        nombre: obj.nombre,
-        valor: obj.valor,
-        defecto: obj.defecto,
-        ui_store: obj.ui_store,
-      })),
+      result.added.map(({ id, ...rest }) =>
+        normalizeMonedaForDb({
+          ...rest,
+          ui_store,
+        }),
+      ),
     );
     if (errInsert) throw errInsert;
   }
 
-  const toUpsert = (result.updated || []).map((u) => ({
-    ...u.after,
-    ui_store,
-  }));
+  const toUpsert = (result.updated || []).map((u) =>
+    normalizeMonedaForDb({
+      ...u.after,
+      ui_store,
+    }),
+  );
   if (toUpsert.length > 0) {
     const { error: errUpsert } = await supabase
       .from("monedas")

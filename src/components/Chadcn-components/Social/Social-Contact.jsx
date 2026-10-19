@@ -21,16 +21,18 @@ import {
 import {
   Trash2,
   Plus,
-  Instagram,
-  Facebook,
-  Twitter,
-  Linkedin,
   Phone,
   Mail,
   MessageCircle,
   Share2,
   BookUser,
 } from "lucide-react";
+import {
+  FaInstagram as Instagram,
+  FaFacebookF as Facebook,
+  FaXTwitter as Twitter,
+  FaLinkedinIn as Linkedin,
+} from "react-icons/fa6";
 import { FromData } from "@/components/globalFunction/fromData";
 import { toast } from "sonner";
 import PlanGuard from "../Planes/PlanGuard";
@@ -162,12 +164,21 @@ function AddForm({
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function SocialContactPage() {
-  const { webshop } = useContext(ThemeContext);
+export default function SocialContactPage({ initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [redes, setRedes] = useState([]);
   const [contacto, setContacto] = useState([]);
   const [newRed, setNewRed] = useState({});
   const [newContact, setNewContact] = useState({});
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   useEffect(() => {
     setRedes(webshop?.store?.redes || []);

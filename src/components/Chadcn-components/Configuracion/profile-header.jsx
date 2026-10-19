@@ -1,5 +1,7 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import { ImagePlus, Upload } from "lucide-react";
 import { ImageUploadWithProps } from "../../component/ImageDND";
 import { ImageUpload } from "./image-upload";
 import {
@@ -8,83 +10,141 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Image from "next/image";
-import { logoApp } from "@/utils/image";
 
-export default function ProfileHeader({ store, setStore }) {
-  const handleCoverUpload = (file) => {
-    setStore({ ...store, bannerNew: file });
-  };
+// Crea y libera el blob URL (antes se creaba uno nuevo en cada render).
+function useObjectUrl(file) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+  return url;
+}
 
-  const handleAvatarUpload = (file) => {
-    setStore({ ...store, urlPosterNew: file });
-  };
-
+// Card individual "pieza" (logo o banner) con el tema de UploadFrame:
+// eyebrow + título, badge de proporción, marco punteado con ícono/preview,
+// y footer con el detalle recomendado.
+function UploadPiece({
+  campo,
+  setStore,
+  previewSrc,
+  eyebrow,
+  title,
+  ratio,
+  placeholderText,
+  footerDetail,
+  square = false,
+}) {
   return (
-    <TooltipProvider>
-      <div className="relative w-full max-w-2xl mx-auto mb-10">
-        {/* Cover Photo */}
-        <ImageUploadWithProps setImageNew={setStore} campo={"bannerNew"}>
-          <div
-            className="relative h-40 bg-gradient-to-br from-rose-200 to-rose-300 group"
-            style={{
-              width: "100%",
-              backgroundImage: store?.bannerNew
-                ? `url(${URL.createObjectURL(store.bannerNew)})`
-                : store?.banner
-                ? `url(${store.banner})`
-                : `url(${logoApp})`,
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-            }}
-          >
-            {/* Cover Photo Edit Button - Now fixed */}
-            <div className="absolute bottom-2 right-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="bg-black/50 rounded-full p-1 text-white group-hover:text-black">
-                    <ImageUpload
-                      onImageSelect={handleCoverUpload}
-                      variant="cover"
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Cambiar foto de portada</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+    <ImageUploadWithProps setImageNew={setStore} campo={campo}>
+      <div
+        className={`rounded-2xl border border-border bg-card overflow-hidden ${square ? "w-full max-w-[16rem]" : ""}`}
+      >
+        <div className="flex items-start justify-between px-4 pt-4">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {eyebrow}
+            </p>
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           </div>
-        </ImageUploadWithProps>
+          <span className="text-[11px] text-muted-foreground border border-border rounded-full px-2 py-0.5 shrink-0">
+            {ratio}
+          </span>
+        </div>
 
-        {/* Profile Content */}
-
-        <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-          {/* Avatar */}
-          <ImageUploadWithProps setImageNew={setStore} campo={"urlPosterNew"}>
-            <div className="relative w-24 h-24 rounded-full bg-white p-1 shadow-lg group">
-              <div className="w-full h-full rounded-full bg-rose-100 flex items-center justify-center overflow-hidden">
-                <Image
-                  src={
-                    store?.urlPosterNew
-                      ? URL.createObjectURL(store.urlPosterNew)
-                      : store?.urlPoster || logoApp
-                  }
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                  width={100}
-                  height={100}
-                />
-
-                {/* Avatar Edit Button */}
-                <div className="absolute  inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ImageUpload onImageSelect={handleAvatarUpload} />
-                </div>
-              </div>
+        <div
+          className={`group relative mx-4 mt-3 mb-3 overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors ${
+            square ? "aspect-square" : "aspect-[3/1]"
+          }`}
+        >
+          {previewSrc ? (
+            <Image
+              src={previewSrc}
+              alt={`Vista previa de ${title.toLowerCase()}`}
+              fill
+              className="object-cover "
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center px-4">
+              <span className="w-9 h-9 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground">
+                <ImagePlus size={18} strokeWidth={1.5} />
+              </span>
+              <strong className="text-xs font-medium text-foreground">
+                Arrastra o selecciona
+              </strong>
+              <small className="text-[11px] text-muted-foreground">
+                {placeholderText}
+              </small>
             </div>
-          </ImageUploadWithProps>
+          )}
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute bottom-2 right-2 rounded-full bg-black/50 text-white opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
+                  <ImageUpload
+                    onImageSelect={(file) =>
+                      setStore((prev) => ({ ...prev, [campo]: file }))
+                    }
+                    variant="cover"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Cambiar {title.toLowerCase()}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <span className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/40 text-white flex items-center justify-center pointer-events-none">
+            <Upload size={12} />
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between px-4 pb-3 text-[11px] text-muted-foreground border-t border-border/60 pt-2">
+          <span>Área recomendada</span>
+          <span className="font-medium">{footerDetail}</span>
         </div>
       </div>
-    </TooltipProvider>
+    </ImageUploadWithProps>
+  );
+}
+
+export default function ProfileHeader({ store, setStore }) {
+  const bannerSrc = useObjectUrl(store?.bannerNew) ?? (store?.banner || null);
+  const avatarSrc =
+    useObjectUrl(store?.urlPosterNew) ?? (store?.urlPoster || null);
+
+  return (
+    <div className="w-full mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-[14rem_minmax(0,1fr)] items-start gap-4">
+        <UploadPiece
+          campo="urlPosterNew"
+          setStore={setStore}
+          previewSrc={avatarSrc}
+          eyebrow="Identidad"
+          title="Logo principal"
+          ratio="1:1"
+          placeholderText="Cuadrado · 400 × 400 px"
+          footerDetail="PNG · fondo transparente"
+          square
+        />
+        <UploadPiece
+          campo="bannerNew"
+          setStore={setStore}
+          previewSrc={bannerSrc}
+          eyebrow="Presencia"
+          title="Banner de portada"
+          ratio="3:1"
+          placeholderText="Horizontal · 1200 × 400 px"
+          footerDetail="JPG / PNG · alta resolución"
+        />
+      </div>
+    </div>
   );
 }

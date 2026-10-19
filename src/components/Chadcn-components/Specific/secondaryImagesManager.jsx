@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Upload, Trash2, Plus, GripVertical } from "lucide-react";
-import { logoApp } from "@/utils/image";
+import { logoAdmin } from "@/utils/image";
 
 function arraysEqual(a = [], b = []) {
   if (a === b) return true;
@@ -23,7 +23,7 @@ export default function SecondaryImagesManager({
 }) {
   const normalize = (arr) => {
     const copy = Array.isArray(arr) ? arr.slice(0, maxImages) : [];
-    while (copy.length < maxImages) copy.push(logoApp);
+    while (copy.length < maxImages) copy.push(logoAdmin);
     return copy;
   };
 
@@ -149,7 +149,7 @@ export default function SecondaryImagesManager({
         } catch (_) {}
         createdBlobUrlsRef.current.delete(prevUrl);
       }
-      next[index] = logoApp;
+      next[index] = logoAdmin;
       return next;
     });
   };
@@ -177,7 +177,7 @@ export default function SecondaryImagesManager({
                 : "border-border hover:border-primary/40"
             } bg-secondary`}
           >
-            {img && img !== logoApp ? (
+            {img && img !== logoAdmin ? (
               <div className="relative w-full h-full">
                 <Image
                   src={img}

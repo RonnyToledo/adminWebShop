@@ -1,22 +1,22 @@
 import { extractPublicId } from "cloudinary-build-url";
 import cloudinary from "@/lib/cloudinary";
+
 export async function DestroyImage(image) {
   const publicId = extractPublicId(image);
-  await cloudinary.uploader.destroy(publicId, (error, result) => {
-    if (error) {
-      console.error("Error eliminando imagen:", error);
+  if (!publicId) return null;
 
-      return NextResponse.json(
-        { message: error },
-        {
-          status: 401,
-        }
-      );
-    } else {
-      console.info("Imagen eliminada:", result);
-    }
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(publicId, (error, result) => {
+      if (error) {
+        console.error("Error eliminando imagen:", error);
+        reject(error);
+        return;
+      }
+      resolve(result);
+    });
   });
 }
+
 export async function UploadNewImage(image) {
   const byte = await image.arrayBuffer();
   const buffer = Buffer.from(byte);
@@ -25,6 +25,7 @@ export async function UploadNewImage(image) {
       .upload_stream({ resource_type: "image" }, (err, result) => {
         if (err) {
           reject(err);
+          return;
         }
         resolve(result);
       })

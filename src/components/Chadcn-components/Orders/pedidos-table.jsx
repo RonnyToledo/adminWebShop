@@ -378,8 +378,8 @@ function TablesPedidosBody({
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export function PedidosTable() {
-  const { webshop } = useContext(ThemeContext);
+export function PedidosTable({ initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const storeUID = webshop?.store?.UUID;
   const sitioweb = webshop?.store?.sitioweb;
   const storeName = webshop?.store?.name;
@@ -387,6 +387,15 @@ export function PedidosTable() {
   const [WhatsApp, setWhatsApp] = useState(false);
   const [loadVerified, setLoadVerified] = useState(false);
   const [PDF, setPDF] = useState(false);
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   // Hook con paginación + real-time
   const { pedidos, setPedidos, loading, hasMore, loadMore, refresh } =

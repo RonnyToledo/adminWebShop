@@ -1,7 +1,7 @@
 "use client";
 // ─── components/AccountSwitcher.jsx ──────────────────────────────────────────
 // Dropdown de multi-cuenta integrado en el footer del AppSidebar.
-// Diseño coherente con el sidebar existente (amber / gray / Tailwind).
+// Diseño coherente con el sidebar existente (slate / Tailwind).
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -91,13 +91,13 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
           ref={panelRef}
           className={cn(
             "absolute bottom-full left-0 right-0 mb-2 z-[60]",
-            "bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/60",
+            "bg-slate-50 border border-slate-200 rounded-2xl shadow-xl shadow-slate-300/60",
             "overflow-hidden",
           )}
         >
           {/* Header del panel */}
-          <div className="px-4 pt-3 pb-2 border-b border-gray-100">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+          <div className="px-4 pt-3 pb-2 border-b border-slate-200">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               Cuentas
             </p>
           </div>
@@ -115,7 +115,7 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
           {/* Otras cuentas */}
           {hasOthers && (
             <>
-              <div className="mx-3 border-t border-gray-100" />
+              <div className="mx-3 border-t border-slate-200" />
               <div className="px-3 py-2 space-y-0.5">
                 {otherAccounts
                   .filter((a) => a.id !== (activeId || webshop?.user?.id))
@@ -134,7 +134,7 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
           )}
 
           {/* Footer acciones */}
-          <div className="mx-3 border-t border-gray-100" />
+          <div className="mx-3 border-t border-slate-200" />
           <div className="px-3 py-2 space-y-0.5">
             {/* Añadir cuenta */}
             <Link
@@ -142,12 +142,12 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
               onClick={() => setOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl",
-                "text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-800",
+                "text-sm text-slate-600 hover:bg-slate-200 hover:text-slate-900",
                 "transition-colors duration-150",
               )}
             >
-              <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                <Plus size={14} className="text-gray-500" />
+              <span className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                <Plus size={14} className="text-slate-600" />
               </span>
               <span>Añadir cuenta</span>
             </Link>
@@ -182,13 +182,13 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
         disabled={switching}
         className={cn(
           "w-full flex items-center gap-3 px-2 py-2 rounded-xl",
-          "hover:bg-gray-50 transition-colors duration-150",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400",
+          "hover:bg-slate-200 transition-colors duration-150",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400",
         )}
       >
         {switching ? (
           <span className="w-8 h-8 flex items-center justify-center shrink-0">
-            <Loader2 size={18} className="animate-spin text-amber-500" />
+            <Loader2 size={18} className="animate-spin text-slate-600" />
           </span>
         ) : (
           <Avatar className="w-8 h-8 shrink-0">
@@ -196,20 +196,20 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
               src={webshop?.user?.image || ""}
               alt={webshop?.user?.name || "Usuario"}
             />
-            <AvatarFallback className="bg-amber-100 text-amber-700 text-xs font-semibold">
+            <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
               {initials(webshop?.user?.name, webshop?.user?.email)}
             </AvatarFallback>
           </Avatar>
         )}
 
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-sm font-semibold text-gray-800 truncate leading-tight">
+          <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
             {switching ? "Cambiando cuenta…" : webshop?.user?.name || "Usuario"}
           </p>
-          <p className="text-[11px] text-gray-400 truncate leading-tight">
+          <p className="text-[11px] text-slate-500 truncate leading-tight">
             {webshop?.store_role ?? "owner"}
             {accounts.length > 1 && (
-              <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-500 font-medium">
+              <span className="ml-1.5 inline-flex items-center gap-0.5 text-slate-600 font-medium">
                 · {accounts.length} cuentas
               </span>
             )}
@@ -219,7 +219,7 @@ export default function AccountSwitcher({ webshop, onSignOut }) {
         <ChevronDown
           size={14}
           className={cn(
-            "text-gray-400 shrink-0 transition-transform duration-200",
+            "text-slate-400 shrink-0 transition-transform duration-200",
             open && "rotate-180",
           )}
         />
@@ -236,25 +236,25 @@ function ActiveAccountRow({ account, webshop }) {
   const image = account?.avatar ?? webshop?.user?.image ?? "";
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-amber-50">
-      <Avatar className="w-8 h-8 shrink-0 ring-2 ring-amber-200">
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100">
+      <Avatar className="w-8 h-8 shrink-0 ring-2 ring-slate-200">
         <AvatarImage src={image} alt={name} />
-        <AvatarFallback className="bg-amber-100 text-amber-700 text-xs font-semibold">
+        <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
           {initials(name, email)}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800 truncate leading-tight">
+        <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
           {name}
         </p>
-        <p className="text-[11px] text-gray-500 truncate">{email}</p>
+        <p className="text-[11px] text-slate-500 truncate">{email}</p>
         {webshop?.store?.name && (
-          <p className="text-[10px] text-amber-600 font-medium truncate">
+          <p className="text-[10px] text-slate-600 font-medium truncate">
             {webshop.store.name}
           </p>
         )}
       </div>
-      <Check size={14} className="text-amber-500 shrink-0" />
+      <Check size={14} className="text-slate-600 shrink-0" />
     </div>
   );
 }
@@ -270,24 +270,24 @@ function OtherAccountRow({ account, loading, removing, onSwitch, onRemove }) {
         "text-left transition-colors duration-150",
         loading || removing
           ? "opacity-50 cursor-not-allowed"
-          : "hover:bg-gray-50 cursor-pointer",
+          : "hover:bg-slate-200 cursor-pointer",
       )}
     >
       <Avatar className="w-8 h-8 shrink-0">
         <AvatarImage src={account.avatar || ""} alt={account.name || ""} />
-        <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-semibold">
+        <AvatarFallback className="bg-slate-200 text-slate-600 text-xs font-semibold">
           {initials(account.name, account.email)}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-700 truncate leading-tight">
+        <p className="text-sm font-medium text-slate-700 truncate leading-tight">
           {account.name || account.email}
         </p>
         {account.name && (
-          <p className="text-[11px] text-gray-400 truncate">{account.email}</p>
+          <p className="text-[11px] text-slate-500 truncate">{account.email}</p>
         )}
         {account.store_name && (
-          <p className="text-[10px] text-gray-400 truncate">
+          <p className="text-[10px] text-slate-500 truncate">
             {account.store_name}
           </p>
         )}
@@ -301,7 +301,7 @@ function OtherAccountRow({ account, loading, removing, onSwitch, onRemove }) {
         onKeyDown={(e) => e.key === "Enter" && onRemove(e)}
         aria-label="Quitar cuenta de la lista"
         className={cn(
-          "p-1 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50",
+          "p-1 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50",
           "transition-colors duration-150 shrink-0",
         )}
       >

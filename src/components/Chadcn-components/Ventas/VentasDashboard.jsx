@@ -14,6 +14,9 @@ import {
 import { calcularGranosClientes } from "@/utils/granos";
 import { TablaGranos } from "./TablaGranos";
 import PlanGuard from "../Planes/PlanGuard";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Logs } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -551,17 +554,29 @@ function TxTable({ compras }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function VentasDashboard({ ThemeContext }) {
-  const { webshop } = useContext(ThemeContext);
+export default function VentasDashboard({ ThemeContext, initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [chartMode, setChartMode] = useState("ingresos");
   const [clientes, setClientes] = useState([]);
-  const [compras, setCompras] = useState([]);
+  const [compras, setCompras] = useState(() =>
+    processCompras(initialData?.events ?? []),
+  );
+  const router = useRouter();
 
   useEffect(() => {
-    const raw = processCompras(webshop?.events ?? []);
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
+  useEffect(() => {
+    const events = initialData?.events ?? webshop?.events ?? [];
+    const raw = processCompras(events);
     setCompras(raw);
-    setClientes(calcularGranosClientes(webshop?.events ?? []));
-  }, [webshop]);
+    setClientes(calcularGranosClientes(events));
+  }, [initialData?.events, webshop?.events]);
 
   const monthly = useMemo(() => buildMonthlyData(compras), [compras]);
   const afiliados = useMemo(() => buildAfiliados(compras), [compras]);
@@ -638,10 +653,22 @@ export default function VentasDashboard({ ThemeContext }) {
               {webshop?.store?.name ?? "Tienda"} · {webshop?.store?.Provincia}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-green-600 font-medium">En vivo</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs text-green-600 font-medium">
+                En vivo
+              </span>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150"
+            onClick={() => router.push("/orders")}
+          >
+            <Logs size={12} className="text-gray-400" />
+            Ver pedidos
+          </Button>
         </div>
 
         {/* KPIs */}
@@ -848,41 +875,6 @@ export default function VentasDashboard({ ThemeContext }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <p className="text-xs text-muted-foreground mb-2">
-                Por método de pago
-              </p>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart
-                  data={pagos}
-                  margin={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    vertical={false}
-                    strokeDasharray="3 3"
-                    stroke="rgba(128,128,128,.1)"
-                  />
-                  <XAxis
-                    dataKey="name"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <Tooltip />
-                  <Bar
-                    dataKey="value"
-                    name="Pedidos"
-                    fill="#378ADD"
-                    radius={[3, 3, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">
                 Por tipo de entrega
               </p>
               <ResponsiveContainer width="100%" height={160}>
@@ -928,8 +920,8 @@ export default function VentasDashboard({ ThemeContext }) {
         </div>
 
         {/* Tabla */}
-        <SectionLabel>Registro detallado</SectionLabel>
-        <TxTable compras={compras} />
+        <SectionLabel>Registro 10 ultimas operaciones</SectionLabel>
+        <TxTable compras={compras.slice(0, 10)} />
 
         {/* Granos */}
         {clientes.length > 0 && (

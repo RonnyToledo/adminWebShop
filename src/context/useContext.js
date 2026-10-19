@@ -14,6 +14,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "sonner";
 import { authService } from "@/lib/supabase";
 import { supabase } from "@/lib/supa";
+import { useSessionSyncOnVisibility } from "@/hooks/useSessionSync";
 
 export const ThemeContext = createContext();
 
@@ -46,22 +47,23 @@ const PROTECTED_ROUTES = [
 const PUBLIC_ROUTES = [
   "/configPage",
   "/login",
+  "/forgotPassword",
   "/resetPassword",
+  "/auth/callback",
   "/createAccount",
   "/updatePassword",
 ];
 
-function buildWebshopState(data) {
-  if (!data || Object.keys(data).length === 0) return initialState;
+function buildWebshopState(previous, data) {
+  if (!data || Object.keys(data).length === 0) return previous ?? initialState;
   return {
-    ...initialState,
+    ...previous, // ← parte de lo que ya había, no de initialState
     ...data,
-    store: { ...initialState.store, ...(data.store || {}) },
-    ga: { ...initialState.ga, ...(data.ga || {}) },
-    store_role: data.store_role ?? null,
+    store: { ...previous?.store, ...(data.store || {}) },
+    ga: data.ga ? { ...previous?.ga, ...data.ga } : previous?.ga,
+    store_role: data.store_role ?? previous?.store_role ?? null,
   };
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // isAddMode: viene del layout y señala que el usuario quiere añadir una segunda
 // cuenta mientras ya tiene sesión activa. En ese caso NO redirigimos a "/" aunque
@@ -86,9 +88,21 @@ export default function MyProvider({
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
-
+  const accessResolved =
+    data != null &&
+    data.store_access_resolved !== false &&
+    Object.prototype.hasOwnProperty.call(data, "store_role");
   const hasStoreAccess = Boolean(data?.store_role);
   const isWelcomeRoute = pathname === "/welcome";
+
+  const handleSessionInvalid = useCallback(() => {
+    if (isPublicRoute) return;
+
+    sessionStorage.setItem("pathRedirect", pathname);
+    window.location.replace("/login");
+  }, [isPublicRoute, pathname]);
+
+  useSessionSyncOnVisibility({ onSessionInvalid: handleSessionInvalid });
 
   // ── Manejo de errores de sesión server-side ───────────────────────────────
   useEffect(() => {
@@ -131,12 +145,20 @@ export default function MyProvider({
 
       if (hasCookies && sessionError === "TIMEOUT") return;
 
-      if (!isPublicRoute || !isProtectedRoute)
-        sessionStorage.setItem("pathRedirect", pathname);
+      if (isPublicRoute) return;
+
+      sessionStorage.setItem("pathRedirect", pathname);
 
       router.replace("/login");
       return;
     }
+
+    // Estas rutas solo requieren sesión; no requieren pertenecer a una tienda.
+    if (isProtectedRoute && !isWelcomeRoute) return;
+
+    // Una consulta de tienda fallida no significa que el usuario no tenga tienda.
+    // Esperar evita enviarlo erróneamente al onboarding.
+    if (!isWelcomeRoute && !accessResolved) return;
 
     // Usuario con acceso a tienda
     if (hasStoreAccess) {
@@ -176,6 +198,7 @@ export default function MyProvider({
     pathname,
     isPublicRoute,
     isProtectedRoute,
+    accessResolved,
     isWelcomeRoute,
     hasStoreAccess,
     sessionError,
@@ -195,7 +218,7 @@ export default function MyProvider({
       setWebshop(initialState);
       return;
     }
-    setWebshop(buildWebshopState(data));
+    setWebshop((prev) => buildWebshopState(prev, data));
     isInitialized.current = true;
   }, [user, data]);
 
@@ -206,8 +229,12 @@ export default function MyProvider({
   }, [pathname]);
 
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange((authUser) => {
-      if (!authUser && user) {
+    const unsubscribe = authService.onAuthStateChange((authUser, event) => {
+      // INITIAL_SESSION puede llegar como null antes de que el cliente
+      // termine de leer las cookies que el servidor acaba de establecer.
+      if (event === "INITIAL_SESSION") return;
+
+      if (!authUser && user && event === "SIGNED_OUT") {
         isInitialized.current = false;
         isLogin.current = false;
         setWebshop(initialState);
@@ -270,7 +297,7 @@ export default function MyProvider({
             onClose={() => setOpenSidebar(false)}
           />
         )}
-        <div className="w-full">
+        <div className="w-full min-w-0">
           {!isPublicRoute && !isProtectedRoute && (
             <HeaderAdmin
               ThemeContext={ThemeContext}

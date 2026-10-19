@@ -1,5 +1,5 @@
 "use client";
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useEffect, useMemo } from "react";
 import { FeatureCard } from "./dashborad/feature-card";
 import { StatsCard } from "./dashborad/stats-card";
 import { QuickActionCard } from "./dashborad/quick-action-card";
@@ -24,6 +24,7 @@ import {
 } from "@/utils/variants";
 import { calcularGranosClientes } from "@/utils/granos";
 import { GranosClientesCard } from "./GranosClientesCard";
+import { BannerApp } from "@/utils/image";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCUP(n, monedaDefault) {
@@ -87,8 +88,17 @@ function buildRecentActivity(products, events, monedaDefault) {
 
 // ─── DashboardHome ────────────────────────────────────────────────────────────
 
-export default function DashboardHome() {
-  const { webshop } = useContext(ThemeContext);
+export default function DashboardHome({ initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
   const store = useMemo(() => webshop?.store ?? {}, [webshop?.store]);
   const ga = useMemo(() => webshop?.ga ?? {}, [webshop?.ga]);
   const products = useMemo(() => webshop?.products ?? [], [webshop?.products]);
@@ -158,7 +168,6 @@ export default function DashboardHome() {
   const storeUrl = store.sitioweb
     ? `roumenu.vercel.app/t/${store.sitioweb}`
     : "—";
-
   return (
     <div className="flex h-screen bg-background">
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -222,7 +231,8 @@ export default function DashboardHome() {
                     variant="success"
                     completed
                     image={
-                      newestProduct?.image ||
+                      newestProduct?.product_variants.find((p) => p.image)
+                        ?.image ||
                       "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&h=200&fit=crop"
                     }
                     badge="Nuevo"
@@ -236,10 +246,7 @@ export default function DashboardHome() {
                     actionLabel="Editar"
                     variant="highlight"
                     icon={<Store className="w-5 h-5 text-primary" />}
-                    image={
-                      store.banner ||
-                      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=200&fit=crop"
-                    }
+                    image={store.banner || BannerApp}
                   />
                 </div>
 

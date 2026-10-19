@@ -1,17 +1,24 @@
 "use client";
 import Link from "next/link";
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { toast } from "sonner";
 import QrCode from "@/components/Chadcn-components/Guide/QRcode";
 import { ThemeContext } from "@/context/useContext";
-import { Copy, ArrowRight, ExternalLink } from "lucide-react";
+import { Copy, ArrowRight, ExternalLink, Route } from "lucide-react";
 import dataCards from "@/components/json/card.json";
 
-// ─── GuideCard ────────────────────────────────────────────────────────────────
-const GuideCard = ({ title, description, steps, link, buttonText }) => (
-  <div className="bg-background border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-primary/30 transition-colors">
-    <div>
-      <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
+const GuideCard = ({ title, description, steps, link, buttonText, route }) => (
+  <div className="bg-background border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-primary/30 transition-colors shadow-sm">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-medium text-foreground">{title}</h3>
+        {route && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-primary">
+            <Route size={10} />
+            {route}
+          </span>
+        )}
+      </div>
       <p className="text-xs text-muted-foreground leading-relaxed">
         {description}
       </p>
@@ -20,7 +27,7 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => (
     {steps?.length > 0 && (
       <div className="space-y-2">
         <p className="text-[11px] text-muted-foreground uppercase tracking-[0.1em] font-medium">
-          Pasos
+          Pasos clave
         </p>
         <ol className="space-y-1.5">
           {steps.map((step, i) => (
@@ -41,7 +48,7 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => (
     {link && (
       <Link
         href={link}
-        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors mt-auto pt-1 border-t border-border"
+        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors mt-auto pt-2 border-t border-border"
       >
         {buttonText}
         <ArrowRight size={11} />
@@ -50,10 +57,18 @@ const GuideCard = ({ title, description, steps, link, buttonText }) => (
   </div>
 );
 
-// ─── Guia ─────────────────────────────────────────────────────────────────────
-export default function Guia() {
-  const { webshop } = useContext(ThemeContext);
+export default function Guia({ initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const storeUrl = `https://roumenu.vercel.app/t/${webshop?.store?.sitioweb}`;
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   const copyToClipboard = (text) => {
     if (navigator?.clipboard) {
@@ -69,8 +84,7 @@ export default function Guia() {
   };
 
   return (
-    <div className="p-6 space-y-10 max-w-5xl mx-auto">
-      {/* ── Sección URL / QR ───────────────────────────────────────── */}
+    <div className="p-6 space-y-10 max-w-6xl mx-auto">
       <section className="space-y-4">
         <div>
           <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
@@ -82,7 +96,6 @@ export default function Guia() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* URL card */}
           <div className="bg-secondary/40 border border-border rounded-xl p-5 space-y-4">
             <p className="text-xs text-muted-foreground">
               Comparte este enlace con tus clientes
@@ -122,7 +135,6 @@ export default function Guia() {
             </div>
           </div>
 
-          {/* QR card */}
           <div className="bg-secondary/40 border border-border rounded-xl p-5 flex flex-col items-center justify-center gap-3">
             <p className="text-xs text-muted-foreground text-center">
               Código QR — escanea para acceder
@@ -135,22 +147,21 @@ export default function Guia() {
         </div>
       </section>
 
-      {/* ── Sección funcionalidades ─────────────────────────────────── */}
       <section className="space-y-4">
         <div>
           <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
             Documentación
           </p>
           <h2 className="text-2xl font-normal text-foreground italic">
-            Funcionalidades clave
+            Rutas útiles del catálogo
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Descubre cómo funcionan las principales herramientas de tu panel de
-            administración.
+            Esta guía resume qué puedes hacer en cada parte del panel y cómo
+            llegar a la zona correcta en pocos pasos.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {dataCards.map((card, i) => (
             <GuideCard key={i} {...card} />
           ))}

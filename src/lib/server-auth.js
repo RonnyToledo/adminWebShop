@@ -18,11 +18,35 @@ async function createServerClient() {
  *
  * @returns {{ userId: string, email: string, user: object, error: null } | { userId: null, user: null, error: string, errorType: string }}
  */
+function isInvalidSessionError(error) {
+  const code = error?.code?.toLowerCase?.() ?? "";
+  const message = error?.message?.toLowerCase?.() ?? "";
+
+  return (
+    ["bad_jwt", "session_not_found", "refresh_token_not_found"].includes(
+      code,
+    ) ||
+    message.includes("invalid jwt") ||
+    message.includes("jwt expired") ||
+    message.includes("session not found")
+  );
+}
+
+function isTransientAuthError(error) {
+  const message = error?.message?.toLowerCase?.() ?? "";
+
+  return (
+    message.includes("timeout") ||
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("fetch failed")
+  );
+}
+
 export async function getServerUser() {
   try {
     const supabase = await createServerClient();
 
-    // Usar un timeout más largo para getUser() — 8 segundos
     const {
       data: { user },
       error,
@@ -34,12 +58,32 @@ export async function getServerUser() {
     ]);
 
     if (error) {
-      // Diferenciar tipo de error
+      if (isInvalidSessionError(error)) {
+        console.warn(
+          "[getServerUser] ℹ️ Sesión inválida o expirada:",
+          error.message,
+        );
+        return {
+          userId: null,
+          user: null,
+          error: error.message,
+          errorType: "NO_USER",
+        };
+      }
+
+      if (isTransientAuthError(error)) {
+        console.warn(`[getServerUser] ⚠️ Error temporal: ${error.message}`);
+        return {
+          userId: null,
+          user: null,
+          error: error.message,
+          errorType: "TEMPORARY",
+        };
+      }
+
       let errorType = "UNKNOWN";
       if (error.message?.includes("invalid")) {
         errorType = "INVALID_JWT";
-      } else if (error.message?.includes("timeout")) {
-        errorType = "TIMEOUT";
       } else if (error.message?.includes("jwt")) {
         errorType = "JWT_ERROR";
       } else if (error.message?.includes("unable to parse")) {

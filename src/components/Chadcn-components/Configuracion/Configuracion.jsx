@@ -8,34 +8,44 @@ import { useState, useEffect, useContext, useMemo } from "react";
 import ConfirmationOut from "@/components/globalFunction/confirmationOut";
 import { InputStore, SwitchStore } from "./Input-Store";
 import {
-  Instagram,
   Phone,
   Mail,
   Loader2,
   BadgeCheck,
   AlertCircle,
+  Sparkles,
+  Trash2,
+  Store,
+  Clock,
+  Coins,
+  Settings2,
 } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CARD_CLASS,
+  CardHeading,
+  SectionHeading,
+  SectionNav,
+  SettingRow,
+} from "./section-primitives";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent } from "@/components/ui/card";
 import { FromData } from "@/components/globalFunction/fromData";
 import ProfileHeader from "./profile-header";
 import WeeklySchedule from "./WeeklySchedule";
 import { Textarea } from "@/components/ui/textarea";
 import ConfiguracionState from "./configuracionState";
+import TransferOwnership from "./TransferOwnership";
 import { toast } from "sonner";
 import axios from "axios";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { buildImprovementPrompt } from "./TextIAModel";
 import { usePlan } from "@/hooks/usePlan";
+import { VscSymbolProperty } from "react-icons/vsc";
+import { IoIosCheckmarkCircle, IoIosWarning } from "react-icons/io";
+import { MdContacts } from "react-icons/md";
 
-export default function Configuracion({ ThemeContext, country }) {
-  const { webshop } = useContext(ThemeContext);
+export default function Configuracion({ ThemeContext, country, initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [newAgregados] = useState({ moneda: "", valor: 0 });
   const [store, setStore] = useState({
     comentario: [],
@@ -43,18 +53,36 @@ export default function Configuracion({ ThemeContext, country }) {
     monedas: [],
     horarios: [],
     envios: [],
+    ...(initialData?.store ?? {}),
   });
   const { config } = usePlan();
 
   useEffect(() => {
-    setStore(webshop?.store);
-  }, [webshop.store]);
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
+
+  useEffect(() => {
+    if (webshop?.store) {
+      setStore((previous) => ({
+        ...previous,
+        ...webshop.store,
+        monedas: Array.isArray(webshop.store.monedas)
+          ? webshop.store.monedas
+          : [],
+      }));
+    }
+  }, [webshop?.store]);
 
   const selectedIdStr = useMemo(
     () =>
       String(
-        store?.monedas.find((m) => m.defecto)?.id ??
-          store?.monedas[0]?.id ??
+        store?.monedas?.find((m) => m.defecto)?.id ??
+          store?.monedas?.[0]?.id ??
           "",
       ),
     [store?.monedas],
@@ -66,7 +94,7 @@ export default function Configuracion({ ThemeContext, country }) {
   });
 
   function setDefaultById(id) {
-    const updated = (webshop?.store?.monedas || []).map((m) => ({
+    const updated = (store?.monedas || []).map((m) => ({
       ...m,
       defecto: m.id === id,
     }));
@@ -157,430 +185,455 @@ export default function Configuracion({ ThemeContext, country }) {
   const totalCategorias = store?.categoria?.length ?? 0;
   const hasPending = hasPendingChanges(store, webshop?.store);
 
+  const defaultMonedaName =
+    store?.monedas?.find((m) => m.defecto)?.nombre ?? "CUP";
+
+  const resumen = [
+    { label: "productos activos", value: productosActivos },
+    { label: "agotados", value: productosAgotados },
+    { label: "categorías", value: totalCategorias },
+    { label: "monedas", value: store?.monedas?.length ?? 0 },
+  ];
+
+  const operaciones = [
+    {
+      key: "carrito",
+      label: "Carrito de compras",
+      desc: "Permitir carrito en el catálogo",
+    },
+    config.stocks && {
+      key: "stocks",
+      label: "Control de stock",
+      desc: "Manejar disponibilidad de productos desde la plataforma",
+    },
+    {
+      key: "local",
+      label: "Recogida en local",
+      desc: "Activar el local como punto de recogida",
+    },
+  ].filter(Boolean);
+
   return (
-    <main className="container mx-auto my-8 px-4 sm:px-6 lg:px-8 space-y-6">
+    <main className="container mx-auto my-8 p-0">
       <FromData store={store} ThemeContext={ThemeContext}>
-        {/* ── Encabezado de sección ─────────────────────────────────────── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Configuración
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {store?.name ?? "Mi tienda"} ·{" "}
-              <span
-                className={
-                  store?.active ? "text-amber-600" : "text-destructive"
-                }
-              >
-                {store?.active ? "Activa" : "Inactiva"}
-              </span>
-            </p>
-          </div>
-          {hasPending && (
-            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              Cambios sin guardar
-            </div>
-          )}
-        </div>
-
-        {/* ── Resumen rápido del log ────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "Productos activos", value: productosActivos },
-            { label: "Agotados", value: productosAgotados },
-            { label: "Categorías", value: totalCategorias },
-            { label: "Monedas", value: store?.monedas?.length ?? 0 },
-          ].map(({ label, value }) => (
-            <div
-              key={label}
-              className="bg-muted/40 rounded-xl border border-border px-4 py-3"
-            >
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-xl font-semibold text-foreground mt-0.5">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Perfil + textos ──────────────────────────────────────────── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Perfil de la tienda</CardTitle>
-            <CardDescription>
-              Foto de portada, logo, nombre y descripción pública
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <ProfileHeader store={store} setStore={setStore} />
-
-            <div className="space-y-2">
-              <Label htmlFor="storeName">Nombre de la tienda</Label>
-              <InputStore
-                name={"Nombre del negocio"}
-                object={store}
-                value={store?.name}
-                action={setStore}
-                type={"text"}
-              />
-            </div>
-
-            <TextAreaInput
-              label="Mensaje de bienvenida"
-              value={store?.parrrafo || ""}
-              onChange={(value) =>
-                setStore((prev) => ({ ...prev, parrrafo: value }))
-              }
-              keyWords={"parrrafo"}
-            />
-
-            <TextAreaInput
-              label="Historia del negocio"
-              value={store?.history || ""}
-              onChange={(value) =>
-                setStore((prev) => ({ ...prev, history: value }))
-              }
-              keyWords={"history"}
-            />
-
-            <div>
-              <Label className="mb-2 block">Horario semanal</Label>
-              <WeeklySchedule
-                horario={store?.horarios || []}
-                onHorarioChange={(horarios) =>
-                  setStore((prev) => ({ ...prev, horarios }))
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Grid de cards ────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Contacto */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Información de contacto</CardTitle>
-              <CardDescription>
-                Teléfono, correo y redes sociales del negocio
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Teléfono</Label>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <InputStore
-                    name={"Número de teléfono"}
-                    object={store}
-                    value={store?.cell}
-                    action={setStore}
-                    type={"number"}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Número visible para pedidos y contacto con clientes
+        <div className="min-w-0 space-y-10">
+          {/* ── Encabezado + resumen ─────────────────────────────────────── */}
+          <header className="space-y-3 px-4 sm:px-6 lg:px-8 ">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">
+                  Configuración
+                </h1>
+                <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                  {store?.name ?? "Mi tienda"}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs">
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        store?.active ? "bg-foreground" : "bg-destructive",
+                      )}
+                    />
+                    {store?.active ? "Activa" : "Inactiva"}
+                  </span>
                 </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo electrónico</Label>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <InputStore
-                    name={"Email"}
-                    object={store}
-                    value={store?.email}
-                    action={setStore}
-                    type={"text"}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="instagram">Instagram</Label>
-                <div className="flex items-center gap-2">
-                  <Instagram className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <InputStore
-                    name={"Instagram"}
-                    object={store}
-                    value={store?.insta}
-                    action={setStore}
-                    type={"text"}
-                  />
-                </div>
-              </div>
-
-              {/* Redes detectadas del log */}
-              {store?.redes?.length > 0 && (
-                <div className="pt-2 border-t space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Redes configuradas
-                  </p>
-                  {store.redes.map((red) => (
-                    <div
-                      key={red.tipo}
-                      className="flex items-center gap-2 text-sm text-foreground"
-                    >
-                      <BadgeCheck className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span className="capitalize">{red.tipo}</span>
-                      <span className="text-muted-foreground truncate">
-                        @{red.user}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Ubicación */}
-          <ConfiguracionState
-            store={store}
-            setStore={setStore}
-            country={country}
-          />
-
-          {/* Configuración de operaciones */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Operaciones del negocio</CardTitle>
-              <CardDescription>
-                Carrito, pagos, stock, local y delivery
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                {
-                  key: "carrito",
-                  label: "Carrito de compras",
-                  desc: "Permitir carrito en el catálogo",
-                },
-                {
-                  key: "act_tf",
-                  label: "Transferencias bancarias",
-                  desc: "Aceptar transferencias como método de pago",
-                },
-                config.stocks && {
-                  key: "stocks",
-                  label: "Control de stock",
-                  desc: "Manejar disponibilidad de productos desde la plataforma",
-                },
-                {
-                  key: "local",
-                  label: "Recogida en local",
-                  desc: "Activar el local como punto de recogida",
-                },
-              ]
-                .filter(Boolean)
-                .map(({ key, label, desc }) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between rounded-lg border px-4 py-3 gap-4"
-                  >
-                    <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label className="text-sm font-medium">{label}</Label>
-                      <p className="text-xs text-muted-foreground">{desc}</p>
-                    </div>
-                    <SwitchStore
-                      name={store?.[key]}
-                      object={store}
-                      title={key}
-                      funcion={setStore}
-                    />
-                  </div>
-                ))}
-
-              {/* Delivery con enlace condicional */}
-              {config.domicilio && (
-                <div className="rounded-lg border px-4 py-3 space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-0.5 flex-1">
-                      <Label className="text-sm font-medium">
-                        Servicio de delivery
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Activar entregas a domicilio
-                        {store?.envios?.length > 0 && (
-                          <span className="ml-1 text-primary font-medium">
-                            · {store.envios.length} zona
-                            {store.envios.length !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <SwitchStore
-                      name={store?.domicilio}
-                      object={store}
-                      title={"domicilio"}
-                      funcion={setStore}
-                    />
-                  </div>
-                  {store?.domicilio && (
-                    <div className="pt-1">
-                      <Button type="button" variant="outline" size="sm" asChild>
-                        <Link href="/configuracion/domicilios">
-                          Gestionar zonas de envío →
-                        </Link>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Monedas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Monedas</CardTitle>
-              <CardDescription>
-                Configura las monedas y tasas de cambio
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Moneda por defecto</Label>
-                <RadioGroup
-                  value={selectedIdStr}
-                  onValueChange={(val) => {
-                    const id = Number(val);
-                    if (!isNaN(id)) setDefaultById(id);
-                  }}
-                  className="space-y-1"
+              {hasPending && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1.5 text-sm text-foreground"
                 >
-                  {store?.monedas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No hay monedas configuradas
-                    </p>
-                  ) : (
-                    store?.monedas.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-lg border hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem
-                            value={String(m.id)}
-                            id={`mon-${m.id}`}
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  Cambios sin guardar
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+              {resumen.map(({ label, value }) => (
+                <span key={label}>
+                  <span className="font-semibold text-foreground">{value}</span>{" "}
+                  {label}
+                </span>
+              ))}
+            </div>
+          </header>
+
+          <SectionNav sections={SECTIONS} />
+          <div className="px-4 sm:px-6 lg:px-8">
+            {/* ── 1. Operación: lo que se toca con más frecuencia ──────────── */}
+            <section id="operacion" className="scroll-mt-20 space-y-4">
+              <SectionHeading
+                title="Operación"
+                description="Cómo recibes pedidos, cobras y atiendes cada día"
+                icon={VscSymbolProperty}
+              />
+              <div className="grid gap-4 lg:grid-cols-2">
+                {/* Operaciones */}
+                <Card className={cn(CARD_CLASS, "min-w-0")}>
+                  <CardHeading
+                    icon={Settings2}
+                    title="Operaciones del negocio"
+                    description="Carrito, stock, local y delivery"
+                  />
+                  <CardContent className="space-y-3">
+                    {operaciones.map(({ key, label, desc }) => (
+                      <SettingRow
+                        key={key}
+                        htmlFor={`switch-${key}`}
+                        label={label}
+                        description={desc}
+                        control={
+                          <SwitchStore
+                            name={store?.[key]}
+                            object={store}
+                            title={key}
+                            funcion={setStore}
                           />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                              {m.nombre}
-                            </span>
-                            {m.defecto && (
-                              <span className="text-xs text-primary font-medium">
-                                Por defecto
+                        }
+                      />
+                    ))}
+
+                    {config.domicilio && (
+                      <SettingRow
+                        htmlFor="switch-domicilio"
+                        label="Servicio de delivery"
+                        description={
+                          <>
+                            Activar entregas a domicilio
+                            {store?.envios?.length > 0 && (
+                              <span className="ml-1 font-medium text-foreground">
+                                · {store.envios.length} zona
+                                {store.envios.length !== 1 ? "s" : ""}
                               </span>
                             )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              value={m.valor}
-                              onChange={(e) =>
-                                updateValor(m.id, e.target.value)
-                              }
-                              className="w-28 pr-8 text-right"
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                              CUP
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              deleteMoneda(m.id);
-                            }}
-                            aria-label={`Eliminar moneda ${m.nombre}`}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
+                          </>
+                        }
+                        control={
+                          <SwitchStore
+                            name={store?.domicilio}
+                            object={store}
+                            title="domicilio"
+                            funcion={setStore}
+                          />
+                        }
+                        footer={
+                          store?.domicilio && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              asChild
                             >
-                              <path d="M3 6h18" />
-                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            </svg>
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </RadioGroup>
-                <p className="text-xs text-muted-foreground">
-                  Los valores son tasas de cambio relativas al CUP
-                </p>
-              </div>
+                              <Link href="/configuracion/domicilios">
+                                Gestionar zonas de envío →
+                              </Link>
+                            </Button>
+                          )
+                        }
+                      />
+                    )}
+                  </CardContent>
+                </Card>
 
-              {/* Agregar moneda */}
-              <div className="pt-4 border-t space-y-3">
-                <Label>Agregar moneda</Label>
-                <div className="grid grid-cols-3 gap-3 items-end">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">
-                      Código
-                    </Label>
-                    <Input
-                      value={localNew.nombre}
-                      maxLength={4}
-                      minLength={2}
-                      onChange={(e) =>
-                        setLocalNew((s) => ({
-                          ...s,
-                          nombre: e.target.value.toLocaleUpperCase(),
-                        }))
+                {/* Horario */}
+                <Card className={cn(CARD_CLASS, "min-w-0")}>
+                  <CardHeading
+                    icon={Clock}
+                    title="Horario semanal"
+                    description="Turnos de atención por día; un día sin turnos figura como cerrado"
+                  />
+                  <CardContent>
+                    <WeeklySchedule
+                      horario={store?.horarios || []}
+                      onHorarioChange={(horarios) =>
+                        setStore((prev) => ({ ...prev, horarios }))
                       }
-                      placeholder="USD"
                     />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">
-                      Tasa (CUP)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={localNew.valor}
-                      onChange={(e) =>
-                        setLocalNew((s) => ({ ...s, valor: e.target.value }))
-                      }
-                      placeholder="470"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleAddLocal();
-                    }}
-                    className="w-full"
-                  >
-                    Agregar
-                  </Button>
-                </div>
+                  </CardContent>
+                </Card>
+
+                {/* Monedas */}
+                <Card className={cn(CARD_CLASS, "min-w-0 lg:col-span-2")}>
+                  <CardHeading
+                    icon={Coins}
+                    title="Monedas"
+                    description={`Moneda por defecto y tasas de cambio respecto a ${defaultMonedaName}`}
+                  />
+                  <CardContent className="space-y-5">
+                    <RadioGroup
+                      value={selectedIdStr}
+                      onValueChange={(val) => {
+                        const id = Number(val);
+                        if (!isNaN(id)) setDefaultById(id);
+                      }}
+                      className="grid gap-1.5 md:grid-cols-2"
+                    >
+                      {store?.monedas?.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No hay monedas configuradas
+                        </p>
+                      ) : (
+                        store?.monedas?.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5 transition-colors hover:bg-muted/50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <RadioGroupItem
+                                value={String(m.id)}
+                                id={`mon-${m.id}`}
+                              />
+                              <div className="flex flex-col">
+                                <Label
+                                  htmlFor={`mon-${m.id}`}
+                                  className="text-sm font-medium"
+                                >
+                                  {m.nombre}
+                                </Label>
+                                {m.defecto && (
+                                  <span className="text-xs text-muted-foreground">
+                                    Por defecto
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  value={m.valor}
+                                  onChange={(e) =>
+                                    updateValor(m.id, e.target.value)
+                                  }
+                                  aria-label={`Tasa de ${m.nombre}`}
+                                  className="w-32 text-right"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-destructive"
+                                onClick={() => deleteMoneda(m.id)}
+                                aria-label={`Eliminar moneda ${m.nombre}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </RadioGroup>
+
+                    <div className="space-y-3 border-t border-border pt-4">
+                      <Label>Agregar moneda</Label>
+                      <div className="grid grid-cols-2 items-end gap-3 sm:grid-cols-[1fr_1fr_auto] md:max-w-xl">
+                        <div>
+                          <Label
+                            htmlFor="new-moneda-codigo"
+                            className="mb-1 block text-xs text-muted-foreground"
+                          >
+                            Código
+                          </Label>
+                          <Input
+                            id="new-moneda-codigo"
+                            value={localNew.nombre}
+                            maxLength={4}
+                            minLength={2}
+                            onChange={(e) =>
+                              setLocalNew((s) => ({
+                                ...s,
+                                nombre: e.target.value.toLocaleUpperCase(),
+                              }))
+                            }
+                            placeholder="USD"
+                          />
+                        </div>
+                        <div>
+                          <Label
+                            htmlFor="new-moneda-tasa"
+                            className="mb-1 block text-xs text-muted-foreground"
+                          >
+                            Tasa ({defaultMonedaName})
+                          </Label>
+                          <Input
+                            id="new-moneda-tasa"
+                            type="number"
+                            value={localNew.valor}
+                            onChange={(e) =>
+                              setLocalNew((s) => ({
+                                ...s,
+                                valor: e.target.value,
+                              }))
+                            }
+                            placeholder="470"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleAddLocal}
+                          className="col-span-2 sm:col-span-1"
+                        >
+                          Agregar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            </section>
+
+            {/* ── 2. Identidad: se configura una vez y se retoca poco ──────── */}
+            <section id="identidad" className="scroll-mt-20 space-y-4">
+              <SectionHeading
+                title="Identidad"
+                description="Lo primero que ven tus clientes en el catálogo"
+                icon={IoIosCheckmarkCircle}
+              />
+              <Card className={CARD_CLASS}>
+                <CardHeading
+                  icon={Store}
+                  title="Perfil de la tienda"
+                  description="Logo, portada, nombre y textos públicos"
+                />
+                <CardContent className="space-y-5">
+                  <ProfileHeader store={store} setStore={setStore} />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="storeName">Nombre de la tienda</Label>
+                    <InputStore
+                      name="storeName"
+                      object={store}
+                      value="name"
+                      action={setStore}
+                      type="text"
+                    />
+                  </div>
+
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    <TextAreaInput
+                      label="Mensaje de bienvenida"
+                      value={store?.parrrafo || ""}
+                      onChange={(value) =>
+                        setStore((prev) => ({ ...prev, parrrafo: value }))
+                      }
+                      keyWords="parrrafo"
+                    />
+                    <TextAreaInput
+                      label="Historia del negocio"
+                      value={store?.history || ""}
+                      onChange={(value) =>
+                        setStore((prev) => ({ ...prev, history: value }))
+                      }
+                      keyWords="history"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* ── 3. Contacto y ubicación ──────────────────────────────────── */}
+            <section id="contacto" className="scroll-mt-20 space-y-4">
+              <SectionHeading
+                title="Contacto y ubicación"
+                description="Cómo te encuentran y te escriben"
+                icon={MdContacts}
+              />
+              <div className="space-y-4">
+                <Card className={CARD_CLASS}>
+                  <CardHeading
+                    icon={Phone}
+                    title="Información de contacto"
+                    description="Teléfono, correo y redes sociales del negocio"
+                  />
+                  <CardContent className="grid gap-5 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="phoneNumber">Teléfono</Label>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <InputStore
+                          name="phoneNumber"
+                          object={store}
+                          value="cell"
+                          action={setStore}
+                          type="tel"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Número visible para pedidos y contacto con clientes
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Correo electrónico</Label>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <InputStore
+                          name="email"
+                          object={store}
+                          value="email"
+                          action={setStore}
+                          type="text"
+                        />
+                      </div>
+                    </div>
+
+                    {store?.redes?.length > 0 && (
+                      <div className="space-y-1.5 border-t border-border pt-3 md:border-t-0 md:pt-0">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Redes configuradas
+                        </p>
+                        {store.redes.map((red) => {
+                          const user = String(red.user ?? "");
+                          return (
+                            <div
+                              key={red.tipo}
+                              className="flex items-center gap-2 text-sm text-foreground"
+                            >
+                              <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+                              <span className="capitalize">{red.tipo}</span>
+                              <span className="truncate text-muted-foreground">
+                                {user.startsWith("@") ? user : `@${user}`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <ConfiguracionState
+                  store={store}
+                  setStore={setStore}
+                  country={country}
+                />
+              </div>
+            </section>
+
+            {/* ── 4. Zona crítica: irreversible, siempre al final ──────────── */}
+            <section id="avanzado" className="scroll-mt-20 space-y-4">
+              <SectionHeading
+                title="Zona crítica"
+                description="Acciones que no se pueden deshacer"
+                icon={IoIosWarning}
+              />
+              <TransferOwnership store={store} />
+            </section>
+          </div>
         </div>
       </FromData>
-      <ConfirmationOut action={hasPendingChanges(store, webshop?.store)} />
+      <ConfirmationOut action={hasPending} />
     </main>
   );
 }
+
+const SECTIONS = [
+  { id: "operacion", label: "Operación", icon: VscSymbolProperty },
+  { id: "identidad", label: "Identidad", icon: IoIosCheckmarkCircle },
+  { id: "contacto", label: "Contacto y ubicación", icon: MdContacts },
+  { id: "avanzado", label: "Zona crítica", icon: IoIosWarning },
+];
 
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
@@ -606,11 +659,15 @@ const TextAreaInput = ({ label, value, onChange, keyWords }) => {
     }
   }, [status]);
 
-  function GeminiUpdated(val) {
+  async function GeminiUpdated(val) {
     setStatus("loading");
     try {
       const formData = new FormData();
-      const text = buildImprovementPrompt(!!val, keyWords, val);
+      const text = buildImprovementPrompt({
+        exists: !!val,
+        textType: keyWords,
+        paragraph: val,
+      });
       formData.append("text", text);
       const postPromise = axios.post(`/api/gemini`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -619,23 +676,21 @@ const TextAreaInput = ({ label, value, onChange, keyWords }) => {
         loading: "Optimizando texto con IA...",
         success: (response) => {
           onChange(response.data.result);
-          return (
-            "Texto actualizado",
-            {
-              description: "El contenido fue mejorado con IA",
-            }
-          );
+          return {
+            message: "Texto actualizado",
+            description: "El contenido fue mejorado con IA",
+          };
         },
         error: (err) => {
           console.error(err);
-          return (
-            "Error al optimizar",
-            {
-              description: "No se pudo optimizar el contenido.",
-            }
-          );
+          return {
+            message: "Error al optimizar",
+            description: "No se pudo optimizar el contenido.",
+          };
         },
       });
+      // toast.promise no devuelve una promesa: esperamos la petición real
+      await postPromise.catch(() => {});
     } catch (error) {
       console.error(error);
     } finally {
@@ -669,9 +724,9 @@ const TextAreaInput = ({ label, value, onChange, keyWords }) => {
         }
       >
         {status === "loading" ? (
-          <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         ) : (
-          <AutoAwesomeIcon sx={{ fontSize: 18 }} className="text-slate-500" />
+          <Sparkles className="w-4 h-4 text-muted-foreground" />
         )}
       </Button>
     </div>

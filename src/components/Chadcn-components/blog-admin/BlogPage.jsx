@@ -1,36 +1,67 @@
 "use client";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Plus, LoaderIcon, Trash2 } from "lucide-react";
+import {
+  Calendar,
+  CalendarClock,
+  Eye,
+  EyeOff,
+  Plus,
+  LoaderIcon,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ThemeContext } from "@/context/useContext";
-import { logoApp } from "@/utils/image";
+import { logoAdmin } from "@/utils/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
-export default function BlogPage() {
+export default function BlogPage({ initialData }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
+  const router = useRouter();
   const [loading, setLoading] = useState("");
 
-  async function DeletePost(slug, image) {
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
+
+  async function DeletePost(slug) {
     if (!slug) return;
     setLoading(slug);
     const url = `/api/tienda/${webshop?.store?.sitioweb}/post`;
     const form = new FormData();
     form.append("slug", slug);
-    if (image) form.append("image", image);
+    form.append("ui_store", webshop?.store?.UUID ?? "");
     try {
-      const postPromise = fetch(url, { method: "DELETE", body: form });
-      toast.promise(postPromise, {
+      const postPromise = fetch(url, { method: "DELETE", body: form }).then(
+        async (response) => {
+          if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            throw new Error(body?.error || "No se pudo eliminar el post.");
+          }
+          return response;
+        },
+      );
+      await toast.promise(postPromise, {
         loading: "Eliminando post...",
         success: () => {
-          setWebshop({
-            ...webshop,
+          setWebshop((previous) => ({
+            ...previous,
             store: {
-              ...webshop?.store,
-              blogs: webshop?.store?.blogs.filter((p) => p.slug !== slug),
+              ...previous?.store,
+              blogs: (previous?.store?.blogs ?? []).filter(
+                (post) => post.slug !== slug,
+              ),
             },
-          });
+          }));
+          router.refresh();
           return "Post eliminado";
         },
         error: (err) => {
@@ -46,6 +77,34 @@ export default function BlogPage() {
   }
 
   const posts = webshop?.store?.blogs || [];
+
+  const getPublicationState = (post) => {
+    const publishAt = post.publish_at ? new Date(post.publish_at) : null;
+    if (
+      post.published &&
+      publishAt &&
+      !Number.isNaN(publishAt.getTime()) &&
+      publishAt > new Date()
+    ) {
+      return {
+        label: `Programado ${publishAt.toLocaleDateString("es-ES")}`,
+        icon: CalendarClock,
+        className: "border-amber-300 text-amber-700",
+      };
+    }
+    if (!post.published) {
+      return {
+        label: "No publicado",
+        icon: EyeOff,
+        className: "bg-secondary text-muted-foreground",
+      };
+    }
+    return {
+      label: "Publicado",
+      icon: Eye,
+      className: "border-primary/30 text-primary",
+    };
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -79,7 +138,7 @@ export default function BlogPage() {
             {/* Imagen */}
             <div className="relative h-44 w-full bg-secondary overflow-hidden">
               <Image
-                src={post.image || logoApp}
+                src={post.image || logoAdmin}
                 alt={post.title}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -97,6 +156,18 @@ export default function BlogPage() {
                     {post.abstract}
                   </p>
                 )}
+                {(() => {
+                  const state = getPublicationState(post);
+                  const StateIcon = state.icon;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 mt-3 rounded-md border px-2 py-1 text-[11px] ${state.className}`}
+                    >
+                      <StateIcon size={12} />
+                      {state.label}
+                    </span>
+                  );
+                })()}
               </div>
 
               <div className="flex items-center justify-between">
@@ -110,17 +181,28 @@ export default function BlogPage() {
                     })}
                   </time>
                 </div>
-                <button
-                  disabled={!!loading}
-                  onClick={() => DeletePost(post.slug, post.image)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  {post.slug === loading ? (
-                    <LoaderIcon size={13} className="animate-spin" />
-                  ) : (
-                    <Trash2 size={13} />
-                  )}
-                </button>
+                <div className="flex items-center gap-1">
+                  <Link
+                    href={`/blog/${post.id}/edit`}
+                    aria-label={`Editar ${post.title}`}
+                    title="Editar post"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Pencil size={13} />
+                  </Link>
+                  <button
+                    disabled={!!loading}
+                    onClick={() => DeletePost(post.slug)}
+                    aria-label={`Eliminar ${post.title}`}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    {post.slug === loading ? (
+                      <LoaderIcon size={13} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={13} />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

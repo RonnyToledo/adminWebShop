@@ -26,7 +26,7 @@ export async function DELETE(req) {
 
     if (!img) return NextResponse.json({ error: "no img" }, { status: 400 });
     // subir a Cloudinary vía upload_stream
-    const result = await DestroyImage(file);
+    const result = await DestroyImage(img);
 
     return NextResponse.json(result);
   } catch (err) {

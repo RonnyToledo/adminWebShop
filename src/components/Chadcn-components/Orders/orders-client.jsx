@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import apiClient from "@/lib/apiClient";
-import { logoApp } from "@/utils/image";
+import { logoAdmin } from "@/utils/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supa";
@@ -69,7 +69,7 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-border shrink-0 bg-secondary">
             <Image
-              src={order?.image || logoApp}
+              src={order?.image || logoAdmin}
               alt={order?.title || "producto"}
               fill
               className="object-cover"
@@ -111,9 +111,9 @@ function PlantillaRows({ order, handleAgregadoUpdate }) {
 // por lo que el contexto nunca tiene los productos del pedido.
 // Este hook va directo a la tabla `Events` para obtener el desc completo.
 //
-function usePedidoDetalle(specific) {
-  const [dataPedido, setDataPedido] = useState(null);
-  const [loading, setLoading] = useState(true);
+function usePedidoDetalle(specific, initialData) {
+  const [dataPedido, setDataPedido] = useState(initialData?.order ?? null);
+  const [loading, setLoading] = useState(!initialData?.order);
   const [error, setError] = useState(null);
 
   const fetchPedido = useCallback(async () => {
@@ -144,14 +144,25 @@ function usePedidoDetalle(specific) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function PedidoDetalle({ ThemeContext, specific }) {
+export default function PedidoDetalle({ ThemeContext, specific, initialData }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const router = useRouter();
 
   // Siempre cargamos desde Supabase para tener el desc completo con los productos.
   // No usamos webshop.events porque PedidosTable solo guarda la vista ligera.
-  const { dataPedido, setDataPedido, loading, error } =
-    usePedidoDetalle(specific);
+  const { dataPedido, setDataPedido, loading, error } = usePedidoDetalle(
+    specific,
+    initialData,
+  );
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   // ── Redirigir si el pedido queda sin items ────────────────────────────────
   useEffect(() => {
@@ -171,7 +182,10 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
       updateDesc(webshop?.store?.sitioweb, value, setWebshop, () => {}),
       {
         loading: "Actualizando pedido...",
-        success: () => "Pedido actualizado correctamente",
+        success: () => {
+          router.refresh();
+          return "Pedido actualizado correctamente";
+        },
         error: (err) => (
           "Error",
           {
@@ -410,7 +424,7 @@ export default function PedidoDetalle({ ThemeContext, specific }) {
                           priceCompra: agregado.priceCompra ?? 0,
                           Cant: agregado.cant ?? 0,
                           embalaje: order.embalaje ?? 0,
-                          image: agregado.image || order.image || logoApp,
+                          image: agregado.image || order.image || logoAdmin,
                           id: `${order.id ?? order.productId}-agregado-${idx}`,
                         }}
                         handleAgregadoUpdate={() =>

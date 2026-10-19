@@ -150,6 +150,21 @@ export function useAccountSwitcher() {
         // Reload limpio para que MyProvider reinicie el contexto de tienda
         window.location.assign("/");
       } catch (err) {
+        const invalidSession =
+          [
+            "invalid_grant",
+            "invalid_refresh_token",
+            "refresh_token_not_found",
+          ].includes(err?.code) ||
+          /refresh token|invalid jwt|jwt expired/i.test(err?.message ?? "");
+
+        if (invalidSession) {
+          setAccounts((prev) => {
+            const updated = prev.filter((a) => a.id !== accountId);
+            writeAccounts(updated);
+            return updated;
+          });
+        }
         setSwitching(false);
         throw err;
       }

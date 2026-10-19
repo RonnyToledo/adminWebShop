@@ -17,7 +17,7 @@ export function buildImprovementPrompt({
     (typeof exists === "string" && exists.trim().length > 0 && exists !== "no");
 
   const typeLabel =
-    textType === "history" || textType === "history"
+    textType === "history"
       ? "Historia del negocio"
       : textType === "parrrafo"
         ? "Mensaje de bienvenida"

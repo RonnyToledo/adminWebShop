@@ -14,10 +14,11 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
+  useDroppable,
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers"; // ← FIX 4: nuevo import
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -25,28 +26,20 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
   DialogTitle,
   DialogDescription,
   DialogHeader,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  MoreVertical,
+  MoreHorizontal,
   Edit,
   Trash2,
   Eye,
@@ -54,7 +47,14 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  CalendarClock,
   GripVertical,
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Search,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -69,9 +69,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { ThemeContext } from "@/context/useContext";
-import { logoApp } from "@/utils/image";
+import { logoAdmin } from "@/utils/image";
 import { format } from "@formkit/tempo";
-import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import apiClient from "@/lib/apiClient";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -85,26 +85,114 @@ import {
 } from "@/utils/variants";
 
 const UNCATEGORIZED_ID = "uncategorized";
+const CONTAINER_PREFIX = "container-"; // namespace para ids droppable de categoría
 
-// ─── Price display helper ─────────────────────────────────────────────────────
-function ProductPriceLabel({ product, webshop }) {
+// Ajusta estas rutas a las de tu app
+const ROUTES = {
+  categories: "/category",
+  newProduct: "/products/new",
+  importProducts: "/products/import",
+};
+
+// ─── Helpers de presentación ──────────────────────────────────────────────────
+function formatPrice(product, webshop) {
   const moneda =
     webshop?.store?.monedas?.find((c) => c.id === product?.default_moneda) ??
     webshop?.store?.monedas?.find((c) => c.defecto);
   const monedaNombre = moneda?.nombre ?? "";
   const min = getDisplayPrice(product);
   const max = getMaxPrice(product);
+  if (min === 0 && max === 0) return null;
   const multi = isMultiVariant(product) && min !== max;
-  if (min === 0 && max === 0)
+  return `${multi ? "desde " : ""}$${min.toFixed(2)}${
+    multi && max > 0 ? ` – $${max.toFixed(2)}` : ""
+  }${monedaNombre ? ` ${monedaNombre}` : ""}`;
+}
+
+function getStockText(product, webshop) {
+  const summary = getVariantSummary(product);
+  if (summary) return summary;
+  const total = getTotalStock(product);
+  if (total > 0)
+    return webshop?.store?.stocks ? `${total} unidades` : "En stock";
+  return "Agotado";
+}
+
+function getPublicationInfo(product) {
+  const scheduledAt = product.publish_at ? new Date(product.publish_at) : null;
+  const isScheduled =
+    product.visible &&
+    scheduledAt &&
+    !Number.isNaN(scheduledAt.getTime()) &&
+    scheduledAt > new Date();
+  if (isScheduled) return { type: "scheduled", scheduledAt };
+  if (!product.visible) return { type: "hidden", scheduledAt: null };
+  return { type: "published", scheduledAt: null };
+}
+
+// ─── Price display helper ─────────────────────────────────────────────────────
+function ProductPriceLabel({ product, webshop }) {
+  const text = formatPrice(product, webshop);
+  if (!text)
     return (
       <p className="text-sm text-muted-foreground">Sin precio configurado</p>
     );
+  return <p className="text-sm text-primary">{text}</p>;
+}
+
+function PublicationBadge({ product }) {
+  const info = getPublicationInfo(product);
+
+  if (info.type === "scheduled") {
+    return (
+      <Badge
+        variant="outline"
+        className="text-xs border-amber-300 text-amber-700"
+      >
+        <CalendarClock className="w-3 h-3 mr-1" />
+        Programado {info.scheduledAt.toLocaleDateString("es-ES")}
+      </Badge>
+    );
+  }
+
+  if (info.type === "hidden") {
+    return (
+      <Badge variant="default" className="text-xs">
+        <EyeOff className="w-3 h-3 mr-1" /> No publicado
+      </Badge>
+    );
+  }
+
   return (
-    <p className="text-sm text-primary">
-      {multi ? "desde " : ""}${min.toFixed(2)}
-      {multi && max > 0 && ` – $${max.toFixed(2)}`}
-      {monedaNombre && ` ${monedaNombre}`}
-    </p>
+    <Badge variant="outline" className="text-xs">
+      <Eye className="w-3 h-3 mr-1" /> Publicado
+    </Badge>
+  );
+}
+
+// Estado en la fila: punto de color + texto (el texto se oculta en móvil)
+const STATE_DOT = {
+  scheduled: "bg-amber-500",
+  hidden: "bg-slate-400",
+  published: "bg-emerald-500",
+};
+
+function PublicationState({ product }) {
+  const info = getPublicationInfo(product);
+  const label =
+    info.type === "scheduled"
+      ? `Programado ${info.scheduledAt.toLocaleDateString("es-ES")}`
+      : info.type === "hidden"
+        ? "No publicado"
+        : "Publicado";
+  return (
+    <div
+      className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground"
+      title={label}
+    >
+      <span className={cn("size-2 rounded-full", STATE_DOT[info.type])} />
+      <span className="hidden whitespace-nowrap md:inline">{label}</span>
+    </div>
   );
 }
 
@@ -141,10 +229,11 @@ function DragOverlayCard({ product }) {
   return (
     <div className="bg-background border border-primary shadow-2xl rounded-lg p-3 flex items-center gap-3 rotate-2 scale-110 opacity-100 pointer-events-none">
       <GripVertical className="w-5 h-5 text-primary shrink-0 animate-pulse" />
-      <Image
+      <AppImage
+        key={`${product.productId}-${product.product_variants?.find((v) => v.image)?.image || ""}`}
         width={48}
         height={48}
-        src={product.product_variants?.find((v) => v.image)?.image || logoApp}
+        src={[product.product_variants?.find((v) => v.image)?.image, logoAdmin]}
         alt={product.title || "Producto"}
         className="w-12 h-12 object-cover rounded-md border-2 border-primary aspect-square"
         style={{
@@ -162,155 +251,119 @@ function DragOverlayCard({ product }) {
   );
 }
 
-// ─── ProductCard — React.memo evita re-renders innecesarios ──────────────────
-const ProductCard = React.memo(function ProductCard({
-  product,
-  webshop,
-  isSelected,
-  onToggleSelection,
-  onToggleStatus,
-  onToggleSimpleStock,
-  onDelete,
-  downloading,
+function AddCategoryLink() {
+  return (
+    <Link
+      href={ROUTES.categories}
+      className="flex items-center h-20 md:h-40 justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition-colors hover:border-primary/60 hover:bg-primary/10"
+    >
+      <Plus className="size-4" />
+      Nueva categoría
+    </Link>
+  );
+}
+
+// ─── Zona droppable: ahora envuelve TODA la categoría (cabecera + filas) ──────
+// Así se puede soltar un producto en categorías vacías y también en categorías
+// colapsadas (queda al final de esa categoría).
+const CategoryDropZone = React.memo(function CategoryDropZone({
+  categoryId,
+  className,
+  children,
 }) {
-  const totalStock = getTotalStock(product);
-  const multiVariant = isMultiVariant(product);
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${CONTAINER_PREFIX}${categoryId}`,
+  });
 
   return (
     <div
+      ref={setNodeRef}
       className={cn(
-        "bg-gradient-to-br from-background border border-border rounded-lg p-2 md:p-4 transition-all",
-        !product.visible
-          ? "from-red-600/10 to-red-900/10"
-          : totalStock > 0
-            ? "to-background"
-            : "from-slate-400/10 to-slate-600/10",
-        isSelected && "border-slate-300 bg-primary/5",
+        className,
+        isOver && "border-primary bg-primary/10 ring-2 ring-primary/40",
       )}
     >
-      <div className="flex items-center gap-1 md:gap-4">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() =>
-            onToggleSelection(product.productId, product.image)
-          }
-          onClick={(e) => e.stopPropagation()}
-        />
-        <h4 className="text-slate-700 hidden md:flex">
-          {(product.order ?? 0) < 9999 ? (product.order ?? 0) + 1 : ""}.
-        </h4>
+      {children}
+    </div>
+  );
+});
 
-        <Image
-          width={300}
-          height={200}
-          src={product.product_variants?.find((v) => v.image)?.image || logoApp}
-          alt={product.title || "Producto"}
-          className="w-16 h-16 object-cover rounded-md border border-border aspect-square"
-          style={{
-            filter:
-              !product.visible || totalStock === 0 ? "grayscale(1)" : "initial",
-          }}
-        />
+// ─── Vista previa (se abre desde los 3 puntos) ────────────────────────────────
+// Contiene las mismas opciones que tenía el DropdownMenu.
+function ProductPreviewDialog({
+  product,
+  webshop,
+  downloading,
+  onClose,
+  onToggleStatus,
+  onToggleSimpleStock,
+  onDelete,
+}) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
-        <div className="flex-1 min-w-0">
-          <Dialog>
-            <DialogTrigger asChild>
-              <h3 className="font-semibold text-foreground line-clamp-1 max-w-[40dvw] md:w-auto cursor-pointer">
-                {product.title || "Sin título"}
-              </h3>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl flex flex-col gap-0 justify-center items-center bg-transparent w-fit p-0 border-none">
-              <DialogHeader>
-                <DialogTitle />
-                <DialogDescription />
-              </DialogHeader>
-              <Image
-                width={300}
-                height={200}
-                src={
-                  product.product_variants?.find((v) => v.image)?.image ||
-                  logoApp
-                }
-                alt={product.title || "Producto"}
-                className="w-[300dvw/4] md:w-[100dvw/2] h-auto object-cover rounded-lg aspect-square"
-              />
-            </DialogContent>
-          </Dialog>
-          <p className="text-sm text-muted-foreground">
-            {product.creado ? format(new Date(product.creado), "short") : "N/A"}
-          </p>
-          <ProductPriceLabel product={product} webshop={webshop} />
-          {multiVariant && (
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {getVariantSummary(product)}
-            </p>
-          )}
-        </div>
+  if (!product) return null;
 
-        {/* Controles desktop */}
-        <div className="gap-3 hidden md:flex items-start">
-          {!webshop?.store?.stocks && !multiVariant && (
-            <div className="flex flex-col items-center gap-2">
-              <Switch
-                checked={totalStock > 0}
-                onCheckedChange={() => onToggleSimpleStock(product.productId)}
-              />
-              <span className="text-sm text-muted-foreground">
-                {totalStock > 0 ? "En Stock" : "Agotado"}
-              </span>
-            </div>
-          )}
-          <div className="flex flex-col-reverse items-center gap-2">
-            <Switch
-              className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
-              checked={!!product.visible}
-              onCheckedChange={() =>
-                onToggleStatus(product.productId, "visible")
-              }
+  const totalStock = getTotalStock(product);
+  const multiVariant = isMultiVariant(product);
+  const image = product.product_variants?.find((v) => v.image)?.image;
+  const priceText = formatPrice(product, webshop) ?? "Sin precio configurado";
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[90dvh] max-w-[90dvw] gap-0 overflow-y-auto p-0 sm:max-w-3xl md:grid md:grid-cols-2">
+        <div className="bg-muted">
+          <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-t-lg md:rounded-l-lg md:rounded-tr-none">
+            <AppImage
+              key={`${product.productId}-${image || ""}`}
+              width={600}
+              height={600}
+              src={[image, logoAdmin]}
+              alt={product.title || "Producto"}
+              className="aspect-square h-full w-full object-cover"
+              style={{
+                filter:
+                  !product.visible || totalStock === 0
+                    ? "grayscale(1)"
+                    : "initial",
+              }}
             />
-            <span className="text-sm text-muted-foreground">
-              {product.visible ? "Visible" : "Oculto"}
-            </span>
+            <Badge className="absolute top-2 left-2 text-sm bg-white text-muted-foreground">
+              {product.creado
+                ? format(new Date(product.creado), "short")
+                : "N/A"}
+              {multiVariant && ` · ${getVariantSummary(product)}`}
+            </Badge>
           </div>
         </div>
 
-        {/* Badges desktop */}
-        <div className="hidden md:flex flex-col-reverse gap-1">
-          <StockBadge product={product} webshop={webshop} />
-          {!product.visible ? (
-            <Badge variant="default" className="text-xs">
-              <EyeOff className="w-3 h-3 mr-1" /> Oculto
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-xs">
-              <Eye className="w-3 h-3 mr-1" /> Visible
-            </Badge>
-          )}
-        </div>
+        <div className="flex flex-col gap-4 p-5 md:p-6">
+          <DialogHeader className="flex space-y-1 text-left">
+            <DialogTitle className="text-xl">
+              {product.title || "Sin título"}
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium text-primary">
+              {priceText}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="size-8 px-2">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <div className="flex flex-wrap items-center gap-2">
+            <PublicationBadge product={product} />
+            <StockBadge product={product} webshop={webshop} />
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-border p-3">
             {!webshop?.store?.stocks && !multiVariant && (
-              <DropdownMenuItem className="flex items-center justify-between gap-2 md:hidden">
-                <span className="text-sm">
-                  {totalStock > 0 ? "En Stock" : "Agotado"}
-                </span>
+              <label className="flex items-center justify-between gap-2 text-sm">
+                <span>{totalStock > 0 ? "En Stock" : "Agotado"}</span>
                 <Switch
                   checked={totalStock > 0}
                   onCheckedChange={() => onToggleSimpleStock(product.productId)}
                 />
-              </DropdownMenuItem>
+              </label>
             )}
-            <DropdownMenuItem className="flex items-center justify-between gap-2 md:hidden">
-              <span className="text-sm">
-                {product.visible ? "Visible" : "Oculto"}
-              </span>
+            <label className="flex items-center justify-between gap-2 text-sm">
+              <span>{product.visible ? "Visible" : "Oculto"}</span>
               <Switch
                 className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800"
                 checked={!!product.visible}
@@ -318,26 +371,24 @@ const ProductCard = React.memo(function ProductCard({
                   onToggleStatus(product.productId, "visible")
                 }
               />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            </label>
+          </div>
+
+          <div className="mt-auto flex flex-col gap-2">
+            <Button asChild>
               <Link href={`/products/${product.productId}`}>
-                <Edit className="size-4 mr-2" /> Editar producto
+                <Edit className="mr-2 size-4" /> Editar producto
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/products/${product.productId}`}>
-                <Eye className="size-4 mr-2" /> Ver en tienda
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive gap-2"
-              onClick={async () =>
-                await onDelete([
-                  { productId: product.productId, image: product.image },
-                ])
-              }
+            </Button>
+
+            <Button
+              variant="outline"
+              className="gap-2 text-destructive hover:text-destructive"
+              disabled={downloading}
+              onClick={() => {
+                setDeleteConfirmation("");
+                setDeleteDialogOpen(true);
+              }}
             >
               {downloading ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -345,19 +396,151 @@ const ProductCard = React.memo(function ProductCard({
                 <Trash2 className="size-4" />
               )}
               Eliminar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setDeleteConfirmation("");
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente este producto. No se puede
+              deshacer.
+            </AlertDialogDescription>
+            <div className="mt-4 space-y-2">
+              <label
+                htmlFor="delete-preview-confirmation"
+                className="text-sm font-medium text-foreground"
+              >
+                Escribe <strong>ELIMINAR</strong> para confirmar
+              </label>
+              <input
+                id="delete-preview-confirmation"
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                autoComplete="off"
+                autoFocus
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-destructive focus:ring-2 focus:ring-destructive/20"
+              />
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={
+                deleteConfirmation.trim().toUpperCase() !== "ELIMINAR" ||
+                downloading
+              }
+              onClick={() => {
+                onDelete([
+                  { productId: product.productId, image: product.image },
+                ]);
+                setDeleteDialogOpen(false);
+                onClose();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {downloading ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : null}
+              Eliminar definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Dialog>
+  );
+}
+
+// ─── ProductCard (contenido de la fila) — React.memo evita re-renders ────────
+const ProductCard = React.memo(function ProductCard({
+  product,
+  webshop,
+  isSelected,
+  onToggleSelection,
+  onToggleStatus,
+  onOpenPreview,
+}) {
+  const totalStock = getTotalStock(product);
+  const soldOut = !getVariantSummary(product) && totalStock === 0;
+  const priceText = formatPrice(product, webshop) ?? "Sin precio configurado";
+  const dateText = product.creado
+    ? format(new Date(product.creado), "short")
+    : "N/A";
+
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2 py-2.5 md:gap-3">
+      <Checkbox
+        checked={isSelected}
+        onCheckedChange={() =>
+          onToggleSelection(product.productId, product.image)
+        }
+      />
+
+      <AppImage
+        key={`${product.productId}-${product.product_variants?.find((v) => v.image)?.image || ""}`}
+        width={100}
+        height={100}
+        src={[product.product_variants?.find((v) => v.image)?.image, logoAdmin]}
+        alt={product.title || "Producto"}
+        className=" size-12 shrink-0 rounded-lg border border-border object-cover aspect-square md:size-14"
+        style={{
+          filter:
+            !product.visible || totalStock === 0 ? "grayscale(1)" : "initial",
+        }}
+      />
+
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate max-w-[6rem] md:max-w-full font-semibold text-foreground">
+          {product.title || "Sin título"}
+        </h3>
+        <p className="truncate text-xs text-muted-foreground md:text-sm">
+          {dateText} · {priceText}
+        </p>
+        <p
+          className={cn(
+            "truncate text-[11px] text-muted-foreground",
+            soldOut && "text-destructive",
+          )}
+        >
+          {getStockText(product, webshop)}
+        </p>
       </div>
+
+      <PublicationState product={product} />
+
+      <Switch
+        className="hidden data-[state=checked]:bg-primary data-[state=unchecked]:bg-red-800 md:inline-flex"
+        checked={!!product.visible}
+        onCheckedChange={() => onToggleStatus(product.productId, "visible")}
+        aria-label={`Cambiar visibilidad de ${product.title || "producto"}`}
+      />
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8 shrink-0"
+        onClick={() => onOpenPreview(product.productId)}
+        aria-label={`Más opciones para ${product.title || "producto"}`}
+      >
+        <MoreHorizontal className="size-4" />
+      </Button>
     </div>
   );
 });
 
-// ─── FIX PRINCIPAL: SortableProductItem con handle inline (no absolute) ───────
-// El handle como elemento flex evita que se superponga sobre Checkbox/Switch.
-// Los listeners solo están en el GripVertical, no en toda la tarjeta.
+// ─── SortableProductItem: fila con handle de arrastre a la izquierda ─────────
 const SortableProductItem = React.memo(function SortableProductItem({
   product,
+  isSelected,
   ...cardProps
 }) {
   const {
@@ -379,33 +562,29 @@ const SortableProductItem = React.memo(function SortableProductItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn("group", isDragging && "opacity-50")}
+      className={cn(
+        "group flex items-stretch gap-1 rounded-xl border border-border bg-background pr-2 transition-colors hover:bg-muted/40 md:pr-3",
+        isSelected && "border-primary/40 bg-primary/5",
+      )}
     >
-      {/* ← Handle como flex item, no position:absolute */}
-      <div className="flex items-stretch gap-0">
-        {/* Handle — solo este nodo captura el drag */}
-        <div
-          {...attributes}
-          {...listeners}
-          className={cn(
-            "flex items-center justify-center px-2 shrink-0",
-            "cursor-grab active:cursor-grabbing",
-            "touch-none select-none", // esencial para móvil
-            "rounded-l-lg hover:bg-primary/10 transition-colors duration-200",
-          )}
-          title="Arrastra para reordenar"
-        >
-          <GripVertical
-            className="text-muted-foreground group-hover:text-primary transition-colors size-5 md:size-4"
-            strokeWidth={2.5}
-          />
-        </div>
-
-        {/* Tarjeta — ya no necesita padding-left compensatorio */}
-        <div className="flex-1 min-w-0">
-          <ProductCard product={product} {...cardProps} />
-        </div>
+      <div
+        {...attributes}
+        {...listeners}
+        className={cn(
+          "flex shrink-0 items-center justify-center px-1.5 md:px-2",
+          "cursor-grab active:cursor-grabbing",
+          "touch-none select-none",
+          "rounded-l-xl hover:bg-primary/10 transition-colors duration-200",
+        )}
+        title="Arrastra para reordenar"
+      >
+        <GripVertical
+          className="text-muted-foreground group-hover:text-primary transition-colors size-5 md:size-4"
+          strokeWidth={2.5}
+        />
       </div>
+
+      <ProductCard product={product} isSelected={isSelected} {...cardProps} />
     </div>
   );
 });
@@ -422,12 +601,13 @@ export function ProductManagementSystem() {
   const [products, setProducts] = useState([]);
   const [downloading, setDownloading] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [activeProduct, setActiveProduct] = useState(null);
+  const [previewId, setPreviewId] = useState(null);
+  const [collapsed, setCollapsed] = useState({});
+  const [search, setSearch] = useState("");
 
-  // ─── FIX 1 + 2: Sensores corregidos ────────────────────────────────────────
-  // PointerSensor distance 10 (era 8): evita activación accidental en clicks.
-  // TouchSensor delay 250ms (era 100ms): da tiempo al navegador para distinguir
-  // scroll nativo de drag. tolerance 8 (era 5): más margen para dedos gruesos.
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -445,11 +625,19 @@ export function ProductManagementSystem() {
   useEffect(() => {
     setProducts(webshop?.products || []);
   }, [webshop?.products]);
-  // Set para O(1) lookups
+
   const selectedProductIds = useMemo(
     () => new Set(selectedProducts.map((s) => s.productId)),
     [selectedProducts],
   );
+
+  // El producto de la vista previa se deriva del estado: los switches del
+  // diálogo se actualizan en vivo y, si el producto se elimina, el diálogo se cierra solo.
+  const previewProduct = useMemo(
+    () => products.find((p) => p.productId === previewId) ?? null,
+    [products, previewId],
+  );
+  const closePreview = useCallback(() => setPreviewId(null), []);
 
   const uncategorizedProducts = useMemo(() => {
     const validIds = new Set(webshop?.store?.categoria?.map((c) => c.id) ?? []);
@@ -469,7 +657,6 @@ export function ProductManagementSystem() {
     return cats;
   }, [webshop?.store?.categoria, uncategorizedProducts]);
 
-  // Map de productos por categoría — evita filtrar el array completo
   const productsByCategory = useMemo(() => {
     const map = new Map(allCategories.map((c) => [c.id, []]));
     for (const p of products) {
@@ -484,10 +671,43 @@ export function ProductManagementSystem() {
     return map;
   }, [products, allCategories]);
 
+  // Productos de una categoría (filtrados por la búsqueda si hay una activa)
+  const normalizedSearch = search.trim().toLowerCase();
   const getCategoryProducts = useCallback(
-    (categoryId) => productsByCategory.get(categoryId) ?? [],
-    [productsByCategory],
+    (categoryId) => {
+      const list = productsByCategory.get(categoryId) ?? [];
+      if (!normalizedSearch) return list;
+      return list.filter((p) =>
+        (p.title ?? "").toLowerCase().includes(normalizedSearch),
+      );
+    },
+    [productsByCategory, normalizedSearch],
   );
+
+  // Con búsqueda activa solo se muestran las categorías con coincidencias
+  const visibleCategories = useMemo(
+    () =>
+      normalizedSearch
+        ? allCategories.filter((c) => getCategoryProducts(c.id).length > 0)
+        : allCategories,
+    [allCategories, normalizedSearch, getCategoryProducts],
+  );
+
+  // ─── Colapsar / expandir ──────────────────────────────────────────────────
+  const toggleCollapsed = useCallback((categoryId) => {
+    setCollapsed((prev) => ({ ...prev, [categoryId]: !prev[categoryId] }));
+  }, []);
+
+  const allCollapsed =
+    allCategories.length > 0 && allCategories.every((c) => collapsed[c.id]);
+
+  const toggleAllCategories = useCallback(() => {
+    setCollapsed(
+      allCollapsed
+        ? {}
+        : Object.fromEntries(allCategories.map((c) => [c.id, true])),
+    );
+  }, [allCollapsed, allCategories]);
 
   // ─── Drag ─────────────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
@@ -496,61 +716,110 @@ export function ProductManagementSystem() {
     [products],
   );
 
-  const handleDragEnd = useCallback(({ active, over }) => {
-    setActiveProduct(null);
-    if (!over || active.id === over.id) return;
-    setProducts((prev) => {
-      const activeIdx = prev.findIndex((p) => p.productId === active.id);
-      const overIdx = prev.findIndex((p) => p.productId === over.id);
-      if (activeIdx === -1 || overIdx === -1) return prev;
-      const newCaja = prev[overIdx]?.caja ?? null;
-      const cajaChanged = prev[activeIdx].caja !== newCaja;
-      const updated = cajaChanged
-        ? prev.map((p) =>
-            p.productId === active.id ? { ...p, caja: newCaja } : p,
-          )
-        : prev;
-      const reordered = arrayMove(updated, activeIdx, overIdx);
-      const counters = {};
-      return reordered.map((p) => {
-        const key = p.caja || UNCATEGORIZED_ID;
-        counters[key] = counters[key] ?? 0;
-        return { ...p, order: counters[key]++ };
+  // Distingue entre soltar sobre otro producto (reordenar) y soltar sobre el
+  // contenedor de una categoría (mover ahí: vacía, colapsada o el espacio libre).
+  const handleDragEnd = useCallback(
+    ({ active, over }) => {
+      if (downloading) return;
+      setActiveProduct(null);
+      if (!over) return;
+
+      const activeId = active.id;
+      const overId = over.id;
+
+      const overIsContainer =
+        typeof overId === "string" && overId.startsWith(CONTAINER_PREFIX);
+
+      if (!overIsContainer && activeId === overId) return;
+
+      setProducts((prev) => {
+        const activeIdx = prev.findIndex((p) => p.productId === activeId);
+        if (activeIdx === -1) return prev;
+
+        let newCaja;
+        let reordered;
+
+        if (overIsContainer) {
+          // Soltado directamente sobre el contenedor de una categoría
+          newCaja = overId.slice(CONTAINER_PREFIX.length);
+          const cajaChanged = prev[activeIdx].caja !== newCaja;
+          const updated = cajaChanged
+            ? prev.map((p) =>
+                p.productId === activeId ? { ...p, caja: newCaja } : p,
+              )
+            : prev;
+          // Lo movemos al final del array (quedará último en su categoría)
+          const idx = updated.findIndex((p) => p.productId === activeId);
+          const item = updated[idx];
+          reordered = [
+            ...updated.slice(0, idx),
+            ...updated.slice(idx + 1),
+            item,
+          ];
+        } else {
+          // Soltado sobre otro producto: comportamiento original
+          const overIdx = prev.findIndex((p) => p.productId === overId);
+          if (overIdx === -1) return prev;
+          newCaja = prev[overIdx]?.caja ?? null;
+          const cajaChanged = prev[activeIdx].caja !== newCaja;
+          const updated = cajaChanged
+            ? prev.map((p) =>
+                p.productId === activeId ? { ...p, caja: newCaja } : p,
+              )
+            : prev;
+          reordered = arrayMove(updated, activeIdx, overIdx);
+        }
+
+        const counters = {};
+        return reordered.map((p) => {
+          const key = p.caja || UNCATEGORIZED_ID;
+          counters[key] = counters[key] ?? 0;
+          return { ...p, order: counters[key]++ };
+        });
       });
-    });
-  }, []);
+    },
+    [downloading],
+  );
 
   const handleDragCancel = useCallback(() => setActiveProduct(null), []);
 
   // ─── Toggles ──────────────────────────────────────────────────────────────
-  const toggleProductStatus = useCallback((productId, field) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.productId === productId ? { ...p, [field]: !p[field] } : p,
-      ),
-    );
-  }, []);
+  const toggleProductStatus = useCallback(
+    (productId, field) => {
+      if (downloading) return;
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.productId === productId ? { ...p, [field]: !p[field] } : p,
+        ),
+      );
+    },
+    [downloading],
+  );
 
-  const toggleSimpleStock = useCallback((productId) => {
-    setProducts((prev) =>
-      prev.map((prod) => {
-        if (prod.productId !== productId) return prod;
-        if (isMultiVariant(prod)) return prod;
-        const newStock = getTotalStock(prod) > 0 ? 0 : 1;
-        const updatedVariants = (prod.product_variants ?? []).map((v) =>
-          v.attributes?.es_default ? { ...v, stock: newStock } : v,
-        );
-        return {
-          ...prod,
-          stock: newStock,
-          product_variants:
-            updatedVariants.length > 0
-              ? updatedVariants
-              : prod.product_variants,
-        };
-      }),
-    );
-  }, []);
+  const toggleSimpleStock = useCallback(
+    (productId) => {
+      if (downloading) return;
+      setProducts((prev) =>
+        prev.map((prod) => {
+          if (prod.productId !== productId) return prod;
+          if (isMultiVariant(prod)) return prod;
+          const newStock = getTotalStock(prod) > 0 ? 0 : 1;
+          const updatedVariants = (prod.product_variants ?? []).map((v) =>
+            v.attributes?.es_default ? { ...v, stock: newStock } : v,
+          );
+          return {
+            ...prod,
+            stock: newStock,
+            product_variants:
+              updatedVariants.length > 0
+                ? updatedVariants
+                : prod.product_variants,
+          };
+        }),
+      );
+    },
+    [downloading],
+  );
 
   // ─── Selección ────────────────────────────────────────────────────────────
   const isProductSelected = useCallback(
@@ -558,16 +827,21 @@ export function ProductManagementSystem() {
     [selectedProductIds],
   );
 
-  const toggleProductSelection = useCallback((productId, image) => {
-    setSelectedProducts((prev) =>
-      prev.some((s) => s.productId === productId)
-        ? prev.filter((s) => s.productId !== productId)
-        : [...prev, { productId, image }],
-    );
-  }, []);
+  const toggleProductSelection = useCallback(
+    (productId, image) => {
+      if (downloading) return;
+      setSelectedProducts((prev) =>
+        prev.some((s) => s.productId === productId)
+          ? prev.filter((s) => s.productId !== productId)
+          : [...prev, { productId, image }],
+      );
+    },
+    [downloading],
+  );
 
   const toggleSelectAllInCategory = useCallback(
     (categoryId) => {
+      if (downloading) return;
       const catProds = getCategoryProducts(categoryId);
       const catIds = catProds.map((p) => p.productId);
       const allSelected = catIds.every((id) => selectedProductIds.has(id));
@@ -581,10 +855,21 @@ export function ProductManagementSystem() {
         return [...prev, ...toAdd];
       });
     },
-    [getCategoryProducts, selectedProductIds],
+    [downloading, getCategoryProducts, selectedProductIds],
   );
 
   const clearSelection = useCallback(() => setSelectedProducts([]), []);
+
+  const openDeleteDialog = useCallback(() => {
+    if (downloading || selectedProducts.length === 0) return;
+    setDeleteConfirmation("");
+    setDeleteDialogOpen(true);
+  }, [downloading, selectedProducts.length]);
+
+  const closeDeleteDialog = useCallback((open) => {
+    setDeleteDialogOpen(open);
+    if (!open) setDeleteConfirmation("");
+  }, []);
 
   // ─── API ──────────────────────────────────────────────────────────────────
   const deleteProduct = useCallback(
@@ -629,6 +914,12 @@ export function ProductManagementSystem() {
     [webshop?.store?.sitioweb, setWebshop],
   );
 
+  const confirmSelectedDeletion = useCallback(() => {
+    if (deleteConfirmation.trim().toUpperCase() !== "ELIMINAR") return;
+    setDeleteDialogOpen(false);
+    deleteProduct(selectedProducts);
+  }, [deleteConfirmation, deleteProduct, selectedProducts]);
+
   const SaveData = useCallback(async () => {
     setDownloading(true);
     const modified = obtenerProductosModificados(
@@ -669,9 +960,51 @@ export function ProductManagementSystem() {
   }, [webshop?.products, webshop?.store?.sitioweb, products, setWebshop]);
 
   const totalSelected = selectedProducts.length;
+  const realCategoriesCount = webshop?.store?.categoria?.length ?? 0;
 
   return (
-    <div className="space-y-3 md:space-y-6">
+    <div className="space-y-4 md:space-y-6">
+      {/* ── Encabezado de página ─────────────────────────────────────────── */}
+
+      {/* ── Resumen + búsqueda + colapsar todo ───────────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">
+            {products.length} producto{products.length !== 1 ? "s" : ""}
+          </strong>{" "}
+          · {realCategoriesCount} categoría
+          {realCategoriesCount !== 1 ? "s" : ""}
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-64 sm:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar productos..."
+              aria-label="Buscar productos"
+              className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleAllCategories}
+            className="shrink-0"
+          >
+            {allCollapsed ? (
+              <ChevronsUpDown className="size-4 md:mr-2" />
+            ) : (
+              <ChevronsDownUp className="size-4 md:mr-2" />
+            )}
+            <span className="hidden md:inline">
+              {allCollapsed ? "Expandir todo" : "Colapsar todo"}
+            </span>
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Barra de selección (eliminar seleccionados) ──────────────────── */}
       {totalSelected > 0 && (
         <Card className="bg-primary/5 border-primary/20 sticky top-16 z-10">
           <CardContent className="p-4">
@@ -685,9 +1018,17 @@ export function ProductManagementSystem() {
                   <X className="w-4 h-4 md:mr-2" />
                   <span className="hidden md:inline">Limpiar selección</span>
                 </Button>
-                <AlertDialog>
+                <AlertDialog
+                  open={deleteDialogOpen}
+                  onOpenChange={closeDeleteDialog}
+                >
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={downloading}
+                      onClick={openDeleteDialog}
+                    >
                       <Trash2 className="w-4 h-4 md:mr-2" />
                       <span className="hidden md:inline">
                         Eliminar seleccionados
@@ -702,11 +1043,33 @@ export function ProductManagementSystem() {
                         producto{totalSelected !== 1 ? "s" : ""}. No se puede
                         deshacer.
                       </AlertDialogDescription>
+                      <div className="mt-4 space-y-2">
+                        <label
+                          htmlFor="delete-products-confirmation"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          Escribe <strong>ELIMINAR</strong> para confirmar
+                        </label>
+                        <input
+                          id="delete-products-confirmation"
+                          value={deleteConfirmation}
+                          onChange={(event) =>
+                            setDeleteConfirmation(event.target.value)
+                          }
+                          autoComplete="off"
+                          autoFocus
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-destructive focus:ring-2 focus:ring-destructive/20"
+                        />
+                      </div>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => deleteProduct(selectedProducts)}
+                        onClick={confirmSelectedDeletion}
+                        disabled={
+                          deleteConfirmation.trim().toUpperCase() !==
+                            "ELIMINAR" || downloading
+                        }
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Eliminar
@@ -720,8 +1083,7 @@ export function ProductManagementSystem() {
         </Card>
       )}
 
-      {/* ─── FIX 4: modifiers={[restrictToWindowEdges]} evita que el overlay
-           vuele fuera del viewport al arrastrar rápido en móvil ───────────── */}
+      {/* ── Catálogo por categorías ──────────────────────────────────────── */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -730,8 +1092,14 @@ export function ProductManagementSystem() {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="grid gap-3 md:gap-6">
-          {allCategories.map((category) => {
+        <div className="grid gap-3 md:gap-4">
+          {normalizedSearch && visibleCategories.length === 0 && (
+            <div className="rounded-xl border-2 border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+              No se encontraron productos para “{search.trim()}”
+            </div>
+          )}
+
+          {visibleCategories.map((category) => {
             const categoryProducts = getCategoryProducts(category.id);
             const categoryProductIds = categoryProducts.map((p) => p.productId);
             const selectedInCategory = categoryProductIds.filter((id) =>
@@ -743,99 +1111,104 @@ export function ProductManagementSystem() {
             const someSelectedInCategory =
               selectedInCategory > 0 &&
               selectedInCategory < categoryProductIds.length;
+            // Con búsqueda activa siempre se expande para mostrar coincidencias
+            const isCollapsed = !normalizedSearch && !!collapsed[category.id];
 
             return (
-              <Card
+              <CategoryDropZone
                 key={category.id}
+                categoryId={category.id}
                 className={cn(
-                  "bg-card",
-                  category.isVirtual &&
-                    "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20",
+                  "rounded-2xl border bg-card transition-all duration-200",
+                  category.isVirtual
+                    ? "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"
+                    : "border-border",
                 )}
               >
-                <CardHeader className="p-3 md:pb-4">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {categoryProducts.length > 0 && (
-                        <Checkbox
-                          checked={allSelectedInCategory}
-                          ref={(el) => {
-                            if (el) el.indeterminate = someSelectedInCategory;
-                          }}
-                          onCheckedChange={() =>
-                            toggleSelectAllInCategory(category.id)
-                          }
-                        />
-                      )}
-                      <span className="text-xl font-bold text-card-foreground flex items-center gap-2">
-                        {category.isVirtual && (
-                          <AlertTriangle className="w-5 h-5 text-amber-500" />
-                        )}
-                        {category.name}
-                      </span>
-                      {selectedInCategory > 0 && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-primary/10 text-primary"
-                        >
-                          {selectedInCategory} seleccionado
-                          {selectedInCategory !== 1 ? "s" : ""}
-                        </Badge>
-                      )}
-                    </div>
+                {/* Cabecera de la categoría */}
+                <div className="flex items-center gap-2 p-3 md:gap-3 md:px-4">
+                  {categoryProducts.length > 0 && (
+                    <Checkbox
+                      checked={allSelectedInCategory}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someSelectedInCategory;
+                      }}
+                      onCheckedChange={() =>
+                        toggleSelectAllInCategory(category.id)
+                      }
+                      aria-label={`Seleccionar todos los productos de ${category.name}`}
+                    />
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => toggleCollapsed(category.id)}
+                    aria-expanded={!isCollapsed}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                    {category.isVirtual && (
+                      <AlertTriangle className="size-5 shrink-0 text-amber-500" />
+                    )}
+                    <span className="truncate text-lg font-bold text-card-foreground">
+                      {category.name}
+                    </span>
+                  </button>
+
+                  {selectedInCategory > 0 && (
                     <Badge
                       variant="secondary"
-                      className={cn(
-                        "bg-secondary text-secondary-foreground",
-                        category.isVirtual &&
-                          "bg-amber-500/20 text-amber-700 dark:text-amber-300",
-                      )}
+                      className="bg-primary/10 text-primary"
                     >
-                      {categoryProducts.length} productos
+                      {selectedInCategory} seleccionado
+                      {selectedInCategory !== 1 ? "s" : ""}
                     </Badge>
-                  </CardTitle>
-                </CardHeader>
+                  )}
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "bg-secondary text-secondary-foreground",
+                      category.isVirtual &&
+                        "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+                    )}
+                  >
+                    {categoryProducts.length} productos
+                  </Badge>
+                </div>
 
-                <CardContent className="p-1 pt-0 md:p-6 md:pt-0">
+                {/* Filas (se ocultan al colapsar) */}
+                {!isCollapsed && (
                   <SortableContext
                     items={categoryProductIds}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div
-                      className={cn(
-                        "min-h-[100px] rounded-lg border-2 border-dashed transition-all duration-200",
-                        "md:p-4 p-2",
-                        category.isVirtual
-                          ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
-                          : "border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/50",
+                    <div className="grid gap-1.5 border-t border-border p-2 md:gap-2 md:p-3">
+                      {categoryProducts.map((product) => (
+                        <SortableProductItem
+                          key={product.productId}
+                          product={product}
+                          webshop={webshop}
+                          isSelected={isProductSelected(product.productId)}
+                          onToggleSelection={toggleProductSelection}
+                          onToggleStatus={toggleProductStatus}
+                          onOpenPreview={setPreviewId}
+                        />
+                      ))}
+                      {categoryProducts.length === 0 && (
+                        <div className="flex min-h-[90px] items-center justify-center rounded-xl border-2 border-dashed border-border text-center text-sm text-muted-foreground">
+                          {category.isVirtual
+                            ? "No hay productos sin categoría"
+                            : "Arrastra productos aquí o agrega nuevos"}
+                        </div>
                       )}
-                    >
-                      <div className="grid gap-1 md:gap-4">
-                        {categoryProducts.map((product) => (
-                          <SortableProductItem
-                            key={product.productId}
-                            product={product}
-                            webshop={webshop}
-                            isSelected={isProductSelected(product.productId)}
-                            onToggleSelection={toggleProductSelection}
-                            onToggleStatus={toggleProductStatus}
-                            onToggleSimpleStock={toggleSimpleStock}
-                            onDelete={deleteProduct}
-                            downloading={downloading}
-                          />
-                        ))}
-                        {categoryProducts.length === 0 && (
-                          <div className="text-center py-8 text-muted-foreground">
-                            {category.isVirtual
-                              ? "No hay productos sin categoría"
-                              : "Arrastra productos aquí o agrega nuevos"}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </SortableContext>
-                </CardContent>
-              </Card>
+                )}
+              </CategoryDropZone>
             );
           })}
         </div>
@@ -844,6 +1217,8 @@ export function ProductManagementSystem() {
           {activeProduct ? <DragOverlayCard product={activeProduct} /> : null}
         </DragOverlay>
       </DndContext>
+
+      <AddCategoryLink />
 
       <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
         <Button
@@ -854,6 +1229,17 @@ export function ProductManagementSystem() {
           Guardar
         </Button>
       </div>
+
+      <ProductPreviewDialog
+        product={previewProduct}
+        webshop={webshop}
+        downloading={downloading}
+        onClose={closePreview}
+        onToggleStatus={toggleProductStatus}
+        onToggleSimpleStock={toggleSimpleStock}
+        onDelete={deleteProduct}
+      />
+
       <ConfirmationOut
         action={hasPendingChanges(products, webshop?.products || [])}
       />

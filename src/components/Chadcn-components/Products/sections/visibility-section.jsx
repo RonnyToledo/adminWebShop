@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Eye, EyeOff, Maximize2, ShoppingBag } from "lucide-react";
+import { Eye, EyeOff, ShoppingBag } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ function Row({ label, description, checked, onCheckedChange, icon: Icon }) {
   );
 }
 
-export function VisibilitySection({ visible, venta, span, onChange }) {
+export function VisibilitySection({ visible, venta, favorito, onChange }) {
   return (
     <div className="space-y-2">
       <Row
@@ -52,11 +52,11 @@ export function VisibilitySection({ visible, venta, span, onChange }) {
         icon={ShoppingBag}
       />
       <Row
-        label="Destacado (doble espacio)"
-        description="Ocupa más espacio en el listado de la tienda"
-        checked={span}
-        onCheckedChange={(v) => onChange({ span: v })}
-        icon={Maximize2}
+        label="Producto en recomendacion"
+        description="Aparecene la Seccion de Novedades"
+        checked={favorito}
+        onCheckedChange={(v) => onChange({ favorito: v })}
+        icon={ShoppingBag}
       />
     </div>
   );

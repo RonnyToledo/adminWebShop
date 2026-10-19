@@ -1,5 +1,5 @@
 "use client";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { ThemeContext } from "@/context/useContext";
 import { usePlan, PLAN_CONFIG } from "@/hooks/usePlan";
 import {
@@ -328,9 +328,22 @@ function VistaAdmin({ sitioUUID, planActual }) {
 }
 
 // ─── Página principal — detecta si es admin o usuario ────────────────────────
-export default function PlanesPage({ adminMode = false, sitioUUID = null }) {
-  const { webshop } = useContext(ThemeContext);
+export default function PlanesPage({
+  adminMode = false,
+  sitioUUID = null,
+  initialData,
+}) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const { plan } = usePlan();
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">

@@ -35,9 +35,11 @@ import { Plus, Search, Calendar, Percent, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import PlanGuard from "../Planes/PlanGuard";
+import { useRouter } from "next/navigation";
 
-export function Marketing({ ThemeContext }) {
+export function Marketing({ ThemeContext, initialData }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
+  const router = useRouter();
   const [discounts, setDiscounts] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,6 +51,15 @@ export function Marketing({ ThemeContext }) {
     discount: 0,
     expiresAt: "",
   });
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   useEffect(() => {
     setDiscounts(webshop?.code || []);
@@ -89,6 +100,7 @@ export function Marketing({ ThemeContext }) {
         loading: "Guardando código...",
         success: (response) => {
           setDiscounts((prev) => [...prev, ...response.data]);
+          router.refresh();
           return "Código creado";
         },
         error: () => "Error al guardar",
@@ -110,6 +122,7 @@ export function Marketing({ ThemeContext }) {
       loading: "Eliminando...",
       success: () => {
         setDiscounts((prev) => prev.filter((d) => d.id !== id));
+        router.refresh();
         return "Código eliminado";
       },
       error: (err) => ("Error", { description: err?.message }),
@@ -136,6 +149,7 @@ export function Marketing({ ThemeContext }) {
           ...prev,
           store: { ...prev.store, marketing: value },
         }));
+        router.refresh();
         return "Actualizado";
       },
       error: (err) => ("Error", { description: err?.message }),

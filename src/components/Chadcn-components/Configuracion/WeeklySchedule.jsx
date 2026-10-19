@@ -172,6 +172,16 @@ export default function WeeklySchedule({ horario, onHorarioChange }) {
           >
             {/* ── Cabecera del día ── */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-expanded={isOpen}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setExpandido(isOpen ? null : dia.dia);
+                }
+              }}
               className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none"
               onClick={() => setExpandido(isOpen ? null : dia.dia)}
             >
@@ -181,8 +191,8 @@ export default function WeeklySchedule({ horario, onHorarioChange }) {
                   "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
                   hayTurnos
                     ? tiene24h
-                      ? "bg-amber-400"
-                      : "bg-blue-400"
+                      ? "bg-foreground ring-2 ring-foreground/25"
+                      : "bg-foreground"
                     : "bg-muted-foreground/25",
                 )}
               />
@@ -201,8 +211,8 @@ export default function WeeklySchedule({ horario, onHorarioChange }) {
                       variant="outline"
                       className={cn(
                         "text-[10px] font-normal py-0 h-5 gap-0.5",
-                        t.es_24h && "border-amber-400 text-amber-600",
-                        t.cruza && "border-amber-400 text-amber-600",
+                        t.es_24h && "border-foreground/40 text-foreground",
+                        t.cruza && "border-foreground/40 text-foreground",
                         erroresDia[i] && "border-destructive text-destructive",
                       )}
                     >
@@ -262,7 +272,7 @@ export default function WeeklySchedule({ horario, onHorarioChange }) {
                   <button
                     type="button"
                     onClick={() => set24h(dia.dia)}
-                    className="text-xs text-amber-600 hover:underline flex items-center gap-1"
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1"
                   >
                     <Sun className="w-3 h-3" />
                     Marcar como 24 horas
@@ -311,10 +321,10 @@ export default function WeeklySchedule({ horario, onHorarioChange }) {
 function TurnoRow({ turno, error, onChange, onRemove }) {
   if (turno.es_24h) {
     return (
-      <div className="flex items-center justify-between rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 px-3 py-2">
+      <div className="flex items-center justify-between rounded-lg border border-border bg-secondary px-3 py-2">
         <div className="flex items-center gap-2">
-          <Sun className="w-3.5 h-3.5 text-amber-600" />
-          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+          <Sun className="w-3.5 h-3.5 text-foreground" />
+          <span className="text-xs font-medium text-foreground">
             Abierto 24 horas
           </span>
         </div>
@@ -338,7 +348,7 @@ function TurnoRow({ turno, error, onChange, onRemove }) {
         error
           ? "border-destructive/50 bg-destructive/5"
           : turno.cruza
-            ? "border-amber-200 bg-amber-50/50 dark:bg-amber-950/10"
+            ? "border-border bg-secondary/60"
             : "border-border bg-muted/10",
       )}
     >
@@ -358,7 +368,7 @@ function TurnoRow({ turno, error, onChange, onRemove }) {
 
       {/* Indicador de cruza medianoche */}
       {turno.cruza && !error && (
-        <span className="flex items-center gap-0.5 text-[10px] text-amber-600 shrink-0">
+        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
           <Moon className="w-3 h-3" />
           +1d
         </span>

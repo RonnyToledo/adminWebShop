@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,12 +36,11 @@ import { useCallback } from "react";
 import style from "./style.module.css";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
-
 const formSchema = z.object({
   name: z.string().min(1, "El nombre del negocio es requerido"),
-  country: z.string().min(1, "El país es requerido"),
-  Provincia: z.string().min(1, "La provincia es requerida"),
-  municipio: z.string().min(1, "El municipio es requerido"),
+  country: z.string().min(1, "El país es requerido"), // ISO code
+  region: z.string().min(1, "La provincia/región es requerida"), // ISO code -> regions.region_code
+  municipio: z.string().min(1, "El municipio es requerido"), // nombre libre
   stock: z.boolean(),
   moneda_default: z.enum(["USD", "EURO", "MLC", "CUP"]),
   email: z.string().email("Email inválido"),
@@ -52,7 +51,7 @@ const stepSchemas = [
   z.object({ name: z.string().min(1, "El nombre del negocio es requerido") }),
   z.object({
     country: z.string().min(1, "El país es requerido"),
-    Provincia: z.string().min(1, "La provincia es requerida"),
+    region: z.string().min(1, "La provincia/región es requerida"),
     municipio: z.string().min(1, "El municipio es requerido"),
   }),
   z.object({
@@ -85,6 +84,8 @@ const STEPS = [
   },
   { icon: Mail, title: "Contacto", description: "Email y número de teléfono" },
 ];
+
+const WELCOME_DRAFT_VERSION = "v1";
 
 // ─── Partículas ───────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export function CrearClienteComponent({
   const [currentStep, setCurrentStep] = useState(0);
   const [slideDir, setSlideDir] = useState(1); // 1 = forward, -1 = backward
   const [focused, setFocused] = useState(null);
+  const hasRestoredDraft = useRef(false);
 
   const defaultCountryIso =
     process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ||
@@ -146,18 +148,13 @@ export function CrearClienteComponent({
     "CU";
   const [selectedCountryIso, setSelectedCountryIso] =
     useState(defaultCountryIso);
-  const defaultCountryName =
-    (
-      validCountries.find((c) => c.isoCode === defaultCountryIso) ||
-      validCountries[0]
-    )?.name || "";
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      country: defaultCountryName,
-      Provincia: "",
+      country: defaultCountryIso,
+      region: "",
       municipio: "",
       moneda_default: "CUP",
       email: user?.email || "",
@@ -165,6 +162,48 @@ export function CrearClienteComponent({
       stock: false,
     },
   });
+
+  const formValues = form.watch();
+  const draftKey = user?.id || user?.user?.id;
+
+  useEffect(() => {
+    if (!draftKey || hasRestoredDraft.current) return;
+
+    hasRestoredDraft.current = true;
+    try {
+      const rawDraft = window.localStorage.getItem(
+        `welcome-store-draft:${WELCOME_DRAFT_VERSION}:${draftKey}`,
+      );
+      if (!rawDraft) return;
+
+      const draft = JSON.parse(rawDraft);
+      if (draft?.formData && typeof draft.formData === "object") {
+        form.reset({ ...form.getValues(), ...draft.formData });
+        if (draft.formData.country)
+          setSelectedCountryIso(draft.formData.country);
+      }
+      if (Number.isInteger(draft?.currentStep)) {
+        setCurrentStep(
+          Math.min(Math.max(draft.currentStep, 0), STEPS.length - 1),
+        );
+      }
+    } catch (error) {
+      console.warn("No se pudo restaurar el borrador de la tienda", error);
+    }
+  }, [draftKey, form]);
+
+  useEffect(() => {
+    if (!draftKey || !hasRestoredDraft.current) return;
+
+    try {
+      window.localStorage.setItem(
+        `welcome-store-draft:${WELCOME_DRAFT_VERSION}:${draftKey}`,
+        JSON.stringify({ formData: formValues, currentStep }),
+      );
+    } catch (error) {
+      console.warn("No se pudo guardar el borrador de la tienda", error);
+    }
+  }, [currentStep, draftKey, formValues]);
 
   useEffect(() => {
     if (!user) router.refresh();
@@ -214,8 +253,8 @@ export function CrearClienteComponent({
         }
         const norm = normalizeStates(await res.json());
         setStates(norm);
-        if (!form.getValues("Provincia") && norm.length > 0)
-          form.setValue("Provincia", norm[0].name);
+        if (!form.getValues("region") && norm.length > 0)
+          form.setValue("region", norm[0].isoCode ?? norm[0].name);
       } catch (e) {
         if (e.name !== "AbortError") setStates([]);
       } finally {
@@ -226,18 +265,16 @@ export function CrearClienteComponent({
   );
 
   const fetchCities = useCallback(
-    async (iso, prov, signal) => {
-      if (!iso || !prov) {
+    async (iso, regionIso, signal) => {
+      if (!iso || !regionIso) {
         setMunicipios([]);
         return;
       }
       setLoadingCities(true);
       try {
         const base = process.env.NEXT_PUBLIC_PATH ?? "";
-        const provObj = states.find((s) => s.name === prov);
-        const stateParam = provObj?.isoCode ?? prov;
         const res = await fetch(
-          `${base}/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(stateParam)}`,
+          `${base}/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(regionIso)}`,
           { signal },
         );
         if (!res.ok) {
@@ -254,33 +291,53 @@ export function CrearClienteComponent({
         setLoadingCities(false);
       }
     },
-    [form, states],
+    [form],
   );
+
+  // ── FIX: único efecto para ciudades, atado al campo REAL "region" ──────────
+  // Antes había un segundo useEffect duplicado escuchando form.watch("Provincia"),
+  // un campo que no existe en el schema (el real es "region"). Ese watch siempre
+  // devolvía undefined, así que en cada montaje/cambio de país disparaba
+  // fetchCities(iso, undefined) → setMunicipios([]) de forma redundante y en
+  // carrera con este efecto correcto, pudiendo pisar el resultado real justo
+  // después de haber cargado los municipios de la región auto-seleccionada.
+  const watchedRegion = form.watch("region");
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchCities(selectedCountryIso, watchedRegion, ctrl.signal);
+    return () => ctrl.abort();
+  }, [selectedCountryIso, watchedRegion, fetchCities]);
 
   useEffect(() => {
     const ctrl = new AbortController();
     fetchStates(selectedCountryIso, ctrl.signal);
-    form.setValue("Provincia", "");
-    form.setValue("municipio", "");
     setMunicipios([]);
     setStates([]);
     return () => ctrl.abort();
   }, [selectedCountryIso, fetchStates, form]);
 
-  const watchedProvincia = form.watch("Provincia");
-  useEffect(() => {
-    const ctrl = new AbortController();
-    fetchCities(selectedCountryIso, watchedProvincia, ctrl.signal);
-    return () => ctrl.abort();
-  }, [selectedCountryIso, watchedProvincia, fetchCities]);
-
   // ── Submit / navegación ─────────────────────────────────────────────────────
 
   async function onSubmit(values) {
     setIsSubmitting(true);
+
+    // ── FIX: antes se armaba el FormData con un loop ciego
+    // (Object.entries(values).forEach). Confirmado contra /api/tienda/route.js:
+    // el RPC create_sitio lee exactamente `country` y `region` como campos
+    // planos con el ISO code (data.get("country") / data.get("region")), así
+    // que el shape correcto YA era el flat original — lo dejamos explícito
+    // acá para que sea obvio qué espera el backend y evitar el loop ciego.
     const fd = new FormData();
     fd.append("user", user?.id || user?.user?.id || "");
-    Object.entries(values).forEach(([k, v]) => fd.append(k, v));
+    fd.append("name", values.name);
+    fd.append("country", values.country); // ISO code del país
+    fd.append("region", values.region); // ISO code de la región (regions.region_code)
+    fd.append("municipio", values.municipio);
+    fd.append("moneda_default", values.moneda_default);
+    fd.append("email", values.email);
+    fd.append("cell", values.cell);
+    fd.append("stock", values.stock);
+
     try {
       if (!isValidPhoneNumber(`+${values.cell}`))
         throw new Error("Número no válido");
@@ -288,6 +345,9 @@ export function CrearClienteComponent({
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (res.status === 200 || res.status === 201) {
+        window.localStorage.removeItem(
+          `welcome-store-draft:${WELCOME_DRAFT_VERSION}:${draftKey}`,
+        );
         toast.success("Tienda creada", {
           description: `Ya puedes empezar a trabajar ${res?.data?.success || ""}`,
         });
@@ -297,6 +357,7 @@ export function CrearClienteComponent({
         setCurrentStep(0);
       }
     } catch (err) {
+      console.error(err);
       toast.error("Error al crear tienda", {
         description: err?.message || "Ocurrió un error",
       });
@@ -387,10 +448,9 @@ export function CrearClienteComponent({
                 >
                   <Select
                     onValueChange={(iso) => {
-                      const c = validCountries.find((x) => x.isoCode === iso);
-                      field.onChange(c ? c.name : iso);
+                      field.onChange(iso); // guardamos el ISO code directo
                       setSelectedCountryIso(iso);
-                      form.setValue("Provincia", "");
+                      form.setValue("region", "");
                       form.setValue("municipio", "");
                       setMunicipios([]);
                       setStates([]);
@@ -402,9 +462,7 @@ export function CrearClienteComponent({
                       onFocus={() => setFocused("country")}
                       onBlur={() => setFocused(null)}
                     >
-                      <SelectValue
-                        placeholder={field.value || "Seleccione país"}
-                      />
+                      <SelectValue placeholder="Seleccione país" />
                     </SelectTrigger>
                     <SelectContent>
                       {validCountries.map((c) => (
@@ -421,18 +479,18 @@ export function CrearClienteComponent({
             {/* Provincia */}
             <FormField
               control={form.control}
-              name="Provincia"
+              name="region"
               render={({ field, fieldState }) => (
                 <FieldInput
-                  id="provincia"
-                  label="Provincia"
+                  id="region"
+                  label="Region / Provincia / Estado"
                   focused={focused}
                   setFocused={setFocused}
                   error={fieldState.error?.message}
                 >
                   <Select
                     onValueChange={(v) => {
-                      field.onChange(v);
+                      field.onChange(v); // isoCode de la región
                       form.setValue("municipio", "");
                     }}
                     value={field.value}
@@ -440,20 +498,18 @@ export function CrearClienteComponent({
                   >
                     <SelectTrigger
                       className={`${baseInput} h-auto`}
-                      onFocus={() => setFocused("provincia")}
+                      onFocus={() => setFocused("region")}
                       onBlur={() => setFocused(null)}
                     >
                       <SelectValue
                         placeholder={
-                          loadingStates
-                            ? "Cargando..."
-                            : field.value || "Seleccione provincia"
+                          loadingStates ? "Cargando..." : "Seleccione provincia"
                         }
                       />
                     </SelectTrigger>
                     <SelectContent>
                       {states.map((s, i) => (
-                        <SelectItem key={i} value={s.name}>
+                        <SelectItem key={i} value={s.isoCode ?? s.name}>
                           {s.name}
                         </SelectItem>
                       ))}
@@ -470,7 +526,7 @@ export function CrearClienteComponent({
               render={({ field, fieldState }) => (
                 <FieldInput
                   id="municipio"
-                  label="Municipio"
+                  label="Ciudad / Municipio / Localidad"
                   focused={focused}
                   setFocused={setFocused}
                   error={fieldState.error?.message}
@@ -619,7 +675,7 @@ export function CrearClienteComponent({
                   error={fieldState.error?.message}
                 >
                   <PhoneInput
-                    country={selectedCountryIso.toLowerCase()}
+                    country={(selectedCountryIso || "cu").toLowerCase()}
                     value={field.value}
                     onChange={field.onChange}
                     inputProps={{

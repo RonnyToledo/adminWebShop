@@ -2,7 +2,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Bell, BellOff, Check, CheckCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supa";
-import { ThemeContext } from "@/context/useContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "@formkit/tempo";
 
@@ -86,10 +85,7 @@ function NotificationItem({ notif, onMarkRead }) {
 }
 
 // ─── Página principal ─────────────────────────────────────────────────────────
-export default function NotificationsPage() {
-  const { webshop } = useContext(ThemeContext);
-  const userId = webshop?.user?.id;
-
+export default function NotificationsPage({ userId }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);

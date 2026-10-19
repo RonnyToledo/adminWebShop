@@ -18,7 +18,7 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import { Bell, HelpCircle, Menu, Search } from "lucide-react";
+import { ArrowLeft, Bell, HelpCircle, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -32,28 +32,37 @@ function getDynamicTitle(pathname, webshop) {
   const greeting =
     hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
 
-  if (/^\/products\/[^/]+$/.test(pathname)) return "Detalle del producto";
-  if (/^\/category\/[^/]+$/.test(pathname)) return "Detalle de categoría";
-  if (/^\/orders\/[^/]+$/.test(pathname)) return "Detalle del pedido";
-  if (/^\/analitycs\/new$/.test(pathname)) return "Nuevo reporte";
+  if (/^\/products\/[^/]+$/.test(pathname))
+    return { name: "Detalle del producto", group: "PRODUCTOS" };
+  if (/^\/category\/[^/]+$/.test(pathname))
+    return { name: "Detalle de categoría", group: "PRODUCTOS" };
+  if (/^\/orders\/[^/]+$/.test(pathname))
+    return { name: "Detalle del pedido", group: "ANALÍTICAS" };
+  if (/^\/analitycs\/new$/.test(pathname))
+    return { name: "Nuevo reporte", group: "ANALÍTICAS" };
 
   const titles = {
-    "/": `${greeting}${name ? ", " + name : ""} 👋`,
-    "/newProduct": "Add New Product",
-    "/products": "Productos",
-    "/category": "Categorías",
-    "/orders": "Pedidos",
-    "/ventas": "Ventas",
-    "/analitycs": "Analíticas",
-    "/notifications": "Notificaciones",
-    "/codeDiscount": "Códigos de descuento",
-    "/configuracion": "Configuración",
-    "/social": "Redes sociales",
-    "/theme": "Personalización",
-    "/planes": "Tu plan",
+    "/": { name: `${greeting}${name ? ", " + name : ""} 👋`, group: "INICIO" },
+    "/newProduct": { name: "Crear Producto", group: "PRODUCTOS" },
+    "/products": { name: "Todos los productos", group: "PRODUCTOS" },
+    "/category": { name: "Categorías", group: "PRODUCTOS" },
+    "/orders": { name: "Pedidos", group: "ANALÍTICAS" },
+    "/ventas": { name: "Ventas", group: "ANALÍTICAS" },
+    "/analitycs": { name: "Analíticas", group: "ANALÍTICAS" },
+    "/codeDiscount": { name: "Códigos de descuento", group: "ANALÍTICAS" },
+    "/notifications": { name: "Notificaciones", group: "CONFIGURACION" },
+    "/configuracion": { name: "Configuración", group: "CONFIGURACIÓN" },
+    "/social": { name: "Redes sociales", group: "CONFIGURACION" },
+    "/theme": { name: "Personalización", group: "CONFIGURACIÓN" },
+    "/planes": { name: "Tu plan", group: "CONFIGURACIÓN" },
   };
 
-  return titles[pathname] ?? "Panel de administración";
+  return (
+    titles[pathname] ?? {
+      name: "Panel de administración",
+      group: "CONFIGURACIÓN",
+    }
+  );
 }
 
 // ─── GuideCard ────────────────────────────────────────────────────────────────
@@ -133,30 +142,25 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
   }, [webshop?.user?.id]);
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-gray-100 bg-white/95 backdrop-blur-sm gap-4">
+    <header className="sticky top-0 z-10 flex items-center justify-between gap-2 px-3 py-2 h-14 border-b border-slate-200 bg-slate-50/95 backdrop-blur-sm sm:gap-4 sm:px-6">
       {/* Left: menu + title */}
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden shrink-0 text-gray-500 hover:bg-gray-100"
+          className=" text-slate-500 hover:bg-slate-200"
           onClick={onMenuClick}
           aria-label="Abrir menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu size={18} />
         </Button>
-
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Ícono de producto (igual a la imagen) */}
-          <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <rect x="1" y="1" width="6" height="6" rx="1.5" fill="#9CA3AF" />
-              <rect x="9" y="1" width="6" height="6" rx="1.5" fill="#9CA3AF" />
-              <rect x="1" y="9" width="6" height="6" rx="1.5" fill="#9CA3AF" />
-              <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#9CA3AF" />
-            </svg>
-          </div>
-          <h1 className="text-lg font-bold text-gray-800 truncate">{title}</h1>
+        <div className="flex lg:hidden h-6 w-px bg-[#e7eaf0]" />
+        <div>
+          <p className="text-xs font-medium text-[#98a2b3]">
+            <span className="hidden md:inline-block">ADMINISTRADOR</span>
+            <span className="inline-block md:hidden">...</span>/ {title.group}
+          </p>
+          <h1 className="text-sm font-semibold">{title.name}</h1>
         </div>
       </div>
 
@@ -164,12 +168,12 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
       <div className="hidden md:flex items-center gap-3 flex-1 max-w-xl">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm placeholder:text-gray-400 focus-visible:ring-amber-400"
+            className="pl-9 h-9 bg-slate-100 border-slate-200 text-sm placeholder:text-slate-400 focus-visible:ring-slate-400"
             placeholder="Search"
           />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
             ⌘ K
           </kbd>
         </div>
@@ -181,12 +185,12 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
         <Button
           variant="ghost"
           size="icon"
-          className="relative w-9 h-9 rounded-xl hover:bg-gray-100 text-gray-500"
+          className="relative w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500"
           onClick={() => router.push("/notifications")}
         >
           <Bell className="w-4.5 h-4.5" />
           {notificaciones && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-slate-500 rounded-full ring-2 ring-slate-50" />
           )}
         </Button>
 
@@ -196,7 +200,7 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
             <Button
               variant="ghost"
               size="icon"
-              className="w-9 h-9 rounded-xl hover:bg-gray-100 text-gray-500"
+              className="w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500"
             >
               <HelpCircle className="w-4.5 h-4.5" />
             </Button>
@@ -217,16 +221,16 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
         </Dialog>
 
         {/* Divider */}
-        <div className="hidden md:flex w-px h-6 bg-gray-200" />
+        <div className="hidden md:flex w-px h-6 bg-slate-200" />
 
         {/* User chip */}
         <div className="hidden md:flex items-center gap-2.5 pl-1 backdrop-blur-xl">
-          <Avatar className="w-8 h-8 ring-2 ring-amber-100">
+          <Avatar className="w-8 h-8 ring-2 ring-slate-200">
             <AvatarImage
               src={webshop?.user?.image || ""}
               alt={webshop?.user?.name || "Usuario"}
             />
-            <AvatarFallback className="bg-amber-100 text-amber-700 text-xs font-bold">
+            <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-bold">
               {webshop?.user?.name
                 ? webshop.user.name
                     .split(" ")
@@ -237,15 +241,15 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
             </AvatarFallback>
           </Avatar>
           <div className="hidden sm:block leading-tight">
-            <p className="text-sm font-semibold text-gray-800 truncate max-w-[100px]">
+            <p className="text-sm font-semibold text-slate-800 truncate max-w-[100px]">
               {webshop?.user?.name?.split(" ")[0] || "Usuario"}
             </p>
-            <p className="text-[11px] text-gray-400 capitalize">
+            <p className="text-[11px] text-slate-500 capitalize">
               {webshop?.store_role ?? "Manager"}
             </p>
           </div>
           {/* Online dot */}
-          <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+          <div className="w-2 h-2 rounded-full bg-slate-500 shrink-0" />
         </div>
       </div>
     </header>

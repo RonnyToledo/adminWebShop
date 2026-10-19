@@ -1,22 +1,106 @@
-//api/tienda/[tienda]/products/route.js
+//src\app\api\tienda\[tienda]\products\route.js
 import { NextResponse } from "next/server";
-import {
-  createRouteSupabase,
-  requireRouteUser,
-} from "@/lib/route-handler-auth";
+import { requireRouteUser } from "@/lib/route-handler-auth";
 import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
 import { GeminiAsk } from "@/hooks/gemini";
 
+const FORCE_PRICE_MODES = new Set(["default", "fixed", "disabled"]);
+
+function sanitizeForcePrice(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  const clean = {};
+  for (const [monedaId, cfg] of Object.entries(raw)) {
+    if (!cfg || typeof cfg !== "object") continue;
+    const mode = cfg.mode;
+    if (!FORCE_PRICE_MODES.has(mode) || mode === "default") continue;
+    if (mode === "disabled") {
+      clean[monedaId] = { mode: "disabled" };
+      continue;
+    }
+    // mode === "fixed"
+    const value = Number(cfg.value);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    clean[monedaId] = { mode: "fixed", value };
+  }
+  return clean;
+}
+const parseJSONOr = (value, fallback) => {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "object") return value;
+  if (typeof value !== "string") return fallback;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return fallback;
+  }
+};
+
+function parseFormJSON(formData, field, fallback) {
+  const raw = formData.get(field);
+  if (raw == null || raw === "") return fallback;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const error = new Error(`El campo ${field} no contiene JSON válido`);
+    error.status = 400;
+    throw error;
+  }
+}
+
+function parseNullableIsoDate(raw, fieldName) {
+  if (raw == null || raw === "") return null;
+
+  const text = String(raw).trim();
+  if (!text) return null;
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) {
+    console.warn(`Fecha inválida para ${fieldName}:`, text);
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
+async function getAuthenticatedSupabase() {
+  const { supabase } = await requireRouteUser();
+  return supabase;
+}
+
 export async function GET() {
-  const supabase = await createRouteSupabase();
-  const { data } = await supabase.from("Products").select("*");
-  return NextResponse.json(data);
+  try {
+    const supabase = await getAuthenticatedSupabase();
+    const { data: tienda, error } = await supabase.from("Sitios").select("*");
+    if (error)
+      return NextResponse.json({ message: error.message }, { status: 500 });
+
+    const a = (tienda || []).map((obj) => {
+      return {
+        ...obj,
+        categoria: parseJSONOr(obj.categoria, null),
+        comentario: parseJSONOr(obj.comentario, null),
+        envios: parseJSONOr(obj.envios, null),
+      };
+    });
+
+    const response = NextResponse.json(a);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
+  } catch (error) {
+    return NextResponse.json(
+      { message: error.message || "Error" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request) {
+  const uploadedImages = [];
+
   try {
     let supabase;
     try {
@@ -26,15 +110,14 @@ export async function POST(request) {
     }
 
     const data = await request.formData();
-    const combosRaw = data.get("combos");
 
     // ── Variantes con sus imágenes ────────────────────────────────────────────
-    const variantsRaw = data.get("variants");
-    let variants = variantsRaw ? JSON.parse(variantsRaw) : [];
+    // Todas las imágenes del producto viven acá, incluida la principal (la
+    // variante default). Products no tiene ni tendrá columna image.
+    let variants = parseFormJSON(data, "variants", []);
     const variantImageFiles = data.getAll("variantImageFiles");
-    const variantImageMeta = JSON.parse(data.get("variantImageMeta") || "[]");
+    const variantImageMeta = parseFormJSON(data, "variantImageMeta", []);
 
-    // subir imágenes de variantes
     const variantFileMap = new Map(
       variantImageFiles.map((f) => [f.name ?? "", f]),
     );
@@ -45,7 +128,10 @@ export async function POST(request) {
         const file = variantFileMap.get(filename);
         if (!file) return;
         const res = await UploadNewImage(file);
-        if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
+        if (res?.secure_url) {
+          variantUrlMap.set(variantId, res.secure_url);
+          uploadedImages.push(res.secure_url);
+        }
       }),
     );
 
@@ -53,10 +139,12 @@ export async function POST(request) {
       variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
     );
 
+    const combosRaw = data.get("combos");
+
     let descripcion = data.get("descripcion") ?? "";
 
     try {
-      const infoSections = JSON.parse(data.get("info_sections") ?? "[]");
+      const infoSections = parseFormJSON(data, "info_sections", []);
 
       if (infoSections.length > 0) {
         const result = await GeminiAsk(
@@ -81,14 +169,13 @@ export async function POST(request) {
       _venta: data.get("venta") === "true",
       _descripcion: descripcion,
       _span: data.get("span") === "true",
-      _caracteristicas: data.get("caracteristicas"),
+      _caracteristicas: parseJSONOr(data.get("caracteristicas"), []),
       _storeid: data.get("UID"),
-      _creado: data.get("creado")
-        ? new Date(data.get("creado")).toISOString()
-        : null,
+      _creado: parseNullableIsoDate(data.get("creado"), "creado"),
       _order: Number(data.get("order") ?? 10000),
       _visible: data.get("visible") === "true",
-      _info_sections: JSON.parse(data.get("info_sections") ?? "[]"),
+      _info_sections: parseFormJSON(data, "info_sections", []),
+      _publish_at: parseNullableIsoDate(data.get("publish_at"), "publish_at"),
     };
 
     const { data: newProduct, error } = await supabase
@@ -107,7 +194,7 @@ export async function POST(request) {
     }
 
     // ── Insertar variantes ────────────────────────────────────────────────────
-    let insertedVariantsWithDiscounts = null; // ← IDs reales de BD
+    let insertedVariantsWithDiscounts = null;
 
     if (variants.length > 0) {
       const productId = newProduct.productId;
@@ -120,19 +207,19 @@ export async function POST(request) {
         stock: Number(v.stock) || 0,
         image: v.image ?? null,
         default_variant: !!v.default_variant,
+        force_price: sanitizeForcePrice(v.force_price),
       }));
 
       const { data: insertedVariants, error: varErr } = await supabase
         .from("product_variants")
         .insert(upsertData)
         .select(
-          "id, label, attributes, price, old_price, stock, image, default_variant",
-        ); // ← todos los campos
+          "id, label, attributes, price, old_price, stock, image, default_variant, force_price",
+        );
 
       if (varErr) {
         console.error("Error insertando variantes:", varErr);
       } else {
-        // ── Insertar quantity_discounts ───────────────────────────────────────
         const labelToId = new Map(
           (insertedVariants ?? []).map((iv) => [iv.label, iv.id]),
         );
@@ -154,13 +241,12 @@ export async function POST(request) {
           const { data: qdData, error: qdErr } = await supabase
             .from("quantity_discounts")
             .insert(allDiscounts)
-            .select("*"); // ← obtener IDs reales de discounts
+            .select("*");
           if (qdErr)
             console.error("Error insertando quantity_discounts:", qdErr);
           else insertedDiscounts = qdData ?? [];
         }
 
-        // ── Combinar variantes reales + discounts reales ──────────────────────
         insertedVariantsWithDiscounts = (insertedVariants ?? []).map((iv) => ({
           ...iv,
           quantity_discounts: insertedDiscounts.filter(
@@ -168,45 +254,48 @@ export async function POST(request) {
           ),
         }));
       }
+    }
 
-      // ── Insertar combos ───────────────────────────────────────────────────────
-      if (combosRaw) {
-        const incomingCombos = JSON.parse(combosRaw);
+    // ── Insertar combos ──────────────────────────────────────────────────────
+    if (combosRaw) {
+      const incomingCombos = parseFormJSON(data, "combos", []);
 
-        const comboRows = incomingCombos
-          .filter((rid) => rid && rid !== newProduct.productId)
-          .map((rid) => ({
-            product_id: newProduct.productId,
-            related_id: rid,
-          }));
+      const comboRows = incomingCombos
+        .filter((rid) => rid && rid !== newProduct.productId)
+        .map((rid) => ({
+          product_id: newProduct.productId,
+          related_id: rid,
+        }));
 
-        if (comboRows.length > 0) {
-          const { error: comboErr } = await supabase
-            .from("product_combos")
-            .insert(comboRows);
-          if (comboErr) console.error("Error insertando combos:", comboErr);
-        }
+      if (comboRows.length > 0) {
+        const { error: comboErr } = await supabase
+          .from("product_combos")
+          .insert(comboRows);
+        if (comboErr) console.error("Error insertando combos:", comboErr);
       }
     }
 
     // ── Respuesta final con IDs reales de BD ──────────────────────────────────
+    // La "imagen del producto" para cualquier consumidor (toast, listados,
+    // combos) sale de la variante default dentro de product_variants — no
+    // hay columna image en Products ni sincronización que hacer acá.
+    const finalVariants = insertedVariantsWithDiscounts ?? variants;
+
     const result = {
       ...newProduct,
-      variants: insertedVariantsWithDiscounts ?? variants,
-      product_variants: insertedVariantsWithDiscounts ?? variants, // ← fix principal
-      combos: JSON.parse(combosRaw ?? "[]"),
-      caracteristicas:
-        typeof newProduct.caracteristicas === "string"
-          ? JSON.parse(newProduct.caracteristicas)
-          : newProduct.caracteristicas,
+      variants: finalVariants,
+      product_variants: finalVariants,
+      combos: parseFormJSON(data, "combos", []),
+      caracteristicas: parseJSONOr(newProduct?.caracteristicas, []),
     };
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    await Promise.allSettled(uploadedImages.map((url) => DestroyImage(url)));
     console.error("Error en POST /products:", error);
     return NextResponse.json(
       { message: error.message || "Error al crear producto" },
-      { status: 500 },
+      { status: error.status ?? 500 },
     );
   }
 }
@@ -219,12 +308,9 @@ export async function PUT(request) {
     } catch {
       return NextResponse.json({ message: "No autenticado" }, { status: 401 });
     }
-
     const data = await request.formData();
     const products = JSON.parse(data.get("products"));
-
     await updateProductsInBatches(supabase, products, 10);
-
     return NextResponse.json({
       message: "Productos y variantes actualizados correctamente.",
     });
@@ -254,19 +340,15 @@ export async function DELETE(request) {
     if (!Array.isArray(values) || values.length === 0)
       return NextResponse.json({ message: "Array vacío" }, { status: 400 });
 
-    // Borrar imágenes en paralelo (imagen principal + secundarias + variantes)
+    // Las imágenes a limpiar en Cloudinary solo pueden venir de las
+    // variantes (Products ya no guarda image/imagesecondary).
     await Promise.allSettled(
-      values.flatMap((v) => {
-        const jobs = [];
-        if (v.imageOld) jobs.push(DestroyImage(v.imageOld));
-        (v.imagesecondary ?? []).forEach(
-          (url) => url && jobs.push(DestroyImage(url)),
-        );
-        (v.variants ?? []).forEach(
-          (vr) => vr.image && jobs.push(DestroyImage(vr.image)),
-        );
-        return jobs;
-      }),
+      values.flatMap((v) =>
+        (v.product_variants ?? v.variants ?? [])
+          .map((vr) => vr.image)
+          .filter(Boolean)
+          .map((url) => DestroyImage(url)),
+      ),
     );
 
     const ids = values.map((v) => v.productId).filter(Boolean);
@@ -304,7 +386,6 @@ async function updateProductsInBatches(supabase, products, batchSize = 10) {
           product_variants = [],
         } = item;
 
-        // 1) Actualiza Products solo con columnas que existen ahí
         const { error: productError } = await supabase
           .from("Products")
           .update({
@@ -324,10 +405,9 @@ async function updateProductsInBatches(supabase, products, batchSize = 10) {
           throw productError;
         }
 
-        // 2) Actualiza / inserta variantes
         if (Array.isArray(product_variants) && product_variants.length > 0) {
           const variantsPayload = product_variants.map((v) => ({
-            id: v.id, // si ya existe, se actualiza
+            id: v.id,
             product_id: productId,
             label: v.label ?? null,
             price: v.price ?? null,

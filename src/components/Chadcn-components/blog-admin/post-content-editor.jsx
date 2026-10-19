@@ -155,6 +155,7 @@ function validateHTML(html) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 export function PostContentEditor({
   initialContent,
+  isEditing = false,
   onBack,
   onComplete,
   slug,
@@ -200,9 +201,7 @@ export function PostContentEditor({
     setIsGeminiLoading(true);
     const formData = new FormData();
     formData.append("text", content ? `${IA} ${content}` : newIA(slug));
-    const postPromise = apiClient.post("/api/gemini", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const postPromise = apiClient.post("/api/gemini", formData);
     toast.promise(postPromise, {
       loading: "Optimizando post...",
       success: (response) => {
@@ -247,7 +246,7 @@ export function PostContentEditor({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[11px] text-primary uppercase tracking-[0.18em] font-medium mb-1">
-            Nuevo post
+            {isEditing ? "Editar post" : "Nuevo post"}
           </p>
           <h1 className="text-2xl font-normal text-foreground italic">
             Editor de contenido

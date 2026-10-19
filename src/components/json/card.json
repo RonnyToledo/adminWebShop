@@ -1,146 +1,236 @@
 [
   {
-    "title": "Agregar/Eliminar categorías",
+    "title": "Categorías",
     "llave": "Category",
-    "description": "Organiza tus productos en categorías.",
+    "route": "/category",
+    "description": "Organiza tu catálogo en grupos para que los clientes naveguen más rápido y encuentren productos por intención de compra.",
     "steps": [
-      "Crea nuevas categorías",
-      "Elimina las que no uses",
-      "Cada categoría muestra la cantaidad productos asignados",
-      "Organiza el orden arrastrandola hasta la posicion deseada",
-      "Guarda los cambios antes de salir"
+      "Crea nuevas categorías y define su orden visual",
+      "Edita el nombre, la descripción y la imagen de portada",
+      "Activa o desactiva categorías según la temporada o el stock",
+      "Usa la vista en la tienda para confirmar cómo se muestran en la web"
     ],
     "link": "/category",
-    "buttonText": "Editar categorías"
+    "buttonText": "Abrir categorías"
   },
   {
-    "title": "Editar categorías",
+    "title": "Detalle de categoría",
     "llave": "Category UID",
-    "description": "Organiza tus productos en categorías.",
+    "route": "/category/[uid]",
+    "description": "Ajusta la configuración individual de cada grupo para controlar la apariencia y el comportamiento dentro del catálogo.",
     "steps": [
-      "Edita el nombre y la descripcion de la categoría",
-      "Agrega imagen de portada",
-      "Decide si va a mostrar o no en los producos a travez de subienda",
-      "Decide si va a estar activa o no"
+      "Modifica el nombre y la descripción de la categoría",
+      "Sube una imagen representativa y revisa cómo se ve en la tienda",
+      "Decide si se muestra como subtienda o como categoría principal",
+      "Guarda los cambios para que la nueva configuración quede publicada"
     ]
   },
   {
-    "title": "Crear producto",
+    "title": "Nuevo producto",
     "llave": "New Product",
-    "description": "Aprende a crear nuevos productos en tu tienda.",
+    "route": "/newProduct",
+    "description": "Añade productos desde cero con la información clave, la categoría, la imagen y el precio base.",
     "steps": [
-      "Selecciona una imagen",
-      "Ingresa todos los campos solicitados",
-      "Selecciona una categoría",
-      "Indica si es especial de la casa",
-      "Con doble espacio la el producto sera el doble de ancho que lo normal"
+      "Carga la imagen principal del producto",
+      "Completa nombre, descripción, precio y stock",
+      "Asigna la categoría correcta y la moneda por defecto",
+      "Marca si es destacado, especial o visible para la tienda"
     ],
     "link": "/newProduct",
     "buttonText": "Crear producto"
   },
   {
-    "title": "Editar productos General",
+    "title": "Productos",
     "llave": "Products",
-    "description": "Actualiza la información de tus productos existentes.",
+    "route": "/products",
+    "description": "Administra el inventario general y ordena los artículos para que aparezcan según tu estrategia comercial.",
     "steps": [
-      "Selecciona el producto a editar",
-      "Actualiza el orden de los productos solicitada",
-      "Puedes cambiar de categoria un producto arrastrandolo y soltandolo en la categoria deseada",
-      "Los productos se desplazan agarrandolos por las tres barras horizontales a la izquierda del nombre",
-      "El orden mostrado en la cetagoria es el en q apareceran en la pagina",
-      "Puedes ordenerar los productos atendiendo a otras especificaiones en el boton junto al nombre de la categoria",
-      "Elimina productos no deseados",
-      "Tocando sobre el nombre del productos puedes ver la informacion del mismo"
+      "Busca y selecciona un producto para editarlo",
+      "Reordena la lista arrastrando las filas o categorías",
+      "Cambia la categoría de un producto si corresponde",
+      "Activa, elimina o revisa visibilidad y agotado de cada item"
     ],
     "link": "/products",
-    "buttonText": "Editar producto"
+    "buttonText": "Gestionar productos"
   },
   {
-    "title": "Editar productos Individual",
+    "title": "Detalle del producto",
     "llave": "Product Specific",
-    "description": "Actualiza la información de tu producto.",
+    "route": "/products/[specific]",
+    "description": "Ajusta el contenido específico de cada producto, incluyendo descripción, variantes, precio, promociones y estado de venta.",
     "steps": [
-      "Actualiza el orden de los productos solicitada",
-      "Con doble espacio la el producto sera el doble de ancho que lo normal",
-      "Si quitas la visibilidad del proucto no aparecera en la tienda",
-      "La opcion de agotado mostrara el producto pero no dejara al cliente comprarlo",
-      "La opcion de destacado mostrara el producto en un carrusel en la entrada de la pagina web",
-      "Si tu producto lleva agregados puedes agregarlo añadiendo el agregado (No hace falta el nombre del producto nuevamente) y su precio por encima del precio del producto (Si el producto cuesta 200 y el agregado 50 solo tiene q ingresar 50)"
+      "Actualiza el nombre, la descripción y los datos visibles",
+      "Configura variantes, stock y precios por opción",
+      "Controla si el producto se muestra o si está agotado",
+      "Agrega agregados o extras y decide si se muestran como opciones adicionales"
     ]
+  },
+  {
+    "title": "Blog",
+    "llave": "Blog",
+    "route": "/blog",
+    "description": "Publica contenido útil para atraer clientes y dar contexto a tu marca, promociones o novedades.",
+    "steps": [
+      "Crea entradas con título, texto e imagen",
+      "Publica contenido relevante para tus clientes",
+      "Revisa cómo aparece en la web antes de compartirlo",
+      "Actualiza o elimina publicaciones obsoletas"
+    ],
+    "link": "/blog",
+    "buttonText": "Ver blog"
   },
   {
     "title": "Pedidos",
     "llave": "Orders",
-    "description": "Acepta, Edita o Elimina compras de tus clientes.",
+    "route": "/orders",
+    "description": "Revisa compras, valida pedidos, coordina con WhatsApp y exporta la información necesaria para atender al cliente.",
     "steps": [
-      "Acepta las compras hechas enviandolas a Whatsapp o exportandola como PDF",
-      "Edita las compras de tus clientes si han rechado algunos encargos de sus pedidos",
-      "Elimina Pedidos rechazados en su totalidad"
+      "Consulta el estado de cada compra",
+      "Acepta, rechaza o modifica pedidos según corresponda",
+      "Usa WhatsApp o PDF para enviar confirmación o detalle",
+      "Elimina pedidos rechazados cuando ya no sean válidos"
     ],
     "link": "/orders",
-    "buttonText": "Editar Ordenes"
-  },
-
-  {
-    "title": "Configurar perfil",
-    "llave": "Configuracion",
-    "description": "Personaliza tu perfil de administrador.",
-    "steps": [
-      "Actualiza tu número de teléfono",
-      "Rectifica tu email",
-      "Añade tu Instagram de negocio",
-      "Indica la provincia sede de tu negocio",
-      "Activa si tienes local de trabajo, domicilio y turnos reservados",
-      "Identifica la moneda aceptada y sus tipos de cambio"
-    ],
-    "link": "/configuracion",
-    "buttonText": "Configurar perfil"
-  },
-  {
-    "title": "Domicilios",
-    "llave": "Configuración Domicilios",
-    "description": "Personaliza tu envios.",
-    "steps": [
-      "Selecciona una provincia para agregarla",
-      "Al final de cada provincia agregada puede agregar sus municipios",
-      "EL boton de eliminar al lado de cada provincia eliminara la provincia y sus municipios",
-      "EL boton de eliminar al lado de cada municipio eliminara el municipio"
-    ],
-    "link": "/configuracion/domicilios",
-    "buttonText": "Configurar perfil"
-  },
-  {
-    "title": "Dashboard Empresarial",
-    "llave": "Dashboard",
-    "description": "Personaliza tu perfil de administrador.",
-    "steps": [
-      "Vas a tener todo los relacionado con esatdisticas sobre el uso y ventas grnerales de su sitio web",
-      "Podras ver las informacion de las compras poniendo el Indentificador universal de la compra en el recuadro q sale al final de la pagina"
-    ],
-    "link": "/analitycs",
-    "buttonText": "Dashboard"
+    "buttonText": "Ver pedidos"
   },
   {
     "title": "Marketing",
     "llave": "Code Discount",
-    "description": "Colabora para poder poner codigos de descuentos a clientes q llegan con codigos de descuentos",
+    "route": "/codeDiscount",
+    "description": "Crea cupones y promociones para incentivar compras con códigos especiales y campañas de marketing.",
     "steps": [
-      "Selecciona si vas a mantener activo o no los codigos",
-      "Crea nuevos codigos usando el nombre del codigo (Seran en Mayus por defecto), el porcentaje de descuento y la fecha de expiracion",
-      "Elimina los codigos no deseados o ya expirados"
+      "Activa o desactiva promociones en general",
+      "Define nombre, porcentaje de descuento y fecha de expiración",
+      "Publica códigos para campañas puntuales o clientes específicos",
+      "Elimina cupones viejos y revisa los que están activos"
     ],
     "link": "/codeDiscount",
-    "buttonText": "Dashboard"
+    "buttonText": "Gestionar marketing"
   },
   {
-    "title": "Guía",
-    "llave": "Guía",
-    "description": "Guia sobre como usar nuestro admin",
+    "title": "Configuración general",
+    "llave": "Configuracion",
+    "route": "/configuracion",
+    "description": "Configura la base de tu negocio: perfil, contacto, turnos, ubicación y monedas aceptadas.",
     "steps": [
-      "Le dejaremos su Qr y su link para difundirlo adecuedamente",
-      "Le mostramos las tarjetas para el uso de cada seccion"
+      "Actualiza datos de contacto y redes sociales",
+      "Define la provincia, el local y la política de domicilio",
+      "Configura turnos, horario de atención y disponibilidad",
+      "Añade monedas y sus tipos de cambio para la tienda"
     ],
-    "link": "/codeDiscount",
-    "buttonText": "Dashboard"
+    "link": "/configuracion",
+    "buttonText": "Configurar tienda"
+  },
+  {
+    "title": "Domicilios",
+    "llave": "Configuración Domicilios",
+    "route": "/configuracion/domicilios",
+    "description": "Administra provincias y municipios para definir zonas de entrega y coberturas de envío.",
+    "steps": [
+      "Agrega una provincia para habilitar entregas",
+      "Añade municipios dentro de cada provincia",
+      "Elimina cualquiera de los niveles si ya no corresponde",
+      "Usa estos datos en la tienda para mostrar cobertura disponible"
+    ],
+    "link": "/configuracion/domicilios",
+    "buttonText": "Configurar domicilios"
+  },
+  {
+    "title": "Analytics",
+    "llave": "Analytics",
+    "route": "/analytics",
+    "description": "Consulta métricas de uso, comportamiento y rendimiento general del catálogo y las ventas.",
+    "steps": [
+      "Revisa estadísticas de actividad del panel",
+      "Mide comportamiento de clientes y ventas",
+      "Consulta conversiones por categorías y productos",
+      "Usa los datos para ajustar precios, stock y promociones"
+    ],
+    "link": "/analytics",
+    "buttonText": "Ver analytics"
+  },
+  {
+    "title": "Ventas",
+    "llave": "Ventas",
+    "route": "/ventas",
+    "description": "Accede a la visión comercial del negocio para revisar ventas, tendencias y actividad general.",
+    "steps": [
+      "Consulta el volumen de ventas por período",
+      "Revisa la actividad comercial de la tienda",
+      "Relaciona ventas con promociones y categorías",
+      "Usa los indicadores para tomar decisiones de inventario"
+    ],
+    "link": "/ventas",
+    "buttonText": "Abrir ventas"
+  },
+  {
+    "title": "Tema y branding",
+    "llave": "Theme",
+    "route": "/theme",
+    "description": "Personaliza la identidad visual del catálogo y la experiencia general de la tienda.",
+    "steps": [
+      "Ajusta colores y estilo general",
+      "Modifica la apariencia del catálogo y la interfaz",
+      "Revisa el resultado en vista previa antes de publicar",
+      "Mantén una identidad visual consistente con la marca"
+    ],
+    "link": "/theme",
+    "buttonText": "Configurar tema"
+  },
+  {
+    "title": "Redes sociales",
+    "llave": "Social",
+    "route": "/social",
+    "description": "Configura los perfiles y enlaces sociales que se mostrarán en la tienda y en el panel.",
+    "steps": [
+      "Añade enlaces de redes sociales",
+      "Muestra canales de contacto y comunidad",
+      "Alinea la presencia digital de tu marca",
+      "Revisa las redes publicadas desde la tienda"
+    ],
+    "link": "/social",
+    "buttonText": "Gestionar redes"
+  },
+  {
+    "title": "Equipo",
+    "llave": "Team",
+    "route": "/team",
+    "description": "Gestiona miembros, permisos y administración del equipo que trabaja en el catálogo.",
+    "steps": [
+      "Invita a colaboradores",
+      "Define roles y permisos por persona",
+      "Administra accesos según necesidades del negocio",
+      "Mantén la seguridad y la organización del equipo"
+    ],
+    "link": "/team",
+    "buttonText": "Ver equipo"
+  },
+  {
+    "title": "Planes y suscripciones",
+    "llave": "Planes",
+    "route": "/planes",
+    "description": "Consulta y gestiona las opciones de plan disponibles para tu tienda y sus beneficios.",
+    "steps": [
+      "Revisa los planes activos y disponibles",
+      "Compara beneficios y límites de uso",
+      "Actualiza el plan según la evolución del negocio",
+      "Asegúrate de que la tienda tenga la cobertura adecuada"
+    ],
+    "link": "/planes",
+    "buttonText": "Ver planes"
+  },
+  {
+    "title": "Guía del panel",
+    "llave": "Guía",
+    "route": "/guia",
+    "description": "Resumen operativo del admin para entender cómo usar cada zona y qué acción corresponde en cada pantalla.",
+    "steps": [
+      "Consulta la URL publica de la tienda",
+      "Lee la guía de rutas clave del panel",
+      "Usa esta referencia rápida al navegar por el admin",
+      "Entrega una mejor experiencia a tu cliente final"
+    ],
+    "link": "/guia",
+    "buttonText": "Abrir guía"
   }
 ]

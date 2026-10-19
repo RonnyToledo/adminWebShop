@@ -23,6 +23,8 @@ export function useSessionSync(options = {}) {
 
   const intervalRef = useRef(null);
   const lastCheckRef = useRef(0);
+  const invalidNotifiedRef = useRef(false);
+  const validationRequestRef = useRef(null);
 
   const validateSession = useCallback(async () => {
     const now = Date.now();
@@ -35,25 +37,34 @@ export function useSessionSync(options = {}) {
     lastCheckRef.current = now;
 
     try {
-      const response = await fetch("/api/login", {
+      if (validationRequestRef.current) return validationRequestRef.current;
+
+      validationRequestRef.current = fetch("/api/login", {
         method: "GET",
         credentials: "include",
         cache: "no-store",
       });
+      const response = await validationRequestRef.current;
 
       if (!response.ok) {
         // 401 = No autenticado o cookies inválidas
         if (response.status === 401) {
+          for (let attempt = 1; attempt <= 3; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const retry = await fetch("/api/login", {
+              method: "GET",
+              credentials: "include",
+              cache: "no-store",
+            });
+            if (retry.ok) return true;
+          }
+
           console.warn(
             "[useSessionSync] Sesión inválida detectada, limpiando cookies...",
           );
 
-          // Limpiar cookies manualmente en el cliente
-          document.cookie = "sb-access-token=; path=/; max-age=0";
-          document.cookie = "sb-refresh-token=; path=/; max-age=0";
-
-          // Callback opcional para notificar a la aplicación
-          if (onSessionInvalid) {
+          if (!invalidNotifiedRef.current && onSessionInvalid) {
+            invalidNotifiedRef.current = true;
             onSessionInvalid();
           }
 
@@ -65,6 +76,8 @@ export function useSessionSync(options = {}) {
     } catch (error) {
       console.error("[useSessionSync] Error validando sesión:", error);
       return false;
+    } finally {
+      validationRequestRef.current = null;
     }
   }, [onSessionInvalid]);
 
@@ -92,9 +105,10 @@ export function useSessionSync(options = {}) {
  * Hook para escuchar cambios de visibilidad de la página
  * Valida sesión cuando el usuario vuelve a la página
  */
-export function useSessionSyncOnVisibility() {
+export function useSessionSyncOnVisibility(options = {}) {
   const { validateSession } = useSessionSync({
     interval: 60 * 60 * 1000, // 1 hora (menos frecuente)
+    onSessionInvalid: options.onSessionInvalid,
   });
 
   useEffect(() => {

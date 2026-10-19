@@ -58,6 +58,40 @@ function errorResponse(type, extra = {}) {
   return NextResponse.json({ error: true, ...body, ...extra }, { status });
 }
 
+function clearAuthCookies(cookieStore) {
+  cookieStore
+    .getAll()
+    .filter(
+      ({ name }) => name.startsWith("sb-") && name.includes("-auth-token"),
+    )
+    .forEach(({ name }) => cookieStore.set(name, "", { maxAge: 0, path: "/" }));
+}
+
+function isInvalidSessionError(error) {
+  const code = error?.code?.toLowerCase?.() ?? "";
+  const message = error?.message?.toLowerCase?.() ?? "";
+
+  return (
+    ["bad_jwt", "session_not_found", "refresh_token_not_found"].includes(
+      code,
+    ) ||
+    message.includes("invalid jwt") ||
+    message.includes("jwt expired") ||
+    message.includes("session not found")
+  );
+}
+
+function isTransientAuthError(error) {
+  const message = error?.message?.toLowerCase?.() ?? "";
+
+  return (
+    message.includes("timeout") ||
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("fetch failed")
+  );
+}
+
 // ─── Helper: crear cliente con cookies ───────────────────────────────────────
 async function makeClient() {
   const cookieStore = await cookies();
@@ -103,7 +137,43 @@ export async function GET() {
       data: { user },
       error,
     } = await supabase.auth.getUser();
-    if (error || !user) return errorResponse("NO_AUTH");
+
+    if (error) {
+      if (isInvalidSessionError(error)) {
+        clearAuthCookies(await cookies());
+        return errorResponse("NO_AUTH");
+      }
+
+      if (isTransientAuthError(error)) {
+        console.warn(
+          "[GET /api/login] Error temporal validando sesión:",
+          error.message,
+        );
+        return NextResponse.json(
+          {
+            error: true,
+            code: "AUTH_TEMPORARY_ERROR",
+            message: "No se pudo validar la sesión",
+            retryable: true,
+          },
+          { status: 503, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error: true,
+          code: "AUTH_ERROR",
+          message: error.message,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!user) {
+      clearAuthCookies(await cookies());
+      return errorResponse("NO_AUTH");
+    }
 
     return NextResponse.json({ userId: user.id, email: user.email, user });
   } catch (err) {

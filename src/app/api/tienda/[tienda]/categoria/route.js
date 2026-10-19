@@ -1,3 +1,5 @@
+//.\app\api\tienda\[tienda]\categoria\route.js
+
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
 import { extractPublicId } from "cloudinary-build-url";

@@ -1,9 +1,10 @@
 import { headers } from "next/headers";
 import MyProvider from "@/context/useContext";
-import { fetchStoreData } from "@/lib/supabaseApi";
+import { fetchStoreData, fetchStoreShellData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
 import { fetchGAData } from "@/lib/ga-utils";
 import { getServerUser } from "@/lib/server-auth";
+import { BannerAdmin } from "@/utils/image";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,9 @@ const PUBLIC_ROUTES = [
   "/login",
   "/createAccount",
   "/configPage",
+  "/forgotPassword",
   "/resetPassword",
+  "/auth/callback",
 ];
 
 const LIGHT_ROUTES = [
@@ -23,17 +26,195 @@ const LIGHT_ROUTES = [
   "/teams-of-service",
 ];
 
-export const metadata = {
-  title: "RouAdmin",
-  description: "Administracion de tiendas y catalogos online",
-  openGraph: {
-    title: "RouAdmin",
-    description: "Administracion de tiendas y catalogos online",
-    images: [
-      "https://res.cloudinary.com/dbgnyc842/image/upload/v1753574413/ChatGPT_Image_26_jul_2025_19_51_29_lvng2w.png",
-    ],
+const ROUTE_DATA_MIGRATED = [
+  "/category",
+  "/products",
+  "/orders",
+  "/codeDiscount",
+  "/blog",
+  "/analytics",
+  "/configuracion",
+  "/theme",
+  "/social",
+  "/ventas",
+  "/newProduct",
+  "/configuracion/domicilios",
+  "/premium-clientes",
+  "/guia",
+  "/",
+  "/notifications",
+  "/planes",
+  "/category",
+  "/products",
+  "/orders",
+];
+
+const adminTitle = "RouAdmin | Panel de administración para tiendas online";
+const adminDescription =
+  "Administra tu tienda, catálogo, ventas y pedidos desde RouAdmin.";
+
+const ROUTE_METADATA = [
+  {
+    route: "/configuracion/domicilios",
+    title: "Domicilios y envíos",
+    description: "Configura las opciones de entrega y envío de tu tienda.",
   },
-};
+  {
+    route: "/blog/new",
+    title: "Crear entrada del blog",
+    description: "Crea y edita publicaciones para el blog de tu tienda.",
+  },
+  {
+    route: "/blog/",
+    title: "Editar entrada del blog",
+    description: "Edita una publicación del blog de tu tienda.",
+  },
+  {
+    route: "/category/",
+    title: "Editar categoría",
+    description: "Consulta y edita la información de una categoría.",
+  },
+  {
+    route: "/products/",
+    title: "Editar producto",
+    description: "Consulta y edita la información de un producto.",
+  },
+  {
+    route: "/orders/",
+    title: "Detalle del pedido",
+    description: "Consulta los productos, pagos y estado de un pedido.",
+  },
+  {
+    route: "/category",
+    title: "Categorías",
+    description: "Organiza las categorías del catálogo de tu tienda.",
+  },
+  {
+    route: "/products",
+    title: "Productos",
+    description: "Administra los productos y variantes de tu catálogo.",
+  },
+  {
+    route: "/orders",
+    title: "Pedidos",
+    description: "Consulta y administra los pedidos de tu tienda.",
+  },
+  {
+    route: "/codeDiscount",
+    title: "Códigos de descuento",
+    description: "Crea y administra promociones para tus clientes.",
+  },
+  {
+    route: "/blog",
+    title: "Blog",
+    description: "Administra las publicaciones del blog de tu tienda.",
+  },
+  {
+    route: "/analytics",
+    title: "Analítica",
+    description: "Consulta las métricas y el rendimiento de tu tienda.",
+  },
+  {
+    route: "/configuracion",
+    title: "Configuración",
+    description: "Administra los datos y preferencias de tu tienda.",
+  },
+  {
+    route: "/theme",
+    title: "Diseño de tienda",
+    description: "Personaliza la apariencia de tu tienda online.",
+  },
+  {
+    route: "/social",
+    title: "Redes sociales",
+    description: "Administra los enlaces y canales sociales de tu tienda.",
+  },
+  {
+    route: "/ventas",
+    title: "Ventas",
+    description: "Revisa el resumen y el rendimiento de tus ventas.",
+  },
+  {
+    route: "/newProduct",
+    title: "Nuevo producto",
+    description: "Agrega un producto nuevo al catálogo de tu tienda.",
+  },
+  {
+    route: "/premium-clientes",
+    title: "Clientes premium",
+    description: "Administra los clientes y beneficios premium.",
+  },
+  {
+    route: "/guia",
+    title: "Guía",
+    description: "Encuentra ayuda para configurar y administrar tu tienda.",
+  },
+  {
+    route: "/notifications",
+    title: "Notificaciones",
+    description: "Consulta las notificaciones de administración de tu tienda.",
+  },
+  {
+    route: "/planes",
+    title: "Planes",
+    description: "Consulta los planes disponibles para tu tienda.",
+  },
+  {
+    route: "/team",
+    title: "Equipo",
+    description: "Administra el acceso de los miembros de tu equipo.",
+  },
+  {
+    route: "/welcome",
+    title: "Bienvenido",
+    description: "Completa la configuración inicial de tu tienda en RouAdmin.",
+  },
+  {
+    route: "/updatePassword",
+    title: "Actualizar contraseña",
+    description: "Actualiza la contraseña de acceso a tu cuenta de RouAdmin.",
+  },
+  {
+    route: "/",
+    title: "Inicio",
+    description: "Resumen de actividad y accesos rápidos de tu tienda.",
+  },
+];
+
+export async function generateMetadata() {
+  const pathname = (await headers()).get("x-pathname") ?? "/";
+  const pageMetadata = ROUTE_METADATA.find(({ route }) =>
+    route.endsWith("/")
+      ? pathname.startsWith(route)
+      : matchesRoute(pathname, route),
+  );
+  const title = pageMetadata
+    ? `${pageMetadata.title} | RouAdmin`
+    : adminTitle;
+  const description = pageMetadata?.description ?? adminDescription;
+
+  return {
+    title,
+    description,
+    robots: {
+      index: false,
+      follow: false,
+    },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      siteName: "RouAdmin",
+      images: [{ url: BannerAdmin, alt: "RouAdmin, panel de administración" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [BannerAdmin],
+    },
+  };
+}
 
 export default async function AdminLayout({ children }) {
   const headersList = await headers();
@@ -66,13 +247,15 @@ export default async function AdminLayout({ children }) {
 
   let data = null;
   if (userId && shouldLoadLayoutData(pathname)) {
-    data = await initializeData(userId, {
-      includeGA: shouldLoadAnalytics(pathname),
-    });
+    data = ROUTE_DATA_MIGRATED.some((route) => matchesRoute(pathname, route))
+      ? await initializeData(userId)
+      : await initializeFullData(userId, {
+          includeGA: shouldLoadAnalytics(pathname),
+        });
   }
 
   return (
-    <html lang="en">
+    <html lang="es">
       <body>
         <MyProvider
           key={userId ?? "guest"}
@@ -88,15 +271,6 @@ export default async function AdminLayout({ children }) {
   );
 }
 
-const safeJsonParse = (value, fallback = []) => {
-  try {
-    if (value == null || value === "") return fallback;
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-};
-
 function matchesRoute(pathname, route) {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
@@ -109,7 +283,34 @@ function shouldLoadAnalytics(pathname) {
   return pathname === "/" || matchesRoute(pathname, "/analytics");
 }
 
-export async function initializeData(userId, options = {}) {
+export async function initializeData(userId) {
+  if (!userId) return null;
+
+  try {
+    const { data, error } = await fetchStoreShellData(userId);
+
+    if (error || !data?.store?.sitioweb) {
+      console.error("Error fetching store data:", error);
+      return {
+        user: data?.user ?? null,
+        store_role: null,
+        store_access_resolved: false,
+      };
+    }
+
+    return {
+      user: data.user,
+      store: data.store,
+      store_role: data.store_role ?? "owner",
+      store_access_resolved: true,
+    };
+  } catch (error) {
+    console.error("Error inicializando datos:", error);
+    return null;
+  }
+}
+
+async function initializeFullData(userId, options = {}) {
   if (!userId) return null;
 
   const { includeGA = true } = options;
@@ -119,49 +320,55 @@ export async function initializeData(userId, options = {}) {
 
     if (error || !data?.store?.sitioweb) {
       console.error("Error fetching store data:", error);
-      return { user: data?.user ?? null };
+      return {
+        user: data?.user ?? null,
+        store_role: null,
+        store_access_resolved: false,
+      };
     }
 
     const store = data.store;
-    const user = data.user;
-
     const categoriasOrdenadas = [...(store.categorias ?? [])].sort(
-      (a, b) => (a.order ?? 0) - (b.order ?? 0),
+      (first, second) => (first.order ?? 0) - (second.order ?? 0),
     );
-
     const productosOrdenados = [...(store.Products ?? [])].sort(
-      (a, b) => (a.order ?? 0) - (b.order ?? 0),
+      (first, second) => (first.order ?? 0) - (second.order ?? 0),
     );
-
+    const safeJsonParse = (value, fallback = []) => {
+      try {
+        if (value == null || value === "") return fallback;
+        return JSON.parse(value);
+      } catch {
+        return fallback;
+      }
+    };
     const tiendaParsed = {
       ...store,
       categoria: categoriasOrdenadas,
       envios: safeJsonParse(store.envios, []),
     };
-
-    const eventsParsed = [...(store.Events ?? [])];
     const productosParsed = OrderProducts(
       productosOrdenados,
       categoriasOrdenadas,
     );
-
     const gaData =
       includeGA && tiendaParsed.sitioweb
         ? await fetchGAData(tiendaParsed.sitioweb)
         : null;
 
     return {
-      user,
+      user: data.user,
       store: tiendaParsed,
       ga: gaData,
-      products: (productosParsed || []).map((obj) => ({
-        ...obj,
-        visitas: obj.visitas ?? 0,
-        caracteristicas: safeJsonParse(obj?.caracteristicas, []),
+      products: (productosParsed || []).map((product) => ({
+        ...product,
+        visitas: product.visitas ?? 0,
+        caracteristicas: safeJsonParse(product?.caracteristicas, []),
       })),
-      events: eventsParsed,
+      events: [...(store.Events ?? [])],
       code: store.codeDiscount ?? [],
       store_role: data.store_role ?? "owner",
+      store_access_resolved: true,
     };
   } catch (error) {
     console.error("Error inicializando datos:", error);

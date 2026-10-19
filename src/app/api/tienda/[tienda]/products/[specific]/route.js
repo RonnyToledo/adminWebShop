@@ -1,5 +1,4 @@
-// api/tienda/[tienda]/products/route.js
-// FIX: combosRaw declarado antes del bloque if(variants) para evitar ReferenceError
+// src\app\api\tienda\[tienda]\products\[specific]\route.js
 import { NextResponse } from "next/server";
 import {
   createRouteSupabase,
@@ -9,7 +8,41 @@ import {
   DestroyImage,
   UploadNewImage,
 } from "@/components/globalFunction/imagesMove";
+import { diffArrays } from "@/components/globalFunction/diferenciasDeArray";
 import { GeminiAsk } from "@/hooks/gemini";
+
+const FORCE_PRICE_MODES = new Set(["default", "fixed", "disabled"]);
+
+const parseJSONOr = (value, fallback) => {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "object") return value;
+  if (typeof value !== "string") return fallback;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+function sanitizeForcePrice(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  const clean = {};
+  for (const [monedaId, cfg] of Object.entries(raw)) {
+    if (!cfg || typeof cfg !== "object") continue;
+    const mode = cfg.mode;
+    if (!FORCE_PRICE_MODES.has(mode) || mode === "default") continue;
+    if (mode === "disabled") {
+      clean[monedaId] = { mode: "disabled" };
+      continue;
+    }
+    // mode === "fixed"
+    const value = Number(cfg.value);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    clean[monedaId] = { mode: "fixed", value };
+  }
+  return clean;
+}
 
 export async function GET() {
   const supabase = await createRouteSupabase();
@@ -17,164 +50,9 @@ export async function GET() {
   return NextResponse.json(data);
 }
 
-export async function POST(request) {
-  try {
-    let supabase;
-    try {
-      ({ supabase } = await requireRouteUser());
-    } catch {
-      return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-    }
-
-    const data = await request.formData();
-
-    // ── Variantes con sus imágenes ────────────────────────────────────────────
-    const variantsRaw = data.get("variants");
-    let variants = variantsRaw ? JSON.parse(variantsRaw) : [];
-    const variantImageFiles = data.getAll("variantImageFiles");
-    const variantImageMeta = JSON.parse(data.get("variantImageMeta") || "[]");
-
-    // subir imágenes de variantes
-    const variantFileMap = new Map(
-      variantImageFiles.map((f) => [f.name ?? "", f]),
-    );
-    const variantUrlMap = new Map();
-
-    await Promise.all(
-      variantImageMeta.map(async ({ variantId, filename }) => {
-        const file = variantFileMap.get(filename);
-        if (!file) return;
-        const res = await UploadNewImage(file);
-        if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
-      }),
-    );
-
-    variants = variants.map((v) =>
-      variantUrlMap.has(v.id) ? { ...v, image: variantUrlMap.get(v.id) } : v,
-    );
-    // ── FIX: leer combosRaw ANTES de usarlo (estaba dentro del if y luego se referenciaba fuera) ──
-    const combosRaw = data.get("combos");
-
-    // ── Crear producto ────────────────────────────────────────────────────────
-    const payload = {
-      _title: data.get("title") ?? "",
-      _default_moneda: Number(data.get("default_moneda") ?? 0),
-      _caja: data.get("caja"),
-      _venta: data.get("venta") === "true",
-      _descripcion: data.get("descripcion") ?? "",
-      _span: data.get("span") === "true",
-      _caracteristicas: data.get("caracteristicas"),
-      _storeid: data.get("UID"),
-      _creado: data.get("creado")
-        ? new Date(data.get("creado")).toISOString()
-        : null,
-      _order: Number(data.get("order") ?? 10000),
-      _visible: data.get("visible") === "true",
-    };
-
-    const { data: newProduct, error } = await supabase
-      .rpc("create_product", payload)
-      .single();
-
-    if (error) {
-      console.error("RPC create_product error:", error);
-      return NextResponse.json({ message: error.message }, { status: 500 });
-    }
-    if (newProduct?.error) {
-      return NextResponse.json(
-        { message: newProduct.error, code: newProduct.code },
-        { status: 400 },
-      );
-    }
-
-    // ── Insertar variantes ────────────────────────────────────────────────────
-    if (variants.length > 0) {
-      const productId = newProduct.productId;
-      const upsertData = variants.map((v) => ({
-        product_id: productId,
-        label: v.label ?? "",
-        attributes: v.attributes ?? {},
-        price: Number(v.price) || 0,
-        old_price: Number(v.old_price) || 0,
-        stock: Number(v.stock) || 0,
-        image: v.image ?? null,
-        default_variant: !!v.default_variant,
-      }));
-
-      const { data: insertedVariants, error: varErr } = await supabase
-        .from("product_variants")
-        .insert(upsertData)
-        .select("id, label, attributes");
-
-      if (varErr) {
-        console.error("Error insertando variantes:", varErr);
-      } else {
-        const labelToId = new Map(
-          (insertedVariants ?? []).map((iv) => [iv.label, iv.id]),
-        );
-
-        const allDiscounts = variants.flatMap((v) => {
-          const realId = labelToId.get(v.label) ?? v.id;
-          return (v.quantity_discounts ?? []).map((qd) => ({
-            variant_id: realId,
-            product_id: productId,
-            min_qty: Number(qd.min_qty) || 1,
-            max_qty: qd.max_qty != null ? Number(qd.max_qty) : null,
-            type: qd.type ?? "quantity",
-            value: Number(qd.value) || 0,
-          }));
-        });
-
-        if (allDiscounts.length > 0) {
-          const { error: qdErr } = await supabase
-            .from("quantity_discounts")
-            .insert(allDiscounts);
-          if (qdErr)
-            console.error("Error insertando quantity_discounts:", qdErr);
-        }
-      }
-    }
-
-    // ── Insertar combos ───────────────────────────────────────────────────────
-    // FIX: combosRaw ya está definido arriba, así que no hay ReferenceError
-    if (combosRaw) {
-      const incomingCombos = JSON.parse(combosRaw);
-
-      const comboRows = incomingCombos
-        .filter((rid) => rid && rid !== newProduct.productId)
-        .map((rid) => ({
-          product_id: newProduct.productId,
-          related_id: rid,
-        }));
-
-      if (comboRows.length > 0) {
-        const { error: comboErr } = await supabase
-          .from("product_combos")
-          .insert(comboRows);
-        if (comboErr) console.error("Error insertando combos:", comboErr);
-      }
-    }
-
-    const result = {
-      ...newProduct,
-      variants,
-      combos: combosRaw ? JSON.parse(combosRaw) : [],
-      caracteristicas:
-        typeof newProduct.caracteristicas === "string"
-          ? JSON.parse(newProduct.caracteristicas)
-          : newProduct.caracteristicas,
-    };
-
-    return NextResponse.json(result, { status: 201 });
-  } catch (error) {
-    console.error("Error en POST /products:", error);
-    return NextResponse.json(
-      { message: error.message || "Error al crear producto" },
-      { status: 500 },
-    );
-  }
-}
 export async function PUT(request) {
+  const uploadedImages = [];
+console.log("PUT /products/[productId] called");
   try {
     let supabase;
     try {
@@ -193,37 +71,29 @@ export async function PUT(request) {
       );
     }
 
-    // ── Imagen principal ──────────────────────────────────────────────────────
-    let imageUrl = data.get("image") ?? null;
-    const newImageFile = data.get("newImage");
-    if (newImageFile instanceof File) {
-      const uploaded = await UploadNewImage(newImageFile);
-      if (uploaded?.secure_url) {
-        // Borrar imagen vieja si existe
-        if (imageUrl) await DestroyImage(imageUrl).catch(() => {});
-        imageUrl = uploaded.secure_url;
+    const rawPublishAt = data.get("publish_at");
+    let publishAt = null;
+    if (typeof rawPublishAt === "string" && rawPublishAt.trim()) {
+      const parsedPublishAt = new Date(rawPublishAt);
+      if (Number.isNaN(parsedPublishAt.getTime())) {
+        return NextResponse.json(
+          { message: "La fecha de publicación no es válida" },
+          { status: 400 },
+        );
       }
-    }
-
-    // ── Imágenes secundarias ──────────────────────────────────────────────────
-    let imagesecondary = JSON.parse(data.get("imagesecondary") ?? "[]");
-    const newSecondaryFiles = data.getAll("newImageSecondaryFiles");
-    const newSecondaryMeta = JSON.parse(
-      data.get("NewImagesSecondaryMeta") ?? "[]",
-    );
-
-    if (newSecondaryFiles.length > 0 && newSecondaryMeta.length > 0) {
-      const fileMap = new Map(newSecondaryFiles.map((f) => [f.name, f]));
-      await Promise.all(
-        newSecondaryMeta.map(async ({ index, filename }) => {
-          const file = fileMap.get(filename);
-          if (!file) return;
-          const res = await UploadNewImage(file);
-          if (res?.secure_url) imagesecondary[index] = res.secure_url;
-        }),
+      publishAt = parsedPublishAt.toISOString();
+    } else if (rawPublishAt !== null && typeof rawPublishAt !== "string") {
+      return NextResponse.json(
+        { message: "La fecha de publicación no es válida" },
+        { status: 400 },
       );
     }
+
     // ── Variantes ─────────────────────────────────────────────────────────────
+    // Todas las imágenes viven acá. Aunque el producto tenga una sola
+    // variante, esa variante es la "default"/principal (default_variant: true
+    // o attributes.es_default: true) y es la que carga la imagen que se
+    // muestra como foto del producto. Products NO tiene columna image.
     let variants = JSON.parse(data.get("variants") ?? "[]");
     const variantImageFiles = data.getAll("variantImageFiles");
     const variantImageMeta = JSON.parse(data.get("variantImageMeta") ?? "[]");
@@ -244,7 +114,10 @@ export async function PUT(request) {
         const file = variantFileMap.get(filename);
         if (!file) return;
         const res = await UploadNewImage(file);
-        if (res?.secure_url) variantUrlMap.set(variantId, res.secure_url);
+        if (res?.secure_url) {
+          variantUrlMap.set(variantId, res.secure_url);
+          uploadedImages.push(res.secure_url);
+        }
       }),
     );
     variants = variants.map((v) =>
@@ -266,6 +139,7 @@ export async function PUT(request) {
         await supabase.from("product_combos").insert(comboRows);
       }
     }
+
     let descripcion = data.get("descripcion") ?? "";
 
     if (data.get("modified_extract") === "true") {
@@ -288,7 +162,9 @@ export async function PUT(request) {
         // NO haces throw → continúa flujo normal
       }
     }
+
     // ── Update producto ───────────────────────────────────────────────────────
+    // Sin "image" ni "imagesecondary": Products no tiene esas columnas.
     const { error: productError } = await supabase
       .from("Products")
       .update({
@@ -301,20 +177,18 @@ export async function PUT(request) {
         span: data.get("span") === "true",
         venta: data.get("venta") === "true",
         default_moneda: Number(data.get("default_moneda") ?? 0),
-        caracteristicas: JSON.parse(data.get("caracteristicas") ?? "[]"),
-        info_sections: JSON.parse(data.get("info_sections") ?? "[]"),
+        caracteristicas: parseJSONOr(data.get("caracteristicas"), []),
+        info_sections: parseJSONOr(data.get("info_sections"), []),
+        publish_at: publishAt,
       })
       .eq("productId", productId);
 
     if (productError) {
       console.error("Error actualizando producto:", productError);
-      return NextResponse.json(
-        { message: productError.message },
-        { status: 500 },
-      );
+      throw productError;
     }
+
     // ── Eliminar variantes que ya no existen y hacer upsert ────────────────
-    // Primero: obtener IDs de variantes existentes
     const { data: existingVariants } = await supabase
       .from("product_variants")
       .select("id, image")
@@ -324,18 +198,14 @@ export async function PUT(request) {
     const incomingIds = variants.map((v) => v.id).filter(Boolean);
     const idsToDelete = existingIds.filter((id) => !incomingIds.includes(id));
 
-    // Eliminar variantes que fueron removidas (y sus descuentos + imágenes asociados)
     if (idsToDelete.length > 0) {
-      // Obtener las imágenes de las variantes a eliminar
       const imagesToDelete = (existingVariants ?? [])
         .filter((v) => idsToDelete.includes(v.id))
         .map((v) => v.image)
         .filter(Boolean);
 
-      // Eliminar imágenes de Cloudinary
       await Promise.allSettled(imagesToDelete.map((url) => DestroyImage(url)));
 
-      // Eliminar descuentos por cantidad de esas variantes
       const { error: deleteQdError } = await supabase
         .from("quantity_discounts")
         .delete()
@@ -348,7 +218,6 @@ export async function PUT(request) {
         );
       }
 
-      // Eliminar las variantes
       const { error: deleteError } = await supabase
         .from("product_variants")
         .delete()
@@ -371,19 +240,16 @@ export async function PUT(request) {
         image: v.image ?? null,
         default_variant: !!v.default_variant,
         attributes: v.attributes ?? {},
+        force_price: sanitizeForcePrice(v.force_price),
         updated_at: new Date().toISOString(),
       }));
-
       const { error: variantError } = await supabase
         .from("product_variants")
         .upsert(variantsPayload, { onConflict: "id" });
 
       if (variantError) {
         console.error("Error en variantes:", variantError);
-        return NextResponse.json(
-          { message: variantError.message },
-          { status: 500 },
-        );
+        throw variantError;
       }
     }
 
@@ -394,10 +260,7 @@ export async function PUT(request) {
       .eq("productId", productId)
       .single();
     if (fetchError) {
-      return NextResponse.json(
-        { message: fetchError.message },
-        { status: 500 },
-      );
+      throw fetchError;
     }
 
     return NextResponse.json(
@@ -410,141 +273,119 @@ export async function PUT(request) {
       { status: 200 },
     );
   } catch (error) {
+    await Promise.allSettled(uploadedImages.map((url) => DestroyImage(url)));
     console.error("PUT /products/[productId] error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(request) {
-  try {
-    let supabase;
-    try {
-      ({ supabase } = await requireRouteUser());
-    } catch {
-      return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-    }
+// ── syncHorariosForStore ────────────────────────────────────────────────────
+export async function syncHorariosForStore(supabase, sitio_id, horarioRows) {
+  if (!sitio_id) throw new Error("sitio_id es requerido");
+  if (!Array.isArray(horarioRows) || horarioRows.length === 0) return;
 
-    const data = await request.formData();
-    const valuesRaw = data.get("values");
-    if (!valuesRaw)
-      return NextResponse.json({ message: "No values" }, { status: 400 });
+  const diasEnviados = [...new Set(horarioRows.map((r) => Number(r.dia)))];
 
-    const values = JSON.parse(valuesRaw);
-    if (!Array.isArray(values) || values.length === 0)
-      return NextResponse.json({ message: "Array vacío" }, { status: 400 });
+  const { error: errDel } = await supabase
+    .from("horarios")
+    .delete()
+    .eq("sitio_id", sitio_id)
+    .in("dia", diasEnviados);
 
-    await Promise.allSettled(
-      values.flatMap((v) => {
-        const jobs = [];
-        if (v.imageOld) jobs.push(DestroyImage(v.imageOld));
-        (v.imagesecondary ?? []).forEach(
-          (url) => url && jobs.push(DestroyImage(url)),
-        );
-        (v.variants ?? []).forEach(
-          (vr) => vr.image && jobs.push(DestroyImage(vr.image)),
-        );
-        return jobs;
-      }),
-    );
+  if (errDel) throw errDel;
 
-    const ids = values.map((v) => v.productId).filter(Boolean);
-    await supabase.from("product_variants").delete().in("product_id", ids);
-    const { error } = await supabase
-      .from("Products")
-      .delete()
-      .in("productId", ids);
-    if (error)
-      return NextResponse.json({ message: error.message }, { status: 500 });
+  const rows = horarioRows.map((r) => ({
+    sitio_id,
+    dia: Number(r.dia),
+    turno: Number(r.turno ?? 0),
+    open: Boolean(r.open),
+    apertura: r.apertura,
+    cierre: r.cierre,
+  }));
 
-    return NextResponse.json({ message: "Eliminados correctamente" });
-  } catch (err) {
-    return NextResponse.json({ message: err.message }, { status: 500 });
-  }
+  const { data, error: errIns } = await supabase
+    .from("horarios")
+    .upsert(rows)
+    .select();
+
+  if (errIns) throw errIns;
+
+  return data;
 }
 
-// Conservado temporalmente para futura edición masiva desde este endpoint.
-// eslint-disable-next-line no-unused-vars
-async function updateProductsInBatches(supabase, products, batchSize = 10) {
-  for (let i = 0; i < products.length; i += batchSize) {
-    const batch = products.slice(i, i + batchSize);
+// ── syncMonedasForStore ──────────────────────────────────────────────────────
+function normalizeMonedaForDb(moneda) {
+  if (!moneda || typeof moneda !== "object") return moneda;
 
-    const results = await Promise.allSettled(
-      batch.map(async (item) => {
-        const {
-          productId,
-          order,
-          caja,
-          visible,
-          title,
-          descripcion,
-          favorito,
-          span,
-          venta,
-          default_moneda,
-          product_variants = [],
-        } = item;
+  const normalizedValor = Number.parseFloat(
+    String(moneda.valor ?? 1).replace(",", "."),
+  );
 
-        const { error: productError } = await supabase
-          .from("Products")
-          .update({
-            title,
-            descripcion,
-            favorito,
-            order,
-            caja,
-            visible,
-            span,
-            venta,
-            default_moneda,
-          })
-          .eq("productId", productId);
+  return {
+    ...moneda,
+    nombre: String(moneda.nombre ?? "").trim() || "Moneda",
+    valor:
+      Number.isFinite(normalizedValor) && normalizedValor > 0
+        ? Number(normalizedValor.toFixed(6))
+        : 1,
+    defecto: Boolean(moneda.defecto),
+    ui_store: moneda.ui_store ?? undefined,
+  };
+}
 
-        if (productError) {
-          console.error(
-            "❌ Error actualizando producto:",
-            productId,
-            productError,
-          );
-          throw new Error(`Producto ${productId}: ${productError.message}`);
-        }
+export async function syncMonedasForStore(supabase, ui_store, monedasActuales) {
+  if (!ui_store) throw new Error("ui_store es requerido");
 
-        if (Array.isArray(product_variants) && product_variants.length > 0) {
-          const variantsPayload = product_variants.map((v) => ({
-            id: v.id,
-            product_id: productId,
-            label: v.label ?? null,
-            price: v.price ?? null,
-            old_price: v.old_price ?? null,
-            stock: v.stock ?? 0,
-            image: v.image ?? null,
-            default_variant: !!v.default_variant,
-            attributes: v.attributes ?? {},
-            updated_at: new Date().toISOString(),
-          }));
+  monedasActuales = Array.isArray(monedasActuales)
+    ? monedasActuales.map(normalizeMonedaForDb)
+    : [];
 
-          const { error: variantError } = await supabase
-            .from("product_variants")
-            .upsert(variantsPayload, { onConflict: "id" });
+  const { data: existing, error: errExisting } = await supabase
+    .from("monedas")
+    .select("*")
+    .eq("ui_store", ui_store);
 
-          if (variantError) {
-            console.error("❌ Error en variantes:", productId, variantError);
-            throw new Error(
-              `Variantes de ${productId}: ${variantError.message}`,
-            );
-          }
-        }
-      }),
+  if (errExisting) throw errExisting;
+
+  const result = diffArrays(existing, monedasActuales, "id");
+
+  if (result.added.length > 0) {
+    const { error: errInsert } = await supabase.from("monedas").insert(
+      result.added.map((obj) =>
+        normalizeMonedaForDb({
+          ...obj,
+          ui_store,
+        }),
+      ),
     );
+    if (errInsert) throw errInsert;
+  }
 
-    // Loguear todos los resultados
-    results.forEach((r, idx) => {
-      if (r.status === "rejected") {
-        console.error(`❌ Batch item ${i + idx} falló:`, r.reason);
-      }
-    });
+  const toUpsert = (result.updated || []).map((u) =>
+    normalizeMonedaForDb({
+      ...u.after,
+      ui_store,
+    }),
+  );
+  if (toUpsert.length > 0) {
+    const { error: errUpsert } = await supabase
+      .from("monedas")
+      .upsert(toUpsert);
+    if (errUpsert) throw errUpsert;
+  }
 
-    // Si alguno falló, lanzar el primer error
-    const failed = results.find((r) => r.status === "rejected");
-    if (failed) throw failed.reason;
+  if (result.removed.length > 0) {
+    const idsToDelete = result.removed
+      .map((obj) => Number(obj.id))
+      .filter((id) => Number.isFinite(id));
+
+    if (idsToDelete.length > 0) {
+      const { error: errDel } = await supabase
+        .from("monedas")
+        .delete()
+        .eq("ui_store", ui_store)
+        .in("id", idsToDelete);
+      if (errDel) throw errDel;
+    }
   }
 }

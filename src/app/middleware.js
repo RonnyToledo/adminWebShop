@@ -44,6 +44,8 @@ export async function middleware(req) {
   const publicRoutes = [
     "/login",
     "/createAccount",
+    "/forgotPassword",
+    "/auth/callback",
     "/api/login",
     "/api/logout",
   ];
@@ -74,13 +76,15 @@ export async function middleware(req) {
   } = await getSessionWithTimeout(supabase);
 
   if (session === null) {
-    const hasCookies =
-      req.cookies.has("sb-access-token") || req.cookies.has("sb-refresh-token");
+    const authCookies = req.cookies
+      .getAll()
+      .filter(
+        ({ name }) => name.startsWith("sb-") && name.includes("-auth-token"),
+      );
 
-    if (hasCookies) {
+    if (authCookies.length > 0) {
       console.warn("[Middleware] ❌ Session inválida, limpiando cookies");
-      res.cookies.delete("sb-access-token");
-      res.cookies.delete("sb-refresh-token");
+      authCookies.forEach(({ name }) => res.cookies.delete(name));
     }
   } else if (session === undefined) {
     console.warn(

@@ -15,14 +15,12 @@ import { ModeToggle } from "./mode-toggle";
 import { QuickEssentials } from "./quick-essentials";
 import { SaveBar } from "./save-bar";
 import { SectionCard } from "./section-card";
+import VariantsManager, { makeDefaultVariant } from "./VariantsManager";
 import { CombosSection } from "./sections/combos-section";
 import { InfoSectionsEditor } from "./sections/info-sections";
 import { TagsSection } from "./sections/tags-section";
 import { VisibilitySection } from "./sections/visibility-section";
-import VariantsManager, { makeDefaultVariant } from "./VariantsManager";
-
 import { ThemeContext } from "@/context/useContext";
-
 // ─── ProductEditForm ──────────────────────────────────────────────────────────
 
 export function ProductEditForm({
@@ -44,7 +42,6 @@ export function ProductEditForm({
   const currencies = currenciesProp ?? webshop?.store?.monedas ?? [];
   const categories = categoriesProp ?? webshop?.store?.categoria ?? [];
   const peers = peersProp ?? webshop?.products ?? [];
-
   // Asegurar al menos una variante default al montar
   useEffect(() => {
     const variants = product?.product_variants ?? [];
@@ -54,7 +51,11 @@ export function ProductEditForm({
         product_variants: [makeDefaultVariant(0, 0, 0)],
       }));
     }
-  }, [product?.product_variants?.length]);
+  }, [
+    onProductChange,
+    product?.product_variants,
+    product?.product_variants.length,
+  ]);
 
   // Modo rápido/detallado: si ya tiene datos avanzados, abrir en detallado
   const hasAdvancedData = useMemo(() => {
@@ -115,6 +116,13 @@ export function ProductEditForm({
     ? (variantImageBlobs.get(defaultVariant.id) ?? null)
     : null;
 
+  // La imagen principal sale únicamente de la variante default —
+  // Products no tiene (ni debe tener) columna image.
+  const persistedMainImage =
+    typeof defaultVariant?.image === "string" && defaultVariant.image.trim()
+      ? defaultVariant.image
+      : null;
+
   const handleMainImageSelect = (file) => {
     if (!defaultVariant) return;
     if (!file) {
@@ -134,7 +142,7 @@ export function ProductEditForm({
   };
 
   return (
-    <div className="space-y-4 pb-2">
+    <div className="w-full min-w-0 space-y-4 pb-2">
       {/* Header con toggle de modo */}
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
@@ -149,13 +157,15 @@ export function ProductEditForm({
               : "Configurá todos los detalles del producto."}
           </p>
         </div>
-        <ModeToggle
-          mode={mode}
-          onChange={(m) => {
-            setMode(m);
-            if (m === "detallado") setShowAdvanced(true);
-          }}
-        />
+        <div>
+          <ModeToggle
+            mode={mode}
+            onChange={(m) => {
+              setMode(m);
+              if (m === "detallado") setShowAdvanced(true);
+            }}
+          />{" "}
+        </div>
       </header>
 
       {/* Banner de cambios sin guardar */}
@@ -175,12 +185,13 @@ export function ProductEditForm({
         currencies={currencies}
         categories={categories}
         imageBlob={defaultVariantBlob}
+        imageUrl={persistedMainImage}
         stock={defaultVariant?.stock || 1}
         priceCompra={defaultVariant?.priceCompra ?? 0}
         embalaje={defaultVariant?.embalaje ?? 0}
         onTitleChange={(v) => update("title", v)}
         onCategoryChange={(v) => update("caja", v)}
-        onCurrencyChange={(v) => update("default_moneda", v)}
+        onCurrencyChange={(v) => update("default_moneda", Number(v))}
         onPriceCompraChange={(v) => updateDefaultVariant({ priceCompra: v })}
         onEmbajajeChange={(v) => updateDefaultVariant({ embalaje: v })}
         onStockChange={(v) => updateDefaultVariant({ stock: v })}
@@ -282,6 +293,8 @@ export function ProductEditForm({
                 onChange={(variants) => update("product_variants", variants)}
                 variantImageBlobs={variantImageBlobs}
                 setVariantImageBlobs={setVariantImageBlobs}
+                currencies={currencies}
+                defaultMonedaId={product.default_moneda}
               />
             </SectionCard>
           )}
@@ -378,7 +391,7 @@ export function ProductEditForm({
             <VisibilitySection
               visible={product.visible}
               venta={product.venta}
-              span={product.span}
+              favorito={product.favorito}
               onChange={(patch) =>
                 onProductChange((prev) => ({ ...prev, ...patch }))
               }
@@ -394,6 +407,17 @@ export function ProductEditForm({
         canSave={canSave}
         missingFields={missing}
         onSave={onSave}
+        onSchedule={(publishAt) => {
+          update("publish_at", publishAt);
+          onSave(publishAt);
+        }}
+        canSchedule={
+          canSave &&
+          (!product.productId ||
+            !product.visible ||
+            (product.publish_at && new Date(product.publish_at) > new Date()))
+        }
+        scheduledAt={product.publish_at}
       />
     </div>
   );

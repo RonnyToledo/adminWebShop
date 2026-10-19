@@ -16,13 +16,16 @@ setupAxiosRetry(apiClient);
 // Interceptor para manejar FormData y logs
 apiClient.interceptors.request.use((config) => {
   // Si es FormData, dejar que axios establezca el Content-Type automáticamente
-  if (config.data instanceof FormData) {
-    delete config.headers["Content-Type"];
+  const isFormData =
+    typeof FormData !== "undefined" && config.data instanceof FormData;
+  if (isFormData) {
+    config.headers?.delete?.("Content-Type");
+    if (config.headers) delete config.headers["Content-Type"];
   } else if (config.data && typeof config.data === "object") {
     // Para objetos planos, establecer JSON
     config.headers["Content-Type"] = "application/json";
   }
-  
+
   console.debug(`[API] ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 });
@@ -35,10 +38,10 @@ apiClient.interceptors.response.use(
   (error) => {
     console.error(
       `[API] ✗ ${error.response?.status || "Error"} ${error.config?.url}`,
-      error.message
+      error.message,
     );
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

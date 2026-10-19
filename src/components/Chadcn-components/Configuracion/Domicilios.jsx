@@ -2,6 +2,7 @@
 
 import React, { useContext, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -101,9 +102,7 @@ function SortableZoneItem({ zone, index, onDelete }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <span
-          className={`text-sm font-semibold ${zone.precio === 0 ? "text-green-600" : "text-foreground"}`}
-        >
+        <span className={`text-sm font-semibold text-foreground`}>
           {zone.precio === 0
             ? "Gratis"
             : `${Number(zone.precio).toLocaleString("es-CU")} CUP`}
@@ -122,7 +121,7 @@ function SortableZoneItem({ zone, index, onDelete }) {
             <AlertDialogHeader>
               <AlertDialogTitle>¿Eliminar zona de delivery?</AlertDialogTitle>
               <AlertDialogDescription>
-                La zona <strong>"{zone.lugar}"</strong> será eliminada
+                La zona <strong>&quot;{zone.lugar}&quot;</strong> será eliminada
                 permanentemente. Esta acción no se puede deshacer.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -143,11 +142,20 @@ function SortableZoneItem({ zone, index, onDelete }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function Domicilios({ ThemeContext }) {
-  const { webshop } = useContext(ThemeContext);
+export default function Domicilios({ ThemeContext, initialData }) {
+  const { webshop, setWebshop } = useContext(ThemeContext);
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ lugar: "", precio: "" });
+
+  useEffect(() => {
+    if (!initialData) return;
+    setWebshop((previous) => ({
+      ...previous,
+      ...initialData,
+      store: { ...previous.store, ...(initialData.store ?? {}) },
+    }));
+  }, [initialData, setWebshop]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -180,9 +188,18 @@ export default function Domicilios({ ThemeContext }) {
   const resetForm = () => setFormData({ lugar: "", precio: "" });
 
   const handleAddZone = () => {
-    if (!formData.lugar) return;
+    const lugar = formData.lugar.trim();
+    if (!lugar) return;
+    if (
+      deliveryZones.some((z) => z.lugar.toLowerCase() === lugar.toLowerCase())
+    ) {
+      toast.error("Esa zona ya existe", {
+        description: "Usa otro nombre o elimina la zona anterior.",
+      });
+      return;
+    }
     const newZone = {
-      lugar: formData.lugar,
+      lugar,
       precio: parseFloat(formData.precio) || 0,
     };
     setDeliveryZones([...deliveryZones, newZone]);
@@ -203,10 +220,9 @@ export default function Domicilios({ ThemeContext }) {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-semibold text-foreground flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              Zonas de Delivery
-            </h2>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Zonas de delivery
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Arrastra para reordenar · El local se activa desde Configuración
             </p>
@@ -299,8 +315,8 @@ export default function Domicilios({ ThemeContext }) {
                   CUP
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -312,8 +328,8 @@ export default function Domicilios({ ThemeContext }) {
                   {precioMax.toLocaleString("es-CU")} CUP
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-foreground" />
               </div>
             </CardContent>
           </Card>

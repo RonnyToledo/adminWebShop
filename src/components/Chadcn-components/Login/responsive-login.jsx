@@ -31,6 +31,7 @@ export default function ResponsiveLogin({ user }) {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingCharge] = useState(false);
   const [focused, setFocused] = useState(null);
 
@@ -84,21 +85,33 @@ export default function ResponsiveLogin({ user }) {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoadingGoogle(true);
+    try {
+      await authService.signInWithGoogle("/");
+    } catch (err) {
+      toast.error("Error con Google", {
+        description: err.message || "Error inesperado.",
+      });
+      setLoadingGoogle(false);
+    }
+  };
+
   if (loadingCharge) return <Loading />;
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-amber-700 to-black relative overflow-hidden">
+    <div className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-background relative overflow-hidden">
       <motion.div
         aria-hidden
         animate={{ y: [0, 20, 0], x: [0, -10, 0] }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-amber-950 blur-3xl"
+        className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-secondary blur-3xl"
       />
       <motion.div
         aria-hidden
         animate={{ y: [0, -25, 0], x: [0, 15, 0] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-        className="pointer-events-none absolute -bottom-32 -right-20 w-96 h-96 rounded-full bg-amber-950 blur-3xl"
+        className="pointer-events-none absolute -bottom-32 -right-20 w-96 h-96 rounded-full bg-secondary blur-3xl"
       />
 
       <motion.div
@@ -123,8 +136,8 @@ export default function ResponsiveLogin({ user }) {
                 x2="100%"
                 y2="100%"
               >
-                <stop offset="0%" stopColor="oklch(26.6% 0.079 36.259)" />
-                <stop offset="100%" stopColor="oklch(28.6% 0.066 53.813)" />
+                <stop offset="0%" stopColor="#0f172a" />
+                <stop offset="100%" stopColor="#334155" />
               </linearGradient>
             </defs>
             <path
@@ -276,8 +289,8 @@ export default function ResponsiveLogin({ user }) {
                   onClick={() => setRemember((v) => !v)}
                   className={`w-4 h-4 rounded-full flex items-center justify-center transition-all duration-200 ${
                     remember
-                      ? "bg-orange-800 border-amber-500"
-                      : "bg-orange-200 border border-border"
+                      ? "bg-primary border-primary"
+                      : "bg-secondary border border-border"
                   }`}
                   aria-pressed={remember}
                   aria-label="Recordarme"
@@ -298,7 +311,7 @@ export default function ResponsiveLogin({ user }) {
                 <span className="text-muted-foreground">
                   Recordarme
                   {remember && (
-                    <span className="ml-1 text-amber-600 font-medium">
+                    <span className="ml-1 text-primary font-medium">
                       · guarda la cuenta
                     </span>
                   )}
@@ -322,7 +335,7 @@ export default function ResponsiveLogin({ user }) {
               className={`w-full rounded-full py-3.5 px-6 text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 mt-2 shadow-lg shadow-primary/30 ${
                 loading
                   ? "bg-muted text-muted-foreground cursor-not-allowed shadow-none"
-                  : "bg-gradient-to-r from-orange-800 to-amber-500 text-white hover:shadow-xl hover:shadow-primary/40 cursor-pointer"
+                  : "bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/40 cursor-pointer"
               }`}
             >
               <AnimatePresence mode="wait">
@@ -358,6 +371,35 @@ export default function ResponsiveLogin({ user }) {
               </AnimatePresence>
             </motion.button>
           </form>
+
+          <div className="mt-6 flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="h-px flex-1 bg-border" aria-hidden="true" />
+            <span>O</span>
+            <div className="h-px flex-1 bg-border" aria-hidden="true" />
+          </div>
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading || loadingGoogle}
+              aria-label="Iniciar sesión con Google"
+              className="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center shadow-md hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingGoogle ? (
+                <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              ) : (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M21.35 11.1H12v3.2h5.35c-.5 2.4-2.55 3.7-5.35 3.7-3.25 0-5.9-2.65-5.9-5.9s2.65-5.9 5.9-5.9c1.45 0 2.75.5 3.8 1.5L18.1 5.3C16.45 3.85 14.35 3 12 3 6.95 3 3 6.95 3 12s3.95 9 9 9c4.45 0 8.5-3.25 8.5-9 0-.45-.05-.9-.15-1.4z" />
+                </svg>
+              )}
+            </button>
+          </div>
 
           {!isAddMode && (
             <div className="mt-6 flex justify-center">

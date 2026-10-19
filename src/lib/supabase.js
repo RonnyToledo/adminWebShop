@@ -52,6 +52,21 @@ export const authService = {
     return data;
   },
 
+  /** Iniciar sesión o registrarse mediante Google */
+  async signInWithGoogle(next = "/") {
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error("Supabase no está disponible");
+
+    const redirectUrl = new URL("/auth/callback", window.location.origin);
+    redirectUrl.searchParams.set("next", next);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirectUrl.toString() },
+    });
+
+    if (error) throw error;
+  },
+
   /** Registrarse */
   async signUp(email, password, metadata = {}) {
     const res = await fetch("/api/login", {
@@ -90,8 +105,8 @@ export const authService = {
     if (!supabase) return () => {};
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      callback(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      callback(session?.user ?? null, event);
     });
     return () => subscription.unsubscribe();
   },

@@ -1,4 +1,3 @@
-//api/tienda/route.js
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
 
@@ -18,6 +17,22 @@ const toIntegerOrNull = (v) => {
   const n =
     typeof v === "number" ? v : parseInt(String(v).replace(/\D/g, ""), 10);
   return Number.isNaN(n) ? null : n;
+};
+
+// ── FIX: FormData siempre manda strings. Antes se hacía
+// `const stocks = data.get("stock") || datos.stock` y se pasaba tal cual al
+// RPC. Cuando el switch estaba en `false`, `data.get("stock")` devolvía el
+// STRING "false", que es truthy en JS (`"false" || x` nunca cae al fallback,
+// y si el RPC espera boolean, "false" como texto probablemente se guarda
+// como truthy). Este helper normaliza cualquier variante ("true"/"false",
+// "1"/"0", boolean real, undefined) a un boolean real antes de mandarlo.
+const toBooleanOrDefault = (v, fallback = false) => {
+  if (v == null) return fallback;
+  if (typeof v === "boolean") return v;
+  const s = String(v).trim().toLowerCase();
+  if (s === "true" || s === "1" || s === "on") return true;
+  if (s === "false" || s === "0" || s === "off" || s === "") return false;
+  return fallback;
 };
 
 async function getAuthenticatedSupabase() {
@@ -58,14 +73,12 @@ const datos = {
   urlPoster: "",
   parrrafo: "",
   Editor: "",
-  act_tf: true,
   insta: "https://www.instagram.com/",
-  Provincia: "",
   domicilio: true,
   variable: "t",
   envios: "[]",
   municipio: "",
-  country: "",
+  stock: false, // ← FIX: agregado default explícito (antes no existía en `datos`)
   tipo: "",
   login: true,
   active: true,
@@ -74,39 +87,37 @@ const datos = {
 export async function POST(request) {
   try {
     const supabase = await getAuthenticatedSupabase();
-
     const data = await request.formData();
 
     const name = data.get("name") || datos.name;
-    const country = data.get("country") || datos.country;
-    const provincia = data.get("Provincia") || datos.Provincia;
-    const municipio = data.get("municipio") || datos.municipio;
-    const editor = data.get("user") || datos.Editor; // debe ser UUID
-    const email = data.get("email") || datos.email;
-    const stocks = data.get("stock") || datos.stock;
+    const country = data.get("country") || datos.country; // ISO code del país
+    const region = data.get("region") || datos.region; // ISO code (regions.region_code)
+    const municipio = data.get("municipio") || datos.municipio; // nombre libre
+    const editor = data.get("user") || datos.Editor;
+    const email = data.get("email") || datos.email || "";
 
-    // Convertir cell a integer o null (esto obliga a Postgres a elegir la firma con bigint)
+    // ── FIX: antes `stocks` quedaba como string "true"/"false" (truthy
+    // siempre) porque FormData no tipa. Ahora se normaliza a boolean real.
+    const stocks = toBooleanOrDefault(data.get("stock"), datos.stock);
+
     const rawCell = data.get("cell");
     const cell = toIntegerOrNull(rawCell);
 
-    // preparar JSON como objetos (no strings). Si vienen del form, intentar parsear; si no, usar datos por defecto.
     const enviosInput = data.get("envios") || datos.envios;
 
     const payload = {
       _name: name,
       _country: country,
-      _provincia: provincia,
+      _region: region,
       _municipio: municipio,
       _editor: editor,
       _email: email,
       _stocks: stocks,
-      _cell: cell, // number o null -> evita ambigüedad bigint/text
+      _cell: cell,
       _urlposter: datos.urlPoster,
       _parrrafo: data.get("parrrafo") || datos.parrrafo,
-      _act_tf: datos.act_tf,
-      _insta: data.get("insta") || datos.insta,
       _domicilio: datos.domicilio,
-      _envios: parseJSONOr(enviosInput, []), // array -> jsonb
+      _envios: parseJSONOr(enviosInput, []),
       _tipo: data.get("tipo") || datos.tipo,
       _login: datos.login,
       _active: datos.active,

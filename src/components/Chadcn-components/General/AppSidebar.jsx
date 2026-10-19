@@ -29,7 +29,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import GroupIcon from "@mui/icons-material/Group";
 import Image from "next/image";
 import BookIcon from "@mui/icons-material/Book";
-import { logoApp } from "@/utils/image";
+import { logoAdmin } from "@/utils/image";
 import { Settings, Eye, X } from "lucide-react";
 import { authService } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -127,34 +127,34 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 lg:sticky inset-y-0 left-0 z-[51] flex flex-col h-screen w-[220px] shrink-0",
-          "bg-white border-r border-gray-100",
+          "fixed top-0 lg:sticky inset-y-0 left-0 z-[49] flex flex-col h-screen w-[220px] shrink-0",
+          "bg-slate-50 border-r border-slate-200",
           "transform transition-transform duration-300 ease-in-out lg:transform-none",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
         {/* Logo */}
-        <div className="sticky lg:static top-0 flex items-center gap-3 p-4 border-b border-gray-100 h-16">
+        <div className="sticky lg:static top-0 flex items-center gap-3 p-4 border-b border-slate-200 h-16">
           <div className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0">
             <Link href="/">
               <Image
                 width={36}
                 height={36}
-                src={logoApp}
+                src={logoAdmin}
                 alt={webshop?.store?.name || "Logo"}
                 className="object-cover aspect-square rounded-xl"
               />
             </Link>
           </div>
-          <span className="font-bold text-gray-800 text-sm tracking-tight">
+          <span className="font-bold text-slate-800 text-sm tracking-tight">
             {webshop?.store?.name || "Roumenu"}
           </span>
           <button
             onClick={onClose}
-            className="lg:hidden ml-auto p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden ml-auto p-1 rounded-lg hover:bg-slate-200 transition-colors"
             aria-label="Cerrar menu"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="w-4 h-4 text-slate-500" />
           </button>
         </div>
 
@@ -163,7 +163,7 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
           {filteredNavLinks.map((section, sectionIndex) => (
             <div key={sectionIndex}>
               {section.group && (
-                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                   {section.group}
                 </p>
               )}
@@ -182,16 +182,16 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
                           onClose?.();
                         }}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                          "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                           isActive
-                            ? "bg-amber-500 text-white shadow-sm shadow-amber-200"
-                            : "text-gray-500 hover:bg-gray-50 hover:text-gray-800",
+                            ? "bg-slate-700 text-white shadow-sm shadow-slate-300"
+                            : "text-slate-500 hover:bg-slate-200 hover:text-slate-800",
                         )}
                       >
                         <Icon
                           className={cn(
                             "shrink-0",
-                            isActive ? "text-white" : "text-gray-400",
+                            isActive ? "text-white" : "text-slate-400",
                           )}
                           style={{ fontSize: 18 }}
                         />
@@ -202,7 +202,7 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
                               "ml-auto px-2 py-0.5 text-[10px] font-semibold rounded-full",
                               isActive
                                 ? "bg-white/20 text-white"
-                                : "bg-amber-50 text-amber-600",
+                                : "bg-slate-200 text-slate-600",
                             )}
                           >
                             {item.badge}
@@ -218,7 +218,7 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
         </nav>
 
         {/* ── Footer con AccountSwitcher (reemplaza la fila de usuario original) ── */}
-        <div className="sticky lg:static bottom-0 p-3 border-t border-gray-100 bg-white">
+        <div className="sticky lg:static bottom-0 p-3 border-t border-slate-200 bg-slate-50">
           <AccountSwitcher webshop={webshop} onSignOut={handleSignOut} />
         </div>
       </aside>

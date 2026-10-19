@@ -60,42 +60,43 @@ export default function UpdatePassword() {
   const pwsMatch = password.length > 0 && password === confirmPassword;
 
   useEffect(() => {
-    async function initSessionFromUrl() {
+    let cancelled = false;
+
+    async function initializeRecoverySession() {
       const hash = window.location.hash.substring(1);
       const params = new URLSearchParams(hash);
-      const access_token = params.get("access_token");
-      const refresh_token = params.get("refresh_token");
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
 
-      if (access_token && refresh_token) {
+      if (accessToken && refreshToken) {
         const {
           data: { session },
           error: setErrorSession,
-        } = await supabase.auth.setSession({ access_token, refresh_token });
+        } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
         if (setErrorSession || !session) {
-          setError("No se pudo iniciar sesión con los tokens proporcionados.");
+          if (!cancelled)
+            setError("No se pudo iniciar sesión con el enlace proporcionado.");
           return;
         }
-        setUser(session.user);
-      } else {
-        const {
-          data: { user: existingUser },
-        } = await supabase.auth.getUser();
-        if (existingUser) setUser(existingUser);
-        else router.replace("/login");
+        if (!cancelled) setUser(session.user);
+        return;
       }
-    }
 
-    async function loadUser() {
       const {
-        data: { user },
+        data: { user: existingUser },
       } = await supabase.auth.getUser();
-      if (user) setUser(user);
+      if (cancelled) return;
+      if (existingUser) setUser(existingUser);
+      else router.replace("/login");
     }
 
-    loadUser();
-    initSessionFromUrl();
+    initializeRecoverySession();
 
     return () => {
+      cancelled = true;
       clearTimeout(passwordTimer.current);
       clearTimeout(confirmTimer.current);
     };
