@@ -80,7 +80,34 @@ export async function PUT(request, { params }) {
       );
     }
     const sitioweb = (await params).tienda;
-    const storeUUID = data.get("UUID");
+    const {
+      data: currentStore,
+      error: currentStoreError,
+    } = await supabase
+      .from("Sitios")
+      .select("UUID, urlPoster, banner")
+      .eq("sitioweb", sitioweb)
+      .maybeSingle();
+
+    if (currentStoreError) {
+      console.error(
+        "[PUT /api/tienda/:tienda] Error leyendo tienda actual:",
+        currentStoreError,
+      );
+      return NextResponse.json(
+        { message: currentStoreError.message || "Error leyendo la tienda" },
+        { status: 500 },
+      );
+    }
+
+    if (!currentStore) {
+      return NextResponse.json(
+        { message: "No se encontró la tienda para actualizar" },
+        { status: 404 },
+      );
+    }
+
+    const storeUUID = currentStore.UUID;
 
     // ── Imágenes + Monedas + Horarios: todo en paralelo ──────────────────
     // Ninguno depende del resultado de otro, así que dejamos que corran
@@ -88,30 +115,40 @@ export async function PUT(request, { params }) {
     let posterResult, bannerResult;
 
     try {
-      const results = await Promise.all([
+      const results = await Promise.allSettled([
         processImage(
           data.get("urlPosterNew"),
-          data.get("urlPoster"),
+          currentStore.urlPoster,
           uploadedImages,
         ),
-        processImage(data.get("bannerNew"), data.get("banner"), uploadedImages),
-        syncMonedasForStore(
-          supabase,
-          storeUUID,
-          JSON.parse(data.get("monedas") ?? "[]"),
+        processImage(
+          data.get("bannerNew"),
+          currentStore.banner,
+          uploadedImages,
         ),
-        syncHorariosForStore(
-          supabase,
-          storeUUID,
-          JSON.parse(data.get("horarios") ?? "[]"),
-        ),
+        data.has("monedas")
+          ? syncMonedasForStore(
+              supabase,
+              storeUUID,
+              JSON.parse(data.get("monedas") ?? "[]"),
+            )
+          : Promise.resolve(),
+        data.has("horarios")
+          ? syncHorariosForStore(
+              supabase,
+              storeUUID,
+              JSON.parse(data.get("horarios") ?? "[]"),
+            )
+          : Promise.resolve(),
       ]);
 
-      posterResult = results[0];
-      bannerResult = results[1];
-      // results[2] = monedas (no necesitamos el valor de retorno)
-      // results[3] = horarios (no necesitamos el valor de retorno)
+      const failedTask = results.find((result) => result.status === "rejected");
+      if (failedTask) throw failedTask.reason;
+
+      posterResult = results[0].value;
+      bannerResult = results[1].value;
     } catch (parallelError) {
+      await Promise.allSettled(uploadedImages.map((url) => DestroyImage(url)));
       console.error(
         "[PUT /api/tienda/:tienda] Error en tareas paralelas (imágenes/monedas/horarios):",
         parallelError,
@@ -126,63 +163,119 @@ export async function PUT(request, { params }) {
     }
 
     // ── Región ────────────────────────────────────────────────────────────
-    const region_code = data.get("region") ?? null;
-
-    // ── Payload principal de Sitios ──────────────────────────────────────
-    const payload = {
-      name: data.get("name"),
-      parrrafo: data.get("parrrafo"),
-      urlPoster: posterResult,
-      banner: bannerResult,
-      stocks: data.get("stocks") === "true",
-      local: data.get("local"),
-      cell: data.get("cell"),
-      email: data.get("email"),
-      direccion: data.get("direccion"),
-      ...(data.has("ubicacion")
-        ? { ubicacion: parseLocation(data.get("ubicacion")) }
-        : {}),
-      municipio: data.get("municipio"),
-      domicilio: data.get("domicilio") === "true",
-      view_news: data.get("view_news") === "true",
-      category_hidden: data.get("category_hidden") === "true",
-      history: data.get("history"),
-      envios: data.get("envios"),
-      colorAutomatic: data.get("colorAutomatic") === "true",
-      region: region_code,
-      minimalista: data.get("minimalista") === "true",
-      catalogLayout: data.get("catalogLayout"),
-      color: data.get("color"),
-      redes: JSON.parse(data.get("redes") ?? "[]"),
-      contacto: JSON.parse(data.get("contacto") ?? "[]"),
+    const payload = {};
+    const addField = (field) => {
+      if (data.has(field)) payload[field] = data.get(field);
+    };
+    const addBoolean = (field) => {
+      if (data.has(field)) payload[field] = data.get(field) === "true";
+    };
+    const addJson = (field, fallback = []) => {
+      if (data.has(field)) {
+        payload[field] = JSON.parse(data.get(field) ?? JSON.stringify(fallback));
+      }
     };
 
-    // FIX: el update ahora ocurre ANTES de validar `error`.
-    // Antes, `if (error)` se evaluaba con una variable `error` que aún
-    // no existía en este scope (se declaraba más abajo con
-    // `const { data: tienda, error } = ...`), así que la validación
-    // nunca revisaba el resultado real del update.
-    const { data: tienda, error } = await supabase
-      .from("Sitios")
-      .update([payload])
-      .eq("sitioweb", sitioweb)
-      .select("*, monedas(*), horarios(*)");
+    for (const field of [
+      "name",
+      "parrrafo",
+      "local",
+      "cell",
+      "email",
+      "direccion",
+      "municipio",
+      "history",
+      "envios",
+      "region",
+      "catalogLayout",
+      "color",
+    ]) {
+      if (field === "region" && data.has(field)) {
+        payload.region = data.get(field) || null;
+      } else {
+        addField(field);
+      }
+    }
 
-    if (error) {
-      console.error(
-        "[PUT /api/tienda/:tienda] Error actualizando Sitios:",
-        error,
-      );
+    for (const field of [
+      "stocks",
+      "domicilio",
+      "view_news",
+      "category_hidden",
+      "colorAutomatic",
+      "minimalista",
+      "accept_orders_when_closed",
+    ]) {
+      addBoolean(field);
+    }
+
+    if (data.has("ubicacion")) {
+      payload.ubicacion = parseLocation(data.get("ubicacion"));
+    }
+    addJson("redes");
+    addJson("contacto");
+
+    if (isUploadFile(data.get("urlPosterNew"))) {
+      payload.urlPoster = posterResult;
+    }
+    if (isUploadFile(data.get("bannerNew"))) {
+      payload.banner = bannerResult;
+    }
+
+    let tienda;
+    if (Object.keys(payload).length > 0) {
+      const { data: updatedStore, error } = await supabase
+        .from("Sitios")
+        .update(payload)
+        .eq("sitioweb", sitioweb)
+        .select(
+          "*, regions(country_code,region_code,countries(code,name)), monedas(*), horarios(*)",
+        );
+
+      if (error) {
+        await Promise.allSettled(
+          uploadedImages.map((url) => DestroyImage(url)),
+        );
+        console.error(
+          "[PUT /api/tienda/:tienda] Error actualizando Sitios:",
+          error,
+        );
+        return NextResponse.json(
+          { message: error.message || "Error actualizando la tienda" },
+          { status: 500 },
+        );
+      }
+      tienda = updatedStore;
+    } else {
+      const { data: unchangedStore, error } = await supabase
+        .from("Sitios")
+        .select(
+          "*, regions(country_code,region_code,countries(code,name)), monedas(*), horarios(*)",
+        )
+        .eq("sitioweb", sitioweb)
+        .maybeSingle();
+
+      if (error) {
+        return NextResponse.json(
+          { message: error.message || "Error leyendo la tienda actualizada" },
+          { status: 500 },
+        );
+      }
+      tienda = unchangedStore ? [unchangedStore] : [];
+    }
+
+    if (!tienda?.length) {
+      await Promise.allSettled(uploadedImages.map((url) => DestroyImage(url)));
       return NextResponse.json(
-        { message: error.message || "Error actualizando la tienda" },
-        { status: 500 },
+        { message: "No se encontró la tienda para actualizar" },
+        { status: 404 },
       );
     }
 
     await Promise.allSettled(
       [
-        data.get("urlPosterNew") ? data.get("urlPoster") : null,
-        data.get("bannerNew") ? data.get("banner") : null,
+        isUploadFile(data.get("urlPosterNew")) ? currentStore.urlPoster : null,
+        isUploadFile(data.get("bannerNew")) ? currentStore.banner : null,
       ]
         .filter(Boolean)
         .map((url) => DestroyImage(url)),
@@ -204,11 +297,21 @@ export async function PUT(request, { params }) {
 
 // ── Helper: procesa una imagen (destroy old + upload new, o mantiene la actual) ──
 async function processImage(newFile, oldUrl, uploadedImages) {
-  if (!newFile) return oldUrl;
+  if (!isUploadFile(newFile)) return oldUrl;
   const uploadResult = await UploadNewImage(newFile);
   if (!uploadResult?.secure_url) throw new Error("No se pudo subir la imagen");
   uploadedImages.push(uploadResult.secure_url);
   return uploadResult.secure_url;
+}
+
+function isUploadFile(value) {
+  return (
+    value &&
+    typeof value !== "string" &&
+    typeof value.size === "number" &&
+    value.size > 0 &&
+    typeof value.arrayBuffer === "function"
+  );
 }
 
 function parseLocation(value) {

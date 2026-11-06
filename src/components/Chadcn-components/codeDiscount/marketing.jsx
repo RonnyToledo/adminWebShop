@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -43,6 +43,7 @@ export function Marketing({ ThemeContext, initialData }) {
   const [discounts, setDiscounts] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
+  const addDiscountLock = useRef(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [focused, setFocused] = useState(null);
@@ -78,12 +79,14 @@ export function Marketing({ ThemeContext, initialData }) {
     new Date(date) < new Date().setDate(new Date().getDate() + diff);
 
   const handleAddDiscount = async () => {
+    if (addDiscountLock.current) return;
     if (!newDiscount.code || !newDiscount.expiresAt) {
       toast.error("Faltan campos", {
         description: "Código y fecha de expiración son requeridos",
       });
       return;
     }
+    addDiscountLock.current = true;
     setLoading(true);
     try {
       const formData = new FormData();
@@ -91,26 +94,25 @@ export function Marketing({ ThemeContext, initialData }) {
       formData.append("discount", newDiscount.discount || 0);
       formData.append("expiresAt", newDiscount.expiresAt);
       formData.append("uid", webshop?.store?.UUID);
-      const postPromise = apiClient.post(
+      const response = await apiClient.post(
         `/api/tienda/${webshop?.store?.sitioweb}/discountCode`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } },
       );
-      toast.promise(postPromise, {
-        loading: "Guardando código...",
-        success: (response) => {
-          setDiscounts((prev) => [...prev, ...response.data]);
-          router.refresh();
-          return "Código creado";
-        },
-        error: () => "Error al guardar",
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
+      setDiscounts((prev) => [...prev, ...(response.data ?? [])]);
       setNewDiscount({ code: "", discount: 0, expiresAt: "" });
-      setLoading(false);
       setIsAddDialogOpen(false);
+      router.refresh();
+      toast.success("Código creado");
+    } catch (error) {
+      console.error("Error al crear código de descuento:", error);
+      toast.error("No se pudo guardar el código", {
+        description:
+          error?.response?.data?.message ?? error?.message ?? "Inténtalo de nuevo.",
+      });
+    } finally {
+      addDiscountLock.current = false;
+      setLoading(false);
     }
   };
 

@@ -50,6 +50,7 @@ export default function NewProduct({ initialData }) {
   const [variantImageBlobs, setVariantImageBlobs] = useState(new Map());
   const [downloading, setdownloading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const submitLock = useRef(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -120,8 +121,8 @@ export default function NewProduct({ initialData }) {
   };
 
   const handleSubmit = async (publishAtOverride) => {
+    if (submitLock.current) return;
     const now = new Date();
-    setdownloading(true);
 
     if (!webshop?.store?.sitioweb || !webshop?.store?.UUID) {
       toast.error("Configuración incompleta", {
@@ -216,87 +217,84 @@ export default function NewProduct({ initialData }) {
     formData.append("variantImageMeta", JSON.stringify(variantMeta));
     // ── Combos sugeridos ──────────────────────────────────────────────────────
     formData.append("combos", JSON.stringify(products.combos ?? []));
+    submitLock.current = true;
+    setdownloading(true);
     const postPromise = axios.post(
       `/api/tienda/${webshop.store.sitioweb}/products`,
       formData,
       { withCredentials: true },
-    );
+    ).then((response) => {
+      const created = response?.data?.data ?? response?.data;
+      if (![200, 201].includes(response?.status) || !created) {
+        throw new Error("El servidor no devolvió el producto creado.");
+      }
+      return response;
+    });
 
     toast.promise(postPromise, {
       loading: "Creando producto...",
       success: (response) => {
         const raw = response?.data?.data ?? response?.data ?? null;
+        const created = {
+          ...raw,
+          product_variants: raw.product_variants ?? raw.variants ?? [],
+          combos: raw.combos ?? [],
+        };
+        setWebshop((prev) => ({
+          ...prev,
+          products: [...(prev?.products ?? []), created],
+        }));
+        router.refresh();
 
-        if (response?.status === 200 || response?.status === 201) {
-          // Normalizar siempre a product_variants
-          const created = raw
-            ? {
-                ...raw,
-                product_variants: raw.product_variants ?? raw.variants ?? [],
-                combos: raw.combos ?? [], // ← nuevo
-              }
-            : null;
-          setWebshop((prev) => ({
-            ...prev,
-            products: [...(prev?.products ?? []), created],
-          }));
-          router.refresh();
-
-          // Thumbnail del toast: usar la imagen que el backend confirmó
-          // (created.image, ya sincronizada desde la variante default)
-          const toastThumb = created?.image || logoAdmin;
-
-          // DESPUÉS
-          const freshVariant = makeDefaultVariant(
-            0,
-            0,
-            Number(!webshop?.store?.stocks),
-          );
-          const resetProducts = {
-            ...getInitialProducts(defaultCurrencyId),
-            product_variants: [freshVariant],
-            caja: products.caja,
-          };
-          initialProductsRef.current = resetProducts;
-          setProducts(resetProducts);
-          setVariantImageBlobs(new Map());
-          window.scrollTo({ top: 0, behavior: "smooth" });
-
-          return (
-            "Producto creado correctamente",
-            {
-              description: (
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/50 p-2.5">
-                  <Image
-                    src={toastThumb}
-                    alt={products.title}
-                    height={50}
-                    width={50}
-                    className="rounded-md object-cover"
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{products.title}</p>
-                  </div>
-                </div>
-              ),
-            }
-          );
-        }
-        return (
-          "Error inesperado",
-          {
-            description: `Status: ${response?.status}`,
-          }
+        const toastThumb = created.image || logoAdmin;
+        const freshVariant = makeDefaultVariant(
+          0,
+          0,
+          Number(!webshop?.store?.stocks),
         );
+        const resetProducts = {
+          ...getInitialProducts(defaultCurrencyId),
+          product_variants: [freshVariant],
+          caja: products.caja,
+        };
+        initialProductsRef.current = resetProducts;
+        setProducts(resetProducts);
+        setVariantImageBlobs(new Map());
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        return {
+          message: "Producto creado correctamente",
+          description: (
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/50 p-2.5">
+              <Image
+                src={toastThumb}
+                alt={products.title}
+                height={50}
+                width={50}
+                className="rounded-md object-cover"
+              />
+              <div>
+                <p className="text-sm font-medium">{products.title}</p>
+              </div>
+            </div>
+          ),
+        };
       },
-      error: (err) => (
-        "Error al crear producto",
-        {
-          description: err?.response?.data?.message ?? err?.message,
-        }
-      ),
+      error: (err) => ({
+        message: "Error al crear producto",
+        description: err?.response?.data?.message ?? err?.message,
+      }),
     });
-    postPromise.finally(() => setdownloading(false));
+    postPromise.then(
+      () => {
+        submitLock.current = false;
+        setdownloading(false);
+      },
+      () => {
+        submitLock.current = false;
+        setdownloading(false);
+      },
+    );
   };
 
   const selectedCurrencyId = products.default_moneda ?? defaultCurrencyId ?? "";

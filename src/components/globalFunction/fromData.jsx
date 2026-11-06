@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useContext } from "react";
+import React, { useRef, useState, useContext, useEffect } from "react";
 import apiClient from "@/lib/apiClient";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
@@ -25,99 +25,136 @@ function normalizeMonedasForSubmit(monedas) {
   });
 }
 
-export function FromData({ children, store, ThemeContext }) {
+function snapshotStore(store) {
+  return Object.fromEntries(
+    Object.entries(store).map(([key, value]) => [
+      key,
+      serializeForComparison(value),
+    ]),
+  );
+}
+
+function getChangedStoreKeys(store, originalSnapshot) {
+  const presentationOnlyKeys = new Set(["country", "country_name", "regions"]);
+  const keys = new Set([
+    ...Object.keys(originalSnapshot),
+    ...Object.keys(store),
+  ]);
+  return [...keys].filter(
+    (key) =>
+      !presentationOnlyKeys.has(key) &&
+      originalSnapshot[key] !== serializeForComparison(store[key]),
+  );
+}
+
+export function FromData({ children, store, setStore, ThemeContext }) {
   const router = useRouter();
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [downloading, setDownloading] = useState(false);
   const form = useRef(null);
-  const originalStore = useRef(serializeForComparison(store));
-  const hasPendingChanges =
-    serializeForComparison(store) !== originalStore.current;
+  const submitLock = useRef(false);
+  const originalStore = useRef(snapshotStore(store));
+  const changedKeys = getChangedStoreKeys(store, originalStore.current);
+  const hasPendingChanges = changedKeys.length > 0;
+
+  useEffect(() => {
+    if (!downloading) return;
+
+    const warnBeforeLeaving = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [downloading]);
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (submitLock.current || changedKeys.length === 0) return;
+    submitLock.current = true;
     setDownloading(true);
 
-    const formData = new FormData();
-
-    Object.entries(store).forEach(([key, value]) => {
-      if (value instanceof File || value instanceof Blob) {
-        formData.append(key, value);
-      } else if (key === "horarios" && Array.isArray(value)) {
-        // Siempre enviar como "horario" sin importar cómo se llame en el store
-        formData.append("horarios", JSON.stringify(value));
-      } else if (key === "monedas" && Array.isArray(value)) {
-        formData.append(
-          "monedas",
-          JSON.stringify(normalizeMonedasForSubmit(value)),
-        );
-      } else if (value && typeof value === "object") {
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, String(value ?? ""));
-      }
-    });
-    const putPromise = fetch(
-      apiClient.getUri({ url: `/api/tienda/${store.sitioweb}/` }),
-      {
-        method: "PUT",
-        body: formData,
-        credentials: "include",
-      },
-    ).then(async (response) => {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(
-          data?.message ?? "No se pudo actualizar la configuración",
-        );
-        error.response = { data };
-        throw error;
-      }
-      return { data };
-    });
-
     try {
-      const res = toast.promise(putPromise, {
-        loading: "Actualizando configuración...",
-        success: (response) => {
-          const [updatedSitio] = response.data.data;
+      const formData = new FormData();
 
-          setWebshop((prev) => ({
-            ...prev,
-            store: {
-              ...store,
-              monedas: updatedSitio.monedas,
-              // horarios raw actualizados; buildHorarioCompleto ya aplicado en actions
-              horarios: updatedSitio.horarios,
-            },
-          }));
-          originalStore.current = serializeForComparison(store);
-          if (form.current?.reset) form.current.reset();
-
-          return (
-            "Éxito",
-            {
-              description:
-                response?.data?.message ??
-                "Configuración actualizada correctamente",
-            }
+      changedKeys.forEach((key) => {
+        const value = store[key];
+        if (value instanceof File || value instanceof Blob) {
+          formData.append(key, value);
+        } else if (key === "horarios" && Array.isArray(value)) {
+          formData.append("horarios", JSON.stringify(value));
+        } else if (key === "monedas" && Array.isArray(value)) {
+          formData.append(
+            "monedas",
+            JSON.stringify(normalizeMonedasForSubmit(value)),
           );
-        },
-        error: (err) => {
-          const msg =
-            err?.response?.data?.message ??
-            err?.message ??
-            "No se pudo actualizar la configuración";
-          return ("Error", { description: `Error: ${msg}` });
-        },
+        } else if (value && typeof value === "object") {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value ?? ""));
+        }
       });
 
-      return res;
-    } catch (err) {
-      console.error("handleSubmit error:", err);
-    } finally {
-      setDownloading(false);
+      const response = await fetch(
+        apiClient.getUri({ url: `/api/tienda/${store.sitioweb}` }),
+        {
+          method: "PUT",
+          body: formData,
+          credentials: "include",
+        },
+      ).then(async (result) => {
+        const data = await result.json().catch(() => ({}));
+        if (!result.ok) {
+          const error = new Error(
+            data?.message ?? "No se pudo actualizar la configuración",
+          );
+          error.response = { data };
+          throw error;
+        }
+        return { data };
+      });
+
+      const [updatedSitio] = response.data.data ?? [];
+      if (!updatedSitio) {
+        throw new Error("El servidor no devolvió la tienda actualizada");
+      }
+
+      const persistedStore = {
+        ...store,
+        ...updatedSitio,
+        monedas: updatedSitio.monedas ?? store.monedas,
+        horarios: updatedSitio.horarios ?? store.horarios,
+      };
+      const relatedCountry = Array.isArray(updatedSitio.regions?.countries)
+        ? updatedSitio.regions.countries[0]
+        : updatedSitio.regions?.countries;
+      persistedStore.country =
+        relatedCountry?.code ?? updatedSitio.regions?.country_code ?? "";
+      persistedStore.country_name = relatedCountry?.name ?? "";
+      delete persistedStore.urlPosterNew;
+      delete persistedStore.bannerNew;
+      setStore?.(persistedStore);
+      setWebshop((prev) => ({ ...prev, store: persistedStore }));
+      originalStore.current = snapshotStore(persistedStore);
+      if (form.current?.reset) form.current.reset();
+      toast.success("Configuración actualizada", {
+        description:
+          response.data.message ?? "Configuración guardada correctamente",
+      });
       router.refresh();
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        "No se pudo actualizar la configuración";
+      console.error("handleSubmit error:", err);
+      toast.error("Error al guardar la configuración", {
+        description: msg,
+      });
+    } finally {
+      submitLock.current = false;
+      setDownloading(false);
     }
   }
 
@@ -127,7 +164,15 @@ export function FromData({ children, store, ThemeContext }) {
       className="grid gap-6 min-h-screen"
       onSubmit={handleSubmit}
     >
-      {children}
+      <fieldset
+        disabled={downloading}
+        aria-busy={downloading}
+        className={`m-0 min-w-0 border-0 p-0 ${
+          downloading ? "pointer-events-none select-none" : ""
+        }`}
+      >
+        {children}
+      </fieldset>
       <div className="backdrop-blur-sm p-2 flex justify-center sticky bottom-0">
         <Button
           type="submit"

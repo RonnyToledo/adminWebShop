@@ -58,7 +58,7 @@ const PLAN_CONFIG = {
   },
 };
 
-export function usePlan() {
+export function usePlan({ productCount } = {}) {
   const { webshop } = useContext(ThemeContext);
 
   return useMemo(() => {
@@ -74,7 +74,8 @@ export function usePlan() {
     const vencido = plan_vence ? new Date(plan_vence) < new Date() : false;
 
     // Cuántos productos tiene actualmente
-    const productosActuales = webshop?.products?.length ?? 0;
+    const productosActuales =
+      productCount ?? webshop?.products?.length ?? 0;
 
     // ¿Puede agregar más productos?
     const puedeAgregarProducto =
@@ -111,6 +112,7 @@ export function usePlan() {
     webshop?.store?.plan_vence,
     webshop?.products?.length,
     webshop?.store,
+    productCount,
   ]);
 }
 

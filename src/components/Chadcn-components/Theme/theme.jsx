@@ -445,7 +445,7 @@ export default function Theme({ ThemeContext, initialData }) {
                       onChange={(v) =>
                         setStore({ ...store, category_hidden: v })
                       }
-                      label="Mostrar sección de novedades"
+                      label="Mostrar panel de categorías"
                     />
                   </div>
                 }

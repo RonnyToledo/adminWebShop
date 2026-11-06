@@ -74,7 +74,12 @@ export default function ResponsiveLogin({ user }) {
         );
       }
 
-      window.location.assign("/");
+      const requestedPlan =
+        searchParams.get("plan") || data.user?.user_metadata?.requested_plan;
+      const nextPath = /^[a-z0-9_-]{1,40}$/i.test(requestedPlan || "")
+        ? `/welcome?plan=${encodeURIComponent(requestedPlan)}`
+        : "/";
+      window.location.assign(nextPath);
     } catch (err) {
       console.error(err);
       toast.error("Error al iniciar sesión", {
@@ -88,7 +93,11 @@ export default function ResponsiveLogin({ user }) {
   const handleGoogleLogin = async () => {
     setLoadingGoogle(true);
     try {
-      await authService.signInWithGoogle("/");
+      const requestedPlan = searchParams.get("plan");
+      const nextPath = /^[a-z0-9_-]{1,40}$/i.test(requestedPlan || "")
+        ? `/welcome?plan=${encodeURIComponent(requestedPlan)}`
+        : "/";
+      await authService.signInWithGoogle(nextPath);
     } catch (err) {
       toast.error("Error con Google", {
         description: err.message || "Error inesperado.",

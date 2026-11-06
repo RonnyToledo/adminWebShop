@@ -43,6 +43,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { VscSymbolProperty } from "react-icons/vsc";
 import { IoIosCheckmarkCircle, IoIosWarning } from "react-icons/io";
 import { MdContacts } from "react-icons/md";
+import { serializeForComparison } from "@/utils/hasChanges";
 
 export default function Configuracion({ ThemeContext, country, initialData }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
@@ -53,8 +54,21 @@ export default function Configuracion({ ThemeContext, country, initialData }) {
     monedas: [],
     horarios: [],
     envios: [],
+    accept_orders_when_closed: true,
     ...(initialData?.store ?? {}),
   });
+  const baselineStore = useMemo(
+    () => ({
+      comentario: [],
+      categoria: [],
+      monedas: [],
+      horarios: [],
+      envios: [],
+      accept_orders_when_closed: true,
+      ...(initialData?.store ?? {}),
+    }),
+    [initialData?.store],
+  );
   const { config } = usePlan();
 
   useEffect(() => {
@@ -183,7 +197,7 @@ export default function Configuracion({ ThemeContext, country, initialData }) {
   const productosAgotados =
     webshop?.products?.filter((p) => p.agotado).length ?? 0;
   const totalCategorias = store?.categoria?.length ?? 0;
-  const hasPending = hasPendingChanges(store, webshop?.store);
+  const hasPending = hasPendingChanges(baselineStore, store);
 
   const defaultMonedaName =
     store?.monedas?.find((m) => m.defecto)?.nombre ?? "CUP";
@@ -215,7 +229,11 @@ export default function Configuracion({ ThemeContext, country, initialData }) {
 
   return (
     <main className="container mx-auto my-8 p-0">
-      <FromData store={store} ThemeContext={ThemeContext}>
+      <FromData
+        store={store}
+        setStore={setStore}
+        ThemeContext={ThemeContext}
+      >
         <div className="min-w-0 space-y-10">
           {/* ── Encabezado + resumen ─────────────────────────────────────── */}
           <header className="space-y-3 px-4 sm:px-6 lg:px-8 ">
@@ -292,6 +310,20 @@ export default function Configuracion({ ThemeContext, country, initialData }) {
                         }
                       />
                     ))}
+
+                    <SettingRow
+                      htmlFor="switch-accept_orders_when_closed"
+                      label="Aceptar pedidos fuera del horario"
+                      description="Permite confirmar pedidos cuando la tienda aparece como cerrada"
+                      control={
+                        <SwitchStore
+                          name={store?.accept_orders_when_closed ?? true}
+                          object={store}
+                          title="accept_orders_when_closed"
+                          funcion={setStore}
+                        />
+                      }
+                    />
 
                     {config.domicilio && (
                       <SettingRow
@@ -638,7 +670,7 @@ const SECTIONS = [
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
 const hasPendingChanges = (data, store) =>
-  JSON.stringify(data) !== JSON.stringify(store);
+  serializeForComparison(data) !== serializeForComparison(store);
 
 function getFirstAvailableId(monedas) {
   const used = new Set((monedas || []).map((m) => Number(m.id)));

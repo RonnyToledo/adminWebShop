@@ -7,13 +7,29 @@
         "href": "/",
         "icon": "HomeRoundedIcon",
         "requiredAction": "read"
-      },
+      }
+    ]
+  },
+  {
+    "group": "Catálogo",
+    "links": [
       {
         "label": "Productos",
         "href": "/products",
         "icon": "AppRegistrationRoundedIcon",
         "requiredAction": "write"
       },
+      {
+        "label": "Categorías",
+        "href": "/category",
+        "icon": "CategoryRoundedIcon",
+        "requiredAction": "write"
+      }
+    ]
+  },
+  {
+    "group": "Contenido",
+    "links": [
       {
         "label": "Blog",
         "href": "/blog",
@@ -33,10 +49,16 @@
       },
 
       {
-        "label": "Analytics",
+        "label": "Analíticas",
         "href": "/analytics",
         "icon": "BarChartIcon",
         "requiredAction": "analytics"
+      },
+      {
+        "label": "Pedidos",
+        "href": "/orders",
+        "icon": "ListIcon",
+        "requiredAction": "read"
       },
       {
         "label": "Ventas",

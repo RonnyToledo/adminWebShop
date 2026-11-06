@@ -1,6 +1,8 @@
 "use client";
 import React, { useContext, useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import dataCards from "@/components/json/card.json";
+import navLinks from "@/components/json/link.json";
 import { usePathname, useRouter } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
@@ -18,11 +20,19 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
-import { ArrowLeft, Bell, HelpCircle, Menu, Search } from "lucide-react";
+import { Bell, HelpCircle, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supa";
+import { can, NAV_PERMISSIONS } from "@/lib/permissions";
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 
 // ─── Generador de títulos dinámicos ──────────────────────────────────────────
 function getDynamicTitle(pathname, webshop) {
@@ -38,7 +48,7 @@ function getDynamicTitle(pathname, webshop) {
     return { name: "Detalle de categoría", group: "PRODUCTOS" };
   if (/^\/orders\/[^/]+$/.test(pathname))
     return { name: "Detalle del pedido", group: "ANALÍTICAS" };
-  if (/^\/analitycs\/new$/.test(pathname))
+  if (/^\/analytics\/new$/.test(pathname))
     return { name: "Nuevo reporte", group: "ANALÍTICAS" };
 
   const titles = {
@@ -46,15 +56,18 @@ function getDynamicTitle(pathname, webshop) {
     "/newProduct": { name: "Crear Producto", group: "PRODUCTOS" },
     "/products": { name: "Todos los productos", group: "PRODUCTOS" },
     "/category": { name: "Categorías", group: "PRODUCTOS" },
+    "/blog": { name: "Blog", group: "CONTENIDO" },
+    "/blog/new": { name: "Crear entrada del blog", group: "CONTENIDO" },
     "/orders": { name: "Pedidos", group: "ANALÍTICAS" },
     "/ventas": { name: "Ventas", group: "ANALÍTICAS" },
-    "/analitycs": { name: "Analíticas", group: "ANALÍTICAS" },
-    "/codeDiscount": { name: "Códigos de descuento", group: "ANALÍTICAS" },
-    "/notifications": { name: "Notificaciones", group: "CONFIGURACION" },
+    "/analytics": { name: "Analíticas", group: "ANALÍTICAS" },
+    "/codeDiscount": { name: "Códigos de descuento", group: "MARKETING" },
+    "/notifications": { name: "Notificaciones", group: "CONFIGURACIÓN" },
     "/configuracion": { name: "Configuración", group: "CONFIGURACIÓN" },
-    "/social": { name: "Redes sociales", group: "CONFIGURACION" },
+    "/social": { name: "Redes sociales", group: "CONFIGURACIÓN" },
     "/theme": { name: "Personalización", group: "CONFIGURACIÓN" },
     "/planes": { name: "Tu plan", group: "CONFIGURACIÓN" },
+    "/team": { name: "Equipo", group: "EQUIPO" },
   };
 
   return (
@@ -94,14 +107,66 @@ const GuideCard = ({ title, description, steps }) => (
 export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
   const { webshop } = useContext(ThemeContext);
   const [notificaciones, setNotificaciones] = useState(false);
-
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [databaseResults, setDatabaseResults] = useState({
+    products: [],
+    categories: [],
+  });
+  const [searchingDatabase, setSearchingDatabase] = useState(false);
+  const [databaseSearchError, setDatabaseSearchError] = useState("");
   const pathname = usePathname();
   const router = useRouter();
+  const storeRole = webshop?.store_role ?? "owner";
 
   const title = useMemo(
     () => getDynamicTitle(pathname, webshop),
     [pathname, webshop],
   );
+  const guideCard = useMemo(
+    () =>
+      dataCards.find(({ route }) => {
+        const pattern = route
+          .split("/")
+          .map((segment) =>
+            segment.startsWith("[") && segment.endsWith("]")
+              ? "[^/]+"
+              : segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          )
+          .join("/");
+        return new RegExp(`^${pattern}$`).test(pathname);
+      }),
+    [pathname],
+  );
+  useEffect(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, [pathname]);
+
+  const searchableSections = useMemo(
+    () =>
+      navLinks
+        .map((section) => {
+          const requiredAction = NAV_PERMISSIONS[section.group ?? ""] ?? "read";
+          if (!can(storeRole, requiredAction)) return null;
+          const links = section.links.filter(
+            (item) =>
+              !item.requiredAction || can(storeRole, item.requiredAction),
+          );
+          return links.length ? { ...section, links } : null;
+        })
+        .filter(Boolean),
+    [storeRole],
+  );
+  const navigateFromSearch = (href) => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    router.push(href);
+  };
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
 
   // Cargar notificaciones pendientes
   useEffect(() => {
@@ -141,6 +206,62 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
     return () => supabase.removeChannel(channel);
   }, [webshop?.user?.id]);
 
+  useEffect(() => {
+    const handleShortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
+  }, []);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    const storeId = webshop?.store?.UUID;
+    if (query.length < 2 || !storeId || !can(storeRole, "write")) {
+      setDatabaseResults({ products: [], categories: [] });
+      setSearchingDatabase(false);
+      setDatabaseSearchError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      setSearchingDatabase(true);
+      setDatabaseSearchError("");
+      try {
+        const params = new URLSearchParams({ q: query, storeId });
+        const response = await fetch(`/api/admin/search?${params}`, {
+          signal: controller.signal,
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            result.message || "No se pudo completar la búsqueda.",
+          );
+        }
+        setDatabaseResults({
+          products: result.products ?? [],
+          categories: result.categories ?? [],
+        });
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setDatabaseResults({ products: [], categories: [] });
+          setDatabaseSearchError(error.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) setSearchingDatabase(false);
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [searchQuery, storeRole, webshop?.store?.UUID]);
+
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between gap-2 px-3 py-2 h-14 border-b border-slate-200 bg-slate-50/95 backdrop-blur-sm sm:gap-4 sm:px-6">
       {/* Left: menu + title */}
@@ -164,19 +285,130 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
         </div>
       </div>
 
-      {/* Center: Search + filters */}
+      {/* Center: navigation search */}
       <div className="hidden md:flex items-center gap-3 flex-1 max-w-xl">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            className="pl-9 h-9 bg-slate-100 border-slate-200 text-sm placeholder:text-slate-400 focus-visible:ring-slate-400"
-            placeholder="Search"
-          />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-            ⌘ K
+        <Button
+          variant="ghost"
+          className="relative flex-1 justify-start h-9 bg-slate-100 border border-slate-200 text-sm font-normal text-slate-500 hover:bg-slate-200"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Buscar secciones"
+        >
+          <Search className="mr-2 h-4 w-4" />
+          Buscar una sección...
+          <kbd className="absolute right-3 text-[10px] font-medium text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
+            Ctrl K
           </kbd>
-        </div>
+        </Button>
+        <CommandDialog
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          className="max-h-[80vh]"
+        >
+          <CommandInput
+            placeholder="Buscar secciones, productos o categorías..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList className="max-h-[calc(80vh-3.5rem)] overflow-y-auto">
+            {searchQuery.trim().length < 2 ? (
+              <>
+                <CommandEmpty>Escribe al menos 2 caracteres.</CommandEmpty>
+                {searchableSections.map((section) => (
+                  <CommandGroup key={section.group} heading={section.group}>
+                    {section.links.map((item) => (
+                      <CommandItem
+                        key={item.href}
+                        value={`${item.label} ${section.group}`}
+                        onSelect={() => navigateFromSearch(item.href)}
+                      >
+                        {item.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </>
+            ) : (
+              <>
+                {databaseSearchError ? (
+                  <p
+                    role="alert"
+                    className="px-4 py-3 text-sm text-destructive"
+                  >
+                    {databaseSearchError}
+                  </p>
+                ) : null}
+                {searchingDatabase ? (
+                  <p
+                    role="status"
+                    className="px-4 py-3 text-sm text-muted-foreground"
+                  >
+                    Buscando en productos y categorías...
+                  </p>
+                ) : null}
+                {searchableSections.map((section) => (
+                  <CommandGroup key={section.group} heading={section.group}>
+                    {section.links.map((item) => (
+                      <CommandItem
+                        key={item.href}
+                        value={`${item.label} ${section.group}`}
+                        onSelect={() => navigateFromSearch(item.href)}
+                      >
+                        {item.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+                {databaseResults.products.length ? (
+                  <CommandGroup heading="Productos">
+                    {databaseResults.products.map((product) => (
+                      <CommandItem
+                        key={product.productId}
+                        value={`${product.title} producto`}
+                        onSelect={() =>
+                          navigateFromSearch(
+                            `/products/${encodeURIComponent(product.productId)}`,
+                          )
+                        }
+                      >
+                        {product.title}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ) : null}
+                {databaseResults.categories.length ? (
+                  <CommandGroup heading="Categorías">
+                    {databaseResults.categories.map((category) => (
+                      <CommandItem
+                        key={category.id}
+                        value={`${category.name} categoría`}
+                        onSelect={() =>
+                          navigateFromSearch(
+                            `/category/${encodeURIComponent(category.id)}`,
+                          )
+                        }
+                      >
+                        {category.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ) : null}
+                {!searchingDatabase &&
+                !databaseSearchError &&
+                !databaseResults.products.length &&
+                !databaseResults.categories.length &&
+                !searchableSections.some((section) =>
+                  section.links.some((item) =>
+                    `${item.label} ${section.group}`
+                      .toLowerCase()
+                      .includes(searchQuery.trim().toLowerCase()),
+                  ),
+                ) ? (
+                  <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                ) : null}
+              </>
+            )}
+          </CommandList>
+        </CommandDialog>
       </div>
 
       {/* Right: Notifications + User */}
@@ -201,22 +433,32 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
               variant="ghost"
               size="icon"
               className="w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500"
+              aria-label="Ayuda sobre esta página"
+              title="Ayuda sobre esta página"
             >
               <HelpCircle className="w-4.5 h-4.5" />
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Info</DialogTitle>
+              <DialogTitle>Ayuda de la sección</DialogTitle>
               <DialogDescription>
-                Panel de información sobre la pantalla
+                Instrucciones y pasos para usar esta parte del panel.
               </DialogDescription>
             </DialogHeader>
-            {dataCards
-              .filter((obj) => obj.llave === identifyRoute(pathname))
-              .map((card, index) => (
-                <GuideCard key={index} {...card} />
-              ))}
+            {guideCard ? (
+              <GuideCard {...guideCard} />
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Aún no hay una guía específica para esta pantalla. Consulta la
+                  guía general del panel para ver las instrucciones disponibles.
+                </p>
+                <Button asChild>
+                  <Link href="/guia">Abrir guía del panel</Link>
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
@@ -255,27 +497,3 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
     </header>
   );
 }
-
-// ─── identifyRoute ────────────────────────────────────────────────────────────
-const identifyRoute = (pathname) => {
-  const routeMap = {
-    "/category/[uid]": "Category UID",
-    "/category": "Category",
-    "/codeDiscount": "Code Discount",
-    "/configuracion/domicilios": "Configuración Domicilios",
-    "/guia": "Guía",
-    "/configuracion": "Configuracion",
-    "/newProduct": "New Product",
-    "/orders": "Orders",
-    "/products/[specific]": "Product Specific",
-    "/products": "Products",
-    "/": "Dashboard",
-  };
-  const matchedRoute = Object.keys(routeMap).find((route) => {
-    const routeRegex = new RegExp(
-      `^${route.replace(/\[.*?\]/g, "([^/]+)").replace(/\//g, "\\/")}$`,
-    );
-    return routeRegex.test(pathname);
-  });
-  return routeMap[matchedRoute] || "Unknown Route";
-};

@@ -48,7 +48,7 @@
     "@radix-ui/react-tooltip": "1.2.7",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.45.2",
-    "axios": "1.7.7",
+    "axios": "^1.21.0",
     "class-variance-authority": "0.7.1",
     "cloudinary": "^2.10.0",
     "cloudinary-build-url": "^0.2.4",
@@ -76,21 +76,21 @@
     "swr": "^2.4.0",
     "tailwind-merge": "2.4.0",
     "tailwindcss-animate": "1.0.7",
-    "uuid": "11.0.0",
+    "uuid": "^11.1.1",
     "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^16.2.4",
+    "eslint-config-next": "^15.5.29",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "postcss": "8",
     "tailwindcss": "3.4.1",
-    "vercel": "^59.9.1"
+    "vercel": "^65.11.0"
   }
 }

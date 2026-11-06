@@ -104,6 +104,7 @@ export default function CreateAccount() {
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [requestedPlan, setRequestedPlan] = useState("");
 
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -118,6 +119,11 @@ export default function CreateAccount() {
       if (id) router.refresh();
     });
   }, [router]);
+
+  useEffect(() => {
+    const plan = new URLSearchParams(window.location.search).get("plan") || "";
+    if (/^[a-z0-9_-]{1,40}$/i.test(plan)) setRequestedPlan(plan);
+  }, []);
 
   useEffect(
     () => () => {
@@ -201,48 +207,47 @@ export default function CreateAccount() {
       password,
       metadata: {
         full_name: name.trim(),
+        ...(requestedPlan ? { requested_plan: requestedPlan } : {}),
         ...(avatarUrl ? { avatar_url: avatarUrl, picture: avatarUrl } : {}),
       },
     });
 
     if (!res?.data) throw new Error("No se recibió respuesta del servidor.");
-    if (res.status === 200 || res.status === 201) router.push("/");
+    return res;
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const promise = performSignup();
-      toast.promise(promise, {
+      const response = await toast.promise(performSignup(), {
         loading: "Creando cuenta...",
-        success: (res) => {
-          if (res?.userId) router.push("/");
-          return (
-            "Cuenta creada",
-            {
-              description: res?.message ?? "Cuenta creada correctamente.",
-            }
-          );
-        },
+        success: (res) => ({
+          message: "Cuenta creada",
+          description:
+            res?.data?.message ?? "Cuenta creada correctamente.",
+        }),
         error: (err) => {
           console.error("Signup error:", err);
-          return (
-            "Error al crear cuenta",
-            {
-              description:
-                err.message + ": " + err.response?.data?.error ??
-                "Error al crear la cuenta.",
-            }
-          );
+          return {
+            message: "Error al crear cuenta",
+            description:
+              err.response?.data?.message ||
+              err.message ||
+              "Error al crear la cuenta.",
+          };
         },
       });
+      const nextPath = requestedPlan
+        ? `/welcome?plan=${encodeURIComponent(requestedPlan)}`
+        : "/welcome";
+      const loginPath = requestedPlan
+        ? `/login?plan=${encodeURIComponent(requestedPlan)}`
+        : "/login";
+      router.replace(response?.data?.session ? nextPath : loginPath);
+      router.refresh();
     } catch (error) {
-      toast.error("Error al crear cuenta", {
-        description:
-          error.message + ": " + error.response?.data?.error ||
-          "Error inesperado.",
-      });
+      console.error("Signup error:", error);
     } finally {
       setLoading(false);
     }
@@ -251,7 +256,10 @@ export default function CreateAccount() {
   const handleGoogleLogin = async () => {
     setLoadingGoogle(true);
     try {
-      await authService.signInWithGoogle("/");
+      const nextPath = requestedPlan
+        ? `/welcome?plan=${encodeURIComponent(requestedPlan)}`
+        : "/welcome";
+      await authService.signInWithGoogle(nextPath);
     } catch (err) {
       toast.error("Error con Google", {
         description: err.message || "Error inesperado.",

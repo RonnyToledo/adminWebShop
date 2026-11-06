@@ -1,8 +1,12 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function sendInviteEmail({ to, storeName, role, inviteId }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is required to send invitation emails.");
+  }
+
+  const resend = new Resend(apiKey);
   const acceptUrl = `${process.env.NEXT_PUBLIC_DEPLOYMENT}/team/invitations`;
   const rejectUrl = `${process.env.NEXT_PUBLIC_DEPLOYMENT}/team/invitations`;
 

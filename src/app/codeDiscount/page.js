@@ -1,6 +1,6 @@
 import React from "react";
 import { ThemeContext } from "@/context/useContext";
-import { Marketing } from "@/components/Chadcn-components/CodeDiscount/marketing";
+import { Marketing } from "@/components/Chadcn-components/codeDiscount/marketing";
 import { fetchDiscountData } from "@/lib/supabaseApi";
 import { getServerUser } from "@/lib/server-auth";
 

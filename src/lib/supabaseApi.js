@@ -68,6 +68,24 @@ export async function fetchStoreShellData(userId) {
   };
 }
 
+export async function fetchPlanData(userId) {
+  const shell = await fetchStoreShellData(userId);
+  if (shell.error || !shell.data?.store?.UUID) return shell;
+
+  const supabase = await getServerSupabase();
+  const { count, error } = await supabase
+    .from("Products")
+    .select("productId", { count: "exact", head: true })
+    .eq("storeId", shell.data.store.UUID);
+
+  if (error) return { data: null, error };
+
+  return {
+    data: { ...shell.data, productCount: count ?? 0 },
+    error: null,
+  };
+}
+
 export async function fetchProductsData(userId) {
   const supabase = await getServerSupabase();
   const access = await getStoreAccess(supabase, userId);
@@ -153,6 +171,12 @@ export async function fetchAnalyticsData(userId) {
     .single();
   if (error) return { data: null, error };
   const ga = store.sitioweb ? await fetchGAData(store.sitioweb) : null;
+  if (ga?.error) {
+    return {
+      data: null,
+      error: new Error(`No se pudieron cargar las analíticas de Google: ${ga.error}`),
+    };
+  }
   return {
     data: {
       store: {
@@ -192,8 +216,17 @@ async function fetchStoreDomainData(userId, select) {
 
 function normalizeStoreData(store) {
   if (!store) return store;
+  const relatedCountry = Array.isArray(store.regions?.countries)
+    ? store.regions.countries[0]
+    : store.regions?.countries;
   return {
     ...store,
+    country:
+      relatedCountry?.code ??
+      store.regions?.country_code ??
+      store.country ??
+      "",
+    country_name: relatedCountry?.name ?? null,
     envios: safeJsonParse(store.envios, []),
   };
 }
@@ -201,7 +234,7 @@ function normalizeStoreData(store) {
 export async function fetchConfigurationData(userId) {
   const result = await fetchStoreDomainData(
     userId,
-    "*, categorias(*), horarios(*), monedas(*), Products(productId, default_moneda, visible)",
+    "*, regions(country_code,region_code,countries(code,name)), categorias(*), horarios(*), monedas(*), Products(productId, default_moneda, visible)",
   );
   if (result.error || !result.data?.store) return result;
   return {
@@ -227,7 +260,7 @@ export async function fetchSocialData(userId) {
 export async function fetchSalesData(userId) {
   const result = await fetchStoreDomainData(
     userId,
-    "UUID, sitioweb, name, Provincia, plan, plan_vence",
+    "UUID, sitioweb, name, plan, plan_vence",
   );
   if (result.error || !result.data?.store) return result;
 

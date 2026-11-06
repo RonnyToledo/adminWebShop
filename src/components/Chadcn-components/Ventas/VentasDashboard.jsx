@@ -20,8 +20,8 @@ import { Logs } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmt(n = 0) {
-  return Number(n).toLocaleString("es-CU") + " CUP";
+function fmt(n = 0, currency = "CUP") {
+  return Number(n).toLocaleString("es-CU") + " " + currency;
 }
 
 function fmtK(n = 0) {
@@ -61,6 +61,8 @@ function processCompras(events = []) {
     .filter((e) => e.events === "compra")
     .map((e) => ({
       ...e.desc,
+      total: Number(e.desc?.total ?? 0),
+      moneda: e.desc?.moneda || "CUP",
       created_at: e.created_at,
       UID_Venta: e.UID_Venta,
     }));
@@ -160,7 +162,16 @@ function buildEntregas(compras) {
   return Object.values(mapa);
 }
 
-function buildAlerts(compras, monthlyData, afiliados) {
+function buildAlerts(compras, monthlyData, afiliados, currency) {
+  if (compras.length === 0) {
+    return [
+      {
+        type: "info",
+        msg: `Aún no hay pedidos en ${currency} para analizar.`,
+      },
+    ];
+  }
+
   const alerts = [];
   const last = monthlyData[monthlyData.length - 1]?.ingresos ?? 0;
   const prev = monthlyData[monthlyData.length - 2]?.ingresos ?? 0;
@@ -308,7 +319,7 @@ const AFF_COLORS = [
   "#BA7517",
 ];
 
-function AfiliadoRow({ a, max, index }) {
+function AfiliadoRow({ a, max, index, currency }) {
   const pct = max ? Math.round((a.ingresos / max) * 100) : 0;
   const color = AFF_COLORS[index % AFF_COLORS.length];
   return (
@@ -325,20 +336,20 @@ function AfiliadoRow({ a, max, index }) {
             {a.code}
           </span>
           <span className="text-xs text-muted-foreground whitespace-nowrap">
-            {fmtK(a.ingresos)} CUP
+            {fmtK(a.ingresos)} {currency}
           </span>
         </div>
         <ProgressBar pct={pct} color={color} />
         <p className="text-[11px] text-muted-foreground">
           {a.ventas} venta{a.ventas > 1 ? "s" : ""} · ticket{" "}
-          {fmt(a.ticketPromedio)}
+          {fmt(a.ticketPromedio, currency)}
         </p>
       </div>
     </div>
   );
 }
 
-function CodigoRow({ c }) {
+function CodigoRow({ c, currency }) {
   const isEff = c.conversion !== null && parseFloat(c.conversion) > 3;
   return (
     <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
@@ -350,7 +361,9 @@ function CodigoRow({ c }) {
         </p>
       </div>
       <div className="text-right flex flex-col items-end gap-1">
-        <p className="text-xs font-medium">{fmtK(c.ingresos)} CUP</p>
+        <p className="text-xs font-medium">
+          {fmtK(c.ingresos)} {currency}
+        </p>
         {c.conversion !== null && (
           <span
             className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${isEff ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}
@@ -363,7 +376,7 @@ function CodigoRow({ c }) {
   );
 }
 
-function ProductoRow({ p, max }) {
+function ProductoRow({ p, max, currency }) {
   const pct = max ? Math.round((p.cant / max) * 100) : 0;
   return (
     <div className="mb-3">
@@ -374,7 +387,9 @@ function ProductoRow({ p, max }) {
         </span>
       </div>
       <ProgressBar pct={pct} color="#1D9E75" />
-      <p className="text-[11px] text-muted-foreground">{fmt(p.total)}</p>
+      <p className="text-[11px] text-muted-foreground">
+        {fmt(p.total, currency)}
+      </p>
     </div>
   );
 }
@@ -398,7 +413,7 @@ function AlertBanner({ type, msg }) {
   );
 }
 
-function CustomTooltip({ active, payload, label, isIngresos }) {
+function CustomTooltip({ active, payload, label, isIngresos, currency }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-card border border-border rounded-lg px-3 py-2 text-xs shadow-md">
@@ -412,7 +427,7 @@ function CustomTooltip({ active, payload, label, isIngresos }) {
             className="w-2 h-2 rounded-full"
             style={{ background: p.color }}
           />
-          {isIngresos ? fmt(p.value) : `${p.value} pedidos`}
+          {isIngresos ? fmt(p.value, currency) : `${p.value} pedidos`}
         </div>
       ))}
     </div>
@@ -426,7 +441,7 @@ const PAGO_LABEL = {
 };
 const LUGAR_LABEL = { Local: "Local", place: "Domicilio", pickup: "Recogida" };
 
-function TxTable({ compras }) {
+function TxTable({ compras, currency }) {
   const [filter, setFilter] = useState("all");
   const rows = [...compras]
     .filter((c) => filter === "all" || c.lugar === filter)
@@ -436,7 +451,7 @@ function TxTable({ compras }) {
     <Card>
       <CardHeader
         title="Historial de transacciones"
-        sub={`${rows.length} transacciones`}
+        sub={`${rows.length} transacciones · ${currency}`}
         right={
           <div className="flex gap-1.5 flex-wrap">
             {[
@@ -534,7 +549,7 @@ function TxTable({ compras }) {
                   </td>
                   <td className="py-2 px-2 border-b border-border text-right">
                     <span className="text-xs font-medium whitespace-nowrap">
-                      {fmt(c.total)}
+                      {fmt(c.total, currency)}
                     </span>
                   </td>
                   <td className="py-2 px-2 border-b border-border text-right">
@@ -557,6 +572,7 @@ function TxTable({ compras }) {
 export default function VentasDashboard({ ThemeContext, initialData }) {
   const { webshop, setWebshop } = useContext(ThemeContext);
   const [chartMode, setChartMode] = useState("ingresos");
+  const [currencyFilter, setCurrencyFilter] = useState("");
   const [clientes, setClientes] = useState([]);
   const [compras, setCompras] = useState(() =>
     processCompras(initialData?.events ?? []),
@@ -578,30 +594,63 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
     setClientes(calcularGranosClientes(events));
   }, [initialData?.events, webshop?.events]);
 
-  const monthly = useMemo(() => buildMonthlyData(compras), [compras]);
-  const afiliados = useMemo(() => buildAfiliados(compras), [compras]);
-  const productos = useMemo(() => buildProductos(compras), [compras]);
-  const codigos = useMemo(
-    () => buildCodigos(compras, webshop?.code ?? []),
-    [compras, webshop],
+  const currencyOptions = useMemo(
+    () => [...new Set(compras.map((purchase) => purchase.moneda))].sort(),
+    [compras],
   );
-  const pagos = useMemo(() => buildPagos(compras), [compras]);
-  const entregas = useMemo(() => buildEntregas(compras), [compras]);
-  const alerts = useMemo(
-    () => buildAlerts(compras, monthly, afiliados),
-    [compras, monthly, afiliados],
+  const defaultCurrency =
+    webshop?.store?.monedas?.find((currency) => currency.defecto)?.nombre ??
+    webshop?.store?.monedas?.[0]?.nombre ??
+    "CUP";
+  const currency = currencyOptions.includes(currencyFilter)
+    ? currencyFilter
+    : currencyOptions.includes(defaultCurrency)
+      ? defaultCurrency
+      : (currencyOptions[0] ?? defaultCurrency);
+  const filteredPurchases = useMemo(
+    () => compras.filter((purchase) => purchase.moneda === currency),
+    [compras, currency],
   );
 
-  const totalVentas = compras.reduce((s, c) => s + (c.total ?? 0), 0);
-  const totalPedidos = compras.length;
+  const monthly = useMemo(
+    () => buildMonthlyData(filteredPurchases),
+    [filteredPurchases],
+  );
+  const afiliados = useMemo(
+    () => buildAfiliados(filteredPurchases),
+    [filteredPurchases],
+  );
+  const productos = useMemo(
+    () => buildProductos(filteredPurchases),
+    [filteredPurchases],
+  );
+  const codigos = useMemo(
+    () => buildCodigos(filteredPurchases, webshop?.code ?? []),
+    [filteredPurchases, webshop?.code],
+  );
+  const pagos = useMemo(() => buildPagos(filteredPurchases), [filteredPurchases]);
+  const entregas = useMemo(
+    () => buildEntregas(filteredPurchases),
+    [filteredPurchases],
+  );
+  const alerts = useMemo(
+    () => buildAlerts(filteredPurchases, monthly, afiliados, currency),
+    [filteredPurchases, monthly, afiliados, currency],
+  );
+
+  const totalVentas = filteredPurchases.reduce(
+    (sum, purchase) => sum + purchase.total,
+    0,
+  );
+  const totalPedidos = filteredPurchases.length;
   const ticket = totalPedidos ? Math.round(totalVentas / totalPedidos) : 0;
   const totalVisitas = webshop?.ga?.cant ?? 0;
   const conv = totalVisitas
     ? ((totalPedidos / totalVisitas) * 100).toFixed(1)
     : "0.0";
-  const hace24 = compras
+  const hace24 = filteredPurchases
     .filter((c) => Date.now() - new Date(c.created_at).getTime() < 86400000)
-    .reduce((s, c) => s + (c.total ?? 0), 0);
+    .reduce((sum, purchase) => sum + purchase.total, 0);
 
   const lastMonth = monthly[monthly.length - 1]?.ingresos ?? 0;
   const prevMonth = monthly[monthly.length - 2]?.ingresos ?? 0;
@@ -650,14 +699,33 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
               Panel financiero
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {webshop?.store?.name ?? "Tienda"} · {webshop?.store?.Provincia}
+              {webshop?.store?.name ?? "Tienda"}
             </p>
           </div>
-          <div>
+          <div className="flex items-center gap-3">
+            {currencyOptions.length > 1 ? (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                Moneda
+                <select
+                  aria-label="Filtrar ventas por moneda"
+                  value={currency}
+                  onChange={(event) => setCurrencyFilter(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-2 py-1.5 text-foreground"
+                >
+                  {currencyOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <span className="text-xs text-muted-foreground">{currency}</span>
+            )}
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-green-600 font-medium">
-                En vivo
+              <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium">
+                Actualizado al abrir
               </span>
             </div>
           </div>
@@ -676,16 +744,18 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           <KpiCard
             label="Ingresos totales"
-            value={fmt(totalVentas)}
-            sub="acumulado"
+            value={fmt(totalVentas, currency)}
+            sub={`en ${currency}`}
             trend={null}
           />
           <KpiCard
             label="Crecimiento"
             value={
-              (growth != null ? (growth >= 0 ? "+" : "") + growth : "—") + "%"
+              growth != null
+                ? (growth >= 0 ? "+" : "") + growth + "%"
+                : "—"
             }
-            sub="vs mes anterior"
+            sub={`vs mes anterior · ${currency}`}
             trend={growth}
           />
           <KpiCard
@@ -696,7 +766,7 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
           />
           <KpiCard
             label="Ticket promedio"
-            value={fmt(ticket)}
+            value={fmt(ticket, currency)}
             sub="por pedido"
             trend={null}
           />
@@ -708,8 +778,8 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
           />
           <KpiCard
             label="Últimas 24h"
-            value={fmt(hace24)}
-            sub="recaudado hoy"
+            value={fmt(hace24, currency)}
+            sub={`últimas 24 h · ${currency}`}
             trend={null}
           />
         </div>
@@ -773,7 +843,10 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
               />
               <Tooltip
                 content={
-                  <CustomTooltip isIngresos={chartMode === "ingresos"} />
+                  <CustomTooltip
+                    isIngresos={chartMode === "ingresos"}
+                    currency={currency}
+                  />
                 }
               />
               <Area
@@ -811,7 +884,13 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
               <p className="text-sm text-muted-foreground py-4">Sin datos</p>
             ) : (
               afiliados.map((a, i) => (
-                <AfiliadoRow key={a.code} a={a} max={maxAff} index={i} />
+                <AfiliadoRow
+                  key={a.code}
+                  a={a}
+                  max={maxAff}
+                  index={i}
+                  currency={currency}
+                />
               ))
             )}
           </Card>
@@ -823,7 +902,7 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
             {codigos.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4">Sin datos</p>
             ) : (
-              codigos.map((c) => <CodigoRow key={c.code} c={c} />)
+              codigos.map((c) =>               <CodigoRow key={c.code} c={c} currency={currency} />)
             )}
           </Card>
         </div>
@@ -839,7 +918,12 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
               <p className="text-sm text-muted-foreground py-4">Sin datos</p>
             ) : (
               productos.map((p) => (
-                <ProductoRow key={p.title} p={p} max={maxProd} />
+                <ProductoRow
+                  key={p.title}
+                  p={p}
+                  max={maxProd}
+                  currency={currency}
+                />
               ))
             )}
           </Card>
@@ -921,7 +1005,7 @@ export default function VentasDashboard({ ThemeContext, initialData }) {
 
         {/* Tabla */}
         <SectionLabel>Registro 10 ultimas operaciones</SectionLabel>
-        <TxTable compras={compras.slice(0, 10)} />
+        <TxTable compras={filteredPurchases.slice(0, 10)} currency={currency} />
 
         {/* Granos */}
         {clientes.length > 0 && (

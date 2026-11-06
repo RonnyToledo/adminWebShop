@@ -86,7 +86,26 @@ const datos = {
 
 export async function POST(request) {
   try {
-    const supabase = await getAuthenticatedSupabase();
+    const { supabase, user } = await requireRouteUser();
+    const { data: account, error: accountError } = await supabase
+      .from("user")
+      .select("owner_aproved")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (accountError) {
+      return NextResponse.json(
+        { message: accountError.message },
+        { status: 500 },
+      );
+    }
+    if (account?.owner_aproved !== true) {
+      return NextResponse.json(
+        { message: "La creación de la tienda requiere aprobación del propietario." },
+        { status: 403 },
+      );
+    }
+
     const data = await request.formData();
 
     const name = data.get("name") || datos.name;

@@ -38,8 +38,16 @@ export default function ConfiguracionState({ store, setStore, country }) {
   const [loadingCities, setLoadingCities] = useState(false);
 
   const selectedCountry = useMemo(() => {
+    const relatedCountry = Array.isArray(store?.regions?.countries)
+      ? store.regions.countries[0]
+      : store?.regions?.countries;
+    const countryCode =
+      store?.regions?.country_code ??
+      relatedCountry?.code ??
+      store?.country;
+
     return (
-      resolveByCodeOrName(country, store?.regions?.country_code, {
+      resolveByCodeOrName(country, countryCode, {
         getCode: getCountryIso,
         getName: getLabel,
       }) ??
@@ -48,10 +56,19 @@ export default function ConfiguracionState({ store, setStore, country }) {
         getName: getLabel,
       })
     );
-  }, [country, store?.regions?.country_code, store?.country]);
+  }, [
+    country,
+    store?.regions?.country_code,
+    store?.regions?.countries,
+    store?.country,
+  ]);
 
   const selectedCountryIso = getCountryIso(selectedCountry); // ya no hardcodees "CU"
-  const selectedCountryLabel = selectedCountry?.name || store?.country || "";
+  const relatedCountry = Array.isArray(store?.regions?.countries)
+    ? store.regions.countries[0]
+    : store?.regions?.countries;
+  const selectedCountryLabel =
+    selectedCountry?.name || relatedCountry?.name || store?.country_name || "";
 
   const regionCode = store?.regions?.region_code ?? store?.region ?? "";
   const selectedState = useMemo(() => {
@@ -103,9 +120,8 @@ export default function ConfiguracionState({ store, setStore, country }) {
       try {
         setLoadingStates(true);
 
-        const base = process.env.NEXT_PUBLIC_PATH ?? "";
         const resp = await fetch(
-          `${base}/api/filter/state?country=${encodeURIComponent(selectedCountryIso)}`,
+          `/api/filter/state?country=${encodeURIComponent(selectedCountryIso)}`,
           { signal: controller.signal },
         );
 
@@ -133,7 +149,6 @@ export default function ConfiguracionState({ store, setStore, country }) {
 
           return {
             ...prev,
-            country: selectedCountry?.name ?? prev.country ?? "",
             region: resolvedCode,
             regions: {
               ...(prev.regions || {}),
@@ -183,8 +198,7 @@ export default function ConfiguracionState({ store, setStore, country }) {
           return;
         }
 
-        const base = process.env.NEXT_PUBLIC_PATH ?? "";
-        const url = `${base}/api/filter/city?country=${encodeURIComponent(
+        const url = `/api/filter/city?country=${encodeURIComponent(
           selectedCountryIso,
         )}&state=${encodeURIComponent(getRegionIso(stateObj))}`;
 
@@ -252,12 +266,9 @@ export default function ConfiguracionState({ store, setStore, country }) {
                     country_code: value,
                     region_code: "",
                   },
-                  country:
-                    country.find((item) => getCountryIso(item) === value)
-                      ?.name ?? "",
-                  region: "",
-                  municipio: "",
-                }))
+                    region: "",
+                    municipio: "",
+                  }))
               }
               placeholder="Seleccione su país"
               status={selectedCountryLabel}

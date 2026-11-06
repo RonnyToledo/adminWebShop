@@ -18,6 +18,16 @@ import { ThemeContext } from "@/context/useContext";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -59,6 +69,7 @@ function ActionButton({ onClick, disabled, loading, icon: Icon, label }) {
 function usePedidos(storeUID) {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -67,16 +78,22 @@ function usePedidos(storeUID) {
     setPedidos([]);
     setPage(0);
     setHasMore(true);
+    setError(null);
     setRefreshKey((k) => k + 1);
   }, []);
 
   // Carga paginada desde la vista summary (campos mínimos)
   useEffect(() => {
-    if (!storeUID) return;
+    if (!storeUID) {
+      setError("No se pudo identificar la tienda.");
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
 
     async function load() {
       setLoading(true);
+      setError(null);
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
@@ -90,6 +107,9 @@ function usePedidos(storeUID) {
       if (!cancelled && !error && data) {
         setPedidos((prev) => (page === 0 ? data : [...prev, ...data]));
         setHasMore(data.length === PAGE_SIZE);
+      }
+      if (!cancelled && error) {
+        setError(error.message || "No se pudieron cargar los pedidos.");
       }
       if (!cancelled) setLoading(false);
     }
@@ -186,6 +206,7 @@ function usePedidos(storeUID) {
     pedidos,
     setPedidos,
     loading,
+    error,
     hasMore,
     loadMore: () => setPage((p) => p + 1),
     refresh,
@@ -202,46 +223,60 @@ function TablesPedidosBody({
   downloading,
 }) {
   const router = useRouter();
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDelete() {
+    if (!orderToDelete) return;
+    setDeleting(true);
+    try {
+      const deleted = await onDelete(orderToDelete.UID_Venta);
+      if (deleted) setOrderToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (pedidos.length === 0) return null;
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full shrink-0 ${verified ? "bg-green-400" : "bg-emerald-500"}`}
-          />
-          {verified ? "Pendientes de confirmar" : "Pedidos confirmados"}
-          <span className="ml-auto text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-            {pedidos.length}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                {[
-                  "Cliente",
-                  "ID pedido",
-                  "Fecha",
-                  "Total",
-                  "Productos",
-                  "",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left px-4 py-3 text-[11px] text-muted-foreground uppercase tracking-[0.08em] font-medium"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence initial={false}>
-                {pedidos.map((order, index) => (
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <div
+              className={`w-2 h-2 rounded-full shrink-0 ${verified ? "bg-green-400" : "bg-emerald-500"}`}
+            />
+            {verified ? "Pendientes de confirmar" : "Pedidos confirmados"}
+            <span className="ml-auto text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+              {pedidos.length}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  {[
+                    "Cliente",
+                    "ID pedido",
+                    "Fecha",
+                    "Total",
+                    "Productos",
+                    "",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-[11px] text-muted-foreground uppercase tracking-[0.08em] font-medium"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence initial={false}>
+                  {pedidos.map((order, index) => (
                   <motion.tr
                     key={order.UID_Venta}
                     initial={{ opacity: 0, y: -8 }}
@@ -359,7 +394,7 @@ function TablesPedidosBody({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="gap-2 text-sm text-destructive focus:text-destructive"
-                            onClick={() => onDelete(order.UID_Venta)}
+                            onSelect={() => setOrderToDelete(order)}
                           >
                             <Trash2 size={14} /> Eliminar
                           </DropdownMenuItem>
@@ -367,13 +402,46 @@ function TablesPedidosBody({
                       </DropdownMenu>
                     </td>
                   </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+      <AlertDialog
+        open={Boolean(orderToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setOrderToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El pedido y su información se eliminarán. Si corresponde, el
+              sistema intentará restaurar el stock. Esta acción no se puede
+              deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmDelete();
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleting ? "Eliminando..." : "Eliminar pedido"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -398,7 +466,7 @@ export function PedidosTable({ initialData }) {
   }, [initialData, setWebshop]);
 
   // Hook con paginación + real-time
-  const { pedidos, setPedidos, loading, hasMore, loadMore, refresh } =
+  const { pedidos, setPedidos, loading, error, hasMore, loadMore, refresh } =
     usePedidos(storeUID);
 
   const noVistos = pedidos.filter((o) => !o.visto);
@@ -421,10 +489,15 @@ export function PedidosTable({ initialData }) {
             uids.includes(p.UID_Venta) ? { ...p, visto: true } : p,
           ),
         );
+        return true;
       } catch (err) {
         toast.error("Error al confirmar", {
-          description: err?.message,
+          description:
+            err?.response?.data?.error ??
+            err?.response?.data?.message ??
+            err?.message,
         });
+        return false;
       } finally {
         setLoadVerified(false);
       }
@@ -436,15 +509,24 @@ export function PedidosTable({ initialData }) {
   const eliminarPedido = useCallback(
     async (uid) => {
       try {
-        await apiClient.delete(`/api/tienda/${sitioweb}/checkOrders`, {
+        const response = await apiClient.delete(
+          `/api/tienda/${sitioweb}/checkOrders`,
+          {
           data: { uid },
           headers: { "Content-Type": "application/json" },
-        });
+          },
+        );
         setPedidos((prev) => prev.filter((p) => p.UID_Venta !== uid));
+        toast.success(response.data?.message ?? "Pedido eliminado");
+        return true;
       } catch (err) {
         toast.error("Error al eliminar", {
-          description: err?.message,
+          description:
+            err?.response?.data?.error ??
+            err?.response?.data?.message ??
+            err?.message,
         });
+        return false;
       }
     },
     [sitioweb, setPedidos],
@@ -455,15 +537,21 @@ export function PedidosTable({ initialData }) {
     setPDF(true);
     try {
       // Cargamos solo los no vistos con su desc completo para el PDF
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("Events")
         .select("id, UID_Venta, nombre, created_at, desc")
         .eq("uid", storeUID)
         .eq("visto", false);
 
+      if (error) throw error;
       if (data?.length) {
-        await confirmarPedidos(data.map((d) => d.UID_Venta));
+        const confirmed = await confirmarPedidos(
+          data.map((d) => d.UID_Venta),
+        );
+        if (!confirmed) return;
         await exportToPDF(data.map((d) => ({ ...d, desc: d.desc })));
+      } else {
+        toast.info("No hay pedidos pendientes para exportar.");
       }
     } catch (err) {
       toast.error("Error al generar PDF", {
@@ -478,20 +566,26 @@ export function PedidosTable({ initialData }) {
   const handleWhatsApp = useCallback(async () => {
     setWhatsApp(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("Events")
         .select("id, UID_Venta, nombre, created_at, desc")
         .eq("uid", storeUID)
         .eq("visto", false);
 
+      if (error) throw error;
       if (data?.length) {
-        await confirmarPedidos(data.map((d) => d.UID_Venta));
+        const confirmed = await confirmarPedidos(
+          data.map((d) => d.UID_Venta),
+        );
+        if (!confirmed) return;
         await sendToWhatsApp(
           data.map((d) => ({ ...d, desc: d.desc })),
           webshop?.store,
           () => {},
           setWhatsApp,
         );
+      } else {
+        toast.info("No hay pedidos pendientes para enviar.");
       }
     } catch (err) {
       toast.error("Error WhatsApp", {
@@ -576,7 +670,24 @@ export function PedidosTable({ initialData }) {
       />
 
       {/* Empty state */}
-      {!loading && pedidos.length === 0 && (
+      {error && (
+        <Card role="alert">
+          <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="font-medium text-destructive">
+              No se pudieron cargar los pedidos
+            </p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <button
+              onClick={refresh}
+              className="text-sm text-primary hover:underline"
+            >
+              Reintentar
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!loading && !error && pedidos.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">

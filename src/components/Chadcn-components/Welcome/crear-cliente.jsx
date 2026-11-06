@@ -122,6 +122,8 @@ function FieldInput({ id, label, focused, error, children }) {
 export function CrearClienteComponent({
   user,
   countries = [{ name: "Cuba", isoCode: "CU" }],
+  requestedPlan = null,
+  planSaveError = false,
 }) {
   const router = useRouter();
 
@@ -272,9 +274,8 @@ export function CrearClienteComponent({
       }
       setLoadingCities(true);
       try {
-        const base = process.env.NEXT_PUBLIC_PATH ?? "";
         const res = await fetch(
-          `${base}/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(regionIso)}`,
+          `/api/filter/city?country=${encodeURIComponent(iso)}&state=${encodeURIComponent(regionIso)}`,
           { signal },
         );
         if (!res.ok) {
@@ -756,6 +757,18 @@ export function CrearClienteComponent({
           <p className="text-[11px] text-primary uppercase tracking-[0.18em] mb-5 font-medium">
             Nueva tienda
           </p>
+          {requestedPlan && (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Plan seleccionado:{" "}
+              <span className="font-medium text-foreground">{requestedPlan}</span>
+              . La selección queda guardada como preferencia; la activación del plan se gestiona por separado.
+            </p>
+          )}
+          {planSaveError && (
+            <p role="alert" className="mb-3 text-sm text-destructive">
+              No se pudo guardar el plan seleccionado en tu cuenta. Contacta al administrador antes de continuar.
+            </p>
+          )}
           <h2 className="text-[36px] font-normal leading-[1.15] text-foreground italic m-0">
             Configura tu
             <br />

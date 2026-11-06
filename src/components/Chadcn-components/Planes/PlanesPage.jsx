@@ -122,7 +122,7 @@ function PlanCard({
 }
 
 // ─── Vista del usuario: su plan actual + barra de uso ────────────────────────
-function VistaUsuario() {
+function VistaUsuario({ productCount }) {
   const {
     plan,
     config,
@@ -131,7 +131,7 @@ function VistaUsuario() {
     productosActuales,
     usoPct,
     puedeAgregarProducto,
-  } = usePlan();
+  } = usePlan({ productCount });
 
   return (
     <div className="space-y-6">
@@ -228,7 +228,7 @@ function VistaUsuario() {
             { label: "Control de stock", active: config.stocks },
             { label: "Envíos a domicilio", active: config.domicilio },
             { label: "Carrito de compras", active: true },
-            { label: "Analitycs y Ventas", active: config.analitycs },
+            { label: "Analíticas y ventas", active: config.analitycs },
             { label: "Temas y Social", active: config.theme },
             {
               label: "Soporte prioritario",
@@ -371,7 +371,7 @@ export default function PlanesPage({
           planActual={plan}
         />
       ) : (
-        <VistaUsuario />
+        <VistaUsuario productCount={initialData?.productCount} />
       )}
     </div>
   );

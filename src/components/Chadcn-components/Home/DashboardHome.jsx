@@ -1,5 +1,6 @@
 "use client";
 import React, { useContext, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { FeatureCard } from "./dashborad/feature-card";
 import { StatsCard } from "./dashborad/stats-card";
 import { QuickActionCard } from "./dashborad/quick-action-card";
@@ -25,15 +26,27 @@ import {
 import { calcularGranosClientes } from "@/utils/granos";
 import { GranosClientesCard } from "./GranosClientesCard";
 import { BannerApp } from "@/utils/image";
+import { toast } from "sonner";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatCUP(n, monedaDefault) {
-  if (!n && n !== 0) return "—";
-  return n.toLocaleString("es-CU") + " " + monedaDefault;
+function formatAmount(n, currency) {
+  if (n == null || n === "") return "—";
+  const amount = Number(n);
+  if (!Number.isFinite(amount)) return "—";
+  return amount.toLocaleString("es-CU") + " " + currency;
+}
+
+function getCurrencyName(currencyId, currencies, fallback) {
+  return (
+    currencies?.find((currency) => String(currency.id) === String(currencyId))
+      ?.nombre ?? fallback
+  );
 }
 
 function timeAgo(dateStr) {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  const timestamp = new Date(dateStr).getTime();
+  if (!Number.isFinite(timestamp)) return "Fecha no disponible";
+  const diff = (Date.now() - timestamp) / 1000;
   if (diff < 3600) return `Hace ${Math.round(diff / 60)} min`;
   if (diff < 86400) return `Hace ${Math.round(diff / 3600)} horas`;
   if (diff < 172800) return "Ayer";
@@ -45,22 +58,33 @@ function timeAgo(dateStr) {
 
 function buildOnboardingSteps(store, products) {
   return [
-    { id: "1", title: "Agregar productos", completed: products.length > 0 },
+    {
+      id: "1",
+      title: "Agregar productos",
+      completed: products.length > 0,
+      href: "/newProduct",
+    },
     {
       id: "2",
       title: "Configurar tienda",
       completed: !!(store.banner && store.name && store.history),
+      href: "/configuracion#identidad",
     },
     {
       id: "3",
       title: "Configurar pagos",
       completed: store.monedas?.length > 0,
+      href: "/configuracion#operacion",
     },
-    { id: "4", title: "Publicar tienda", completed: store.active === true },
+    {
+      id: "4",
+      title: store.active ? "Tienda publicada" : "Publicación pendiente",
+      completed: store.active === true,
+    },
   ];
 }
 
-function buildRecentActivity(products, events, monedaDefault) {
+function buildRecentActivity(products, events, currencies, monedaDefault) {
   const latestProducts = [...products]
     .sort((a, b) => new Date(b.modified) - new Date(a.modified))
     .slice(0, 2)
@@ -69,7 +93,10 @@ function buildRecentActivity(products, events, monedaDefault) {
       title: `${p.title} agregado`,
       time: timeAgo(p.modified),
       // Precio desde variantes
-      price: formatCUP(getDisplayPrice(p), monedaDefault),
+      price: formatAmount(
+        getDisplayPrice(p),
+        getCurrencyName(p.default_moneda, currencies, monedaDefault),
+      ),
     }));
 
   const latestOrders = [...events]
@@ -80,7 +107,7 @@ function buildRecentActivity(products, events, monedaDefault) {
       icon: ShoppingCart,
       title: `Nuevo pedido · ${e.nombre}`,
       time: timeAgo(e.created_at),
-      price: formatCUP(e.desc?.total, monedaDefault),
+      price: formatAmount(e.desc?.total, e.desc?.moneda || monedaDefault),
     }));
 
   return [...latestOrders, ...latestProducts].slice(0, 4);
@@ -100,7 +127,6 @@ export default function DashboardHome({ initialData }) {
     }));
   }, [initialData, setWebshop]);
   const store = useMemo(() => webshop?.store ?? {}, [webshop?.store]);
-  const ga = useMemo(() => webshop?.ga ?? {}, [webshop?.ga]);
   const products = useMemo(() => webshop?.products ?? [], [webshop?.products]);
   const events = useMemo(() => webshop?.events ?? [], [webshop?.events]);
   const code = useMemo(() => webshop?.code ?? [], [webshop?.code]);
@@ -113,32 +139,31 @@ export default function DashboardHome({ initialData }) {
   // ── Métricas ──────────────────────────────────────────────────────────────
 
   const totalProductos = products.length;
-  const totalPedidos = events.filter((e) => e.events === "compra").length;
-
-  // Ingresos reales — siempre desde el total del evento (ya incluye variantes)
-  const totalIngresos = events
-    .filter((e) => e.events === "compra")
-    .reduce((sum, e) => sum + (e.desc?.total ?? 0), 0);
+  const compras = events.filter((event) => event.events === "compra");
+  const totalPedidos = compras.length;
+  const ingresosPorMoneda = compras.reduce((totals, event) => {
+    const currency = event.desc?.moneda || MonedaDefault;
+    totals.set(
+      currency,
+      (totals.get(currency) ?? 0) + Number(event.desc?.total ?? 0),
+    );
+    return totals;
+  }, new Map());
+  const totalIngresos = ingresosPorMoneda.size
+    ? [...ingresosPorMoneda]
+        .map(([currency, total]) => formatAmount(total, currency))
+        .join(" · ")
+    : formatAmount(0, MonedaDefault);
 
   // Productos con stock (usando helper de variantes)
   const productosConStock = products.filter((p) => getTotalStock(p) > 0).length;
   const productosMulti = products.filter((p) => isMultiVariant(p)).length;
 
   const clientesUnicos = new Set(
-    events.filter((e) => e.phonenumber).map((e) => String(e.phonenumber)),
+    compras
+      .filter((event) => event.phonenumber)
+      .map((event) => String(event.phonenumber)),
   ).size;
-
-  const meses = ga.promedioVisitasPorMes?.contadorMeses ?? {};
-  const mesEntries = Object.entries(meses);
-  const visitasCambio =
-    mesEntries.length >= 2
-      ? Math.round(
-          ((mesEntries[mesEntries.length - 1][1] -
-            mesEntries[mesEntries.length - 2][1]) /
-            Math.max(mesEntries[mesEntries.length - 2][1], 1)) *
-            100,
-        )
-      : 0;
 
   const topCode = [...code].sort((a, b) => b.visitas - a.visitas)[0];
 
@@ -156,8 +181,14 @@ export default function DashboardHome({ initialData }) {
   );
 
   const recentActivity = useMemo(
-    () => buildRecentActivity(products, events, MonedaDefault),
-    [products, events, MonedaDefault],
+    () =>
+      buildRecentActivity(
+        products,
+        events,
+        store.monedas,
+        MonedaDefault,
+      ),
+    [products, events, store.monedas, MonedaDefault],
   );
   // Dentro del componente, justo después de donde calculas `recentActivity`:
   const clientesGranos = useMemo(
@@ -166,8 +197,15 @@ export default function DashboardHome({ initialData }) {
   );
 
   const storeUrl = store.sitioweb
-    ? `roumenu.vercel.app/t/${store.sitioweb}`
-    : "—";
+    ? `${process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://roumenu.vercel.app"}/t/${encodeURIComponent(store.sitioweb)}`
+    : "";
+  const newestProductCurrency = newestProduct
+    ? getCurrencyName(
+        newestProduct.default_moneda,
+        store.monedas,
+        MonedaDefault,
+      )
+    : MonedaDefault;
   return (
     <div className="flex h-screen bg-background">
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -179,34 +217,21 @@ export default function DashboardHome({ initialData }) {
                 <StatsCard
                   title="Productos"
                   value={totalProductos}
-                  // Sub-info: cuántos tienen variantes múltiples
-                  change={productosMulti > 0 ? undefined : 8}
-                  changeLabel={
-                    productosMulti > 0
-                      ? `${productosMulti} con variantes`
-                      : "este mes"
-                  }
                   icon={<Package className="w-5 h-5 text-primary" />}
                 />
                 <StatsCard
                   title="Pedidos"
                   value={totalPedidos}
-                  change={totalPedidos > 0 ? 12 : 0}
-                  changeLabel="esta semana"
                   icon={<ShoppingCart className="w-5 h-5 text-primary" />}
                 />
                 <StatsCard
                   title="Clientes únicos"
                   value={clientesUnicos || "—"}
-                  change={clientesUnicos > 0 ? 5 : undefined}
-                  changeLabel="nuevos"
                   icon={<Users className="w-5 h-5 text-primary" />}
                 />
                 <StatsCard
                   title="Ingresos totales"
-                  value={formatCUP(totalIngresos, MonedaDefault)}
-                  change={visitasCambio !== 0 ? visitasCambio : undefined}
-                  changeLabel="vs. mes anterior"
+                  value={totalIngresos}
                   icon={<TrendingUp className="w-5 h-5 text-primary" />}
                 />
               </div>
@@ -224,10 +249,11 @@ export default function DashboardHome({ initialData }) {
                     }
                     description={
                       newestProduct
-                        ? `Precio: ${formatCUP(getDisplayPrice(newestProduct), MonedaDefault)}${isMultiVariant(newestProduct) ? " (desde)" : ""}. Puedes editarlo o agregar más.`
+                        ? `Precio: ${formatAmount(getDisplayPrice(newestProduct), newestProductCurrency)}${isMultiVariant(newestProduct) ? " (desde)" : ""}. Puedes editarlo o agregar más.`
                         : "Tu producto ha sido agregado exitosamente."
                     }
                     actionLabel="Agregar más productos"
+                    actionHref="/newProduct"
                     variant="success"
                     completed
                     image={
@@ -244,6 +270,7 @@ export default function DashboardHome({ initialData }) {
                       "Personaliza la foto de portada, logo, nombre y descripción."
                     }
                     actionLabel="Editar"
+                    actionHref="/configuracion#identidad"
                     variant="highlight"
                     icon={<Store className="w-5 h-5 text-primary" />}
                     image={store.banner || BannerApp}
@@ -258,16 +285,18 @@ export default function DashboardHome({ initialData }) {
                     <QuickActionCard
                       title="Método de pago"
                       actionLabel="Ver"
+                      actionHref="/configuracion#operacion"
                       icon={<CreditCard className="w-4 h-4 text-primary" />}
                     />
                     <QuickActionCard
                       title="Revisar productos"
                       actionLabel={`${totalProductos} productos`}
+                      actionHref="/products"
                       icon={<ClipboardCheck className="w-4 h-4 text-primary" />}
                     />
                     <QuickActionCard
-                      title="Guía del dominio"
-                      actionLabel="Links"
+                      title="Ver tienda"
+                      actionLabel="Abrir"
                       actionHref={storeUrl}
                       external
                       icon={<Globe className="w-4 h-4 text-primary" />}
@@ -281,9 +310,12 @@ export default function DashboardHome({ initialData }) {
                     <h3 className="text-sm font-medium text-foreground">
                       Actividad reciente
                     </h3>
-                    <button className="text-xs text-primary hover:underline">
-                      Ver todo
-                    </button>
+                    <Link
+                      href="/orders"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Ver pedidos
+                    </Link>
                   </div>
                   {recentActivity.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
@@ -360,11 +392,24 @@ export default function DashboardHome({ initialData }) {
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50 text-sm">
                     <Link2 className="w-4 h-4 text-muted-foreground" />
                     <span className="text-muted-foreground truncate flex-1">
-                      {storeUrl}
+                      {storeUrl || "—"}
                     </span>
                     <button
-                      onClick={() => navigator.clipboard?.writeText(storeUrl)}
-                      className="text-primary text-xs hover:underline shrink-0"
+                      disabled={!storeUrl}
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(storeUrl);
+                          toast.success("Enlace copiado");
+                        } catch (error) {
+                          toast.error("No se pudo copiar el enlace", {
+                            description:
+                              error?.message ??
+                              "Copia la dirección de la tienda manualmente.",
+                          });
+                        }
+                      }}
+                      aria-label="Copiar enlace de la tienda"
+                      className="text-primary text-xs hover:underline shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Copiar
                     </button>
@@ -428,9 +473,23 @@ export default function DashboardHome({ initialData }) {
                         </p>
                       );
                     })()}
-                  <button className="w-full mt-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                    Ver tienda
-                  </button>
+                  {storeUrl ? (
+                    <Link
+                      href={storeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full mt-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium text-center hover:bg-primary/90 transition-colors"
+                    >
+                      Ver tienda
+                    </Link>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full mt-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium opacity-50"
+                    >
+                      Tienda no disponible
+                    </button>
+                  )}
                 </div>
 
                 {store.envios?.length > 0 && (
@@ -446,7 +505,7 @@ export default function DashboardHome({ initialData }) {
                         >
                           <span className="text-muted-foreground">{lugar}</span>
                           <span className="font-medium text-foreground">
-                            {formatCUP(precio, MonedaDefault)}
+                            {formatAmount(precio, MonedaDefault)}
                           </span>
                         </div>
                       ))}

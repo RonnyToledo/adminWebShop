@@ -4,10 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function OnboardingProgress({ steps, className }) {
   const completedCount = steps.filter((s) => s.completed).length;
-  const progress = (completedCount / steps.length) * 100;
+  const progress = steps.length ? (completedCount / steps.length) * 100 : 0;
 
   return (
     <Card className={cn("p-5", className)}>
@@ -35,16 +36,30 @@ export function OnboardingProgress({ steps, className }) {
             ) : (
               <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
             )}
-            <span
-              className={cn(
-                "text-sm",
-                step.completed
-                  ? "text-muted-foreground line-through"
-                  : "text-foreground",
-              )}
-            >
-              {step.title}
-            </span>
+            {step.href ? (
+              <Link
+                href={step.href}
+                className={cn(
+                  "text-sm hover:text-primary hover:underline",
+                  step.completed
+                    ? "text-muted-foreground line-through"
+                    : "text-foreground",
+                )}
+              >
+                {step.title}
+              </Link>
+            ) : (
+              <span
+                className={cn(
+                  "text-sm",
+                  step.completed
+                    ? "text-muted-foreground line-through"
+                    : "text-foreground",
+                )}
+              >
+                {step.title}
+              </span>
+            )}
           </li>
         ))}
       </ul>

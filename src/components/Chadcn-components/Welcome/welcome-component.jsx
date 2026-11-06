@@ -50,7 +50,11 @@ const ROLE_LABELS = {
   support: "Soporte",
 };
 
-export default function WelcomeComponent({ user }) {
+export default function WelcomeComponent({
+  user,
+  requestedPlan,
+  planSaveError = false,
+}) {
   const [ownerRequest, setOwnerRequest] = useState(null); // última solicitud de tienda propia
   const [pendingInvites, setPendingInvites] = useState([]); // invitaciones recibidas
   const [loading, setLoading] = useState(true);
@@ -165,6 +169,19 @@ export default function WelcomeComponent({ user }) {
             </p>
           </div>
         </div>
+
+        {requestedPlan && (
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+            Plan seleccionado:{" "}
+            <span className="font-semibold text-white">{requestedPlan}</span>
+            . Se conserva mientras el administrador revisa la aprobación manual del propietario.
+          </div>
+        )}
+        {planSaveError && (
+          <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            No se pudo guardar el plan seleccionado en tu cuenta. Vuelve a elegirlo antes de continuar o contacta al administrador.
+          </div>
+        )}
 
         {/* Error global */}
         {error && (

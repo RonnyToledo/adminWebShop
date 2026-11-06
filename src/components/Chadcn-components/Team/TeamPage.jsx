@@ -1,6 +1,16 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   UserPlus,
   Shield,
   Trash2,
@@ -31,6 +41,7 @@ const CAN_MANAGE = ["owner", "admin"];
 export default function TeamPage({ storeId, currentUserId, storeRole }) {
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  const [membersError, setMembersError] = useState("");
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("editor");
@@ -39,6 +50,8 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
   // Confirmación de desvinculación propia
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
+  const [removingMemberId, setRemovingMemberId] = useState(null);
 
   const canManage = CAN_MANAGE.includes(storeRole);
   const assignable = ASSIGNABLE_ROLES[storeRole] ?? [];
@@ -46,18 +59,30 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
   // ─── fetchers ────────────────────────────────────────────────────────────
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true);
+    setMembersError("");
     try {
       const res = await fetch(`/api/team?store_id=${storeId}`);
       const data = await res.json();
-      if (res.ok) setMembers(data.members ?? []);
-      else toast.error(data.message || "No se pudieron cargar los miembros");
+      if (!res.ok) {
+        throw new Error(data.message || "No se pudieron cargar los miembros");
+      }
+      setMembers(data.members ?? []);
+    } catch (error) {
+      setMembersError(error.message || "No se pudieron cargar los miembros");
+      toast.error("No se pudieron cargar los miembros", {
+        description: error.message,
+      });
     } finally {
       setLoadingMembers(false);
     }
   }, [storeId]);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId) {
+      setMembersError("No se pudo identificar la tienda.");
+      setLoadingMembers(false);
+      return;
+    }
     fetchMembers();
   }, [storeId, fetchMembers]);
 
@@ -88,30 +113,42 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
   }
 
   async function handleRoleChange(memberId, newRole) {
-    const res = await fetch("/api/team", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member_id: memberId, store_role: newRole }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/team", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ member_id: memberId, store_role: newRole }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || "No se pudo actualizar el rol");
+      }
       toast.success("Rol actualizado");
-      fetchMembers();
-    } else {
-      toast.error(data.message || "No se pudo actualizar el rol");
+      await fetchMembers();
+    } catch (error) {
+      toast.error("No se pudo actualizar el rol", {
+        description: error.message,
+      });
     }
   }
 
   async function handleRemoveMember(memberId) {
-    const res = await fetch(`/api/team?member_id=${memberId}`, {
-      method: "DELETE",
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) {
+    setRemovingMemberId(memberId);
+    try {
+      const res = await fetch(`/api/team?member_id=${memberId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "No se pudo eliminar el miembro");
       toast.success("Miembro eliminado");
-      fetchMembers();
-    } else {
-      toast.error(data.message || "No se pudo eliminar el miembro");
+      setMemberToRemove(null);
+      await fetchMembers();
+    } catch (error) {
+      toast.error("No se pudo eliminar el miembro", {
+        description: error.message,
+      });
+    } finally {
+      setRemovingMemberId(null);
     }
   }
 
@@ -130,6 +167,11 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
         toast.error(data.message || "No se pudo desvincular");
         setConfirmLeave(false);
       }
+    } catch (error) {
+      toast.error("No se pudo desvincular", {
+        description: error.message,
+      });
+      setConfirmLeave(false);
     } finally {
       setLeaving(false);
     }
@@ -205,6 +247,43 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
         </div>
       )}
 
+      <AlertDialog
+        open={Boolean(memberToRemove)}
+        onOpenChange={(open) => {
+          if (!open && !removingMemberId) setMemberToRemove(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar a este miembro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToRemove?.user?.email ??
+                memberToRemove?.user?.name ??
+                "Este usuario"}{" "}
+              perderá el acceso a la tienda. Esta acción se puede revertir
+              invitándolo de nuevo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(removingMemberId)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={Boolean(removingMemberId)}
+              onClick={(event) => {
+                event.preventDefault();
+                if (memberToRemove) {
+                  void handleRemoveMember(memberToRemove.id);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {removingMemberId ? "Eliminando..." : "Eliminar miembro"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ── Formulario de invitación (solo owner/admin) ── */}
       {canManage && (
         <form
@@ -260,6 +339,16 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
         {loadingMembers ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
+          </div>
+        ) : membersError ? (
+          <div role="alert" className="flex flex-col items-center gap-3 py-12">
+            <p className="text-sm text-destructive">{membersError}</p>
+            <button
+              onClick={fetchMembers}
+              className="text-sm text-primary hover:underline"
+            >
+              Reintentar
+            </button>
           </div>
         ) : members.length === 0 ? (
           <div className="flex flex-col items-center py-12 gap-2">
@@ -328,7 +417,7 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
                 {/* Eliminar miembro */}
                 {canEdit && (
                   <button
-                    onClick={() => handleRemoveMember(m.id)}
+                    onClick={() => setMemberToRemove(m)}
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     title="Eliminar miembro"
                   >

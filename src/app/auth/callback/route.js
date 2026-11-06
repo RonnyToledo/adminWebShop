@@ -48,5 +48,23 @@ export async function GET(request) {
     );
   }
 
-  return NextResponse.redirect(new URL(next, requestUrl.origin));
+  const nextUrl = new URL(next, requestUrl.origin);
+  const requestedPlan = nextUrl.searchParams.get("plan");
+  if (
+    nextUrl.pathname === "/welcome" &&
+    /^[a-z0-9_-]{1,40}$/i.test(requestedPlan || "")
+  ) {
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: { requested_plan: requestedPlan },
+    });
+    if (metadataError) {
+      console.error(
+        "[auth/callback] No se pudo guardar el plan solicitado:",
+        metadataError.message,
+      );
+      nextUrl.searchParams.set("plan_save_error", "1");
+    }
+  }
+
+  return NextResponse.redirect(nextUrl);
 }

@@ -19,6 +19,7 @@ export const NAV_PERMISSIONS = {
   // group name → acción mínima requerida
   "": "read", // sin grupo (home)
   Catálogo: "write",
+  Contenido: "write",
   Pedidos: "read",
   Marketing: "write",
   Analíticas: "analytics",

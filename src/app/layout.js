@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import MyProvider from "@/context/useContext";
 import { fetchStoreData, fetchStoreShellData } from "@/lib/supabaseApi";
 import { OrderProducts } from "@/utils/products";
@@ -252,6 +253,13 @@ export default async function AdminLayout({ children }) {
       : await initializeFullData(userId, {
           includeGA: shouldLoadAnalytics(pathname),
         });
+
+    if (
+      data?.store_access_resolved &&
+      (data.user?.role === "user" || !data.store_role)
+    ) {
+      redirect("/welcome");
+    }
   }
 
   return (
@@ -289,12 +297,21 @@ export async function initializeData(userId) {
   try {
     const { data, error } = await fetchStoreShellData(userId);
 
-    if (error || !data?.store?.sitioweb) {
+    if (error) {
       console.error("Error fetching store data:", error);
       return {
         user: data?.user ?? null,
         store_role: null,
         store_access_resolved: false,
+      };
+    }
+
+    if (!data?.store) {
+      return {
+        user: data?.user ?? null,
+        store: null,
+        store_role: null,
+        store_access_resolved: true,
       };
     }
 
@@ -318,12 +335,21 @@ async function initializeFullData(userId, options = {}) {
   try {
     const { data, error } = await fetchStoreData(userId);
 
-    if (error || !data?.store?.sitioweb) {
+    if (error) {
       console.error("Error fetching store data:", error);
       return {
         user: data?.user ?? null,
         store_role: null,
         store_access_resolved: false,
+      };
+    }
+
+    if (!data?.store) {
+      return {
+        user: data?.user ?? null,
+        store: null,
+        store_role: null,
+        store_access_resolved: true,
       };
     }
 

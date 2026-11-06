@@ -29,8 +29,10 @@ export async function POST(request) {
 
     if (error) {
       console.error("RPC error", error);
-    } else {
-      console.info("Resultado");
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(

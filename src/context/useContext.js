@@ -93,6 +93,7 @@ export default function MyProvider({
     data.store_access_resolved !== false &&
     Object.prototype.hasOwnProperty.call(data, "store_role");
   const hasStoreAccess = Boolean(data?.store_role);
+  const needsOnboarding = data?.user?.role === "user" || !hasStoreAccess;
   const isWelcomeRoute = pathname === "/welcome";
 
   const handleSessionInvalid = useCallback(() => {
@@ -160,28 +161,7 @@ export default function MyProvider({
     // Esperar evita enviarlo erróneamente al onboarding.
     if (!isWelcomeRoute && !accessResolved) return;
 
-    // Usuario con acceso a tienda
-    if (hasStoreAccess) {
-      if (isWelcomeRoute) {
-        router.replace("/");
-        return;
-      }
-
-      if (user && data && !isInitialized.current) {
-        setWebshop(buildWebshopState(data));
-        isInitialized.current = true;
-
-        const redirectTo = sessionStorage.getItem("pathRedirect");
-        if (redirectTo) {
-          sessionStorage.removeItem("pathRedirect");
-          router.replace(redirectTo);
-        }
-      }
-      return;
-    }
-
-    // Usuario sin membresía → onboarding /welcome
-    if (!hasStoreAccess) {
+    if (needsOnboarding) {
       if (!isWelcomeRoute) {
         router.replace("/welcome");
       }
@@ -192,6 +172,21 @@ export default function MyProvider({
       }
       return;
     }
+
+    if (isWelcomeRoute) {
+      router.replace("/");
+      return;
+    }
+
+    if (user && data && !isInitialized.current) {
+      setWebshop(buildWebshopState(data));
+      isInitialized.current = true;
+      const redirectTo = sessionStorage.getItem("pathRedirect");
+      if (redirectTo) {
+        sessionStorage.removeItem("pathRedirect");
+        router.replace(redirectTo);
+      }
+    }
   }, [
     user,
     data,
@@ -201,6 +196,7 @@ export default function MyProvider({
     accessResolved,
     isWelcomeRoute,
     hasStoreAccess,
+    needsOnboarding,
     sessionError,
     isAddMode, // ← nueva dependencia
     router,

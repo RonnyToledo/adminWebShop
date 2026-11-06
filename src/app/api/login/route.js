@@ -238,6 +238,15 @@ export async function PUT(request) {
     if (!body?.email || !body?.password) return errorResponse("MISSING_FIELDS");
 
     const { email, password, metadata } = body;
+    if (
+      metadata?.requested_plan &&
+      !/^[a-z0-9_-]{1,40}$/i.test(metadata.requested_plan)
+    ) {
+      return NextResponse.json(
+        { error: true, code: "INVALID_PLAN", message: "Plan inválido" },
+        { status: 400 },
+      );
+    }
     const supabase = await makeClient();
 
     const { data, error } = await supabase.auth.signUp({

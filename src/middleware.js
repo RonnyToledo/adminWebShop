@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
-// Cache de sesiones por tiempo limitado (30 segundos)
+// Añade contexto de ruta y valida la sesión para las páginas del panel.
 const sessionCache = new Map();
 
 async function getSessionWithTimeout(supabase, timeoutMs = 15000) {

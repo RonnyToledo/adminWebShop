@@ -1,23 +1,25 @@
-"use client"
+"use client";
 
 import { Card } from "@/components/ui/card"
 import { ArrowRight, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link";
 
 
 
 export function QuickActionCard({
   title,
   actionLabel,
-  actionHref = "#",
+  actionHref,
   external,
   icon,
   className,
 }) {
-  return (
+  const card = (
     <Card
       className={cn(
-        "p-4 transition-all duration-300 hover:border-primary/40 hover:bg-secondary/50 cursor-pointer group",
+        "p-4 transition-all duration-300 group",
+        actionHref && "hover:border-primary/40 hover:bg-secondary/50",
         className
       )}
     >
@@ -48,4 +50,23 @@ export function QuickActionCard({
       </div>
     </Card>
   )
+
+  if (!actionHref) return card;
+
+  const linkClass =
+    "block cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  return external ? (
+    <a
+      href={actionHref}
+      target="_blank"
+      rel="noreferrer"
+      className={linkClass}
+    >
+      {card}
+    </a>
+  ) : (
+    <Link href={actionHref} className={linkClass}>
+      {card}
+    </Link>
+  );
 }

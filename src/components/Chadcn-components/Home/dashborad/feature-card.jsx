@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function FeatureCard({
   title,
   description,
   actionLabel,
-  actionHref = "#",
+  actionHref,
   icon,
   image,
   variant = "default",
@@ -68,14 +69,17 @@ export function FeatureCard({
         )}
 
         {/* Action */}
-        {actionLabel && (
+        {actionLabel && actionHref && (
           <Button
+            asChild
             variant="ghost"
             size="sm"
             className="group/btn p-0 h-auto text-primary hover:text-primary hover:bg-transparent"
           >
-            {actionLabel}
-            <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover/btn:translate-x-1" />
+            <Link href={actionHref}>
+              {actionLabel}
+              <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover/btn:translate-x-1" />
+            </Link>
           </Button>
         )}
       </div>
