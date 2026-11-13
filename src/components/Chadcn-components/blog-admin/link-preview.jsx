@@ -171,7 +171,7 @@ function splitHTMLByLinks(html) {
 function styledHTML(html) {
   return html.replace(
     /<a\s([^>]*href=["'](?:https?:\/\/[^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi,
-    '<a $1 target="_blank" rel="noopener noreferrer" style="color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 2px;">$2</a>',
+    '<a $1 target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: underline; text-underline-offset: 2px;">$2</a>',
   );
 }
 

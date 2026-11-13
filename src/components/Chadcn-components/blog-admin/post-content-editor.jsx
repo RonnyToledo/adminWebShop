@@ -115,6 +115,34 @@ function validateHTML(html) {
       errors.push(
         `Etiquetas no permitidas: ${[...new Set(invalidTags.map((el) => el.tagName.toLowerCase()))].join(", ")}`,
       );
+    const allowedAttributes = new Set([
+      "alt",
+      "aria-label",
+      "class",
+      "height",
+      "href",
+      "id",
+      "loading",
+      "rel",
+      "src",
+      "target",
+      "title",
+      "width",
+    ]);
+    tempDiv.querySelectorAll("*").forEach((element) => {
+      for (const attribute of element.attributes) {
+        const name = attribute.name.toLowerCase();
+        if (
+          !allowedAttributes.has(name) ||
+          ((name === "href" || name === "src") &&
+            /^(?:javascript|vbscript|data):/i.test(attribute.value.trim()))
+        ) {
+          errors.push(
+            `Atributo no permitido: ${name} en <${element.tagName.toLowerCase()}>`,
+          );
+        }
+      }
+    });
     const stack = [];
     const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*>/g;
     let match;
@@ -152,12 +180,19 @@ function validateHTML(html) {
   return { isValid: errors.length === 0, errors };
 }
 
+function normalizeAIHtml(value) {
+  const content = String(value ?? "").trim();
+  const fencedHtml = content.match(/^```(?:html)?\s*([\s\S]*?)\s*```$/i);
+  return fencedHtml ? fencedHtml[1].trim() : content;
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 export function PostContentEditor({
   initialContent,
   isEditing = false,
   onBack,
   onComplete,
+  onContentChange,
   slug,
 }) {
   const [content, setContent] = useState(initialContent ?? "");
@@ -172,6 +207,13 @@ export function PostContentEditor({
   const iaUsesRef = useRef(0);
   const [iaUsesDisplay, setIaUsesDisplay] = useState(0);
   const textareaRef = useRef(null);
+  const updateContent = useCallback(
+    (nextContent) => {
+      setContent(nextContent);
+      onContentChange?.(nextContent);
+    },
+    [onContentChange],
+  );
 
   useEffect(() => {
     setHtmlValidation(
@@ -186,14 +228,14 @@ export function PostContentEditor({
       const { selectionStart: start, selectionEnd: end } = textarea;
       const newContent =
         content.substring(0, start) + insert + content.substring(end);
-      setContent(newContent);
+      updateContent(newContent);
       setTimeout(() => {
         const pos = start + insert.length + cursorOffset;
         textarea.focus();
         textarea.setSelectionRange(pos, pos);
       }, 0);
     },
-    [content],
+    [content, updateContent],
   );
 
   const GeminiQuestions = useCallback(async () => {
@@ -205,7 +247,7 @@ export function PostContentEditor({
     toast.promise(postPromise, {
       loading: "Optimizando post...",
       success: (response) => {
-        setContent(response.data.result);
+        updateContent(normalizeAIHtml(response.data.result));
         iaUsesRef.current += 1;
         setIaUsesDisplay(iaUsesRef.current);
         return "Contenido actualizado";
@@ -216,7 +258,7 @@ export function PostContentEditor({
       },
     });
     postPromise.finally(() => setIsGeminiLoading(false));
-  }, [content, slug]);
+  }, [content, slug, updateContent]);
 
   const handleSubmit = async () => {
     setError("");
@@ -321,7 +363,8 @@ export function PostContentEditor({
             <CardContent>
               <HTMLEditor
                 value={content}
-                onChange={setContent}
+                onChange={updateContent}
+                textareaRef={textareaRef}
                 rows={18}
                 placeholder={"<p>Escribe HTML...</p>"}
               />
@@ -412,11 +455,13 @@ export function PostContentEditor({
         >
           {isSubmitting ? (
             <>
-              <Loader2 size={14} className="animate-spin" /> Creando post...
+              <Loader2 size={14} className="animate-spin" />
+              {isEditing ? "Guardando cambios..." : "Creando post..."}
             </>
           ) : (
             <>
-              <Save size={14} /> Crear post
+              <Save size={14} />
+              {isEditing ? "Guardar cambios" : "Crear post"}
             </>
           )}
         </motion.button>

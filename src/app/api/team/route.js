@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { sendInviteEmail } from "@/utils/resend";
 import { requireRouteUser } from "@/lib/route-handler-auth";
+import { sendPushToUser } from "@/lib/server/push-notifications";
 
 function err(msg, status = 400) {
   return NextResponse.json({ error: true, message: msg }, { status });
@@ -165,11 +166,21 @@ export async function POST(request) {
         .eq("status", "pending");
 
       // Notificación in-app
-      await supabase.from("Notification").insert({
+      const notificationMessage = `Ya podés trabajar en "${storeInfo?.name ?? "tu tienda"}" como ${role}. ¡Accedé ahora!`;
+      const { error: notificationError } = await supabase.from("Notification").insert({
         userID: existingUser.id,
-        mensaje: `Ya podés trabajar en "${storeInfo?.name ?? "tu tienda"}" como ${role}. ¡Accedé ahora!`,
+        mensaje: notificationMessage,
         link: "/",
       });
+      if (notificationError) {
+        console.error("No se pudo guardar la notificación de invitación:", notificationError);
+      } else {
+        await sendPushToUser(existingUser.id, {
+          title: "Te agregaron a una tienda",
+          body: notificationMessage,
+          link: "/",
+        });
+      }
 
       // Audit log
       await supabase.from("audit_log").insert({

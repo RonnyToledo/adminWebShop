@@ -11,6 +11,21 @@ function routeError(message, status = 400) {
   return error;
 }
 
+function readImageFile(formData) {
+  const image = formData.get("image");
+  if (image === null || image === "") return null;
+  if (typeof image === "string" || typeof image.arrayBuffer !== "function") {
+    throw routeError("La portada debe ser un archivo de imagen válido.");
+  }
+  if (!image.type.startsWith("image/")) {
+    throw routeError("La portada debe ser un archivo de imagen válido.");
+  }
+  if (image.size > 10 * 1024 * 1024) {
+    throw routeError("La portada debe pesar 10 MB o menos.");
+  }
+  return image;
+}
+
 function errorResponse(error, fallbackStatus = 500) {
   return NextResponse.json(
     { error: error?.message ?? String(error) },
@@ -163,10 +178,10 @@ export async function POST(req) {
     const ui_store = String(formData.get("ui_store") ?? "");
     await assertStoreAccess(supabase, user.id, ui_store);
     const fields = await readPostFields(formData, supabase, ui_store);
-    const img = formData.get("image");
+    const img = readImageFile(formData);
 
     let image = null;
-    if (img && typeof img.arrayBuffer === "function") {
+    if (img) {
       const uploadedRes = await UploadNewImage(img);
       image = uploadedRes?.secure_url ?? uploadedRes;
       uploadedImage = uploadedRes?.secure_url ?? null;
@@ -229,9 +244,9 @@ export async function PATCH(req) {
     if (!currentPost) throw routeError("No se encontró el post.", 404);
 
     const fields = await readPostFields(formData, supabase, ui_store, id);
-    const img = formData.get("image");
+    const img = readImageFile(formData);
     let image = currentPost.image;
-    if (img && typeof img.arrayBuffer === "function") {
+    if (img) {
       const uploadedRes = await UploadNewImage(img);
       image = uploadedRes?.secure_url ?? uploadedRes;
       uploadedImage = uploadedRes?.secure_url ?? null;

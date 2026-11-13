@@ -1,5 +1,22 @@
 import React, { useCallback } from "react";
 import { DndContext, useDroppable } from "@dnd-kit/core";
+import { toast } from "sonner";
+
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+
+function selectImage(files, setImageNew) {
+  const file = files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    toast.error("Selecciona un archivo de imagen válido.");
+    return;
+  }
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    toast.error("La imagen debe pesar 10 MB o menos.");
+    return;
+  }
+  setImageNew(file);
+}
 
 // ─── Zona de drop interna ─────────────────────────────────────────────────────
 function DroppableZone({ children, onFileDrop }) {
@@ -17,9 +34,7 @@ function DroppableZone({ children, onFileDrop }) {
       }}
       onDrop={(e) => {
         e.preventDefault();
-        const files = Array.from(e.dataTransfer.files).filter((f) =>
-          f.type.startsWith("image/"),
-        );
+        const files = Array.from(e.dataTransfer.files);
         if (files.length) onFileDrop(files);
       }}
       onDragOver={(e) => e.preventDefault()}
@@ -33,7 +48,7 @@ function DroppableZone({ children, onFileDrop }) {
 export default function ImageUploadDrag({ setImageNew }) {
   const handleDrop = useCallback(
     (acceptedFiles) => {
-      setImageNew(acceptedFiles[0]);
+      selectImage(acceptedFiles, setImageNew);
     },
     [setImageNew],
   );
@@ -54,7 +69,10 @@ export default function ImageUploadDrag({ setImageNew }) {
                 id="images"
                 name="images"
                 type="file"
-                onChange={(e) => setImageNew(e.target.files[0])}
+                onChange={(e) => {
+                  selectImage(Array.from(e.target.files ?? []), setImageNew);
+                  e.target.value = "";
+                }}
                 accept="image/*"
                 style={{ display: "none" }}
               />
@@ -101,9 +119,7 @@ function DroppableZoneWithProps({ children, onFileDrop }) {
       ref={setNodeRef}
       onDrop={(e) => {
         e.preventDefault();
-        const files = Array.from(e.dataTransfer.files).filter((f) =>
-          f.type.startsWith("image/"),
-        );
+        const files = Array.from(e.dataTransfer.files);
         if (files.length) onFileDrop(files);
       }}
       onDragOver={(e) => e.preventDefault()}
@@ -116,7 +132,17 @@ function DroppableZoneWithProps({ children, onFileDrop }) {
 export function ImageUploadWithProps({ setImageNew, campo, children }) {
   const handleDrop = useCallback(
     (acceptedFiles) => {
-      setImageNew((prev) => ({ ...prev, [campo]: acceptedFiles[0] }));
+      const file = acceptedFiles[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        toast.error("Selecciona un archivo de imagen válido.");
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        toast.error("La imagen debe pesar 10 MB o menos.");
+        return;
+      }
+      setImageNew((prev) => ({ ...prev, [campo]: file }));
     },
     [setImageNew, campo],
   );

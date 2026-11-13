@@ -1,26 +1,10 @@
 "use client";
 import React, { useContext, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import dataCards from "@/components/json/card.json";
+import Image from "next/image";
 import navLinks from "@/components/json/link.json";
 import { usePathname, useRouter } from "next/navigation";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  CardTitle,
-  CardDescription,
-  CardHeader,
-  CardContent,
-  Card,
-} from "@/components/ui/card";
-import { Bell, HelpCircle, Menu, Search } from "lucide-react";
+import { Bell, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supa";
@@ -68,6 +52,7 @@ function getDynamicTitle(pathname, webshop) {
     "/theme": { name: "Personalización", group: "CONFIGURACIÓN" },
     "/planes": { name: "Tu plan", group: "CONFIGURACIÓN" },
     "/team": { name: "Equipo", group: "EQUIPO" },
+    "/rouai-guide": { name: "RouAI Guide", group: "AYUDA" },
   };
 
   return (
@@ -78,33 +63,12 @@ function getDynamicTitle(pathname, webshop) {
   );
 }
 
-// ─── GuideCard ────────────────────────────────────────────────────────────────
-const GuideCard = ({ title, description, steps }) => (
-  <div className="grid w-full overflow-hidden">
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[50vh]">
-          <div className="grid gap-4">
-            <h3 className="text-lg font-semibold">Pasos a seguir</h3>
-            <ul className="list-disc space-y-2 pl-6 text-slate-500">
-              {steps.map((step, index) => (
-                <li key={index}>{step}</li>
-              ))}
-            </ul>
-          </div>
-          <ScrollBar />
-        </ScrollArea>
-      </CardContent>
-    </Card>
-  </div>
-);
-
 // ─── HeaderAdmin ──────────────────────────────────────────────────────────────
-export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
+export default function HeaderAdmin({
+  ThemeContext,
+  onMenuClick,
+  hideMenu = false,
+}) {
   const { webshop } = useContext(ThemeContext);
   const [notificaciones, setNotificaciones] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -122,21 +86,6 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
   const title = useMemo(
     () => getDynamicTitle(pathname, webshop),
     [pathname, webshop],
-  );
-  const guideCard = useMemo(
-    () =>
-      dataCards.find(({ route }) => {
-        const pattern = route
-          .split("/")
-          .map((segment) =>
-            segment.startsWith("[") && segment.endsWith("]")
-              ? "[^/]+"
-              : segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          )
-          .join("/");
-        return new RegExp(`^${pattern}$`).test(pathname);
-      }),
-    [pathname],
   );
   useEffect(() => {
     setSearchOpen(false);
@@ -263,22 +212,24 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
   }, [searchQuery, storeRole, webshop?.store?.UUID]);
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-2 px-3 py-2 h-14 border-b border-slate-200 bg-slate-50/95 backdrop-blur-sm sm:gap-4 sm:px-6">
+    <header className="sticky top-0 z-10 flex h-14 w-full shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm sm:gap-4 sm:px-6">
       {/* Left: menu + title */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className=" text-slate-500 hover:bg-slate-200"
-          onClick={onMenuClick}
-          aria-label="Abrir menu"
-        >
-          <Menu size={18} />
-        </Button>
+        {!hideMenu && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className=" text-slate-500 hover:bg-slate-200 lg:hidden"
+            onClick={onMenuClick}
+            aria-label="Abrir menu"
+          >
+            <Menu size={18} />
+          </Button>
+        )}
         <div className="flex lg:hidden h-6 w-px bg-[#e7eaf0]" />
         <div>
           <p className="text-xs font-medium text-[#98a2b3]">
-            <span className="hidden md:inline-block">ADMINISTRADOR</span>
+            <span className="hidden md:inline-block">ROUADMIN</span>
             <span className="inline-block md:hidden">...</span>/ {title.group}
           </p>
           <h1 className="text-sm font-semibold">{title.name}</h1>
@@ -426,73 +377,21 @@ export default function HeaderAdmin({ ThemeContext, onMenuClick }) {
           )}
         </Button>
 
-        {/* Help */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500"
-              aria-label="Ayuda sobre esta página"
-              title="Ayuda sobre esta página"
-            >
-              <HelpCircle className="w-4.5 h-4.5" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Ayuda de la sección</DialogTitle>
-              <DialogDescription>
-                Instrucciones y pasos para usar esta parte del panel.
-              </DialogDescription>
-            </DialogHeader>
-            {guideCard ? (
-              <GuideCard {...guideCard} />
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Aún no hay una guía específica para esta pantalla. Consulta la
-                  guía general del panel para ver las instrucciones disponibles.
-                </p>
-                <Button asChild>
-                  <Link href="/guia">Abrir guía del panel</Link>
-                </Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Divider */}
-        <div className="hidden md:flex w-px h-6 bg-slate-200" />
-
-        {/* User chip */}
-        <div className="hidden md:flex items-center gap-2.5 pl-1 backdrop-blur-xl">
-          <Avatar className="w-8 h-8 ring-2 ring-slate-200">
-            <AvatarImage
-              src={webshop?.user?.image || ""}
-              alt={webshop?.user?.name || "Usuario"}
-            />
-            <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-bold">
-              {webshop?.user?.name
-                ? webshop.user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                : "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden sm:block leading-tight">
-            <p className="text-sm font-semibold text-slate-800 truncate max-w-[100px]">
-              {webshop?.user?.name?.split(" ")[0] || "Usuario"}
-            </p>
-            <p className="text-[11px] text-slate-500 capitalize">
-              {webshop?.store_role ?? "Manager"}
-            </p>
-          </div>
-          {/* Online dot */}
-          <div className="w-2 h-2 rounded-full bg-slate-500 shrink-0" />
-        </div>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="h-9 rounded-xl px-2.5 text-slate-600 hover:bg-slate-200"
+        >
+          <Link
+            href={`/rouai-guide?from=${encodeURIComponent(pathname)}`}
+            aria-label="Abrir RouAI Guide"
+            title="RouAI Guide"
+            className="flex items-center gap-2"
+          >
+            <Image src="/rouai-guide.svg" alt="" width={22} height={22} />
+          </Link>
+        </Button>
       </div>
     </header>
   );

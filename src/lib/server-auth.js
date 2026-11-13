@@ -147,7 +147,7 @@ export async function getServerSession() {
  */
 export async function requireAuth() {
   const userData = await getServerUser();
-  if (!userData) {
+  if (!userData?.userId) {
     return { authenticated: false, userId: null, user: null };
   }
   return { authenticated: true, ...userData };
@@ -158,6 +158,6 @@ export async function requireAuth() {
 export const serverAuthService = {
   getCurrentUser: getServerUser,
   getSession: getServerSession,
-  isAuthenticated: async () => !!(await getServerUser()),
+  isAuthenticated: async () => Boolean((await getServerUser())?.userId),
   createClient: createServerClient,
 };

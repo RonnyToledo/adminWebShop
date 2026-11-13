@@ -17,6 +17,11 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const ICONS = {
@@ -214,39 +219,37 @@ export function InfoSectionsEditor({ sections, onChange }) {
 
       {/* Add menu */}
       {availablePresets.length > 0 && (
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowMenu((v) => !v)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 h-10 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors"
+        <Popover open={showMenu} onOpenChange={setShowMenu}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-1.5 px-3 h-10 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors"
+            >
+              <Plus size={13} />
+              Agregar sección
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl"
           >
-            <Plus size={13} />
-            Agregar sección
-          </button>
-          {showMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowMenu(false)}
-              />
-              <div className="absolute left-0 right-0 top-12 z-50 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
-                {availablePresets.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => addSection(p)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-accent/40 transition-colors text-left"
-                  >
-                    <span className="w-6 h-6 rounded-md bg-secondary text-foreground flex items-center justify-center">
-                      <IconFor name={p.icon} size={11} />
-                    </span>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+            <div className="overflow-hidden">
+              {availablePresets.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => addSection(p)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-accent/40 transition-colors text-left"
+                >
+                  <span className="w-6 h-6 rounded-md bg-secondary text-foreground flex items-center justify-center">
+                    <IconFor name={p.icon} size={11} />
+                  </span>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ArrowRight,
   CalendarClock,
@@ -12,6 +12,14 @@ import { toast } from "sonner";
 import ImageUploadDrag from "@/components/component/ImageDND";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function PostBasicInfo({
   initialData,
@@ -29,12 +37,28 @@ export function PostBasicInfo({
     former: initialData.former ?? "",
     next: initialData.next ?? "",
   });
-  const [newImage, setNewImage] = useState(null);
+  const [newImage, setNewImage] = useState(() =>
+    typeof File !== "undefined" && initialData.imageUrl instanceof File
+      ? initialData.imageUrl
+      : null,
+  );
+  const [newImagePreviewUrl, setNewImagePreviewUrl] = useState(null);
   const [removeCurrentImage, setRemoveCurrentImage] = useState(
     Boolean(initialData.removeImage),
   );
   const [focused, setFocused] = useState(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+
+  useEffect(() => {
+    if (!newImage) {
+      setNewImagePreviewUrl(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(newImage);
+    setNewImagePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [newImage]);
 
   const handleTitleChange = (title) => {
     setFormData((prev) => ({
@@ -83,6 +107,9 @@ export function PostBasicInfo({
     const offset = date.getTimezoneOffset();
     return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
   })();
+  const imagePreviewSrc =
+    newImagePreviewUrl ||
+    (typeof formData.imageUrl === "string" ? formData.imageUrl : null);
 
   return (
     <div className="p-6 space-y-6 max-w-2xl mx-auto">
@@ -238,14 +265,12 @@ export function PostBasicInfo({
           <p className="text-[11px] text-muted-foreground uppercase tracking-[0.12em] font-medium flex items-center gap-1.5">
             <ImageIcon size={11} /> Imagen de portada
           </p>
-          {newImage || (formData.imageUrl && !removeCurrentImage) ? (
+          {imagePreviewSrc && !removeCurrentImage ? (
             <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-border">
               <Image
                 alt="Portada"
                 fill
-                src={
-                  newImage ? URL.createObjectURL(newImage) : formData.imageUrl
-                }
+                src={imagePreviewSrc}
                 className="object-cover"
               />
               <button
@@ -330,71 +355,59 @@ export function PostBasicInfo({
           <ArrowRight size={14} />
         </motion.button>
       </div>
-      {scheduleOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
-                  Programar publicación
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  El post se publicará automáticamente en la fecha elegida.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Cerrar programación"
-                onClick={() => setScheduleOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <span className="text-lg leading-none">×</span>
-              </button>
-            </div>
-            <label
-              htmlFor="post-publish-at"
-              className="mt-5 block text-xs font-medium text-foreground"
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-base">
+              Programar publicación
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              El post se publicará automáticamente en la fecha elegida.
+            </DialogDescription>
+          </DialogHeader>
+          <label
+            htmlFor="post-publish-at"
+            className="mt-2 block text-xs font-medium text-foreground"
+          >
+            Fecha y hora
+          </label>
+          <input
+            id="post-publish-at"
+            type="datetime-local"
+            value={publishAtLocal}
+            min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+            onChange={(event) =>
+              setFormData((prev) => ({
+                ...prev,
+                publishAt: event.target.value
+                  ? new Date(event.target.value).toISOString()
+                  : null,
+              }))
+            }
+            className={`${baseInput} mt-2`}
+          />
+          <DialogFooter className="mt-2 -mx-5 -mb-5 flex-row justify-end rounded-b-2xl border-0 bg-transparent p-0">
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(false)}
+              className="h-9 rounded-lg px-3 text-sm text-muted-foreground hover:bg-accent"
             >
-              Fecha y hora
-            </label>
-            <input
-              id="post-publish-at"
-              type="datetime-local"
-              value={publishAtLocal}
-              min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
-              onChange={(event) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  publishAt: event.target.value
-                    ? new Date(event.target.value).toISOString()
-                    : null,
-                }))
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(false)}
+              disabled={
+                !formData.publishAt ||
+                new Date(formData.publishAt) <= new Date()
               }
-              className={`${baseInput} mt-2`}
-            />
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setScheduleOpen(false)}
-                className="h-9 rounded-lg px-3 text-sm text-muted-foreground hover:bg-accent"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => setScheduleOpen(false)}
-                disabled={
-                  !formData.publishAt ||
-                  new Date(formData.publishAt) <= new Date()
-                }
-                className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
-              >
-                Confirmar fecha
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
+            >
+              Confirmar fecha
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

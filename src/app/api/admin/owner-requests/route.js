@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
+import { sendPushToUser } from "@/lib/server/push-notifications";
 
 function err(msg, status = 400) {
   return NextResponse.json({ error: true, message: msg }, { status });
@@ -146,18 +147,38 @@ export async function POST(request) {
       }
 
       // Notificar usuario de aprobación
-      await supabase.from("Notification").insert({
+      const notificationMessage = `¡Felicidades! Tu solicitud para crear la tienda "${ownerRequest.store_name}" fue aprobada.`;
+      const { error: notificationError } = await supabase.from("Notification").insert({
         userID: ownerRequest.user_id,
-        mensaje: `¡Felicidades! Tu solicitud para crear la tienda "${ownerRequest.store_name}" fue aprobada.`,
+        mensaje: notificationMessage,
         link: "/",
       });
+      if (notificationError) {
+        console.error("No se pudo guardar la notificación de aprobación:", notificationError);
+      } else {
+        await sendPushToUser(ownerRequest.user_id, {
+          title: "Solicitud aprobada",
+          body: notificationMessage,
+          link: "/",
+        });
+      }
     } else {
       // Notificar rechazo
-      await supabase.from("Notification").insert({
+      const notificationMessage = `Tu solicitud para crear tienda fue rechazada. Razón: ${rejection_reason || "No especificada"}`;
+      const { error: notificationError } = await supabase.from("Notification").insert({
         userID: ownerRequest.user_id,
-        mensaje: `Tu solicitud para crear tienda fue rechazada. Razón: ${rejection_reason || "No especificada"}`,
+        mensaje: notificationMessage,
         link: "/",
       });
+      if (notificationError) {
+        console.error("No se pudo guardar la notificación de rechazo:", notificationError);
+      } else {
+        await sendPushToUser(ownerRequest.user_id, {
+          title: "Solicitud revisada",
+          body: notificationMessage,
+          link: "/",
+        });
+      }
     }
 
     // Auditar

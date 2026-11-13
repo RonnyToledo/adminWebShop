@@ -217,8 +217,15 @@ function highlightTag(tag) {
 
 // ── Editor Component ────────────────────────────────────────────────────
 
-export function HTMLEditor({ value, onChange, rows = 18, placeholder }) {
-  const textareaRef = useRef(null);
+export function HTMLEditor({
+  value,
+  onChange,
+  rows = 18,
+  placeholder,
+  textareaRef: externalTextareaRef,
+}) {
+  const internalTextareaRef = useRef(null);
+  const textareaRef = externalTextareaRef ?? internalTextareaRef;
   const overlayRef = useRef(null);
   const lineNumRef = useRef(null);
   const [textareaHeight, setTextareaHeight] = useState(0);
@@ -234,7 +241,7 @@ export function HTMLEditor({ value, onChange, rows = 18, placeholder }) {
     const h = Math.max(scrollH, minHeight);
     ta.style.height = `${h}px`;
     setTextareaHeight(h);
-  }, [value, rows]);
+  }, [value, rows, textareaRef]);
 
   const handleFormat = useCallback(() => {
     const formatted = formatHTML(value);
@@ -309,7 +316,7 @@ export function HTMLEditor({ value, onChange, rows = 18, placeholder }) {
     if (ln) {
       ln.scrollTop = ta.scrollTop;
     }
-  }, []);
+  }, [textareaRef]);
 
   const highlighted = highlightHTML(value);
   const lineCount = value.split("\n").length;

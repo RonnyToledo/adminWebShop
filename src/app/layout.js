@@ -47,6 +47,7 @@ const ROUTE_DATA_MIGRATED = [
   "/planes",
   "/category",
   "/products",
+  "/rouai-guide",
   "/orders",
 ];
 
@@ -164,6 +165,11 @@ const ROUTE_METADATA = [
     route: "/team",
     title: "Equipo",
     description: "Administra el acceso de los miembros de tu equipo.",
+  },
+  {
+    route: "/rouai-guide",
+    title: "RouAI Guide",
+    description: "Recibe orientación contextual para utilizar RouAdmin.",
   },
   {
     route: "/welcome",

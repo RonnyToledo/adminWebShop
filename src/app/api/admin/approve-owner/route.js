@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
+import { sendPushToUser } from "@/lib/server/push-notifications";
 
 function err(msg, status = 400) {
   return NextResponse.json({ error: true, message: msg }, { status });
@@ -138,11 +139,21 @@ export async function POST(request) {
     });
 
     // Notificar al usuario
-    await supabase.from("Notification").insert({
+    const notificationMessage = `Felicidades! Ahora eres owner de la tienda: ${store.name}`;
+    const { error: notificationError } = await supabase.from("Notification").insert({
       userID: targetUser.id,
-      mensaje: `Felicidades! Ahora eres owner de la tienda: ${store.name}`,
+      mensaje: notificationMessage,
       link: "/",
     });
+    if (notificationError) {
+      console.error("No se pudo guardar la notificación de aprobación:", notificationError);
+    } else {
+      await sendPushToUser(targetUser.id, {
+        title: "Acceso de owner aprobado",
+        body: notificationMessage,
+        link: "/",
+      });
+    }
 
     return NextResponse.json({
       message: "Usuario aprobado como owner",

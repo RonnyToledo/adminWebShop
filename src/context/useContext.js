@@ -12,6 +12,7 @@ import HeaderAdmin from "@/components/Chadcn-components/General/HeaderAdmin";
 import AppSidebar from "@/components/Chadcn-components/General/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "sonner";
+import { MessageCircle, X } from "lucide-react";
 import { authService } from "@/lib/supabase";
 import { supabase } from "@/lib/supa";
 import { useSessionSyncOnVisibility } from "@/hooks/useSessionSync";
@@ -78,6 +79,7 @@ export default function MyProvider({
 }) {
   const [webshop, setWebshop] = useState(() => buildWebshopState(data));
   const [OpenSidebar, setOpenSidebar] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -88,6 +90,7 @@ export default function MyProvider({
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
+  const isRouAIGuideRoute = pathname === "/rouai-guide";
   const accessResolved =
     data != null &&
     data.store_access_resolved !== false &&
@@ -195,10 +198,9 @@ export default function MyProvider({
     isProtectedRoute,
     accessResolved,
     isWelcomeRoute,
-    hasStoreAccess,
     needsOnboarding,
     sessionError,
-    isAddMode, // ← nueva dependencia
+    isAddMode,
     router,
   ]);
 
@@ -286,21 +288,24 @@ export default function MyProvider({
     <ThemeContext.Provider value={{ webshop, setWebshop }}>
       <Toaster position="top-center" />
       <SidebarProvider>
-        {!isPublicRoute && !isProtectedRoute && (
-          <AppSidebar
-            ThemeContext={ThemeContext}
-            isOpen={OpenSidebar}
-            onClose={() => setOpenSidebar(false)}
-          />
-        )}
-        <div className="w-full min-w-0">
+        <div className="flex min-h-dvh w-full flex-col">
           {!isPublicRoute && !isProtectedRoute && (
             <HeaderAdmin
               ThemeContext={ThemeContext}
               onMenuClick={() => setOpenSidebar(!OpenSidebar)}
+              hideMenu={isRouAIGuideRoute}
             />
           )}
-          {children}
+          <div className="flex min-h-0 flex-1">
+            {!isPublicRoute && !isProtectedRoute && !isRouAIGuideRoute && (
+              <AppSidebar
+                ThemeContext={ThemeContext}
+                isOpen={OpenSidebar}
+                onClose={() => setOpenSidebar(false)}
+              />
+            )}
+            <div className="w-full min-w-0 flex-1">{children}</div>
+          </div>
         </div>
       </SidebarProvider>
     </ThemeContext.Provider>

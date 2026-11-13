@@ -18,7 +18,6 @@ import {
   Mail,
   Inbox,
   LogOut,
-  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -205,47 +204,39 @@ export default function TeamPage({ storeId, currentUserId, storeRole }) {
         )}
       </div>
 
-      {/* Modal confirmación desvinculación */}
-      {confirmLeave && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-background border border-border rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertTriangle size={18} className="text-destructive" />
-              </div>
-              <div>
-                <p className="font-medium text-foreground text-sm">
-                  ¿Desvincularse de la tienda?
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Perderás acceso inmediatamente.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end pt-1">
-              <button
-                onClick={() => setConfirmLeave(false)}
-                disabled={leaving}
-                className="px-4 py-2 rounded-lg text-sm border border-border hover:bg-secondary/50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleLeave}
-                disabled={leaving}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-60"
-              >
-                {leaving ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <LogOut size={13} />
-                )}
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog
+        open={confirmLeave}
+        onOpenChange={(open) => {
+          if (!open && !leaving) setConfirmLeave(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desvincularse de la tienda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Perderás acceso inmediatamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={leaving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={leaving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(event) => {
+                event.preventDefault();
+                void handleLeave();
+              }}
+            >
+              {leaving ? (
+                <Loader2 size={13} className="mr-2 animate-spin" />
+              ) : (
+                <LogOut size={13} className="mr-2" />
+              )}
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={Boolean(memberToRemove)}

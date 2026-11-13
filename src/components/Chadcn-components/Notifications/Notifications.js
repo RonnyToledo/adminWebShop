@@ -4,6 +4,7 @@ import { Bell, BellOff, Check, CheckCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supa";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "@formkit/tempo";
+import PushNotificationControl from "./PushNotificationControl";
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -192,23 +193,26 @@ export default function NotificationsPage({ userId }) {
             </p>
           )}
         </div>
+        <div className="flex flex-col items-end gap-2">
+          <PushNotificationControl userId={userId} />
 
-        {/* Marcar todas */}
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllAsRead}
-            disabled={marking}
-            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl border border-border text-foreground hover:bg-secondary/60 transition-colors disabled:opacity-40 shrink-0 mt-1"
-          >
-            {marking ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              <CheckCheck size={12} />
-            )}
-            <span className="hidden sm:inline">Marcar todas</span>
-            <span className="sm:hidden">Leer todo</span>
-          </button>
-        )}
+          {/* Marcar todas */}
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              disabled={marking}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl border border-border text-foreground hover:bg-secondary/60 transition-colors disabled:opacity-40 shrink-0 mt-1"
+            >
+              {marking ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <CheckCheck size={12} />
+              )}
+              <span className="hidden sm:inline">Marcar todas</span>
+              <span className="sm:hidden">Leer todo</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

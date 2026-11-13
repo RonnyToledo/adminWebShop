@@ -27,9 +27,7 @@ import ListIcon from "@mui/icons-material/List";
 import AddCardIcon from "@mui/icons-material/AddCard";
 import EditIcon from "@mui/icons-material/Edit";
 import GroupIcon from "@mui/icons-material/Group";
-import Image from "next/image";
 import BookIcon from "@mui/icons-material/Book";
-import { logoAdmin } from "@/utils/image";
 import { Settings, Eye, X } from "lucide-react";
 import { authService } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -117,7 +115,7 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
       {/* Overlay móvil */}
       <div
         className={cn(
-          "z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
+          "fixed inset-x-0 bottom-0 top-14 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
@@ -127,39 +125,14 @@ export default function AppSidebar({ ThemeContext, isOpen, onClose }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 lg:sticky inset-y-0 left-0 z-[49] flex flex-col h-screen w-[220px] shrink-0",
+          "fixed bottom-0 left-0 top-14 z-[49] flex h-[calc(100dvh-3.5rem)] w-[220px] shrink-0 flex-col lg:sticky lg:top-14",
           "bg-slate-50 border-r border-slate-200",
           "transform transition-transform duration-300 ease-in-out lg:transform-none",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
-        {/* Logo */}
-        <div className="sticky lg:static top-0 flex items-center gap-3 p-4 border-b border-slate-200 h-16">
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0">
-            <Link href="/">
-              <Image
-                width={36}
-                height={36}
-                src={logoAdmin}
-                alt={webshop?.store?.name || "Logo"}
-                className="object-cover aspect-square rounded-xl"
-              />
-            </Link>
-          </div>
-          <span className="font-bold text-slate-800 text-sm tracking-tight">
-            {webshop?.store?.name || "Roumenu"}
-          </span>
-          <button
-            onClick={onClose}
-            className="lg:hidden ml-auto p-1 rounded-lg hover:bg-slate-200 transition-colors"
-            aria-label="Cerrar menu"
-          >
-            <X className="w-4 h-4 text-slate-500" />
-          </button>
-        </div>
-
         {/* Navegación */}
-        <nav className="flex-1 overflow-y-scroll px-3 py-4 space-y-5">
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
           {filteredNavLinks.map((section, sectionIndex) => (
             <div key={sectionIndex}>
               {section.group && (

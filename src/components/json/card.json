@@ -1,5 +1,19 @@
 [
   {
+    "title": "Inicio",
+    "llave": "Home",
+    "route": "/",
+    "description": "El panel de inicio resume la actividad del negocio: productos, pedidos, clientes e ingresos, además de accesos rápidos y tareas de configuración pendientes.",
+    "steps": [
+      "Consulta los indicadores generales de la tienda",
+      "Revisa la actividad reciente de productos y pedidos",
+      "Usa los accesos rápidos para agregar productos o editar la tienda",
+      "Completa las tareas de inicio que todavía estén pendientes"
+    ],
+    "link": "/",
+    "buttonText": "Volver al inicio"
+  },
+  {
     "title": "Categorías",
     "llave": "Category",
     "route": "/category",
@@ -29,12 +43,13 @@
     "title": "Nuevo producto",
     "llave": "New Product",
     "route": "/newProduct",
-    "description": "Añade productos desde cero con la información clave, la categoría, la imagen y el precio base.",
+    "description": "Añade productos desde cero. El formulario tiene un modo rápido y otro detallado; la imagen, el precio y el stock inicial pertenecen a la variante principal.",
     "steps": [
-      "Carga la imagen principal del producto",
-      "Completa nombre, descripción, precio y stock",
-      "Asigna la categoría correcta y la moneda por defecto",
-      "Marca si es destacado, especial o visible para la tienda"
+      "Completa el nombre y selecciona una categoría",
+      "Elige la moneda y define el precio y el stock de la variante principal",
+      "Carga la imagen principal en esa variante",
+      "Usa el modo detallado si necesitas configurar información y opciones adicionales",
+      "Revisa la visibilidad antes de guardar"
     ],
     "link": "/newProduct",
     "buttonText": "Crear producto"
@@ -57,12 +72,12 @@
     "title": "Detalle del producto",
     "llave": "Product Specific",
     "route": "/products/[specific]",
-    "description": "Ajusta el contenido específico de cada producto, incluyendo descripción, variantes, precio, promociones y estado de venta.",
+    "description": "Edita la información del producto y sus variantes; cada variante puede tener sus propios datos de precio, stock, imagen y opciones de venta.",
     "steps": [
-      "Actualiza el nombre, la descripción y los datos visibles",
-      "Configura variantes, stock y precios por opción",
-      "Controla si el producto se muestra o si está agotado",
-      "Agrega agregados o extras y decide si se muestran como opciones adicionales"
+      "Actualiza el nombre, la descripción y la categoría",
+      "Revisa el precio, stock e imagen de cada variante",
+      "Ajusta la visibilidad y las opciones de venta",
+      "Abre el modo detallado para gestionar información adicional, descuentos por cantidad o productos relacionados"
     ]
   },
   {
@@ -80,6 +95,32 @@
     "buttonText": "Ver blog"
   },
   {
+    "title": "Crear entrada del blog",
+    "llave": "Blog New",
+    "route": "/blog/new",
+    "description": "El formulario de publicación guía la creación del contenido en dos pasos: información básica y contenido del artículo.",
+    "steps": [
+      "Completa los datos básicos de la entrada",
+      "Continúa al editor para redactar el contenido",
+      "Revisa la información antes de guardar o publicar"
+    ],
+    "link": "/blog/new",
+    "buttonText": "Crear entrada"
+  },
+  {
+    "title": "Editar entrada del blog",
+    "llave": "Blog Edit",
+    "route": "/blog/[id]/edit",
+    "description": "Permite actualizar una entrada existente; el formulario carga sus datos y conserva el flujo de información básica y edición del contenido.",
+    "steps": [
+      "Comprueba que abriste la entrada correcta",
+      "Actualiza sus datos básicos o su contenido",
+      "Guarda los cambios para actualizar la publicación"
+    ],
+    "link": "/blog",
+    "buttonText": "Volver al blog"
+  },
+  {
     "title": "Pedidos",
     "llave": "Orders",
     "route": "/orders",
@@ -92,6 +133,20 @@
     ],
     "link": "/orders",
     "buttonText": "Ver pedidos"
+  },
+  {
+    "title": "Detalle del pedido",
+    "llave": "Order Detail",
+    "route": "/orders/[specific]",
+    "description": "Muestra los datos de un pedido, los productos y cantidades, sus importes y las opciones de atención disponibles para ese pedido.",
+    "steps": [
+      "Verifica los datos del pedido y sus productos",
+      "Revisa cantidades e importes antes de hacer cambios",
+      "Usa la opción de contacto disponible si necesitas coordinar con el cliente",
+      "Vuelve a Pedidos para consultar otros registros"
+    ],
+    "link": "/orders",
+    "buttonText": "Volver a pedidos"
   },
   {
     "title": "Marketing",
@@ -120,6 +175,19 @@
     ],
     "link": "/configuracion",
     "buttonText": "Configurar tienda"
+  },
+  {
+    "title": "Notificaciones",
+    "llave": "Notifications",
+    "route": "/notifications",
+    "description": "Reúne las notificaciones de la cuenta y permite filtrar las vistas o pendientes y marcar notificaciones como vistas.",
+    "steps": [
+      "Cambia entre Todas, No vistas y Vistas",
+      "Abre una notificación para ir al contenido relacionado",
+      "Marca una notificación individual o todas como vistas"
+    ],
+    "link": "/notifications",
+    "buttonText": "Ver notificaciones"
   },
   {
     "title": "Domicilios",
@@ -204,6 +272,19 @@
     ],
     "link": "/team",
     "buttonText": "Ver equipo"
+  },
+  {
+    "title": "Clientes Premium",
+    "llave": "Premium Customers",
+    "route": "/premium-clientes",
+    "description": "Permite buscar clientes y administrar quién tiene acceso activo como cliente Premium del negocio.",
+    "steps": [
+      "Busca clientes por nombre o correo",
+      "Agrega un cliente y confirma que aparece en la lista",
+      "Revisa el estado de acceso y actívalo o desactívalo según corresponda"
+    ],
+    "link": "/premium-clientes",
+    "buttonText": "Gestionar clientes Premium"
   },
   {
     "title": "Planes y suscripciones",

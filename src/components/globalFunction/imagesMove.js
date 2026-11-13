@@ -1,9 +1,10 @@
 import { extractPublicId } from "cloudinary-build-url";
-import cloudinary from "@/lib/cloudinary";
+import cloudinary, { assertCloudinaryConfigured } from "@/lib/cloudinary";
 
 export async function DestroyImage(image) {
   const publicId = extractPublicId(image);
   if (!publicId) return null;
+  assertCloudinaryConfigured();
 
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(publicId, (error, result) => {
@@ -18,6 +19,7 @@ export async function DestroyImage(image) {
 }
 
 export async function UploadNewImage(image) {
+  assertCloudinaryConfigured();
   const byte = await image.arrayBuffer();
   const buffer = Buffer.from(byte);
   return await new Promise((resolve, reject) => {

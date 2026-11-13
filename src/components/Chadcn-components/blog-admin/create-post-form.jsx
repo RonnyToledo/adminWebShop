@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useState } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PostBasicInfo } from "./post-basic-info";
 import { PostContentEditor } from "./post-content-editor";
@@ -32,7 +32,7 @@ export function CreatePostForm({ initialPost = null, availablePosts = [] }) {
     content: initialPost?.description ?? "",
     imageUrl: initialPost?.image ?? "",
     author: "Admin",
-    published: initialPost?.published ?? false,
+    published: initialPost?.published ?? true,
     publishAt: initialPost?.publish_at ?? null,
     former: resolvePostSlug(initialPost?.former, posts),
     next: resolvePostSlug(initialPost?.next, posts),
@@ -42,6 +42,12 @@ export function CreatePostForm({ initialPost = null, availablePosts = [] }) {
     setFormData((prev) => ({ ...prev, ...data }));
     setStep(2);
   };
+
+  const handleContentChange = useCallback((content) => {
+    setFormData((prev) =>
+      prev.content === content ? prev : { ...prev, content },
+    );
+  }, []);
 
   const handleBack = () => {
     setStep(1);
@@ -134,6 +140,7 @@ export function CreatePostForm({ initialPost = null, availablePosts = [] }) {
           isEditing={Boolean(initialPost)}
           onBack={handleBack}
           onComplete={handleContentComplete}
+          onContentChange={handleContentChange}
           slug={formData.slug}
         />
       )}

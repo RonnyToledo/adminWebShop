@@ -171,7 +171,12 @@ export default function PedidoDetalle({ ThemeContext, specific, initialData }) {
     if (total === 0) {
       router.push("/orders");
     }
-  }, [dataPedido?.desc?.pedido, dataPedido?.UID_Venta, router]);
+  }, [
+    dataPedido?.desc.pedido,
+    dataPedido?.UID_Venta,
+    router,
+    dataPedido?.desc?.total,
+  ]);
 
   // ── Actualizar en servidor ────────────────────────────────────────────────
   async function Update(value) {

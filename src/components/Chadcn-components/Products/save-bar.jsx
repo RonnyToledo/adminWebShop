@@ -1,8 +1,16 @@
 "use client";
 
-import { CalendarClock, Check, Circle, Loader2, X } from "lucide-react";
+import { CalendarClock, Check, Circle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function SaveBar({
   hasChanges,
@@ -99,62 +107,49 @@ export function SaveBar({
           </div>
         </div>
       </div>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
-                  Programar publicación
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  El producto se guardará y aparecerá automáticamente en esa
-                  fecha.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Cerrar programación"
-                onClick={() => setOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <label
-              htmlFor="schedule-publish-at"
-              className="mt-5 block text-xs font-medium text-foreground"
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-base">
+              Programar publicación
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              El producto se guardará y aparecerá automáticamente en esa fecha.
+            </DialogDescription>
+          </DialogHeader>
+          <label
+            htmlFor="schedule-publish-at"
+            className="mt-2 block text-xs font-medium text-foreground"
+          >
+            Fecha y hora
+          </label>
+          <input
+            id="schedule-publish-at"
+            type="datetime-local"
+            value={dateValue}
+            min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+            onChange={(event) => setDateValue(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+          />
+          <DialogFooter className="mt-2 -mx-5 -mb-5 flex-row justify-end rounded-b-2xl border-0 bg-transparent p-0">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="h-9 rounded-lg px-3 text-sm text-muted-foreground hover:bg-accent"
             >
-              Fecha y hora
-            </label>
-            <input
-              id="schedule-publish-at"
-              type="datetime-local"
-              value={dateValue}
-              min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
-              onChange={(event) => setDateValue(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-            />
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="h-9 rounded-lg px-3 text-sm text-muted-foreground hover:bg-accent"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={confirmSchedule}
-                disabled={!dateValue || new Date(dateValue) <= new Date()}
-                className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
-              >
-                Guardar programación
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={confirmSchedule}
+              disabled={!dateValue || new Date(dateValue) <= new Date()}
+              className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
+            >
+              Guardar programación
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

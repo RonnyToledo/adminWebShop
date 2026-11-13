@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/route-handler-auth";
+import { sendPushToUser } from "@/lib/server/push-notifications";
 
 function err(message, status = 400) {
   return NextResponse.json({ error: true, message }, { status });
@@ -126,11 +127,21 @@ export async function POST(request) {
     });
     if (auditError) return err(auditError.message, 500);
 
-    await supabase.from("Notification").insert({
+    const notificationMessage = `Ahora eres owner de la tienda: ${store.name}`;
+    const { error: notificationError } = await supabase.from("Notification").insert({
       userID: targetUserId,
-      mensaje: `Ahora eres owner de la tienda: ${store.name}`,
+      mensaje: notificationMessage,
       link: "/",
     });
+    if (notificationError) {
+      console.error("No se pudo guardar la notificación de transferencia:", notificationError);
+    } else {
+      await sendPushToUser(targetUserId, {
+        title: "Transferencia de tienda",
+        body: notificationMessage,
+        link: "/",
+      });
+    }
 
     return NextResponse.json({
       message: "Propiedad transferida correctamente",

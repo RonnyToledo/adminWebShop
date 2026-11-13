@@ -391,9 +391,9 @@ export default function Page({ ThemeContext, initialData }) {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {/* VISITAS 30 */}
 
-        <div className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20">
+        <div className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               Visitas este mes
             </p>
 
@@ -430,9 +430,9 @@ export default function Page({ ThemeContext, initialData }) {
 
         {/* PROMEDIO */}
 
-        <div className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20">
+        <div className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               Promedio mensual
             </p>
 
@@ -450,9 +450,9 @@ export default function Page({ ThemeContext, initialData }) {
 
         {/* TOTAL */}
 
-        <div className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20">
+        <div className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               Total visitas
             </p>
 
@@ -471,10 +471,10 @@ export default function Page({ ThemeContext, initialData }) {
         {/* DÍAS */}
 
         <div // KPI
-          className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
+          className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
         >
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               Días con actividad
             </p>
 
@@ -538,7 +538,7 @@ export default function Page({ ThemeContext, initialData }) {
             </div>
           </div>
 
-          <div className="h-[280px] w-full p-4 sm:h-[320px]">
+          <div className="h-70 w-full p-4 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={visibleDaily}
@@ -640,7 +640,7 @@ export default function Page({ ThemeContext, initialData }) {
         ================================================== */}
 
         <section // KPI
-          className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
+          className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
         >
           <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-orange-600 dark:text-orange-400">
             Comparativa
@@ -664,7 +664,7 @@ export default function Page({ ThemeContext, initialData }) {
             </span>
           </div>
 
-          <div className="mt-4 h-[105px]">
+          <div className="mt-4 h-26.25">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={months}
@@ -782,7 +782,7 @@ export default function Page({ ThemeContext, initialData }) {
           )}
         </div>
 
-        <div className="h-[220px] w-full p-4 sm:h-[250px]">
+        <div className="h-55 w-full p-4 sm:h-62.5">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={hourlyData}
@@ -803,7 +803,7 @@ export default function Page({ ThemeContext, initialData }) {
 
               <CartesianGrid
                 vertical={false}
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
                 strokeDasharray="3 4"
               />
 
@@ -812,7 +812,7 @@ export default function Page({ ThemeContext, initialData }) {
                 tickLine={false}
                 axisLine={false}
                 tick={{
-                  fill: "hsl(var(--muted-foreground))",
+                  fill: "var(--muted-foreground)",
                   fontSize: 9,
                 }}
                 interval={1}
@@ -823,8 +823,8 @@ export default function Page({ ThemeContext, initialData }) {
               <Tooltip
                 contentStyle={{
                   borderRadius: 10,
-                  border: "1px solid hsl(var(--border))",
-                  background: "hsl(var(--background))",
+                  border: "1px solid var(--border)",
+                  background: "var(--background)",
                   fontSize: 12,
                 }}
                 formatter={(value) => [value, "Visitas"]}
@@ -856,7 +856,7 @@ export default function Page({ ThemeContext, initialData }) {
         ================================================== */}
 
         <section // KPI
-          className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
+          className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
         >
           <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-orange-600 dark:text-orange-400">
             Actividad diaria
@@ -896,12 +896,12 @@ export default function Page({ ThemeContext, initialData }) {
           <div className="mt-4 flex items-center justify-end gap-2 text-[10px] text-muted-foreground">
             <span>Menos</span>
 
-            <span className="h-3 w-3 rounded-[2px] bg-muted" />
-            <span className="h-3 w-3 rounded-[2px] bg-orange-100 dark:bg-orange-950/50" />
-            <span className="h-3 w-3 rounded-[2px] bg-orange-200 dark:bg-orange-900/60" />
-            <span className="h-3 w-3 rounded-[2px] bg-orange-300 dark:bg-orange-800/70" />
-            <span className="h-3 w-3 rounded-[2px] bg-orange-500 dark:bg-orange-700" />
-            <span className="h-3 w-3 rounded-[2px] bg-orange-600 dark:bg-orange-500" />
+            <span className="h-3 w-3 rounded-xs bg-muted" />
+            <span className="h-3 w-3 rounded-xs bg-orange-100 dark:bg-orange-950/50" />
+            <span className="h-3 w-3 rounded-xs bg-orange-200 dark:bg-orange-900/60" />
+            <span className="h-3 w-3 rounded-xs bg-orange-300 dark:bg-orange-800/70" />
+            <span className="h-3 w-3 rounded-xs bg-orange-500 dark:bg-orange-700" />
+            <span className="h-3 w-3 rounded-xs bg-orange-600 dark:bg-orange-500" />
 
             <span>Más</span>
           </div>
@@ -932,7 +932,7 @@ export default function Page({ ThemeContext, initialData }) {
         ================================================== */}
 
         <section // KPI
-          className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
+          className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
         >
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
@@ -994,7 +994,7 @@ export default function Page({ ThemeContext, initialData }) {
         ================================================== */}
 
         <section // KPI
-          className="rounded-xl border border-orange-200/60 bg-gradient-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
+          className="rounded-xl border border-orange-200/60 bg-linear-to-br from-orange-50/80 to-background p-4 shadow-sm dark:border-orange-950/60 dark:from-orange-950/20"
         >
           <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-orange-600 dark:text-orange-400">
             Audiencia
@@ -1049,7 +1049,7 @@ export default function Page({ ThemeContext, initialData }) {
           {/* DONUT */}
 
           <div className="mt-5 flex items-center justify-center gap-5">
-            <div className="h-[130px] w-[130px]">
+            <div className="h-32.5 w-32.5">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
